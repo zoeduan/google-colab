@@ -1,0 +1,809 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Iterative Translation Refinement with Large Language Models</title>
+				<funder ref="#_Qz7bzaT">
+					<orgName type="full">UK government&apos;s Horizon Europe funding guarantee</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">UK Research and Innovation (UKRI)</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-05-01">1 May 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Pinzhen</forename><surname>Chen</surname></persName>
+							<email>pinzhen.chen@ed.ac.uk</email>
+							<affiliation key="aff0">
+								<orgName type="department">School of Informatics</orgName>
+								<orgName type="institution">University of Edinburgh</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Zhicheng</forename><surname>Guo</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="department" key="dep1">Dept. of Comp. Sci. &amp; Tech</orgName>
+								<orgName type="department" key="dep2">Institute for AI</orgName>
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Barry</forename><surname>Haddow</surname></persName>
+							<email>bhaddow@ed.ac.uk</email>
+							<affiliation key="aff0">
+								<orgName type="department">School of Informatics</orgName>
+								<orgName type="institution">University of Edinburgh</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Kenneth</forename><surname>Heafield</surname></persName>
+							<email>kenneth.heafield@ed.ac.uk</email>
+							<affiliation key="aff0">
+								<orgName type="department">School of Informatics</orgName>
+								<orgName type="institution">University of Edinburgh</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Iterative Translation Refinement with Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-05-01">1 May 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">F122675F117F62095A353A93530AADD1</idno>
+					<idno type="arXiv">arXiv:2306.03856v2[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:53+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>We propose iteratively prompting a large language model to self-correct a translation, with inspiration from their strong language understanding and translation capability as well as a human-like translation approach. Interestingly, multi-turn querying reduces the output's string-based metric scores, but neural metrics suggest comparable or improved quality. Human evaluations indicate better fluency and naturalness compared to initial translations and even human references, all while maintaining quality. Ablation studies underscore the importance of anchoring the refinement to the source and a reasonable seed translation for quality considerations. We also discuss the challenges in evaluation and relation to human performance and translationese.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Large language models (LLMs), e.g. generative pretrained Transformers (GPT), have made notable advancements in natural language processing <ref type="bibr" target="#b21">(Radford et al., 2019;</ref><ref type="bibr" target="#b3">Brown et al., 2020;</ref><ref type="bibr" target="#b13">Kaplan et al., 2020;</ref><ref type="bibr" target="#b18">Ouyang et al., 2022)</ref>. In machine translation <ref type="bibr">(MT)</ref>, where the convention is to use an encoderdecoder architecture to deal with source and target sentences respectively <ref type="bibr" target="#b0">(Bahdanau et al., 2015;</ref><ref type="bibr" target="#b28">Vaswani et al., 2017)</ref>, recent papers have examined the feasibility of LLM prompting for translation <ref type="bibr" target="#b29">(Vilar et al., 2023;</ref><ref type="bibr" target="#b34">Zhang et al., 2023;</ref><ref type="bibr">Hendy et al., 2023;</ref><ref type="bibr" target="#b0">Agrawal et al., 2023)</ref>.</p><p>With autoregressive decoding being the convention, machine translation models yield output in a single attempt, and so do post-editing models. Rather, a human translator can read and edit translations repeatedly, or even pass the outcome to another translator for a second opinion. We explore such an iterative refinement process with LLMs, where the proposed method simply feeds a sourcetranslation pair into an LLM for an improved translation in multiple rounds. It is worth noting that this method can be applied to an initial translation from any model, not just LLM outputs. We further conduct a qualitative evaluation of the outputs. Our approach offers two insights from a fluency and naturalness perspective: 1) LLMs are pre-trained on natural texts that are orders of magnitude larger than traditional MT data, and 2) the method does not require complicated prompt engineering, yet allows for iterative and arbitrary rephrasing compared to automatic post-editing, which is limited to token-level error correction without style editing <ref type="bibr" target="#b11">(Ive et al., 2020)</ref>.</p><p>Empirical results show that the refinement procedure introduces significant textual changes reflected by the drop in BLEU and chrF++, but attains similar or higher COMET scores compared to initial translations. Native speakers prefer refined outputs in terms of fluency and naturalness when compared with GPT translations and even human references. Reference-based human evaluation confirms that such gains are made without sacrificing general quality. As corroborated by recent works, automatic metrics like BLEU and COMET are witnessed to move in opposite directions <ref type="bibr" target="#b8">(Freitag et al., 2019;</ref><ref type="bibr" target="#b8">Freitag et al., 2022)</ref>. Our human-like LLM prompting method contributes to translation naturalness which can enhance utility as perceived by the target language users. On a broader scope, this work touches on the concept of involving LLMs in a collaborative translation editing strategy.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Mode Prompt</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Translate</head><p>Source: ${source} Please give me a translation in ${lang} without any explanation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Refine</head><p>Source: ${source} Translation: ${prev translation} Please give me a better ${lang} translation without any explanation.</p><p>RefineContrast Source: ${source} Bad translation: ${prev translation} Please give me a better ${lang} translation without any explanation.</p><p>RefineRandom Source: ${source} Bad translation: ${random target} if first-round, else ${prev translation} Please give me a better ${lang} translation without any explanation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Paraphrase</head><p>Sentence: ${prev translation} Please give me a paraphrase in ${lang} without any explanation.</p><p>Table <ref type="table">1</ref>: Prompts used in our work, where a ${variable} is substituted with its corresponding content.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Methodology</head><p>Having an input source sentence x and an optimizable model θ mt , the process to obtain a translation y can be modelled as y = argmax y P (y|x; θ mt ).</p><p>Next, an automatic post-editor θ ape creates a refined translation y ′ through modelling y ′ = argmax y ′ P (y ′ |x, y; θ ape ). Conventional translation or automatic post-editing models are trained on (x, y) or (x, y, y ′ ) data pairs. Extending prior work on LLM prompting, our study uses zero-shot prompting by affixing a task description to form a prompt p and querying an LLM θ LLM to elicit a response <ref type="bibr" target="#b3">(Brown et al., 2020)</ref>. We introduce five prompts in our study:</p><p>1. Translate: it queries for a translation of a source input, extending the translation process with a prompt p: y = argmax y P (y|p, x; θ LLM ). This is vanilla LLM prompting for MT. 2. Refine: similar to post-editing, the LLM is given the source sentence and the previous translation to produce a better translation y ′ = argmax y ′ P (y ′ |p, x, y; θ LLM ). 3. Refine Contrast : as a contrasting prompt to the above, we insert the word "bad" to hint that the previously translated text is unwanted, regardless of its actual quality. 4. Refine Random : same prompt as Refine Contrast , but in the first iteration, a random sentence is fed instead of a translation to imitate a genuinely "bad translation". 5. Paraphrase: a contrasting experiment to translation prompting, we ask an LLM to rephrase a translation without feeding the source sentence x: y ′′ = argmax y ′′ P (y ′′ |p, y; θ LLM ).</p><p>We propose to iteratively call the refinement prompts, where the source stays the same but the previous translation is updated each turn. To encourage a parsable model response, we ask the LLM to not give any explanation. Such prompting does not require model parameters θ LLM to be accessible. Through ablation prompts, Refine Random and Paraphrase, we analyse to what degree the source input and seed translations are helpful. The exact prompt texts are displayed in Table <ref type="table">1</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Experiments</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Data and model details</head><p>We select language pairs from the news and general domain translation tasks hosted at <ref type="bibr">WMT 2021</ref><ref type="bibr">and 2022</ref><ref type="bibr">(Farhad et al., 2021;</ref><ref type="bibr" target="#b14">Kocmi et al., 2022)</ref>, which are supported by COMET to obtain reliable scores. In total, we tested seven translation directions: English↔German (en→de, de→en), English↔Chinese (en→zh, zh→en), German→French (de→fr), English→Japanese (en→ja), and Ukrainian→Czech (uk→cs). We directly benchmark on the test sets, and in situations where multiple references are available, we use human reference "A" released by the WMT organizers as our reference.</p><p>We experiment with GPT-3.5, a powerful closedsource model from OpenAI that can be accessed by all users. 1 As the API call tends to be slow, we randomly sample 200 instances from the official test set to form our in-house test. In the refinement and paraphrase experiments, we use the response from the LLM Translate query as the seed translation to be improved upon. We do not keep the query (multi-turn) history so as to prevent an LLM from seeing that the previous translation is produced by itself. In experiments later on, we also tested with translations from encoder-decoder systems that participated in WMT, human references, and online systems. Overall, translation refinement is iterated four times at maximum considering the API costs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Evaluation setup</head><p>We consider four automatic metrics: string-based BLEU <ref type="bibr" target="#b20">(Papineni et al., 2002)</ref> and chrF++ <ref type="bibr" target="#b21">(Popović, 2017)</ref> as well as embedding-based COMET DA and COMET QE <ref type="bibr" target="#b24">(Rei et al., 2020)</ref>. The difference between the DA and QE versions is that COMET DA requires a source, a translation, and a reference, whereas COMET QE is reference-free. BLEU and chrF++ are as implemented in the sacrebleu toolkit. <ref type="foot" target="#foot_2">2</ref> We also use this toolkit to obtain test sets with references as well as past WMT systems' outputs. Specifically for tokenization in BLEU calculation, we use "zh" for Chinese, "ja-mecab" for Japanese, and "13a" for the rest. The BLEU and chrF++ signatures are footnoted. 3,4 For COMET metrics, we used the official implementation released by the authors.<ref type="foot" target="#foot_5">foot_5</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Refinement results</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>WMT21</head><p>We first experiment with en↔de and en↔zh from WMT21, which are high-resource languages in terms of both translation data and LLM training data. We run all five prompts and display results in Table <ref type="table" target="#tab_0">2</ref>. For iterative refinement and paraphrasing experiments, the best iteration is picked according to COMET QE . We observe that the refined translations record a drastic drop in string-based metrics compared to initial translations, indicating lexical and structural variations. In terms of COMET DA , refined outputs surpass initial GPT translations in three out of four cases, and in terms of COMET QE , the refinement strategy ends as the highest with substantial improvement for into-English directions. As a contrasting experiment, Paraphrase sees a decline in all metrics, suggesting the importance of feeding the source input as an anchor during iterations to prevent semantic drift. Table 3: Automatic scores of different strategies with GPT on low-resource and medium-resource pairs from WMT 2022 news translation.</p><p>and Huawei TSC <ref type="bibr" target="#b30">(Wei et al., 2021)</ref>. These are competitive systems built with data augmentation, multilingualism, ensembling, re-ranking, etc. We then include two online engines used in WMT 2021: Online-A and Online-Y. Finally, human reference "B" is added so that we can experiment with our refinement strategy on human translations.<ref type="foot" target="#foot_6">foot_6</ref> References "A" and "B" are sourced from different translation agencies <ref type="bibr">(Farhad et al., 2021)</ref>.</p><p>We report automatic scores from the refinement process in Table <ref type="table" target="#tab_2">4</ref>. A pattern similar to previous GPT translation refinement is noticed: for five out of seven WMT entries, the refinement strategy reaches a higher COMET QE score, surprisingly, with up to one-third drop in BLEU. Refine Contrast in all but one system surpass Refine, and without the initial translation, Paraphrase iterations record the lowest scores compared to the original submissions and refinements.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Human Evaluation</head><p>String-based and neural scores are observed to vary in opposite directions, which may suggest volatile changes in texts. Since it is questionable to conclude a quality degradation in this case, we set up human evaluations to measure two characteristics in the refined translations: text naturalness and overall quality. Human evaluators involved in this study are practitioners in the field of natural language processing but are unaware of the goal of this study.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Fluency and naturalness</head><p>We mimic the human evaluation of fluency in <ref type="bibr">(Lembersky et al., 2012, p819)</ref>. Native speakers of the target language are with two translations but without the source sentence; then we ask "Please choose the translation that is more fluent, natural, and reflecting better use of ${language}", where ${language} is substituted with the target language name. The evaluator has three options: they can select one of the two translations, or a "tie" if they consider both equally (un)natural. We conduct such pairwise evaluation to compare the first-round output from Refine Contrast against human references, as well as against Translate separately. We evaluate 50 samples from en↔de and en↔zh experiments in Section 3.3, and report in Figure <ref type="figure" target="#fig_0">1</ref> (left). Native speakers prefer Refine Contrast to vanilla Translate in all four directions, and even favour Refine Contrast over human references when translating into English. It demonstrates that our simple strategy enhances the naturalness of GPT outputs and that WMT human references could be less favourable than GPT outputs in some cases.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Overall quality</head><p>We also evaluate for general quality as a safeguard.</p><p>In this setup, a source sentence and two translations are given to an evaluator who is fluent in both languages. They are asked to pick the translation with better quality or indicate a tie. We only evaluated two translation directions, English to and from Chinese, due to the limited availability of bilingual speakers. Similar to the previous evaluation, we compare Refine Contrast against human references, as well as Refine Contrast against Translate separately. We report evaluator preferences in Figure <ref type="figure" target="#fig_0">1</ref>  <ref type="bibr">(right)</ref>. It shows that GPT Refine attains slightly better performance in zh→en and similar performance in en→zh when compared with human references. On the other hand, it is more favourable than GPT Translate in terms of human judgements. Combining evaluation outcomes, we conclude that the refinement strategy could improve the target-side naturalness without undermining general quality.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Analysis and Discussions</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">Performance through iterations</head><p>To investigate the behaviour of refinement strategies through different iterations, we plot BLEU, COMET DA , and COMET QE at different iterations in Figure <ref type="figure" target="#fig_1">2</ref> for four translation directions: en↔de and en↔zh. We find that Refine and Refine Contrast usually attain their best after undergoing more than one refinement iteration, showing superiority to one-off editing. 7 However, in almost all Paraphrase 7 The first iteration is equivalent to a one-off translation editing using an LLM. experiments, scores decrease monotonically, indicating that semantics drift away as paraphrasing iterates. Moreover, Refine Random results start low, gradually catch up, but never reach as high as Refine or Refine Contrast . This means that iterative refinement is indeed useful in fixing translations, but starting with a reasonable translation is also crucial for obtaining a strong result.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Diverging automatic scores</head><p>According to automatic string-based metrics, our queries deliver lower-quality translations through iterations, but COMET DA scores remain comparable and COMET QE scores mostly increase. We argue that the string-based metrics might not accurately indicate quality, but rather reflect text variations with respect to the reference. We further verified this via human evaluation that fluency and overall quality are not impacted.</p><p>In Table <ref type="table">5</ref> we show outputs from different strategies for a single source input, where a native speaker marked preference for Refine Contrast . It illustrates that the word choice is diverse for both directions and specifically for Chinese→English, there are substantial structural changes. The huge variety in expressions across translations can result in low BLEU with respect to human references, but without much change in meaning, for instance, as in Table <ref type="table" target="#tab_0">2</ref> where BLEU can decline up to one-third, but neural metric scores change little. In the field of MT, a leap in BLEU is usually associated with performance improvement; however, in our case, a drop cannot be simply interpreted as performance degradation. This can be attributed to the lexical and structural diversity in the refined translations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3">Human performance</head><p>A human translator is deemed to be fluent in their native language, which intuitively is difficult for a model to compete with. In our human evalua- tion, GPT fluency can be as good or even better than reference translations-we offer two possible explanations. First, the WMT references might have been created by translators with varying expertise, which may not represent upper-bound human performance, especially when compared with advanced LLMs. More importantly, translations can exhibit awkwardness in word and syntax choices, potentially due to source language interference or "shining through" <ref type="bibr" target="#b9">(Gellerstam, 1986;</ref><ref type="bibr" target="#b26">Teich, 2003)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.4">Relation to translationese</head><p>Both human and machine translations might be more explicit, language-normalized, and simpler <ref type="bibr" target="#b1">(Baker, 1996;</ref><ref type="bibr">Koppel and Ordan, 2011)</ref>. On a broader scope, translationese is regarded as the distinct features in translations to include influences from both the source and target sides. Although MT normally learns from human translation data, researchers found that human and machine translation patterns do not fully overlap <ref type="bibr" target="#b2">(Bizzoni et al., 2020)</ref>. While translationese occurs in translations inevitably, consumers could prefer translations that are more natural in their native language, provided that the semantics and utility are preserved. From a narrow aspect, our method relates to machine translationese mitigation in terms of reducing unnaturalness and literalness, instead of focusing on state-of-the-art metric scores. It may be viable to create diverse translations through iterations, as we observe huge changes in BLEU scores. Measuring these using automatic metrics at the moment is challenging, especially given that most translation metrics are reference-based, where the reference can be translationese-prone in the first place. COMET QE might be more robust to this end. Source Der 17-Jährige floh zunächst vom Tatort, seine Personalien konnten aber im Nachhinein ermittelt werden.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Reference</head><p>The 17 year-old proceeded to flee the crime scene, however, his personal details could be retrieved later.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Translate</head><p>The 17-year-old initially fled from the crime scene, but his personal information was later determined. RefineContrast The 17-year-old initially fled from the scene of the crime, but his personal details could later be identified.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Paraphrase</head><p>At first, the 17-year-old ran away from where the crime occurred, but eventually, the authorities were able to identify him by his personal details.</p><p>Source 新法令规定，坎帕尼亚大区自即日起室内公共场所必须戴口罩，违者最高可处以1000欧元罚金。 Reference According to a new decree, people must wear masks in indoor public places in Campania from now on, and offenders can be fined up to 1,000 euros.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Translate</head><p>A new regulation stipulates that in Campania, indoor public places must wear masks. Violators can be fined up to 1000 euros. RefineContrast A new regulation states that in the Campania region, masks must be worn in indoor public places, with a maximum fine of 1000 euros for those who violate the rule.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Paraphrase</head><p>A new rule in Campania requires people to wear masks in indoor public places, and those who don't follow this rule may be charged up to 1000 euros.</p><p>Table 5: German→English and Chinese→English examples showing rich lexical variations across translation strategies.</p><p>6 Related Work</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.1">Translation post-editing</head><p>Closely related to our refinement prompting is automatic post-editing (APE), which trains a neural network to fix translation errors by learning from human correction data, that can be traced back to as early as <ref type="bibr">(Knight and Chander, 1994)</ref>. While it has shown advancements in statistical machine translation, it has been suspected to be less effective in the deep learning era due to original translations being high-quality and lack of post-editing data (Junczys-Dowmunt and <ref type="bibr" target="#b12">Grundkiewicz, 2018;</ref><ref type="bibr" target="#b4">Chatterjee et al., 2018)</ref>. Whilst one way to facilitate this is more data provision <ref type="bibr" target="#b6">(Chollampatt et al., 2020;</ref><ref type="bibr" target="#b11">Ive et al., 2020)</ref>, our workaround utilizes a large language model, which possesses the post-editing capability without the need for specific training or fine-tuning. Furthermore, post-editing models might have limited power to alleviate awkwardness, because human editing data is collected from annotators who are usually instructed to not make style improvements <ref type="bibr" target="#b11">(Ive et al., 2020)</ref>. Compared to APE, our method allows LLMs to re-generate an entirely different translation, which could escape the "post-editese" phenomenon, where Toral (2019) demonstrated that human-edited machine translations still exhibit translationese features. Some post-editing models do not rely on the source translation or human editing data <ref type="bibr" target="#b25">(Simard et al., 2007)</ref>. For instance, <ref type="bibr" target="#b8">Freitag et al. (2019)</ref> trained a post-editor solely on monolingual data by reconstructing the original text given its round-trip translation. In our work, we incorporate stronger natural language modelling into post-editing by employing LLMs. Other translation refinement research includes combining statistical and neural systems <ref type="bibr" target="#b18">(Novak et al., 2016;</ref><ref type="bibr" target="#b17">Niehues et al., 2016)</ref>, merging APE into the NMT framework <ref type="bibr" target="#b19">(Pal et al., 2020;</ref><ref type="bibr" target="#b6">Chen et al., 2022)</ref>, and debiasing translationese in the latent embedding space (Dutta <ref type="bibr" target="#b7">Chowdhury et al., 2022)</ref>. The iterative editing mechanism mostly lies in non-autoregressive translation, where each output token is independent of other target positions and iterative decoding enhances output quality <ref type="bibr" target="#b15">(Lee et al., 2018;</ref><ref type="bibr" target="#b10">Gu et al., 2019;</ref><ref type="bibr" target="#b32">Xu and Carpuat, 2021)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.2">Translation prompting with large language models</head><p>Large language models have recently become highly effective tools for various NLP tasks <ref type="bibr" target="#b21">(Radford et al., 2019;</ref><ref type="bibr" target="#b3">Brown et al., 2020;</ref><ref type="bibr">Chowdhery et al., 2022;</ref><ref type="bibr" target="#b18">Ouyang et al., 2022)</ref>. Nowadays, optimising LLMs directly for specific tasks becomes less important since they generalize to downstream tasks even without explicit supervision. With more parameters and training data, LLMs may offer stronger performance than dedicated translation or post-editing models. The method we use to elicit a response from GPT is zero-shot prompting <ref type="bibr" target="#b3">(Brown et al., 2020)</ref>, which means affixing a description to the original task input to form a query to the model. Researchers have benchmarked LLMs' capability to translate <ref type="bibr" target="#b29">(Vilar et al., 2023;</ref><ref type="bibr" target="#b34">Zhang et al., 2023;</ref><ref type="bibr" target="#b11">Jiao et al., 2023;</ref><ref type="bibr">Hendy et al., 2023)</ref>, and to interpret translation quality <ref type="bibr" target="#b14">(Kocmi and Federmann, 2023;</ref><ref type="bibr" target="#b16">Lu et al., 2023;</ref><ref type="bibr" target="#b33">Xu et al., 2023)</ref>. Among the recent papers on LLM translation prompting, we identify the following to be most relevant to us. Previous findings show that GPT produces less literal translations, especially for out-of-English translations <ref type="bibr">(Raunak et al., 2023a)</ref>, which to some extent stands in contrast with our later human evaluation results on naturalness and fluency. <ref type="bibr">Raunak et al. (2023b)</ref> formalized post-editing as a chain-of-thought process <ref type="bibr" target="#b31">(Wei et al., 2022)</ref> with GPT-4 and achieved promising results. Different from their focus, our work features the iterative refinement process as a means to enhance naturalness and fluency. Our work reveals that iterated refinement is better than one-off editing. The observed improvement, especially for into-English, may be attributed to the abundant English pre-training data available for LLMs. To the best of our knowledge, although the concept of iterative refinement is not new, ours is the pioneering paper in applying such strategies to LLMs for translation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Conclusion and Future Work</head><p>We presented a simple way to leverage an LLM for translation refinement, which greatly helps fluency and naturalness. It is shown that our method maintains translation quality and introduces lexical and structural changes, especially for high-resource into-English translation. We have also discussed the potential of using our work to obtain diverse, fluent translations that are less translationese, as well as the limitation in automatic metrics to measure this.</p><p>On a broader note, this work connects to the concept of using LLMs to imitate collaborative translation refinement. Yet, it is important to acknowledge the high cost of running a multi-round LLM refinement. Future work can explore sentence-level refinement decisions to reduce cost.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Human preferences on fluency and naturalness (source-free, left) and overall quality (source-based, right).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: BLEU, COMETDA, and COMETQE at different refinement and paraphrase iterations for high-resource translation.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 2 :</head><label>2</label><figDesc>Automatic scores of different strategies with GPT on high-resource pairs from WMT 2021 news translation.</figDesc><table><row><cell></cell><cell></cell><cell cols="4">BLEU chrF++ COMETDA COMETQE</cell></row><row><cell></cell><cell>ReferenceA</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>.0919</cell></row><row><cell>de</cell><cell>Translate</cell><cell>30.90</cell><cell>57.55</cell><cell>.8606</cell><cell>.1128</cell></row><row><cell>↓</cell><cell>Refine</cell><cell>23.14</cell><cell>51.91</cell><cell>.8525</cell><cell>.1116</cell></row><row><cell>en</cell><cell cols="2">RefineContrast 22.88</cell><cell>52.47</cell><cell>.8452</cell><cell>.1162</cell></row><row><cell></cell><cell cols="2">RefineRandom 18.83</cell><cell>51.79</cell><cell>.7777</cell><cell>.0770</cell></row><row><cell></cell><cell cols="2">Paraphrase 11.01</cell><cell>40.05</cell><cell>.8044</cell><cell>.0919</cell></row><row><cell></cell><cell>ReferenceA</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>.1127</cell></row><row><cell>en</cell><cell>Translate</cell><cell>25.39</cell><cell>53.54</cell><cell>.8427</cell><cell>.1083</cell></row><row><cell>↓</cell><cell>Refine</cell><cell>22.35</cell><cell>50.57</cell><cell>.8478</cell><cell>.1153</cell></row><row><cell>de</cell><cell cols="2">RefineContrast 22.54</cell><cell>51.21</cell><cell>.8211</cell><cell>.0929</cell></row><row><cell></cell><cell cols="2">RefineRandom 19.36</cell><cell>46.56</cell><cell>.7906</cell><cell>.0832</cell></row><row><cell></cell><cell cols="2">Paraphrase 13.60</cell><cell>43.54</cell><cell>.8197</cell><cell>.1006</cell></row><row><cell></cell><cell>ReferenceA</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>.0708</cell></row><row><cell>zh</cell><cell>Translate</cell><cell>25.64</cell><cell>53.74</cell><cell>.8199</cell><cell>.0867</cell></row><row><cell>↓</cell><cell>Refine</cell><cell>20.26</cell><cell>49.06</cell><cell>.8156</cell><cell>.0921</cell></row><row><cell>en</cell><cell cols="2">RefineContrast 24.81</cell><cell>51.77</cell><cell>.8538</cell><cell>.1132</cell></row><row><cell></cell><cell cols="2">RefineRandom 24.24</cell><cell>47.11</cell><cell>.8323</cell><cell>.1022</cell></row><row><cell></cell><cell cols="2">Paraphrase 12.76</cell><cell>40.92</cell><cell>.7931</cell><cell>.0885</cell></row><row><cell></cell><cell>ReferenceA</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>.0956</cell></row><row><cell>en</cell><cell>Translate</cell><cell>29.28</cell><cell>20.61</cell><cell>.8300</cell><cell>.0761</cell></row><row><cell>↓</cell><cell>Refine</cell><cell>28.26</cell><cell>19.28</cell><cell>.8417</cell><cell>.0870</cell></row><row><cell>zh</cell><cell cols="2">RefineContrast 29.28</cell><cell>19.69</cell><cell>.8395</cell><cell>.0881</cell></row><row><cell></cell><cell cols="2">RefineRandom 25.71</cell><cell>17.49</cell><cell>.8126</cell><cell>.0763</cell></row><row><cell></cell><cell cols="2">Paraphrase 21.95</cell><cell>17.14</cell><cell>.8144</cell><cell>.0716</cell></row></table><note><p>WMT22 Moving to lower-resourced languages with non-English translation, we gather numbers for three translation directions from WMT22 in Table3</p><p>. Since Refine Random results are not desirable for WMT21, we omit experiments with this. The overall pattern remains the same as before: Refine works best, obtaining higher COMET QE than vanilla translations and Refine Contrast . Also, the reduction in string-based scores becomes less obvious, which might be attributed to seed GPT translations in lesser-resourced languages being lower in quality in the beginning. models built by research labs that, based on human evaluation, have been ranked at significantly different positions on the German-to-English leaderboard: Tencent(Wang et al., 2021), Facebook AI  (Tran et al., 2021), Edinburgh (Chen et al., 2021),    </p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 4 :</head><label>4</label><figDesc>Automatic scores of refining WMT 2021 news shared task German-to-English submissions.</figDesc><table><row><cell></cell><cell></cell><cell cols="4">BLEU chrF++ COMETDA COMETQE</cell></row><row><cell></cell><cell>ReferenceA</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>.0919</cell></row><row><cell>ReferenceB</cell><cell cols="2">Submission 30.05 Refine 23.39 RefineContrast 25.10 Paraphrase 12.52</cell><cell>56.00 51.80 53.82 41.03</cell><cell>.8497 .8527 .8566 .8031</cell><cell>.1050 .1123 .1116 .0894</cell></row><row><cell>OnlineA</cell><cell cols="2">Submission 34.45 Refine 23.37 RefineContrast 25.14 Paraphrase 12.22</cell><cell>60.78 51.67 52.84 41.34</cell><cell>.8582 .8494 .8534 .8097</cell><cell>.1061 .1098 .1137 .0942</cell></row><row><cell>OnlineY</cell><cell cols="2">Submission 32.70 Refine 22.92 RefineContrast 24.40 Paraphrase 11.97</cell><cell>59.32 50.85 53.32 40.29</cell><cell>.8500 .8522 .8517 .8054</cell><cell>.0981 .1080 .1134 .0892</cell></row><row><cell>Tencent</cell><cell cols="2">Submission 35.35 Refine 23.75 RefineContrast 26.89 Paraphrase 12.43</cell><cell>61.28 52.16 54.75 41.35</cell><cell>.8584 .8488 .8553 .8116</cell><cell>.1055 .1095 .1116 .0947</cell></row><row><cell>Facebook</cell><cell cols="2">Submission 34.67 Refine 22.97 RefineContrast 25.74 Paraphrase 11.80</cell><cell>60.78 51.05 53.88 40.99</cell><cell>.8677 .8505 .8548 .8099</cell><cell>.1146 .1113 .1130 .0922</cell></row><row><cell>Edinburgh</cell><cell cols="2">Submission 34.20 Refine 22.04 RefineContrast 25.24 Paraphrase 12.79</cell><cell>60.03 50.29 52.87 40.18</cell><cell>.8588 .8496 .8546 .8067</cell><cell>.1087 .1097 .1147 .0921</cell></row><row><cell>Huawei</cell><cell cols="2">Submission 35.13 Refine 22.24 RefineContrast 24.95 Paraphrase 12.20</cell><cell>61.17 50.82 52.47 40.74</cell><cell>.8643 .8519 .8560 .8078</cell><cell>.1126 .1097 .1124 .0909</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>We accessed a version of gpt-3.5-turbo with training data up to Sep</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" xml:id="foot_1"><p>2021, so it should not have seen WMT 2021 or 2022 test references. Nevertheless, our findings are mostly drawn from reference-free metrics and human evaluation.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_2"><p>https://github.com/mjpost/sacrebleu</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_3"><p>#:1|c:mixed|e:no|tok:13a|s:exp|v:2.3.1</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_4"><p>#:1|c:mixed|e:yes|nc:6|nw:2|s:no|v:2.3.1</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_5"><p>https://github.com/Unbabel/COMET</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_6"><p>The overview paper of WMT 2021 states that "for German↔English, the 'B' reference was found to be a postedited version of one of the participating online systems". We discover that it refers to English→German only, and German→English is not affected.</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgement</head><p>We express our gratitude to the reviewers of this paper for their detailed and invaluable feedback and suggestions. The work also benefited from discussions with <rs type="person">Nikolay Bogoychev</rs> and <rs type="person">Biao Zhang</rs>. We are grateful to <rs type="person">Laurie Burchell</rs>, <rs type="person">Ziqin Fang</rs>, <rs type="person">Matthias Lindemann</rs>, and <rs type="person">Jonas Waldendorf</rs> for their participation in the human evaluation.</p><p>This work is funded by <rs type="funder">UK Research and Innovation (UKRI)</rs> under the <rs type="funder">UK government's Horizon Europe funding guarantee</rs> [grant number <rs type="grantNumber">10052546</rs>].</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_Qz7bzaT">
+					<idno type="grant-number">10052546</idno>
+				</org>
+			</listOrg>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Neural machine translation by jointly learning to align and translate</title>
+		<author>
+			<persName><forename type="first">Sweta</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunting</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marjan</forename><surname>Ghazvininejad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">;</forename><surname>Bahdanau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyunghyun</forename><surname>Dzmitry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoshua</forename><surname>Cho</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bengio</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: ACL 2023</title>
+		<imprint>
+			<date type="published" when="2015">2023. 2015</date>
+		</imprint>
+	</monogr>
+	<note>Bahdanau et al.2015 In-context examples selection for machine translation In 3rd International Conference on Learning Representations</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">Mona</forename><surname>Baker</surname></persName>
+		</author>
+		<title level="m">Corpus-based Translation Studies: The Challenges that Lie Ahead. Benjamins Translation Library</title>
+		<imprint>
+			<publisher>John Benjamins Publishing Company</publisher>
+			<date type="published" when="1996">1996</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">How human is machine translationese? comparing human and machine translations of text and speech</title>
+		<author>
+			<persName><surname>Bizzoni</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 17th International Conference on Spoken Language Translation</title>
+		<meeting>the 17th International Conference on Spoken Language Translation</meeting>
+		<imprint>
+			<date type="published" when="2020">2020. 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><surname>Brown</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2020">2020. 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Findings of the WMT 2018 shared task on automatic postediting</title>
+		<author>
+			<persName><surname>Chatterjee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Third Conference on Machine Translation</title>
+		<meeting>the Third Conference on Machine Translation</meeting>
+		<imprint>
+			<date type="published" when="2018">2018. 2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Alexandra Birch, and Kenneth Heafield. 2021. The University of Edinburgh&apos;s English-German and English-Hausa submissions to the WMT21 news translation task</title>
+		<author>
+			<persName><forename type="first">Chen</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Sixth Conference on Machine Translation</title>
+		<meeting>the Sixth Conference on Machine Translation</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Synchronous refinement for neural machine translation</title>
+		<author>
+			<persName><forename type="first">Chen</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing</title>
+		<editor>
+			<persName><surname>Chowdhery</surname></persName>
+		</editor>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Adam Roberts, Paul Barham, Hyung Won Chung, Charles Sutton</addrLine></address></meeting>
+		<imprint>
+			<publisher>Sebastian Gehrmann</publisher>
+			<date type="published" when="2020">2022. 2022. 2020</date>
+		</imprint>
+	</monogr>
+	<note>Chollampatt et al.2020 Can automatic post-editing improve NMT? Findings of the Association for Computational Linguistics: ACL 2022 et al. 2022. PaLM: Scaling language modeling with pathways. arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Towards debiasing translation artifacts</title>
+		<author>
+			<persName><forename type="first">Dutta</forename><surname>Chowdhury</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</meeting>
+		<imprint>
+			<publisher>Federmann Christian</publisher>
+			<date type="published" when="2022">2022. 2022</date>
+		</imprint>
+	</monogr>
+	<note>Farhad et al.2021 et al. 2021. Findings of the 2021 conference on machine translation (WMT21). In Proceedings of the Sixth Conference on Machine Translation</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Results of WMT22 metrics shared task: Stop using BLEU -neural metrics are better and more robust</title>
+		<author>
+			<persName><surname>Freitag</surname></persName>
+		</author>
+		<idno>Freitag et al.2022</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Seventh Conference on Machine Translation</title>
+		<meeting>the Seventh Conference on Machine Translation</meeting>
+		<imprint>
+			<date type="published" when="2019">2019. 2019. 2022</date>
+		</imprint>
+	</monogr>
+	<note>APE at scale and its implications on MT evaluation biases Proceedings of the Fourth Conference on Machine Translation</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Translationese in Swedish novels translated from English</title>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Gellerstam</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Translation studies in Scandinavia: Proceedings from the Scandinavian Symposium on Translation Theory II</title>
+		<imprint>
+			<publisher>CWK Gleerup</publisher>
+			<date type="published" when="1986">1986</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Levenshtein transformer</title>
+		<author>
+			<persName><surname>Gu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><surname>Hendy</surname></persName>
+		</editor>
+		<imprint>
+			<date type="published" when="2019">2019. 2019. 2023</date>
+		</imprint>
+	</monogr>
+	<note>How good are GPT models at machine translation? a comprehensive evaluation. arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">A post-editing dataset in the legal domain: Do we underestimate neural machine translation quality?</title>
+		<author>
+			<persName><surname>Ive</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Twelfth Language Resources and Evaluation Conference</title>
+		<meeting>the Twelfth Language Resources and Evaluation Conference</meeting>
+		<imprint>
+			<date type="published" when="2020">2020. 2020. 2023</date>
+		</imprint>
+	</monogr>
+	<note>Joachim Van den Bogaert Jiao et al.2023 Is ChatGPT a good translator? Yes with GPT-4 as the engine. arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">MS-UEdin submission to the WMT2018 APE shared task: Dual-source transformer for automatic post-editing</title>
+		<author>
+			<persName><forename type="first">Junczys-Dowmunt</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Grundkiewicz</forename><forename type="middle">;</forename><surname>Junczys-Dowmunt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marcin</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roman</forename><surname>Grundkiewicz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Third Conference on Machine Translation</title>
+		<meeting>the Third Conference on Machine Translation</meeting>
+		<imprint>
+			<date type="published" when="2018">2018. 2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Scaling laws for neural language models</title>
+		<author>
+			<persName><surname>Kaplan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Twelfth AAAI National Conference on Artificial Intelligence</title>
+		<meeting>the Twelfth AAAI National Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<publisher>Kevin and Ishwar Chander</publisher>
+			<date type="published" when="1994">2020. 2020. 1994. 1994</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Automated postediting of documents</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Large language models are stateof-the-art evaluators of translation quality</title>
+		<author>
+			<persName><forename type="first">Federmann</forename><forename type="middle">;</forename><surname>Kocmi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Kocmi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Federmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">;</forename><surname>Kocmi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rachel</forename><surname>Tom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ondřej</forename><surname>Bawden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anton</forename><surname>Bojar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Dvorkovich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Federmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thamme</forename><surname>Fishel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yvette</forename><surname>Gowda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roman</forename><surname>Graham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barry</forename><surname>Grundkiewicz</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Haddow</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Seventh Conference on Machine Translation. [Koppel and Ordan2011] Koppel, Moshe and Noam Ordan. 2011. Translationese and its dialects</title>
+		<meeting>the Seventh Conference on Machine Translation. [Koppel and Ordan2011] Koppel, Moshe and Noam Ordan. 2011. Translationese and its dialects</meeting>
+		<imprint>
+			<date type="published" when="2022">2023. 2023. 2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Kocmi et al.2022 Findings of the 2022 conference on machine translation (WMT22) In Proceedings of the 49th Annual Meeting of the Association for Computational Linguistics: Human Language Technologies</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Deterministic nonautoregressive neural sequence modeling by iterative refinement</title>
+		<author>
+			<persName><surname>Lee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<editor>
+			<persName><surname>Lembersky</surname></persName>
+		</editor>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2012">2018. 2018. 2012</date>
+		</imprint>
+	</monogr>
+	<note>Language Models for Machine Translation: Original vs Translated Texts . Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Liping Xie, and Dacheng Tao. 2023. Error analysis prompting enables human-like translation evaluation in large language models: A case study on ChatGPT</title>
+		<author>
+			<persName><surname>Lu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Pre-translation for neural machine translation</title>
+		<author>
+			<persName><surname>Niehues</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 26th International Conference on Computational Linguistics</title>
+		<meeting>the 26th International Conference on Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2016">2016. 2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><surname>Novak</surname></persName>
+		</author>
+		<idno>Ouyang et al.2022</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2016">2016. 2016. 2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Iterative refinement for machine translation</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">The transference architecture for automatic post-editing</title>
+		<author>
+			<persName><surname>Pal</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 28th International Conference on Computational Linguistics</title>
+		<meeting>the 28th International Conference on Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2020">2020. 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">BLEU: a method for automatic evaluation of machine translation</title>
+		<author>
+			<persName><surname>Papineni</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 40th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2002">2002. 2002</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Language models are unsupervised multitask learners</title>
+		<author>
+			<persName><forename type="first">Maja</forename><forename type="middle">;</forename><surname>Popović</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Second Conference on Machine Translation</title>
+		<meeting>the Second Conference on Machine Translation</meeting>
+		<imprint>
+			<date type="published" when="2017">2017. 2019</date>
+		</imprint>
+	</monogr>
+	<note>Radford et al.2019 chrF++: words helping character n-grams openai.com</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">2023a. Do GPTs produce less literal translations?</title>
+		<author>
+			<persName><surname>Raunak</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<author>
+			<persName><surname>Raunak</surname></persName>
+		</author>
+		<title level="m">Hany Hassan Awadallah, and Arul Menezes. 2023b. Leveraging GPT-4 for automatic translation postediting</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">COMET: A neural framework for MT evaluation</title>
+		<author>
+			<persName><surname>Rei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2020">2020. 2020</date>
+		</imprint>
+	</monogr>
+	<note>Ana C Farinha, and Alon Lavie</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Statistical phrase-based postediting</title>
+		<author>
+			<persName><surname>Simard</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Human Language Technologies 2007: The Conference of the North American Chapter</title>
+		<imprint>
+			<publisher>the Association for Computational Linguistics</publisher>
+			<date type="published" when="2007">2007. 2007</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">Cross-Linguistic Variation in System and Text: A Methodology for the Investigation of Translations and Comparable Texts</title>
+		<author>
+			<persName><forename type="first">Elke</forename><surname>Teich</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2003">2003</date>
+			<publisher>De Gruyter Mouton</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Post-editese: An exacerbated translationese</title>
+		<author>
+			<persName><forename type="first">Antonio</forename><surname>Toral</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of Machine Translation Summit XVII</title>
+		<meeting>Machine Translation Summit XVII</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Facebook AI&apos;s WMT21 news translation task submission</title>
+		<author>
+			<persName><forename type="first">Tran</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Sixth Conference on Machine Translation</title>
+		<meeting>the Sixth Conference on Machine Translation</meeting>
+		<imprint>
+			<date type="published" when="2017">2021. 2021. 2017</date>
+		</imprint>
+	</monogr>
+	<note>Vaswani et al.2017 Attention is all you need Advances in Neural Information Processing Systems</note>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Prompting PaLM for translation: Assessing strategies and performance</title>
+		<author>
+			<persName><surname>Vilar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2021">2023. 2023. 2021</date>
+		</imprint>
+	</monogr>
+	<note>Tencent translation system for the WMT21 news translation task Proceedings of the Sixth Conference on Machine Translation</note>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">HW-TSC&apos;s participation in the WMT 2021 news translation shared task</title>
+		<author>
+			<persName><surname>Wei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Sixth Conference on Machine Translation</title>
+		<meeting>the Sixth Conference on Machine Translation</meeting>
+		<imprint>
+			<date type="published" when="2021">2021. 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Chain of thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><surname>Wei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2022">2022. 2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">EDITOR: An edit-based transformer with repositioning for neural machine translation with soft lexical constraints</title>
+		<author>
+			<persName><forename type="first">Carpuat</forename><forename type="middle">;</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weijia</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marine</forename><surname>Carpuat</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021. 2021</date>
+			<publisher>Transactions of the Association for Computational Linguistics</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<title level="m" type="main">INSTRUCTSCORE: Towards explainable text generation evaluation with automatic feedback</title>
+		<author>
+			<persName><surname>Xu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Prompting large language model for machine translation: A case study</title>
+		<author>
+			<persName><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th International Conference on Machine Learning</title>
+		<meeting>the 40th International Conference on Machine Learning</meeting>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

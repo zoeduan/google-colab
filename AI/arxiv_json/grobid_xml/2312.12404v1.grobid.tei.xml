@@ -1,0 +1,2014 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Towards Automatic Support of Software Model Evolution with Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-12-19">19 Dec 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Christof</forename><surname>Tinnes</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Thomas</forename><surname>Fuchss</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Hka</forename><surname>Karlsruhe</surname></persName>
+						</author>
+						<author>
+							<persName><surname>Germany</surname></persName>
+						</author>
+						<author>
+							<affiliation key="aff0">
+								<orgName type="institution">Siemens AG</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff1">
+								<orgName type="institution">and Saarland University</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff2">
+								<orgName type="institution" key="instit1">UWE HOHENSTEIN</orgName>
+								<orgName type="institution" key="instit2">Siemens AG</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff3">
+								<orgName type="institution" key="instit1">SVEN APEL</orgName>
+								<orgName type="institution" key="instit2">Saarland University</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Towards Automatic Support of Software Model Evolution with Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-12-19">19 Dec 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">3D290CBB7B42CCF0FA3708214E846710</idno>
+					<idno type="arXiv">arXiv:2312.12404v1[cs.SE]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:26+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Modeling structure and behavior of software systems plays a crucial role, in various areas of software engineering. As with other software engineering artifacts, software models are subject to evolution. Supporting modelers in evolving models by model completion facilities and providing high-level edit operations such as frequently occurring editing patterns is still an open problem. Recently, large language models (i.e., generative neural networks) have garnered significant attention in various research areas, including software engineering. In this paper, we explore the potential of large language models in supporting the evolution of software models in software engineering. We propose an approach that utilizes large language models for model completion and discovering editing patterns in model histories of software systems. Through controlled experiments using simulated model repositories, we conduct an evaluation of the potential of large language models for these two tasks. We have found that large language models are indeed a promising technology for supporting software model evolution, and that it is worth investigating further in the area of software model evolution.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Models play an important role in modern software and system development <ref type="bibr" target="#b52">[53]</ref>, software documentation <ref type="bibr" target="#b40">[41,</ref><ref type="bibr" target="#b48">49]</ref>, system architecture <ref type="bibr" target="#b49">[50]</ref>, simulation <ref type="bibr" target="#b21">[22]</ref>, industry automation <ref type="bibr" target="#b30">[31]</ref>, and user interface layout design <ref type="bibr" target="#b15">[16]</ref>. For disambiguation, we refer to these models as software models.</p><p>All artifacts in software and system development are typically subject to evolution, which also applies to software models <ref type="bibr" target="#b68">[69]</ref>: Software models have to evolve because of changing requirements, but they can also be subject to bugfixes or refactorings. For example, a shopfloor automation system has to adapt to changed production processes (i.e., changing requirements), or the handling of an exceptional situation has to be corrected (i.e., a bugfix).</p><p>From the perspective of a user of a modelling tool, we can understand the evolution of software models as a sequence of edit operations: To change or evolve the model, the tool user executes edit operations (e.g., using mouse clicks and keyboard strokes) provided by the tool. For example, the user could modify the velocity of a shopfloor conveyor belt, or add another sensor input to the warning mechanism of a large drive. Edit operations can be specified by in-place model transformations <ref type="bibr" target="#b20">[21,</ref><ref type="bibr" target="#b44">45]</ref>, which in turn can be formalized as graph transformations <ref type="bibr" target="#b8">[9,</ref><ref type="bibr" target="#b22">23,</ref><ref type="bibr" target="#b23">24]</ref>.</p><p>For the evolution of software models, modelling tools typically provide an initial set of edit operations (e.g., adding an attribute to an UML class). Nevertheless, since the usage of a (domain-specific) language is also subject to evolution and since (project-specific) usage patterns might emerge, this initial set of edit operations can rarely be exhaustive.</p><p>For example, in object-oriented design, design patterns <ref type="bibr" target="#b24">[25]</ref> are widely used but are not part of the UML language specification <ref type="bibr" target="#b48">[49]</ref>. Likewise, in electronic circuit design, patterns such as a low-pass filter will often be used and might not be part of the tool's standard component library (e.g., consisting of capacitors, resistors, diodes). Consequently, approaches for the specification of new user-specific model transformations-and edit operations, in particular-have been developed <ref type="bibr" target="#b3">[4,</ref><ref type="bibr" target="#b6">7,</ref><ref type="bibr" target="#b39">40,</ref><ref type="bibr" target="#b47">48]</ref>.</p><p>Using a specification language for defining edit operations poses two challenges: First, specifying new edit operations requires the knowledge of the specification language and of the concrete domain-specific language (or metamodel) for which the edit operations have to be specified. Second, domain-specific edit operations are often not explicitly known, that is, they are a form of tacit knowledge <ref type="bibr" target="#b50">[51]</ref>. Externalizing the knowledge can therefore be hard or even impossible for domain experts.</p><p>While it might even be necessary to define project-specific edit operations <ref type="bibr" target="#b66">[67,</ref><ref type="bibr" target="#b67">68]</ref> the overhead for their manual specification is often not economically feasible for many projects and tool providers <ref type="bibr" target="#b32">[33,</ref><ref type="bibr" target="#b34">35,</ref><ref type="bibr" target="#b45">46]</ref>. Therefore, researchers have sought to support or even automate the specification of model transformations and edit operations, in particular. These approaches range from a visual or concrete syntax-based support <ref type="bibr" target="#b0">[1,</ref><ref type="bibr" target="#b4">5,</ref><ref type="bibr" target="#b28">29]</ref>, over supervised approaches that turn single examples <ref type="bibr" target="#b9">[10,</ref><ref type="bibr" target="#b32">33,</ref><ref type="bibr" target="#b63">64]</ref> or a set of examples <ref type="bibr" target="#b34">[35,</ref><ref type="bibr" target="#b45">46]</ref> into model transformation specifications (so-called model transformation by-example (MTBE)), to unsupervised approaches such as the generation of model transformations out of a given meta-model <ref type="bibr" target="#b36">[37,</ref><ref type="bibr" target="#b37">38,</ref><ref type="bibr" target="#b42">43]</ref>. More recently, mining model transformations from the software model history using frequent subgraph mining has been proposed <ref type="bibr" target="#b66">[67]</ref>. Mining approaches are especially appealing since they do not require any manual specification, no hand-crafting of examples (as in MTBE), and they are not limited to simple well-formedness rules that can be derived out-of-the metamodel.</p><p>Unfortunately, frequent subgraph mining and related techniques are not scalable; in particular large differences between two model revisions might lead to extremely long execution times or large memory consumption <ref type="bibr" target="#b66">[67]</ref>.</p><p>Furthermore, mining approaches lack abstraction capabilities. For example, two edit operations that are identical but for one type-even with common parent type in the metamodel-are seen as two different edit operations and could even be missed by the approach.</p><p>From the perspective of software model evolution it would also be desirable to have context-dependent completions, instead of learning a fixed set of edit operations. That is, the user would benefit from the recommendation of a completion operation that complements the edit operations that have been applied to the model. Motivated by recent breakthroughs of generative neural network architectures for various tasks such as code generation and completion <ref type="bibr" target="#b16">[17]</ref>, program repair <ref type="bibr" target="#b41">[42]</ref>, and even to the generation of graph like structures-most notably molecular generation <ref type="bibr" target="#b5">[6]</ref>-we investigate feasibility of generative language models for edit pattern mining and software model completion. The rationale is that, if we fine-tune the language model to generate completions for software models, it should have learned the underlying patterns of the (modelling) language in question. We propose and study an approach to learn edit and completion patterns from the software model history and to extract the corresponding operations from a generative language model. Specifically, we define and use an encoding for serializations of model difference graphs that we will use to fine-tune the language models. Using a synthetic dataset with control over the actually performed edit operations, we then evaluate whether we can generate serializations of edit operations using the fine-tuned language models and whether we can complete software model changes correctly. We find that, regarding completion, the approach performs surprisingly well and generates the correct completion in 87.60% of our samples.</p><p>The approach is also able to generate edit operations, although, in some cases, not all applied edit operations were generated.</p><p>In a summary, we make the following contributions:</p><p>• We formalize the concepts of edit operations, completion operations, and edit patterns such that they are suitable for the mining perspective, and show that this formalization is consistent with earlier constructions.</p><p>• We propose an approach to use large language models for mining edit patterns and software model completion.</p><p>• We evaluate the approach in a controlled experiment. We find that the approach can provide correct software model completions and also generate edit operations that have been applied in the simulation of the software model repositories.</p><p>2 Foundations and State-of-the-Art</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Software Models and Edit Operations</head><p>In this section we will provide background about software models and we present a new formalization of edit operations that is well suited for studying mining approaches. We will then see that this formalization is compatible with earlier formalizations.</p><p>In model-driven engineering the language for a software model (i.e., its abstract syntax and static semantics) is typically defined by a metamodel T M. A model is an instance of its metamodel. We denote by M the set of all valid models (according to some metamodel). This can be formalized using typed attributed graphs <ref type="bibr" target="#b8">[9,</ref><ref type="bibr" target="#b22">23]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Definition 2.1 (Abstract Syntax Graph</head><p>). An abstract syntax graph 𝐺 𝑚 of a model 𝑚 ∈ M is a typed attributed graph, typed over an attributed type graph 𝑇𝐺 that is given by the metamodel T M.</p><p>The idea of typed graphs is to define a graph homomorphism (i.e., a function from the typed graph 𝐺 to the type graph 𝑇𝐺). Details of this formalization are given in the work by Biermann et al. <ref type="bibr" target="#b8">[9]</ref>. The abstract syntax graph of a model (together with the type graph) contains all information that a model contains. The concrete (visual) syntax of a model is only an external representation on the model that provides visual cues for the end-user of a model. It is meant to allow for easier handling and understanding of the models and therefore sometimes even hides information of the model.</p><p>In the present work, we are concerned with model repositories. We assume that the modelling tool already takes care of checking the correct typing of the models, and we therefore expect that the models are correctly typed. We therefore work with a simplified graph representation of the models in which the abstract syntax graph is just a labeled directed graph with node labels equal to the node type names and edge labels equal to the edge type names of the abstract syntax graph from Definition 2.1. Definition 2.2 (Labeled Directed Graph). Given a label alphabet 𝐿, a labeled directed graph 𝐺 is a tuple (𝑉 , 𝐸, 𝜆), where 𝑉 is a finite set of nodes, 𝐸 is a subset of 𝑉 × 𝑉 , called the edge set, and 𝜆 : 𝑉 ∪ 𝐸 → 𝐿 is the labeling function, which assigns a label to nodes and edges. We refer to the set of all directed labeled graphs by G. In the following, we will use the labeled graphs corresponding to the model instead of the graphs from Definition 2.1. Rather than working directly on the abstract syntax graph of the models, we will mostly be working with model differences.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Definition 2.3 (Structural Model Difference</head><p>). A structural model difference Δ 𝑚𝑛 of a pair of model versions 𝑚 and 𝑛 is obtained by matching corresponding model elements in the model graphs 𝐺 𝑚 and 𝐺 𝑛 (using a model matcher <ref type="bibr" target="#b62">[63]</ref>, e.g., EMFCompare <ref type="bibr" target="#b11">[12]</ref> or SiDiff <ref type="bibr" target="#b54">[55]</ref>). Then, there are added elements (the ones present in 𝐺 𝑛 but not in 𝐺 𝑚 ), removed element (the ones present in 𝐺 𝑚 but not in 𝐺 𝑛 ), and preserved elements which are present in 𝐺 𝑚 and 𝐺 𝑛 .</p><p>We assume here that this matching is deterministic, that is, given two models 𝑚, 𝑛 ∈ M, we get a unique structural model difference Δ 𝑚𝑛 . The structural model difference can be represented as a difference graph <ref type="bibr" target="#b46">[47]</ref> 𝐺 Δ𝑚𝑛 , where the nodes carry some prefix label "Add", "Preserve", or "Remove", and matching elements (i.e., the preserved ones) from 𝐺 𝑚 and 𝐺 𝑛 are unified with each other (i.e., the will be present only once).</p><p>We define a simple change graph to be the smallest subgraph comprising all changes in the difference graph 𝐺 Δ 𝑚𝑛 . Definition 2.4 (Simple Change Graph). Given a difference graph 𝐺 Δ 𝑚𝑛 , a simple change graph 𝑆𝐶𝐺 Δ 𝑚𝑛 ⊆ 𝐺 Δ 𝑚𝑛 is derived from 𝐺 Δ 𝑚𝑛 by first selecting all the elements in 𝐺 Δ 𝑚𝑛 representing a change (i.e., added, removed nodes and edges) and, second, adding preserved nodes that are adjacent to a changed edge. The simple change graph is the smallest subgraph of 𝐺 Δ 𝑚𝑛 containing all changed nodes and edges. We can then also define a function 𝑆𝐶𝐺 : T → G that takes a model transformation (i.e., a pair of models) as input and returns the simple change graph for the corresponding model difference.</p><p>We can use this map 𝑆𝐶𝐺 to define an equivalence relation on T by</p><formula xml:id="formula_0">𝑡 1 = (𝑚, 𝑛) ∼ 𝑡 2 = (𝑘, 𝑙) ,</formula><p>if and only if</p><formula xml:id="formula_1">𝑆𝐶𝐺 Δ 𝑚𝑚 = 𝑆𝐶𝐺 Δ 𝑘𝑙 .</formula><p>It is straightforward to see that this relation indeed defines an equivalence relation (i.e., the relation is reflexive, symmetric, and transitive). We can therefore define the quotient set T /∼, which-by construction-is set isomorphic to the set of simple change graphs, that is, the range of the map 𝑆𝐶𝐺.</p><p>We can use this construction to formally define the concept of an edit operation. We can also interpret an edit operation as a template for a rule to transform a model 𝑚 into a model 𝑛:</p><p>For a simple change graph, we call the subgraphs of "Remove" and "Preserve" nodes the left-hand side graph 𝐿, and the "Add" and "Preserve" nodes the right-hand side graph 𝑅. The embedding of 𝐿 and 𝑅 along the preserved nodes 𝐾 (i.e., 𝐿 ←↪ 𝐾 ↩→ 𝑅, where ←↪ denotes an injective homomorphism, i.e., an embedding) in the simple change graph defines how to remove the "Remove" nodes from 𝑚 and glue the "Add" nodes along 𝐾. Given an edit operation 𝜀 and a concrete model 𝑚, one can define a matching match : 𝐿 ↩→ 𝐺 𝑚 , and perform the removal of "Remove" nodes and the gluing of "Add" nodes as defined by the simple change graph corresponding to 𝜀, and then set concrete attributes. This yields the corresponding model 𝑛 with (𝑚, 𝑛) ∈ 𝜀, and this way an edit operation 𝜀 ∈ E can be interpreted as a template for a model transformation in agreement with previous constructions <ref type="bibr" target="#b8">[9,</ref><ref type="bibr" target="#b33">34,</ref><ref type="bibr" target="#b66">67]</ref>. We therefore also write 𝑚 𝜀 → 𝑛 to denote a concrete element (i.e., a model transformation) in the equivalence class 𝜀 ∈ E.</p><p>The set of edit operations obtained by this construction is huge-infinite to be more precise-and it contains also "operations" such as constructing a large model from scratch (i.e., taking 𝑚 ⊥, the empty model and 𝑛 ∈ M a large model). This does not coincide with more pragmatic definitions, for example, as the set of operations provided by the modelling tool, which typically is finite.</p><p>A transition from 𝑚 𝜀 → 𝑛 can usually also be obtained by a sequence (aka. edit script <ref type="bibr" target="#b35">[36]</ref>)</p><formula xml:id="formula_2">𝑚 𝜀 1 → 𝑚 1 𝜀 2 → . . . 𝜀 𝑘 -1 → 𝑚 𝑘 -1 𝜀 𝑘 → 𝑛.</formula><p>Definition 2.7. A set 𝑆 ⊂ E is called a generator for E, if every model can be reached by a sequence of edit operations in 𝑆, that is,</p><formula xml:id="formula_3">∀𝑚 ∈ M. ∃ 𝜀 1 , . . . , 𝜀 𝑘 𝑚 ∈ 𝑆, 𝑚 1 , . . . , 𝑚 𝑘 𝑚 -1 ∈ M such that ⊥ 𝜀 1 → 𝑚 1 𝜀 2 → . . . 𝜀 𝑘𝑚 -1 → 𝑚 𝑘 𝑚 -1 𝜀 𝑘 → 𝑚.</formula><p>An example for a generator 𝑆 is the set of elementary edit operations that can be derived from a metamodel, as given in the work of Kehrer et al. <ref type="bibr" target="#b37">[38]</ref>. This set is finite and contains rather fine-grained edit operations. Any subset 𝐸 ⊂ E can be completed to a generator by joining it with an existing generator (e.g., the set of elementary edit operations), therefore ensuring that all valid models can be reached.</p><p>In this work, we explore the continuum between elementary edit operations and the set E of all edit operations. Our goal is to identify those higher-level edit operations whose effect is actually observable in model histories, providing empirical evidence that these are meaningful edit operations from a modeler's point of view. We call these higher-level edit operations edit patterns. Furthermore, we are interested in completing software models, that is, for an observed evolution 𝑚 𝜀 → 𝑛, we want to find a completion 𝛾 ∈ E, such that 𝑚 𝜀 → 𝑛 𝛾 → 𝑐 is a meaningful (i.e., observable) completion. We call this 𝛾 a completion operation.</p><p>To give a concrete example for the difference between E, a generator 𝑆, and edit patterns, consider the modelling language SysML, which is used in system engineering <ref type="bibr" target="#b49">[50]</ref>. The set E would then include very fine-grained elementary edit operations from 𝑆, for example, adding a port to a component or adding a connector between two ports, but also very large edit operations, for example for setting up the entire system architecture of a manufacturing execution system. An edit pattern could be given, for example, by "adding an interface", that is, adding source port, target port, and connector in one step. After a port has been added to a component, a completion operation could be the completion of adding a target port and connecting the ports via a connector.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Automatic Inference of Edit Operations</head><p>Since simple operations on the abstract syntax graph of a software model are very fine-grained and may lead to inconsistent models, and since structural model differences are too specific, there has been a long history of attempting to infer relevant edit operations (and model transformations in general) from available information (e.g., the metamodel, given examples, or a model history).</p><p>Definition 2.8 (Automatic Inference of Edit Operations). Given a metamodel T M with models M, automatic inference of edit operations is a computable function 𝐼 : 2 M → 2 E that, given a set of models (and their metamodel)</p><formula xml:id="formula_4">M ′ ⊂ M, computes a set of edit operations E ′ ⊂ E.</formula><p>There are supervised and unsupervised approaches to the inference of edit operations. One branch of supervised approaches are demonstration approaches, were a tool user presents the transformation steps to an operation recorder <ref type="bibr" target="#b9">[10,</ref><ref type="bibr" target="#b75">76]</ref>. Typically, these approaches require some manual post-processing, for example, edit conditions have to be refined manually <ref type="bibr" target="#b9">[10]</ref>. Another branch of supervised approaches include by-example approaches, with which the tool user specifies a set of examples (and sometimes also counter examples) and the tool automatically infers the model transformations <ref type="bibr" target="#b2">[3,</ref><ref type="bibr" target="#b34">35]</ref>. These approaches have been motivated by the seminal work of Varró <ref type="bibr" target="#b69">[70]</ref>, who proposed byexample learning for exogenous model transformations. Furthermore, heuristic approaches <ref type="bibr" target="#b45">[46]</ref> applying search-based techniques to finding a set of refactorings have been proposed.</p><p>Unsupervised approaches include generative approaches, deriving model transformations from the metamodel, and mining approaches. Generative approaches have been proposed in the area of model transformation testing <ref type="bibr" target="#b10">[11]</ref>. Also, more recently, generative fuzzing approaches based on language models have been proposed that try to generate models with similar properties to real-world models <ref type="bibr" target="#b57">[58]</ref>. Edit operations are only indirectly addressed within these generative approaches. It has been shown that a complete set of consistency preserving edit operations can also be derived from the metamodel <ref type="bibr" target="#b37">[38,</ref><ref type="bibr" target="#b42">43]</ref>. These operations capture static constraints that are already present in the metamodel and are typically very simple operations. More recent MTBE approaches also use neural networks to learn exogenous model transformations, for example, Burgueño et al. <ref type="bibr" target="#b12">[13,</ref><ref type="bibr" target="#b14">15]</ref> investigate learning exogenous model transformations from examples using long-short-term memory neural networks. However, these approaches need concrete input-output model pairs and have not been evaluated for endogenous model transformations.</p><p>Recently, mining model transformations from the modelling history using graph mining approaches has been proposed <ref type="bibr" target="#b66">[67]</ref>. An advantage of mining approaches over by-example approaches is that they do not require to handcraft examples. A disadvantage is their computational complexity and that negative application conditions and multi-object patterns (e.g., creating a variable count of elements in a model transformation) can not inferred. Anyway, a postprocessing (e.g., using by-example approaches) is conceivable, and it this sense, by-example approaches and mining approaches are orthogonal. constraint solving <ref type="bibr" target="#b46">[47,</ref><ref type="bibr" target="#b56">57,</ref><ref type="bibr" target="#b60">61,</ref><ref type="bibr" target="#b65">66]</ref>). However, these approaches are only able to complete a partial model to a model that conforms to the metamodel or satisfies additional explicitly given constraints. Other works take existing model repositories or pattern databases into account and employ model clone detection to discover similar (parts of) existing models to make completion recommendations <ref type="bibr" target="#b17">[18,</ref><ref type="bibr" target="#b61">62]</ref>. Fine-tuned large language models would come in here very handy, because they encode the software model history in their parameters and can provide context-specific completions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3">Software Model Completion</head><p>The would not require hand-crafted pattern databases or expensive clone detection in the model repository and are able to generalize to unseen context information. Nevertheless, we are not aware of existing work investigating language models for software model completion. An overview of model completion approaches is given in the secondary study by Almonte et al. <ref type="bibr" target="#b1">[2]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.4">Language Models</head><p>Definition 2.10 (Language Model). A language model is a conditional probability distribution P(𝜔 |𝑐) for a (sequence of) token(s) 𝜔, given a sequence of context tokens 𝑐.</p><p>The probability distribution is typically derived from a corpus of documents, containing (some of) the tokens. This has been done by means of statistical methods in the past. For example, Jelinek and Mercer <ref type="bibr" target="#b31">[32]</ref> derive the probabilities of so-called n-grams (i.e., sequences of n tokens) from a corpus. Motivated by the representation of concepts and language in the human brain, the idea of distributed representations <ref type="bibr" target="#b27">[28]</ref> has been developed. The idea is that there are efficient representations of (sequences of) words that avoid handling sparse n-gram tables and can carry linguistic and semantic information. Based on this idea, Bengio et al. <ref type="bibr" target="#b7">[8]</ref> proposed using neural network architectures to learn the probability distribution P(𝜔 |𝑐). With the success of transformer architecture <ref type="bibr" target="#b70">[71]</ref>, these models have become quite popular now and are used in plenty of domains including software engineering <ref type="bibr" target="#b53">[54,</ref><ref type="bibr" target="#b73">74,</ref><ref type="bibr" target="#b76">77]</ref>. Today neural language models with billions of parameters are pre-trained on large corpora of natural language text as well as source code.</p><p>These pre-trained models can then be fine-tuned for specific data sets and applications. It is also worth noting that language models are generative models, that is, a language model can be used to generate new sequences of tokens whose probabilistic distribution should approximate the distribution of tokens in the corpora used in training.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.5">Further Related Work</head><p>An area of research related to inference of edit operations is automatic "by-example" program synthesis <ref type="bibr" target="#b26">[27]</ref> such as Flash Meta <ref type="bibr" target="#b51">[52]</ref>. From the perspective of this kind of research, in the approach presented in this work, we try to learn a grammar. We haven't evaluated language models yet for identifying functional relationships between attributes in software models. Instead, our approach is able to detect patterns in the data and does not need any example pairs to derive these patterns. Therefore, the program synthesis approaches are more similar to the classical model transformation by-example approaches. For the future, a combination of symbolic inductive programming approaches with neural approaches as the one presented here might be an interesting field of research.</p><p>Some researchers investigate the extraction of knowledge graphs from language models <ref type="bibr" target="#b25">[26,</ref><ref type="bibr" target="#b64">65]</ref>. Our idea of extracting edit patterns from a fine-tuned language model is similar in that we also try to extract "learned knowledge" from a language model. Anyway, our application domain is a different one. In cheminformatics and bioinformatics, language models have been investigated for molecular generation, that is, to the generation of (undirected) graphs <ref type="bibr" target="#b5">[6,</ref><ref type="bibr" target="#b77">78]</ref>.</p><p>Regarding the application of natural language processing and language models, in particular there has been some</p><p>research activities in the model-driven engineering community: Burgueño et al. propose an NLP-based architecture for the auto-completion of partial domain models. They do not employ language models in their approach and instead use other natural language processing approaches (i.e., word embedding similarity) to recommend words, which are then transformed into model elements in a post-processing <ref type="bibr" target="#b13">[14]</ref>. Weyssow et al. use a long-short-term memory neural network architecture to recommend metamodel concepts but they do not generate entire model completions <ref type="bibr" target="#b72">[73]</ref>.</p><p>Furthermore, it needs to be mentioned that for source code, the use of language models for code completion is outperforming other approaches and capable of generating code from natural language input <ref type="bibr" target="#b16">[17,</ref><ref type="bibr" target="#b18">19]</ref>. Sobania et al. <ref type="bibr" target="#b59">[60]</ref> compare large language model-based GitHub CoPilot to genetic programming based program synthesis. Wan et al. <ref type="bibr" target="#b71">[72]</ref> study if abstract syntax tree representations can be retrieved from language models trained on code.</p><p>3 Approach</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Motivation</head><p>As discussed in Section 2.1, we are interested in identifying edit operations that are meaningful. Of course, which edit operation can considered to be meaningful is highly task dependent. As we are interested in the evolution of software models, meaningful edit operations could be the ones helping to understand the model evolution. There is evidence that edit operations that compress the modelling history the most are meaningful to domain experts <ref type="bibr" target="#b66">[67]</ref>.</p><p>In this spirit, we are interested in identifying the most compressing (pattern) subgraphs in observed simple change graphs (i.e., the ones derived from to successive software model revisions). Approaches to identify frequent or compressing subgraphs <ref type="bibr" target="#b19">[20,</ref><ref type="bibr" target="#b38">39,</ref><ref type="bibr" target="#b74">75]</ref> of a database of graphs often grow the patterns (also called motifs) edge-wise. That is, they start with a single node and extend it edge by edge. Given a context graph 𝐺, two possible extensions edges 𝑒 and 𝑒 ′ , and some metric 𝑀 (e.g., frequency or compression), the search then favours the extension 𝑒 with better metric 𝑀 (𝑒 ∩ 𝑔) &gt; 𝑀 (𝑒 ′ ∩ 𝑔) (e.g., in the form of a beam search as in Subdue <ref type="bibr" target="#b38">[39]</ref>). For a frequency and a compression measure, this condition can then be reformulated to yield a probabilistic formulation:</p><formula xml:id="formula_5">𝑀 (𝑒 ∩ 𝐺) &gt; 𝑀 (𝑒 ′ ∩ 𝐺)<label>(1)</label></formula><formula xml:id="formula_6">⇔ P(𝑒 ∩ 𝐺) &gt; P(𝑒 ′ ∩ 𝐺)<label>(2)</label></formula><p>⇔ P(𝑒 ∩ 𝐺) P(𝐺)</p><formula xml:id="formula_7">&gt; P(𝑒 ′ ∩ 𝐺) P(𝐺)<label>(3)</label></formula><formula xml:id="formula_8">⇔ P(𝑒 | 𝐺) &gt; P(𝑒 ′ | 𝐺)<label>(4)</label></formula><p>In ( <ref type="formula" target="#formula_6">2</ref>), we have normalized over the whole dataset to yield a probabilistic formulation and in (4), we apply the definition of the conditional probability. In this formulation, the extension criteria reminds a lot on the language models from Section 2.4, with the major difference that language models are probability distributions on sequences of tokens, while the formulation above is for a probability distribution on sets of graphs. This suggests that language models can be used to generate serializations of patterns in simple change graphs in an edge-wise fashion.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Concrete Approach</head><p>The motivation of Section 3.1 suggests the following high-level procedure to employ language models for the mining of edit patterns: (1) We serialize simple change graphs of (successive) pairs of software models edge-wise. <ref type="bibr" target="#b1">(2)</ref> We then generate pairs of partial simple change graphs and their completion to the full simple change graph serialization.</p><p>(3) These pairs are then used to fine-tune a pre-trained language model. (4) The fine-tuned language model can then be used to generate serializations of simple change graphs. When a context is already given, we are in a completion setting. <ref type="bibr" target="#b4">(5)</ref> In a last step, we rank the generated serializations from the previous step.</p><p>We can divide the procedure into two phases: training phase (Step 1, 2, and 3) and the generation phase (i.e., <ref type="bibr">Step 4 and 5)</ref>. In what follows we will describe the steps in more detail.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.1">Training Phase</head><p>The input to the training phase is a set of simple change graphs computed from pair-wise (successive) differences of software models in a model repository. The output of the training phase is a fine-tuned language model.</p><p>Step (1) -Serialize the graph components: We have to serialize the graph as an edge list. One reason for this is that we want to sample the simple change graphs edge-wise, as suggested in Section 3.1. Common formats such as the GraphML 1 are not suitable, because they start with a list of vertices before they list the edges. It is intuitive from a language model perspective why this is not a suitable format: Suppose our initial simple change graphs are the results of the application of more than one edit pattern. In this case, the initial simple change graphs will be larger than the simple change graphs of the edit patterns that we want to discover. Anyway, the language model will learn to generate serializations statistically similar to the input. This implies that the number of nodes would probably always be too large for a serialization of an edit pattern. We therefore use a simple graph serialization called EdgeList for directed labeled graphs: The serialization of every edge has the format e &lt; s r c _ i d &gt; &lt; t g t _ i d &gt; &lt; e d g e _ l a b e l &gt; &lt; s r c _ l a b e l &gt; &lt; t g t _ l a b e l &gt;</p><p>where &lt; src_id &gt; and &lt; tgt_id &gt; are identifiers for the source and target vertices of the edge, respectively. The serialization of a graph starts with a header line in the format</p><formula xml:id="formula_9">t # &lt; g r a p h _ i d &gt;</formula><p>and then all edges of the graph serialized line by line. An example is given in Listing 1. Another degree of freedom that arises in the serialization step is the order of the edges and the identifiers of the vertices in this serialization. After the order of the edges is chosen, we can enumerate the vertices (e.g., increasing integers in the order they appear when following the edges). This still leaves us with |𝐸|! choices (up to automorphism), which can quickly become impractically large. There are canonical graph serializations <ref type="bibr" target="#b43">[44]</ref>, but they do have exponential worst-case time complexity and do not help for our task, because these serializations do not ensure that pattern subgraphs appear with their own canonical ordering <ref type="foot" target="#foot_1">2</ref> . Therefore, choosing some of the possible |𝐸|! edge orderings will probably lead to better results. In this work we chose one ordering (obtained through a depth-first search) that worked well for our data, and we leave the investigation of the influence of further edge orderings for future research.</p><p>Step (2) -Randomly split serializations in prompt and completion: As input for the fine-tuning of language model, we provide a set of context and completion pairs. From every EdgeList serialization from the previous step, we generate three training samples: We compute three cut points. One cut point is randomly chosen in the first 10% of the edges, the second randomly between the first and the last 10% of the edges, and the third cut point randomly among the last 10% of the edges. For every cut point, we then obtain one training sample by taking the edges before the cut point as context and the edges after the cut point as the completion.</p><p>Step (3) -Fine-tune a language model: In this step, we use the dataset obtained above to fine-tune a pre-trained language model. Specifically, we use so-called autoregressive language models (the GPT-3 model family), although other types of language models are also conceivable. In autoregressive language models, only the probabilities for the next token in a sequence is predicted based on the context (i.e., the previous tokens). This way, we obtain a language model that is fine-tuned to the simple change graph serializations computed for a specific model repository.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.2">Generation Phase</head><p>The fine-tuned language model can now be applied to generate edit patterns, on the one hand, and completion operations, on the other.</p><p>Step the context in the generation of candidates. For the generation of edit patterns, we use an "empty edge" context (i.e.,</p><p>the token e to be more precise).</p><p>The candidate generation works as follows (see pseudo code in Listing 1): The algorithm takes a set of incomplete edit operation candidates (in the form of serialized simple change graphs) and uses the fine-tuned language model to sample new edge candidates and appends them to the incomplete edit operation candidate (Line 12). The sampling generates all possible extensions above a certain probability threshold. Since we cannot guarantee that the extensions lead to a correct EdgeList serialization, we check the syntactical correctness and reject incorrect extensions (Line 13).</p><p>Furthermore, even syntactically valid extensions could be invalid according to the metamodel and have to be rejected likewise (Line 14). After that, the corresponding simple change graph represents a valid edit operation by definition.</p><p>Based on a graph isomorphism test, we then filter out duplicates (Line 15). Although graph isomorphism is theoretically expensive from a computational perspective, in our setting, it is acceptable since we have only a few medium size graphs, and employ Weisfeiler-Lehman hashes <ref type="bibr" target="#b29">[30]</ref> to speed up the comparison. We add complete candidates to the output list (Line 19) and repeat this process until all candidates are complete (Line 9). Whether a candidate is complete is checked using several conditions such as the total probability of the candidate, a drop in the probability of a generated edge, or a generated stop token.</p><p>Step (5) -Ranking of generated candidates: In the last step, we rank the generated candidates from Step 4. Several ranking metrics are conceivable, for example, the probability for a candidate given by the token probabilities of the language model, the compression metric as used in the work of Tinnes et al. <ref type="bibr" target="#b66">[67]</ref>, or also scaled variants of the token probabilities such as scaling with the number of edges or nodes. We will evaluate different ranking metrics.</p><p>In this section we evaluate to what extent language models, as exemplified by our approach (Section 3), can help to derive edit patterns and completion operations from the software model history.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Research Questions</head><p>To better understand the merits of language models for edit operation and completion operation mining, we set out to answer the following research questions:</p><p>RQ 1: Using our approach, are language models capable of generating correct simple change graph graph serializations?</p><p>Since a language model is not aware of the meta-model and definition of a graph per se, the generated edit patterns or completion operations might not be correct simple change graph serializations. That is, they might be invalid according to the metamodel (e.g., invalid combination of edge, source, and target node labels) or could even be invalid directed labeled graph serializations (i.e., not adhere to the EdgeList format). We are particularly interested how this depends on the properties of the dataset and the properties of the language model used for the approach.</p><p>RQ 2: Using our approach, are language models capable of providing completion operations for software models?</p><p>The approach uses a language model that is trained to complete the simple change graph serializations. It optimizes the token probability, given a context. This does not ensure per se that the provided completions represent simple change graphs that are isomorphic to the correct simple change graphs. Therefore, we are interested in to which extent the completed and the original simple change graph coincide and how this depends on the properties of the dataset and of the language model. RQ 3: Using our approach, can edit operations be reconstructed from the language model?</p><p>The main idea of our approach is that the language model leverages patterns in the training data while generating text. Therefore, it should be possible to read out the patterns from the language model. The approach presented here is just one idea how the patterns can be retrieved from the language model, and we have to evaluate this approach empirically. We further evaluate how the generation of edit pattern candidates depends on the properties of the dataset and the properties of the language model used for the approach.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>RQ 4: Which ranking metric for the edit operation candidates performs best?</head><p>There are several possibilities to rank the list of generated edit operation candidates, including language model probability, the probability scaled by the factorial of the number of edges, or scaled by the number of edges, or a more computationally expensive compression-like metric as used in a previous approach <ref type="bibr" target="#b66">[67]</ref>. The idea behind the scaled metrics is that -as discussed already above -there are several possible simple change graph serialization (up to |𝐸|!).</p><p>At least, the probability will inevitably decrease with the number of edges and we have to account for this to avoid favouring smaller edit operation candidates. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Dataset</head><p>As we will discuss in Section 4.6, the goal of this work is to study the merits of language models for edit pattern and completion operation mining with a high internal validity. To answer the research questions, we simulated the evolution of a software model similar to previous work <ref type="bibr" target="#b66">[67]</ref>. This gives us control over the edit operations that have been applied</p><p>to yield the model history. For this simulation, we used a metamodel from Tinnes et al. <ref type="bibr" target="#b66">[67]</ref> that resembles a simple component model (as used in modelling system architecture) with components, implementations, ports, connectors, and requirements. We then randomly apply edit operations. Specifically, we applied three different kinds of edit operations (i.e., adding a component, adding an interface, and adding a new package including a component). We controlled for the number of edit operations that are applied per model revision (i.e., <ref type="bibr" target="#b10">11,</ref><ref type="bibr" target="#b30">31,</ref><ref type="bibr" target="#b50">51,</ref><ref type="bibr">81)</ref> and the number of model revisions in one dataset (i.e., 10 or 20). We furthermore randomly applied perturbations, that is, with a certain probability (i.e., 0%, 50%, 100%), we slightly modified the edit operation by a successive application of an additional edit operation that overlaps with the original edit operation. This way, we obtain 24 simulations of a software model evolution (see Figure <ref type="figure" target="#fig_5">2</ref>) and we know which edit operations had been applied between two model revisions of the repositories.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Operationalization</head><p>For every simulated repository in the dataset from Section 4.2, we applied the steps of the training phase, described in Section 3. We controlled for the number of epochs (i.e., 4 and 6) and the base language model used for the fine-tuning (i.e., text-ada-001, text-curie-001, and text-davinci-003 from the GPT-3 family of language models). Since fine-tuning the text-davinci-003 model is quite expensive (i.e., 3 Cents per thousand tokens at the time of writing), we fine-tuned this model only for the model repositories where perturbation probability equals 100% (the ones which are typically the harder ones). We therefore have to report separately if we also include the text-davinci-003 model in the analysis. We split the datasets (for each of the repositories from Section 4.2) in a training and a test set (90% of the samples in the train set and 10% in the test set), so that we can report on the performance of the (textual) completion task the models were trained on.</p><p>The total cost for the training via the OpenAI API was 347$.</p><p>Experiment 1: To answer the first research question, we use the fine-tuned language models and apply the edit pattern candidate generation from Section 3. During the edge extension in the generation phase, we checked whether the completion actually corresponds to a correct graph serialization. We also checked whether the edge extension corresponds to a correct extension according to the meta-model, that is, whether the generated graph actually corresponds to a simple change graph. We then report how many of the extensions during the generation were incorrect and how the number of incorrectly generated serializations depends on the base language model, the number of training epochs, the perturbation parameter, and the number of training tokens in the dataset.</p><p>Experiment 2: We fine-tune the language models based on a model completion task. Therefore, the procedure from Section 3 for deriving fine-tuning data from a model repository together with the training test split described above yield data that can be used to evaluate whether language models can be used for model completion, answering the second research question. We investigate the simple change graph completion from two perspectives: First, we investigate the average token accuracy on the test set during the fine-tuning of the language model. The average token accuracy gives us the relative number of correctly retrieved tokens. The metric is not aware of any specifics of the dataset. For example, even a single wrong token in a serialization can produce a syntactically wrong serialization while the token accuracy for this can still be high. We therefore also analyze the completion operation candidates from a graph matching perspective. Since generating all completion candidates for all test samples of all fined-tuned language models will be quite expensive, we select two fine-tuned language models and perform the analysis for them. From the set of generated completion operation candidates, we especially look at two candidates: the one providing "the best completion" and the "top-ranked completion" using the edge-scaled ranking metric (see Experiment 4). In some sense, these two selected candidates give us an upper and a lower bound for the performance on the software model completion task. To make completions comparable, we assign a numeric value to them. This is possible, since we define completion candidates isomorphic to the correct graph to be better than completion candidates that are too large (i.e., the ground truth is a subgraph of the completion candidate), which themselves are better than completion candidates that are too small, which again are better than incorrect completion candidates (i.e., some edges missing and some additional edges).</p><p>Experiment 3: To answer RQ 3, we evaluate the generation of edit pattern candidates from the fine-tuned language models. To this end, we apply the approach from Section 3 to the synthetic model repositories. Since we know the edit operations that have been applied, we can directly look for the applied edit operations in the list of edit pattern recommendations. We count the number of correct edit operation candidates that have been generated. There are three correct edit operations in total, and each of them has been applied in every software model to our synthetic dataset (see Figure <ref type="figure" target="#fig_5">2</ref>). Additionally, we investigate how the number of correctly retrieved edit operations depends on repository as well as language model parameters. We will also investigate the costs for the generation of edit pattern candidates.</p><p>Experiment 4: As in experiment 3, we apply the approach to the synthetic model repositories. We compute the different ranking metrics (i.e., language model probability, the probability scaled by the factorial of the number of edges, probability scaled by the number of edges, and compression-like metric) for all generated edit pattern candidates.</p><p>We then compare the different rankings based on the given ground truth, that is, the rank of the known applied edit operation. To compare the different ranking metrics, we use the mean average precision at k (MAP@k), which is </p><formula xml:id="formula_10">MAP@k := 1 |𝐷 | ∑︁ D AP@k ,</formula><p>where 𝐷 is the family of all datasets (one dataset represents one repository) and AP@k is defined by AP@k := 𝑘 𝑖=1 P(𝑖) • rel(𝑖) |all correct simple change graphs| , where P(𝑖) is the precision at 𝑖, and rel(𝑖) indicates if the candidate at rank 𝑖 is relevant.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Results</head><p>Experiment 1: For 51.8% of the simulated repositories, the generation procedure produced exclusively valid graphs, for 48.2% it produced also only correct simple change graph (i.e., also correct with respect to the metamodel). On average, 2.26 invalid graphs are generated in the generation phase, with a minimum of 0 and a maximum of 30. A constraint in the given EdgeList serialization is that a node with a given id has to appear always with the same label (i.e., the node labels are redundantly encoded in EdgeList). The only type of violation against a valid EdgeList encoding we have encountered in this experiment was that this correspondence of node id and node label has been violated. A manual inspection of the data for the model repositories with a large amount of invalid graphs (&gt; 5) reveals that these are the "smaller" datasets with mostly a high perturbation. For example, the repository with only 10 revisions, 11 applied edit operations, and a perturbation of 100% is the one with the maximum of 30 invalid graphs.</p><p>In Table <ref type="table" target="#tab_0">1</ref> we report the correlation coefficients (Spearman<ref type="foot" target="#foot_2">foot_2</ref> ) between invalid graphs and invalid simple change graphs and the base language model (BM), the number of training epochs, the perturbation probability (P), and the number of training tokens of the dataset (T). For the correlation with the base language model, we sort the base models according to their size (i.e., ada: 0, curie: 1, davinci: 2).</p><p>We observe significant positive Spearman correlation between the number of invalid generated graph serializations and the perturbation parameter. Furthermore, there is a significant negative Spearman correlation between the number of invalid generated graph serializations and the number of tokens in the training set.</p><p>Experiment 2: At the token level, we find an average token accuracy of 0.969, with a minimum of 0.921, and a maximum of 0.990 on our test data set.</p><p>Only 2.71 completion candidates are generated, on average. For a large number of samples, only one completion operation candidate has been generated. In all of theses cases, the only candidate has also been the correct one. On the edge-scaled ranking).</p><p>In Table <ref type="table" target="#tab_1">2</ref> we report on the Spearman correlation coefficients of the score of the completion candidates with the number of omitted edges (i.e., the ones that have to be computed), the total number of edges of the ground truth simple change graph, and the number of completions that have been generated.</p><p>We see significant negative correlations between the score (of the best generated candidate and the best ranked candidate) and the number of edges that have to be completed, the number of edges from the full original simple change graph, and the number of completions candidates that have been generated.</p><p>Experiment 3: On average, out of the three applied edit operations, we could retrieve 2.17 for the text-ada-001 model, 2.13 for the text-curie-001 model, and 1.00 for the text-davinci-003 model. The text-davinci-003 model has only been trained to the datasets that appeared to be difficult for text-ada-001 and text-curie-001 (i.e., perturbation probability of 100%).</p><p>In Table <ref type="table" target="#tab_2">3</ref>, we list the Spearman correlations of the correctly retrieved edit operations with the base model (BM), the number of training epochs, the perturbation probability (P), and the number of applied edit operations between two model revisions (E).</p><p>The average generation cost for text-ada-001 was 0.45 Cent, for text-curie-001 3.68 Cent, and for text-davinci-003</p><p>51.84 Cent.</p><p>Experiment 4: We list the MAP scores for the 4 different ranking metrics in Table <ref type="table" target="#tab_3">4</ref>. Furthermore, we compare the average precisions obtained through the different ranking. We can observe a high significant (𝑝 &lt; .001) Spearman correlations coefficients &gt; 0.65 among all of them, the largest one between compression metric and node factorial scaled probability metric (0.90).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5">Discussion</head><p>RQ 1: From our results, we can conclude that with our current approach we generate mostly valid graph serializations.</p><p>Indeed, even for a majority of the simulated repositories, we do not generate invalid graph serializations, at all, and, on average, 2.26 invalid candidates per generation phase. If we consider correct simple change graphs, only 0.901 illegal simple change graphs (i.e., they do not conform to the metamodel or the definition of simple change graphs) are generated, on average. The analysis also shows that the repositories for which we also get invalid graph serializations are the smaller ones (in the number of training tokens), with a high perturbation. The dependency on the size of the repository and the perturbation is also significant (as can be seen in Table <ref type="table" target="#tab_0">1</ref>). This suggests, that one should use larger repositories or even pre-train the language model with simple change graph serializations from other repositories.</p><p>We also observe a small negative but insignificant correlation w.r.t. the size of the base language model that has been used for the fine-tuning. This suggests that larger base language models might perform better in the generation of simple change graph. Given that text-davinci-003 is 50 times as expensive as text-ada-001, and this correlation is not significant, we can conclude that text-ada-001 is an acceptable choice for the base language model for the generation of simple change graphs.</p><p>Summary: Overall, invalid graphs are generated only rarely. Smaller repositories are more likely to lead to invalid graphs than larger repositories.</p><p>RQ 2: From the results, we can clearly conclude that, in a majority of the samples, the correct completions have been generated. Also, the number of completion operation candidates is typically low and the correct completion operation (if among the candidates) is typically top ranked. The larger the simple change graph and the more edges we omit for the completion, the worse the score of the completion candidates. Anyway, for the larger graphs, a subgraph of the correct completion was among the candidates in most cases.</p><p>Summary: A manageable amount of completion operation candidates are generated and in a majority of the cases the correct completion has been generated by the language model. Larger simple change graphs (in number of edges) and a larger number of omitted edges are more challenging than smaller ones, which is rather intuitive.</p><p>RQ 3: Overall, using the approach from Section 3, we were able to retrieve two and, in some cases, even all of the applied edit operations. The perturbation seems to be the major influencing factor that increases the difficulty. Using larger language models (i.e., text-davinci-003) did not improve the results. We can even see a decrease of the number of retrieved edit operations with increasing language model size. The costs for using the language models are definitely acceptable (0.45 Cent to 51.84 Cent), especially given that the more expensive language models do not perform any better.</p><p>Summary: We were able to retrieve edit patterns from a fine-tuned language model. However, with increasing perturbation probability, the approach yields worse results.</p><p>RQ 4: From the results of Experiment 4, we can see that, for 𝑘 &gt; 3 (where 𝑘 is the number of considered generation candidates), the compression metric outperforms the other metrics. Since the compression metric is expensive to calculate, we also tried to recompute it from the probability given by the language model. Although we can observe high correlations among the average precisions, none of the three metrics yields the same ranking as the compression-based ranking. For practical purposes, the edges-scaled probability metric is most feasible, since it gives results close to the compression metric and does not require any expensive calculations.</p><p>Summary: We can confirm earlier results <ref type="bibr" target="#b66">[67]</ref> that the compression metric seems to be a good metric to select edit patterns. There seems to be a -yet unknown -relationship between the probability given by the language model and the compression metric from earlier work.</p><p>Frequent subgraph mining vs. language models: In a recent study <ref type="bibr" target="#b66">[67]</ref>, frequent subgraph mining has been proposed for edit operation mining. First, this approach cannot be applied to model completion out-of-the-box, because it does not yield a conditional distribution that can be used for completion. Second, regarding edit operation mining, frequent subgraph mining is challenging from a computational/memory complexity point of view. This sometimes requires omitting large simple change graphs in the mining. The reason for this is that subgraph matching requires to try many possible combinations that vertices from the subgraph can be matched to the super graph. Using language models, we circumvent this issue and train on sequential -instead of graph-like -data. The training resources (and therefore also cost) scale linearly with the number of tokens. A graph would be "equivalent" to all of its possible serializations (i.e., approximately |𝐸|!). Training a language model on all of theses serializations would then be infeasible. Anyway, using a language model as described in Section 3, we get control over the number of serializations and we have seen that considering only one serialization per graph yields promising results.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.6">Threats To Validity</head><p>We have evaluated the proposed approach in a controlled experiment setting, this way, maximizing internal validity.</p><p>However, further experimentation and evaluation is required before it can be considered for implementation in realworld software engineering projects. Our research is currently in the simulation phase. This stage of research is similar to the early stages of drug development in the pharmaceutical industry, where candidates for a treatment are first evaluated through simulations and small-scale experiments before moving on to larger studies. One of the main reasons to take such a staged approach is that the application of language models to large-scale industrial experiments requires training on large model repositories. Training on all possible simple change graphs and serializations is infeasible from a cost perspective. We therefore have to better understand large language models in the domain of model generation to use a suitable sampling in real-world applications. Furthermore, without cost-intensive legal considerations, real-world data can not be uploaded to the GPT-3 API and therefore we would have to rely on much smaller, non-state-of-the-art language models. So, we made the explicit decision to trade-off external validity for internal validity <ref type="bibr" target="#b58">[59]</ref> before moving on to the next stage, that is, an application to real-world models. The purpose of the present study is to understand the merits of language models for edit pattern and completion operation mining.</p><p>With respect to internal validity, we have chosen those properties and parameters that intuitively have the highest impact on fine-tuning language models, although we cannot control for any arbitrary property of the modelling language or the model repository (because of combinatorial explosion). Several design decisions (e.g., which parameters to fix and which to vary) have to be made before language models can be applied to the domain of software model completion (e.g., serialization strategy, graph encoding, choice of the base model, etc.). Other design decisions could have led to other conclusions and there is still room for improvement and optimization of language models for edit pattern mining and model completion. Furthermore, the base models (i.e., GPT-3) that were fine-tuned in this work are only available through an API. We wanted to conduct this study with state-of-the-art models, and at the time the experiments were conducted, GPT-3 was the state-of-the-art without significant competition. However, it would also be interesting to compare a larger set of language models on the above tasks, although this is well beyond the scope of the present study.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>In this work, we have evaluated the principle feasibility of using language models (i.e., GPT-3) for extracting edit patterns from software model repositories and for model completion. A key advantage is that a language model has to be fine-tuned only once and can then be used for edit pattern mining and model completion. We presented a formalization of both tasks that makes the synergy between them more obvious.</p><p>To evaluate the use of language models for edit pattern mining and model completion, we conducted a controlled experiment with a synthetic software model repository. We found promising results for both tasks (edit pattern mining and model completion), even without elaborate optimizations. Our approach fine-tunes language models on a graph representation of model differences. It was able to correctly complete a majority of serialized difference graphs from a synthetic test dataset. Furthermore, some of the edit operations that have been applied to generate the synthetic difference graphs could be generated via the fine-tuned language model, although we were not able to always generate all applied edit operations.</p><p>For future work, it is necessary to optimize the approach, for example, investigating the influence of adding more simple change graph serializations during the fine-tuning of the language model. Another way of optimization is to further fine-tune the approach in a supervised manner, on a set of correct and incorrect completions or a set of known edit patterns. Also, in a productive environment, user-feedback may be involved in the generations by wrapping the language model in a reinforcement learning approach.</p><p>Optimized versions of the approach have to be evaluated in more realistic, real-world settings. Also, it would be interesting to investigate whether language models are able to learn attribute relationships (e.g., functional relationships between attributes) and learn to abstract (e.g., automatically discover "is-a" relationships).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Data Availability</head><p>We have provided data as well as Python scripts for our approach-to replicate the results of this paper-as a replication package. We furthermore provide the R scripts to replicate our statistical evaluation. The replication package will be made public (e.g., GitHub) in case of acceptance.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Definition 2 . 5 (</head><label>25</label><figDesc>Endogenous model transformation). An endogenous model transformation is a pair 𝑡 = (𝑚, 𝑛) ∈ M × M. We call 𝑚 the source model and 𝑛 the target model of the transformation and T def = M × M the space of endogenous model transformations.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Definition 2 . 6 .</head><label>26</label><figDesc>An edit operation is an equivalence class in the set E def = T /∼. An edit operation is therefore a set of model transformations that have the same simple change graph.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>(Definition 2 . 9 (</head><label>29</label><figDesc>Software) model completion is the task of further evolving a software model based on a given (partial) model. More formally: Model Completion). Given a set of model transformations T , model completion is a computable function 𝐶 : T → T that, given a model transformation 𝑚 𝜀 → 𝑛 from a source model 𝑚 to a (partial) target model 𝑛, computes a model transformation 𝐶 (𝑚 𝜀 → 𝑛) = 𝑛 𝛾 → 𝑐. The problem of model completion is to find a meaningful completion 𝑚 𝜀 → 𝑛 𝛾 → 𝑐. We call the edit operation 𝛾 a completion operation. To implement model completion, some authors proposed to automatically complete a partial model to a model that conforms to the meta-model and possibly other constraints(e.g., via rule based approaches or</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>d d _p o r t Add_Component Add_Port e 0 2 A d d _ r e q u i r e m e n t Add_Component Add_Requirement Listing 1. An example SCG in the EdgeList format.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>( 4 ) 1 𝜀→ 𝑚 2 asFig. 1 .</head><label>4121</label><figDesc>Fig. 1. Pseudocode for the candidate generation.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Fig. 2 .</head><label>2</label><figDesc>Fig. 2. Simulation of the model repositories.</figDesc><graphic coords="12,110.16,95.04,428.39,240.97" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="10,110.16,95.04,428.39,246.44" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 .</head><label>1</label><figDesc>Correlation (Spearman) between invalid graphs generation with other parameters. (**: 𝑝 &lt; .001, *: 𝑝 &lt; .01)</figDesc><table><row><cell>BM</cell><cell>Epochs</cell><cell>P</cell><cell>T</cell></row><row><cell>#Invalid -0.08</cell><cell>-0.10</cell><cell>0.35 **</cell><cell>-0.33 *</cell></row><row><cell>#Invalid metamodel -0.22</cell><cell>-0.05</cell><cell>0.31*</cell><cell>-0.22</cell></row><row><cell>#Invalid (+ davinci) -0.28</cell><cell>-0.11</cell><cell>-</cell><cell>-0.56 **</cell></row><row><cell>#Invalid metamodel (+ davinci) -0.24</cell><cell>-0.13</cell><cell>-</cell><cell>-0.56 **</cell></row><row><cell>commonly used in the evaluation of recommender systems [56]:</cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 .</head><label>2</label><figDesc>Correlation coefficients (Spearman) of the completion candidate score with the number of omitted edges in the sample, the number of total edges of the correct simple change graph, and the number of completion candidates that have been generated. (*: 𝑝 &lt; .001)</figDesc><table><row><cell></cell><cell cols="3">#Omitted Edges #Total Edges #Completions</cell></row><row><cell>Score (best rank)</cell><cell>-0.69 *</cell><cell>-0.38 *</cell><cell>-0.75 *</cell></row><row><cell>Score (best candidate)</cell><cell>-0.29 *</cell><cell>-0.33 *</cell><cell>-0.21 *</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 3 .</head><label>3</label><figDesc>Correlations between the correctly retrieved edit operations and repository as well as language model parameters. (*:𝑝 &lt; .001), in 87.60% of the samples, the correct completion is among the candidates, with an average rank of 1.55 (w.r.t.</figDesc><table><row><cell>BM</cell><cell>Epochs</cell><cell>P</cell><cell>E</cell></row><row><cell cols="2">#Correct -0.33 * -0.03</cell><cell>-0.80 *</cell><cell>0.10</cell></row><row><cell>#Correct (+ davinci) -0.22</cell><cell>0.08</cell><cell>-</cell><cell>0.28</cell></row></table><note><p>average</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 4 .</head><label>4</label><figDesc>MAP for the different ranking metrics. Grey background indicates the best MAP among all metrics.</figDesc><table><row><cell></cell><cell cols="4">Compression Factorial Probability Edges-Scaled</cell></row><row><cell>MAP@3</cell><cell>0.32</cell><cell>0.20</cell><cell>0.13</cell><cell>0.33</cell></row><row><cell>MAP@5</cell><cell>0.38</cell><cell>0.29</cell><cell>0.17</cell><cell>0.36</cell></row><row><cell>MAP@10</cell><cell>0.41</cell><cell>0.32</cell><cell>0.24</cell><cell>0.40</cell></row><row><cell>MAP@∞</cell><cell>0.42</cell><cell>0.33</cell><cell>0.25</cell><cell>0.41</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>http://graphml.graphdrawing.org/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>Otherwise graph isomorphism problem and subgraph isomorphism problem would be in the same complexity class, which is not thought to be the case.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>We use Spearman correlation instead of Pearson correlation, since we can not assume that there are linear dependencies.</p></note>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">VMTL: A language for end-user model transformation</title>
+		<author>
+			<persName><forename type="first">Harald</forename><surname>Vlad Acreţoaie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Störrle</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Strüber</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Software &amp; Systems Modeling</title>
+		<imprint>
+			<biblScope unit="volume">17</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="1139" to="1167" />
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">Lissette</forename><surname>Almonte</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Esther</forename><surname>Guerra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iván</forename><surname>Cantador</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Juan</forename><surname>De</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lara</forename></persName>
+		</author>
+		<title level="m">Recommender systems in model-driven engineering. Software and System Modelling</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">21</biblScope>
+			<biblScope unit="page" from="249" to="280" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Learning minimal and maximal rules from observations of graph transformations</title>
+		<author>
+			<persName><forename type="first">Abdullah</forename><forename type="middle">M</forename><surname>Alshanqiti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reiko</forename><surname>Heckel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tamim</forename><surname>Ahmed Khan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Electronic Communication of the European Association of Software Science and Technology</title>
+		<imprint>
+			<date type="published" when="2012">2012</date>
+			<biblScope unit="volume">47</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Henshin: Advanced concepts and tools for in-place EMF model transformations</title>
+		<author>
+			<persName><forename type="first">Thorsten</forename><surname>Arendt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Enrico</forename><surname>Biermann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefan</forename><surname>Jurack</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Krause</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriele</forename><surname>Taentzer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Model Driven Engineering Languages and Systems (MODELS)</title>
+		<meeting>the International Conference on Model Driven Engineering Languages and Systems (MODELS)</meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2010">2010</date>
+			<biblScope unit="page" from="121" to="135" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Specifying model transformations by direct manipulation using concrete visual notations and interactive recommendations</title>
+		<author>
+			<persName><forename type="first">Iman</forename><surname>Avazpour</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Grundy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lars</forename><surname>Grunske</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Visual Languages and Computing</title>
+		<imprint>
+			<biblScope unit="volume">28</biblScope>
+			<biblScope unit="page" from="195" to="211" />
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Molgpt: Molecular generation using a transformer-decoder model</title>
+		<author>
+			<persName><forename type="first">Viraj</forename><surname>Bagal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishal</forename><surname>Aggarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Deva</forename><surname>Vinod</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Priyakumar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Chemical Information and Modeling</title>
+		<imprint>
+			<biblScope unit="volume">62</biblScope>
+			<biblScope unit="issue">9</biblScope>
+			<biblScope unit="page" from="2064" to="2076" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Advanced model transformation language constructs in the VIATRA2 framework</title>
+		<author>
+			<persName><forename type="first">András</forename><surname>Balogh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dániel</forename><surname>Varró</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the ACM Symposium on Applied Computing</title>
+		<meeting>the ACM Symposium on Applied Computing</meeting>
+		<imprint>
+			<date type="published" when="2006">2006</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="1280" to="1287" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">A neural probabilistic language model</title>
+		<author>
+			<persName><forename type="first">Yoshua</forename><surname>Bengio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Réjean</forename><surname>Ducharme</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pascal</forename><surname>Vincent</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>MIT Press</publisher>
+			<date type="published" when="2000">2000</date>
+			<biblScope unit="page" from="932" to="938" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Formal foundation of consistent EMF model transformations by algebraic graph transformation</title>
+		<author>
+			<persName><forename type="first">Enrico</forename><surname>Biermann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claudia</forename><surname>Ermel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriele</forename><surname>Taentzer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Software and Systems Modeling</title>
+		<imprint>
+			<biblScope unit="volume">11</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="227" to="250" />
+			<date type="published" when="2012">2012</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">An example is worth a thousend words: Composite operation modeling by-example</title>
+		<author>
+			<persName><forename type="first">Petra</forename><surname>Brosch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philip</forename><surname>Langer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martina</forename><surname>Seidl</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Konrad</forename><surname>Wieland</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manuel</forename><surname>Wimmer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gerti</forename><surname>Kappel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Werner</forename><surname>Retschitzegger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wieland</forename><surname>Schwinger</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Model Driven Engineering Languages and Systems (MODELS)</title>
+		<meeting>the International Conference on Model Driven Engineering Languages and Systems (MODELS)</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2009">2009</date>
+			<biblScope unit="page" from="271" to="285" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Metamodel-based test generation for model transformations: an algorithm and a tool</title>
+		<author>
+			<persName><forename type="first">Erwan</forename><surname>Brottier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Franck</forename><surname>Fleurey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jim</forename><surname>Steel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benoit</forename><surname>Baudry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yves</forename><surname>Le Traon</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of International Sympoisum on Software Reliability Engineering (ISSRE)</title>
+		<meeting>International Sympoisum on Software Reliability Engineering (ISSRE)</meeting>
+		<imprint>
+			<date type="published" when="2006">2006</date>
+			<biblScope unit="page" from="85" to="94" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Model differences in the eclipse modeling framework. UPGRADE</title>
+		<author>
+			<persName><forename type="first">Cédric</forename><surname>Brun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alfonso</forename><surname>Pierantonio</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">The European Journal for the Informatics Professional</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="29" to="34" />
+			<date type="published" when="2008">2008</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">A generic LSTM neural network architecture to infer heterogeneous model transformations</title>
+		<author>
+			<persName><forename type="first">Loli</forename><surname>Burgueño</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jordi</forename><surname>Cabot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuai</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sébastien</forename><surname>Gérard</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Software and Systems Modelling</title>
+		<imprint>
+			<biblScope unit="volume">21</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="139" to="156" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">An nlp-based architecture for the autocompletion of partial domain models</title>
+		<author>
+			<persName><forename type="first">Loli</forename><surname>Burgueño</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Clarisó</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sébastien</forename><surname>Gérard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuai</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jordi</forename><surname>Cabot</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Advanced Information Systems Engineering</title>
+		<meeting>the International Conference on Advanced Information Systems Engineering</meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="91" to="106" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">An lstm-based neural network architecture for model transformations</title>
+		<author>
+			<persName><forename type="first">Loli</forename><surname>Burgueño</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jordi</forename><surname>Cabot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sébastien</forename><surname>Gérard</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Model Driven Engineering Languages and Systems (MODELS)</title>
+		<meeting>the International Conference on Model Driven Engineering Languages and Systems (MODELS)</meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="294" to="299" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<title level="m" type="main">Developing Mobile Applications on the Android Platform</title>
+		<author>
+			<persName><forename type="first">Guiran</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunguang</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guanhua</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chuan</forename><surname>Zhu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2010">2010</date>
+			<publisher>Springer</publisher>
+			<pubPlace>Berlin Heidelberg</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jerry</forename><surname>Tworek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heewoo</forename><surname>Jun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiming</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henrique</forename><surname>Ponde De Oliveira Pinto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harri</forename><surname>Edwards</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuri</forename><surname>Burda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>Joseph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Greg</forename><surname>Brockman</surname></persName>
+		</author>
+		<title level="m">Evaluating large language models trained on code</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Recommendation and weaving of reusable mashup model patterns for assisted development</title>
+		<author>
+			<persName><forename type="first">Roy</forename><surname>Soudip</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>Chowdhury</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Daniel</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Casati</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Transactions on Internet Technology</title>
+		<imprint>
+			<biblScope unit="volume">14</biblScope>
+			<biblScope unit="issue">2-3</biblScope>
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">An empirical study on the usage of transformer models for code completion</title>
+		<author>
+			<persName><forename type="first">Matteo</forename><surname>Ciniselli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nathan</forename><surname>Cooper</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luca</forename><surname>Pascarella</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antonio</forename><surname>Mastropaolo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emad</forename><surname>Aghajani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denys</forename><surname>Poshyvanyk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Massimiliano</forename><surname>Di Penta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriele</forename><surname>Bavota</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions on Software Engineering</title>
+		<imprint>
+			<biblScope unit="volume">48</biblScope>
+			<biblScope unit="issue">12</biblScope>
+			<biblScope unit="page" from="4818" to="4837" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<author>
+			<persName><forename type="first">Diane</forename><forename type="middle">J</forename><surname>Cook</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lawrence</forename><forename type="middle">B</forename><surname>Holder</surname></persName>
+		</author>
+		<title level="m">Mining graph data</title>
+		<imprint>
+			<publisher>John Wiley &amp; Sons</publisher>
+			<date type="published" when="2006">2006</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Feature-based survey of model transformation approaches</title>
+		<author>
+			<persName><forename type="first">Krzysztof</forename><surname>Czarnecki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Helsen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IBM systems journal</title>
+		<imprint>
+			<biblScope unit="volume">45</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="621" to="645" />
+			<date type="published" when="2006">2006</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Mastering simulink</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>James</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><forename type="middle">L</forename><surname>Dabney</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Harman</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2004">2004</date>
+			<publisher>Pearson/Prentice Hall Upper Saddle River</publisher>
+			<biblScope unit="volume">230</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Fundamental theory for typed attributed graph transformation</title>
+		<author>
+			<persName><forename type="first">Hartmut</forename><surname>Ehrig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ulrike</forename><surname>Prange</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriele</forename><surname>Taentzer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Graph Transformation (ICGT)</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2004">2004</date>
+			<biblScope unit="page" from="161" to="177" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Generation of visual editors as Eclipse plug-ins</title>
+		<author>
+			<persName><forename type="first">Karsten</forename><surname>Ehrig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claudia</forename><surname>Ermel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefan</forename><surname>Hänsgen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriele</forename><surname>Taentzer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Automated Software Engineering (ASE)</title>
+		<meeting>the International Conference on Automated Software Engineering (ASE)</meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2005">2005</date>
+			<biblScope unit="page" from="134" to="143" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Design patterns: elements of reusable object-oriented software</title>
+		<author>
+			<persName><forename type="first">Erich</forename><surname>Gamma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ralph</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Helm</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ralph</forename><forename type="middle">E</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Vlissides</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1995">1995</date>
+			<publisher>Prentice Hall</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">Can language models capture graph semantics? from graphs to language model and vice-versa</title>
+		<author>
+			<persName><forename type="first">Tarun</forename><surname>Garg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kaushik</forename><surname>Roy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sheth</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2206.09259</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Program synthesis</title>
+		<author>
+			<persName><forename type="first">Sumit</forename><surname>Gulwani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleksandr</forename><surname>Polozov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishabh</forename><surname>Singh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Foundations and Trends® in Programming Languages</title>
+		<imprint>
+			<biblScope unit="volume">4</biblScope>
+			<biblScope unit="issue">1-2</biblScope>
+			<biblScope unit="page" from="1" to="119" />
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Learning distributed representations of concepts</title>
+		<author>
+			<persName><forename type="first">Geoffrey</forename><forename type="middle">E</forename><surname>Hinton</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Annual Conference of the Cognitive Science Society</title>
+		<meeting>the Annual Conference of the Cognitive Science Society<address><addrLine>Amherst, MA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="1986">1986</date>
+			<biblScope unit="volume">1</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Systematically deriving domain-specific transformation languages</title>
+		<author>
+			<persName><forename type="first">Katrin</forename><surname>Hölldobler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bernhard</forename><surname>Rumpe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ingo</forename><surname>Weisemöller</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Model Driven Engineering Languages and Systems (MODELS)</title>
+		<meeting>the International Conference on Model Driven Engineering Languages and Systems (MODELS)</meeting>
+		<imprint>
+			<publisher>ACM/IEEE</publisher>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="page" from="136" to="145" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">A short tutorial on the weisfeiler-lehman test and its variants</title>
+		<author>
+			<persName><forename type="first">Teresa</forename><surname>Ningyuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soledad</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Villar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Acoustics, Speech and Signal Processing (ICASSP)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="8533" to="8537" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">Programmable controllers -part 3: Programming languages</title>
+		<author>
+			<persName><surname>Iec</surname></persName>
+		</author>
+		<idno>DIN/EN/IEC 61131</idno>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical report</note>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Interpolated estimation of markov source parameters from sparse data</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Jelinek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">L</forename><surname>Mercer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Workshop on Pattern Recognition in Practice</title>
+		<meeting>the Workshop on Pattern Recognition in Practice</meeting>
+		<imprint>
+			<date type="published" when="1980">1980</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Model transformation by-example: A survey of the first wave</title>
+		<author>
+			<persName><forename type="first">Gerti</forename><surname>Kappel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philip</forename><surname>Langer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Werner</forename><surname>Retschitzegger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wieland</forename><surname>Schwinger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manuel</forename><surname>Wimmer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Conceptual Modelling and Its Theoretical Foundations -Essays Dedicated to Bernhard Thalheim on the Occasion of His 60th Birthday</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2012">2012</date>
+			<biblScope unit="page" from="197" to="215" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<title level="m" type="main">Calculation and Propagation of Model Changes based on User-Level Edit Operations: A Foundation for Version and Variant Management in Model-Driven Engineering</title>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Kehrer</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+		</imprint>
+		<respStmt>
+			<orgName>University of Siegen</orgName>
+		</respStmt>
+	</monogr>
+	<note type="report_type">PhD thesis</note>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Automatic inference of rule-based specifications of complex in-place model transformations</title>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Kehrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abdullah</forename><forename type="middle">M</forename><surname>Alshanqiti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reiko</forename><surname>Heckel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Model Transformations (ICMT)</title>
+		<meeting>the International Conference on Model Transformations (ICMT)</meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="92" to="107" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">Consistency-preserving edit scripts in model versioning</title>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Kehrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Udo</forename><surname>Kelter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriele</forename><surname>Taentzer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Automated Software Engineering (ASE)</title>
+		<meeting>the International Conference on Automated Software Engineering (ASE)</meeting>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="191" to="201" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Generating edit operations for profiled uml models</title>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Kehrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michaela</forename><surname>Rindt</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">MoDELS Workshop on Models and Evolution (ME@MoDELS)</title>
+		<imprint>
+			<publisher>Citeseer</publisher>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="30" to="39" />
+		</imprint>
+	</monogr>
+	<note>Pit Pietsch, and Udo Kelter</note>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Automatically deriving the specification of model editing operations from meta-models</title>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Kehrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriele</forename><surname>Taentzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michaela</forename><surname>Rindt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Udo</forename><surname>Kelter</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Model Transformations (ICMT)</title>
+		<meeting>the International Conference on Model Transformations (ICMT)</meeting>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="volume">9765</biblScope>
+			<biblScope unit="page" from="173" to="188" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Subdue: Compression-based frequent pattern discovery in graph data</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Nikhil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lawrence</forename><forename type="middle">B</forename><surname>Ketkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diane</forename><forename type="middle">J</forename><surname>Holder</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Cook</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 1st International Workshop on Open Source Data Mining: Frequent Pattern Mining Implementations</title>
+		<meeting>the 1st International Workshop on Open Source Data Mining: Frequent Pattern Mining Implementations</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2005">2005</date>
+			<biblScope unit="page" from="71" to="76" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<monogr>
+		<author>
+			<persName><forename type="first">Dimitris</forename><surname>Kolovos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Rose</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antonio</forename><surname>García-Domínguez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Paige</surname></persName>
+		</author>
+		<title level="m">The epsilon book</title>
+		<imprint>
+			<publisher>Google Scholar</publisher>
+			<date type="published" when="2012">2013. 2012</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">The 4+ 1 view model of architecture</title>
+		<author>
+			<persName><forename type="first">Philippe</forename><forename type="middle">B</forename><surname>Kruchten</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE software</title>
+		<imprint>
+			<biblScope unit="volume">12</biblScope>
+			<biblScope unit="issue">6</biblScope>
+			<biblScope unit="page" from="42" to="50" />
+			<date type="published" when="1995">1995</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Applying codebert for automated program repair of java simple bugs</title>
+		<author>
+			<persName><forename type="first">Ehsan</forename><surname>Mashhadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hadi</forename><surname>Hemmati</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Mining Software Repositories (MSR)</title>
+		<meeting>the International Conference on Mining Software Repositories (MSR)</meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="505" to="509" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Generating correctness-preserving editing operations for diagram editors</title>
+		<author>
+			<persName><forename type="first">Steffen</forename><surname>Mazanek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Minas</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Electronic Communication of the European Association of Software Science and Technology</title>
+		<imprint>
+			<date type="published" when="2009">2009</date>
+			<biblScope unit="volume">18</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">Practical graph isomorphism, ii</title>
+		<author>
+			<persName><forename type="first">Brendan</forename><forename type="middle">D</forename><surname>Mckay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adolfo</forename><surname>Piperno</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Symbolic Computation</title>
+		<imprint>
+			<biblScope unit="volume">60</biblScope>
+			<biblScope unit="page" from="94" to="112" />
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<analytic>
+		<title level="a" type="main">A taxonomy of model transformation</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Mens</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pieter</forename><surname>Van Gorp</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="s">Electronic Notes in Theoretical Computer Science</title>
+		<imprint>
+			<biblScope unit="volume">152</biblScope>
+			<biblScope unit="issue">1-2</biblScope>
+			<biblScope unit="page" from="125" to="142" />
+			<date type="published" when="2006">2006</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Recommending model refactoring rules from refactoring examples</title>
+		<author>
+			<persName><forename type="first">Chihab</forename><surname>Mokaddem</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Houari</forename><surname>Sahraoui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eugene</forename><surname>Syriani</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Model Driven Engineering Languages and Systems (MODELS)</title>
+		<meeting>the International Conference on Model Driven Engineering Languages and Systems (MODELS)</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="257" to="266" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">ReVision: A tool for history-based model repair recommendations</title>
+		<author>
+			<persName><forename type="first">Manuel</forename><surname>Ohrndorf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Pietsch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Udo</forename><surname>Kelter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Kehrer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Software Engineering (ICSE): Companion Proceedings</title>
+		<meeting>the International Conference on Software Engineering (ICSE): Companion Proceedings</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="105" to="108" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<monogr>
+		<title level="m" type="main">Meta Object Facility (MOF) 2.0 Query/View/Transformation Specification, Version 1.3</title>
+		<author>
+			<persName><surname>Omg</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2016-06">June 2016</date>
+		</imprint>
+		<respStmt>
+			<orgName>Object Management Group</orgName>
+		</respStmt>
+	</monogr>
+	<note type="report_type">Technical report</note>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<monogr>
+		<title level="m" type="main">Unified modeling language (UML) version 2.5.1. Standard, Object Management Group</title>
+		<author>
+			<persName><surname>Omg</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2017-12">December 2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<monogr>
+		<title level="m" type="main">Omg sysml v. 1.6. Standard, Object Management Group</title>
+		<author>
+			<persName><surname>Omg</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019-12">December 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<monogr>
+		<title level="m" type="main">Personal Knowledge: Towards a Post Critical Philosophy</title>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Polanyi</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1958">1958</date>
+			<publisher>University of Chicago Press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<analytic>
+		<title level="a" type="main">Flashmeta: A framework for inductive program synthesis</title>
+		<author>
+			<persName><forename type="first">Oleksandr</forename><surname>Polozov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sumit</forename><surname>Gulwani</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">SIGPLAN Not</title>
+		<imprint>
+			<biblScope unit="volume">50</biblScope>
+			<biblScope unit="issue">10</biblScope>
+			<biblScope unit="page" from="107" to="126" />
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">Model-driven engineering: A survey supported by the unified conceptual model</title>
+		<author>
+			<persName><forename type="first">Alberto</forename><surname>Rodrigues</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Da</forename><surname>Silva</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Computer Languages, Systems and Structures</title>
+		<imprint>
+			<biblScope unit="volume">43</biblScope>
+			<biblScope unit="page" from="139" to="155" />
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<analytic>
+		<title level="a" type="main">A systematic mapping study of source code representation for deep learning in software engineering</title>
+		<author>
+			<persName><forename type="first">Hazem</forename><surname>Peter Samoaa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Firas</forename><surname>Bayram</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pasquale</forename><surname>Salza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philipp</forename><surname>Leitner</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IET Software</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<analytic>
+		<title level="a" type="main">Constructing difference tools for models using the SiDiff framework</title>
+		<author>
+			<persName><forename type="first">Maik</forename><surname>Schmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tilman</forename><surname>Gloetzner</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Software Engineering (ICSE): Companion Proceedings</title>
+		<meeting>the International Conference on Software Engineering (ICSE): Companion Proceedings</meeting>
+		<imprint>
+			<publisher>ACM/IEEE</publisher>
+			<date type="published" when="2008">2008</date>
+			<biblScope unit="page" from="947" to="948" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b55">
+	<analytic>
+		<title level="a" type="main">Setting goals and choosing metrics for recommender system evaluations</title>
+		<author>
+			<persName><forename type="first">Gunnar</forename><surname>Schröder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maik</forename><surname>Thiele</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wolfgang</forename><surname>Lehner</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Conference on Recommender Systems (RecSys)</title>
+		<meeting>the Conference on Recommender Systems (RecSys)</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2011">2011</date>
+			<biblScope unit="page">53</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b56">
+	<analytic>
+		<title level="a" type="main">Towards domain-specific model editors with automatic model completion</title>
+		<author>
+			<persName><forename type="first">Sagar</forename><surname>Sen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benoit</forename><surname>Baudry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hans</forename><surname>Vangheluwe</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Simulation</title>
+		<imprint>
+			<biblScope unit="volume">86</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="109" to="126" />
+			<date type="published" when="2010">2010</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b57">
+	<analytic>
+		<title level="a" type="main">Slgpt: using transfer learning to directly generate simulink model files and find bugs in the simulink toolchain</title>
+		<author>
+			<persName><forename type="first">Lal</forename><surname>Sohil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christoph</forename><surname>Shrestha</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Csallner</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Conference on Evaluation and Assessment in Software Engineering (EASE)</title>
+		<meeting>the Conference on Evaluation and Assessment in Software Engineering (EASE)</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b58">
+	<analytic>
+		<title level="a" type="main">Views on internal and external validity in empirical software engineering</title>
+		<author>
+			<persName><forename type="first">Janet</forename><surname>Siegmund</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Norbert</forename><surname>Siegmund</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sven</forename><surname>Apel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Software Engineering (ICSE)</title>
+		<meeting>the International Conference on Software Engineering (ICSE)</meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="page" from="9" to="19" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b59">
+	<monogr>
+		<title level="m" type="main">Choose your programming copilot: A comparison of the program synthesis performance of github copilot and genetic programming</title>
+		<author>
+			<persName><forename type="first">Dominik</forename><surname>Sobania</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Briesch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Franz</forename><surname>Rothlauf</surname></persName>
+		</author>
+		<idno>CoRR, abs/2111.07875</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b60">
+	<analytic>
+		<title level="a" type="main">Generic model assist</title>
+		<author>
+			<persName><forename type="first">Friedrich</forename><surname>Steimann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bastian</forename><surname>Ulke</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Model Driven Engineering Languages and Systems (MODELS)</title>
+		<editor>
+			<persName><forename type="first">Ana</forename><surname>Moreira</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Bernhard</forename><surname>Schätz</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jeff</forename><surname>Gray</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Antonio</forename><surname>Vallecillo</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Peter</forename><surname>Clarke</surname></persName>
+		</editor>
+		<meeting>the International Conference on Model Driven Engineering Languages and Systems (MODELS)<address><addrLine>Berlin Heidelberg</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="18" to="34" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b61">
+	<analytic>
+		<title level="a" type="main">Towards a cognizant virtual software modeling assistant using model clones</title>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Stephan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Software Engineering (ICSE) (NIER)</title>
+		<editor>
+			<persName><forename type="first">Anita</forename><surname>Sarma</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Leonardo</forename><surname>Murta</surname></persName>
+		</editor>
+		<meeting>the International Conference on Software Engineering (ICSE) (NIER)</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="21" to="24" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b62">
+	<analytic>
+		<title level="a" type="main">A survey of model comparison approaches and applications</title>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Stephan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><forename type="middle">R</forename><surname>Cordy</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Model-Driven Engineering and Software Development (MODELSWARD)</title>
+		<meeting>the International Conference on Model-Driven Engineering and Software Development (MODELSWARD)</meeting>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="265" to="277" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b63">
+	<analytic>
+		<title level="a" type="main">MT-Scribe: An end-user approach to automate software model evolution</title>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jules</forename><surname>White</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Engineering (ICSE)</title>
+		<meeting>the International Conference on Engineering (ICSE)</meeting>
+		<imprint>
+			<publisher>ACM/IEEE</publisher>
+			<date type="published" when="2011">2011</date>
+			<biblScope unit="page" from="980" to="982" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b64">
+	<monogr>
+		<title level="m" type="main">Interpreting language models through knowledge graph extraction</title>
+		<author>
+			<persName><forename type="first">Vinitra</forename><surname>Swamy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angelika</forename><surname>Romanou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Jaggi</surname></persName>
+		</author>
+		<idno>CoRR, abs/2111.08546</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b65">
+	<analytic>
+		<title level="a" type="main">Change-preserving model repair</title>
+		<author>
+			<persName><forename type="first">Gabriele</forename><surname>Taentzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manuel</forename><surname>Ohrndorf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yngve</forename><surname>Lamo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adrian</forename><surname>Rutle</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Fundamental Approaches to Software Engineering</title>
+		<editor>
+			<persName><forename type="first">Marieke</forename><surname>Huisman</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Julia</forename><surname>Rubin</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Berlin, Heidelberg; Berlin Heidelberg</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="283" to="299" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b66">
+	<analytic>
+		<title level="a" type="main">Learning domain-specific edit operations from model repositories with frequent subgraph mining</title>
+		<author>
+			<persName><forename type="first">Christof</forename><surname>Tinnes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Kehrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joblin</forename><surname>Mitchell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Uwe</forename><surname>Hohenstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andreas</forename><surname>Biesdorf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sven</forename><surname>Apel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Automated Software Engineering (ASE)</title>
+		<meeting>the International Conference on Automated Software Engineering (ASE)</meeting>
+		<imprint>
+			<publisher>ACM/IEEE</publisher>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b67">
+	<analytic>
+		<title level="a" type="main">Sometimes you have to treat the symptoms: tackling model drift in an industrial clone-and-own software product line</title>
+		<author>
+			<persName><forename type="first">Christof</forename><surname>Tinnes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wolfgang</forename><surname>Rössler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Uwe</forename><surname>Hohenstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Torsten</forename><surname>Kühn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andreas</forename><surname>Biesdorf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sven</forename><surname>Apel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering (ESEC/FSE)</title>
+		<meeting>the Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering (ESEC/FSE)</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="1355" to="1366" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b68">
+	<monogr>
+		<title level="m" type="main">Model-driven software evolution: A research agenda</title>
+		<author>
+			<persName><forename type="first">Arie</forename><surname>Van Deursen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eelco</forename><surname>Visser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jos</forename><surname>Warmer</surname></persName>
+		</author>
+		<idno>Series TUD-SERG-2007-006</idno>
+		<imprint>
+			<date type="published" when="2007">2007</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b69">
+	<analytic>
+		<title level="a" type="main">Model transformation by example</title>
+		<author>
+			<persName><forename type="first">Dániel</forename><surname>Varró</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Model Driven Engineering Languages and Systems (MODELS)</title>
+		<meeting>the International Conference on Model Driven Engineering Languages and Systems (MODELS)</meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2006">2006</date>
+			<biblScope unit="page" from="410" to="424" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b70">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niki</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jakob</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Llion</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Łukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">30</biblScope>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b71">
+	<analytic>
+		<title level="a" type="main">What do they capture? -A structural analysis of pre-trained language models for source code</title>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Yao Wan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongyu</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yulei</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guandong</forename><surname>Sui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hai</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Jin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Software Engineering (ICSE)</title>
+		<meeting>the International Conference on Software Engineering (ICSE)</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="2377" to="2388" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b72">
+	<analytic>
+		<title level="a" type="main">Recommending metamodel concepts during modeling activities with pre-trained language models</title>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Weyssow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Houari</forename><surname>Sahraoui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eugene</forename><surname>Syriani</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Software and Systems Modeling</title>
+		<imprint>
+			<biblScope unit="volume">21</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="1071" to="1089" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b73">
+	<analytic>
+		<title level="a" type="main">A systematic evaluation of large language models of code</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Frank</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Uri</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Graham</forename><surname>Alon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vincent</forename><surname>Neubig</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Josua Hellendoorn</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Symposium on Machine Programming</title>
+		<meeting>the International Symposium on Machine Programming</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="1" to="10" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b74">
+	<monogr>
+		<title level="m" type="main">gSpan: graph-based substructure pattern mining</title>
+		<author>
+			<persName><forename type="first">Xifeng</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiawei</forename><surname>Han</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2002">2002</date>
+			<biblScope unit="volume">3</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b75">
+	<analytic>
+		<title level="a" type="main">Specifying and detecting meaningful changes in programs</title>
+		<author>
+			<persName><forename type="first">Yijun</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thein</forename><surname>Than Tun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bashar</forename><surname>Nuseibeh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Automated Software Engineering (ASE)</title>
+		<meeting>the International Conference on Automated Software Engineering (ASE)</meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2011">2011</date>
+			<biblScope unit="page" from="273" to="282" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b76">
+	<analytic>
+		<title level="a" type="main">Natural language processing for requirements engineering: a systematic mapping study</title>
+		<author>
+			<persName><forename type="first">Liping</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Waad</forename><surname>Alhoshan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alessio</forename><surname>Ferrari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Keletso</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Muideen</forename><forename type="middle">A</forename><surname>Letsholo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erol-Valeriu</forename><surname>Ajagbe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Riza T</forename><surname>Chioasca</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Batista-Navarro</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Computing Surveys (CSUR)</title>
+		<imprint>
+			<biblScope unit="volume">54</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="1" to="41" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b77">
+	<analytic>
+		<title level="a" type="main">Transmol: repurposing a language model for molecular generation</title>
+		<author>
+			<persName><forename type="first">Rustam</forename><surname>Zhumagambetov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ferdinand</forename><surname>Molnár</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vsevolod</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siamac</forename><surname>Peshkov</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Fazli</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">RSC advances</title>
+		<imprint>
+			<biblScope unit="volume">11</biblScope>
+			<biblScope unit="issue">42</biblScope>
+			<biblScope unit="page" from="25921" to="25932" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

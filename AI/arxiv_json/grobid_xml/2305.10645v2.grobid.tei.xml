@@ -1,0 +1,1244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Are Large Language Models Fit For Guided Reading?</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-05-19">19 May 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Peter</forename><surname>Ochieng</surname></persName>
+							<email>po304@cam.ac.uk</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">University of Cambridge</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Are Large Language Models Fit For Guided Reading?</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-05-19">19 May 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">53B78F142014CE2E1C1B53B1C1E4A47A</idno>
+					<idno type="arXiv">arXiv:2305.10645v2[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:29+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>This paper looks at the ability of large language models to participate in educational guided reading. We specifically, evaluate their ability to generate meaningful questions from the input text, generate diverse questions both in terms of content coverage and difficulty of the questions and evaluate their ability to recommend part of the text that a student should re-read based on the student's responses to the questions. Based on our evaluation of ChatGPT and Bard, we report that, 1) Large language models are able to generate high quality meaningful questions that have high correlation with the input text, 2) They generate diverse question that cover most topics in the input text even though this ability is significantly degraded as the input text increases, 3)The large language models are able to generate both low and high cognitive questions even though they are significantly biased toward low cognitive question, 4) They are able to effectively summarize responses and extract a portion of text that should be re-read.</p><p>Preprint. Under review.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>The recent advancement of natural language processing is currently being exemplified by the large language model (LLMs) such as GPT-3 <ref type="bibr" target="#b0">[1]</ref>, PaLM <ref type="bibr" target="#b1">[2]</ref>, Galactica <ref type="bibr" target="#b2">[3]</ref> and LLaMA <ref type="bibr" target="#b3">[4]</ref>. The models have been trained on large amount of text-data and are able to answer questions, generate coherent text and complete most language related tasks. LLMs have been touted to have impact in domains such as climate science <ref type="bibr" target="#b4">[5]</ref>, health <ref type="bibr" target="#b5">[6]</ref> and education <ref type="bibr" target="#b6">[7]</ref>. In education, it has been suggested that they can be exploited to boost learning in different categories such as in elementary school children, middle and high school children, university students etc <ref type="bibr" target="#b7">[8]</ref>. This is line with a long-time goal of AI to develop conversational agents that can support teachers in guiding children through reading material such as reading storybooks <ref type="bibr" target="#b8">[9]</ref>  <ref type="bibr" target="#b9">[10]</ref>. Normally, in reading a text such as children's storybook, a teacher is expected to guide the children through the text and periodically gauge their understanding by posing questions from the text. The key concept in guided reading is the ability to use questions to gauge understanding and encourage deeper thinking about the material being read. In a teacher led guided reading, apart from gauging understanding, questions can be used to identify children's support needs and enable the teacher to direct attention to the critical content. To achieve the full benefits of guided reading, the teacher is supposed to ask wide variety of questions ranging from low to high cognitive challenge questions <ref type="bibr" target="#b10">[11]</ref>. Low cognitive challenge questions are constrained to short answers while high cognitive challenge questions require explanations, evaluation or extension of text <ref type="bibr" target="#b10">[11]</ref>. The use of questions to foster understanding and learning from text is well established across a range of age groups and learning contexts <ref type="bibr" target="#b10">[11]</ref>. It is therefore of interest to gauge the effectiveness of LLMs to perform the tasks involved in guided reading. For LLMs to be viewed as potential support agents for teachers or even stand-alone tools that can help in guided reading, they must be able to: generate meaningful questions and answers from the text, generate diverse questions both in terms of content coverage and difficulty of questions and identify the support needs for the students. In this work, we investigate the suitability of ChatGPT <ref type="foot" target="#foot_0">1</ref> and Bard<ref type="foot" target="#foot_1">foot_1</ref> to act as a storybook reading guide for children. Specifically, we evaluate them on the following issues:</p><p>1. Ability to generate content related questions and answers from a given input text i.e., its performance in question-answer generation(QAG) task.</p><p>2. Ability to generate both low and high cognitive demand questions.</p><p>3. Ability to generate diverse questions i.e., questions that cover almost all topics in each story.</p><p>4. Ability to recommend areas that a student needs to focus on based on wrong responses from the student 5. Compare their performance to the currently existing AI-based tools for educational question generation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related work</head><p>Question generation tools seek to accept input text and generate meaningful questions that are extracted from the text. Existing question generation tools can be categorised into two i.e., rule-based tools and neural based tools <ref type="bibr" target="#b11">[12]</ref>. Rule based tools such as <ref type="bibr" target="#b12">[13]</ref> and <ref type="bibr" target="#b13">[14]</ref> exploit manually crafted rules to extract questions from text. Neural based techniques implement an end-to-end architecture that follow attention-based sequence-to-sequence framework <ref type="bibr" target="#b14">[15]</ref>. The sequence-to-sequence frameworks are mainly composed of two key parts i.e., the encoder which learns a joint representation of the input text and the decoder which generates the questions <ref type="bibr" target="#b11">[12]</ref>. Currently, both the joint representation learning, and question generation are implemented by attention-based framework <ref type="bibr" target="#b15">[16]</ref>. Work in <ref type="bibr" target="#b16">[17]</ref> introduced the attention-based sequence-to-sequence architecture to generate question from the input sentence. The encoder was implemented via RNN to accept an input text and learn its representation. Its output is fed into the decoder which generates a related question. The decoder exploits attention mechanism to assign more weight to the most relevant part of the text. Other question asking tools that implement attention-based sequence-to sequence framework include <ref type="bibr" target="#b17">[18]</ref>, <ref type="bibr" target="#b18">[19]</ref> and <ref type="bibr" target="#b19">[20]</ref>. Although these neural based tools have a common high-level encoder-decoder structure, their low-level implementations of different aspects of question generation differ significantly <ref type="bibr" target="#b11">[12]</ref>. While these tools are generally developed for question generation, there are tool such as <ref type="bibr" target="#b8">[9]</ref> and <ref type="bibr" target="#b9">[10]</ref> which target question generation for educational purposes. The use of questions in guided reading has been widely studied <ref type="bibr" target="#b20">[21]</ref> [22] <ref type="bibr" target="#b22">[23]</ref>. Questions are used during guided reading to evaluate understanding, encourage deeper thinking about the text and to scaffold understanding of challenging text <ref type="bibr" target="#b10">[11]</ref>. It has been suggested in <ref type="bibr" target="#b7">[8]</ref> that large language models can play a significant role in boosting education of different levels of children. It is therefore important to evaluate them if indeed they are fit for purpose in which they are being deployed in. In this work we evaluate their ability to participate in guided reading and specifically, evaluate their question generation ability. Are they able to follow the general trend of a human teacher in asking question during comprehension reading ?</p><p>3 Question and answer generation (QAG).</p><p>3.1 Ability to generate meaningful questions.</p><p>LLMs must demonstrate that they have the potential for an in-depth understanding of a given input text for them to be deployed as reading guides. One indicator of input text's comprehension is the ability to generate meaningful questions and answers from the input text. Formally, given a passage P , the model should be able to generate a set of questions {q 1 , • • • , q n } and their respective answers {q 1 , • • • , q n }. Both the set of questions and answers should be retrieved from the passage P . Perhaps one of the greatest powers of LLMs such as ChatGPT is the ability to respond to questions posed to it on-the-fly. However, it is unclear to what extent they can connect different aspect of input stories to generate both low cognitive questions and questions that require inference to be answered (i.e., high cognitive demand questions). Moreover,how will it exploit the vast amount of knowledge it acquired during training to boost its question asking ability? Further, will it be able to generate answers from the input text without being "confused" by its internal knowledge. We are interested in evaluating the ability of LLMs to ask meaningful questions that can be solely answered from the input story. We are also interested to evaluate how accurate LLMs are in answering the questions when solely relying on its understanding of the input text. To do this, we prompt a given LLM to generate questions based on an input story (see fig <ref type="figure">1</ref>). The generated questions are automatically evaluated by comparing their semantic similarity to a set of baseline questions.</p><p>Figure <ref type="figure">1</ref>: Prompting LLM to generate questions from a given text input.</p><p>To evaluate the performance of a given LLM on question generation, we exploit the popularly used metrics in question generation task which include ROUGE-L <ref type="bibr" target="#b23">[24]</ref> and BERTScore <ref type="bibr" target="#b24">[25]</ref> and compare the semantic similarity of questions generated with the baseline questions. The similarity between LLM generated questions and reference questions is evaluated by concatenating the generated questions into one sentence and compare it with similarly concatenated reference questions ( see <ref type="bibr" target="#b9">[10]</ref> which uses a similar approach).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Question diversity</head><p>To test the student's understanding of a given text being read, questions must be generated that cover nearly all the sections of the story. We are interested in evaluating the ability of ChatGPT and Bard to generate questions that are not biased towards a given section of the text. Concretely, we are seeking to quantify the variation of the questions being generated by LLMs. We hypothesize that the more diverse the questions are, the more exhaustive the questions cover the different topics in the input text. This will give us an idea on suitability of LLMs to generate questions that cover the whole content being read. In machine learning, several entropy reliant techniques have been proposed to evaluate diversity of dataset. Research in <ref type="bibr" target="#b25">[26]</ref> proposes Inception Score (IS) to evaluate the synthetic samples generated by a Generative Adversarial model(GAN),(G) <ref type="bibr" target="#b26">[27]</ref>. The intuition behind IS is that the conditional label distribution P (y | x) of images generated by GAN is projected to have low label entropy i.e., the generated images belong to few classes while entropy across the images should be high that is the marginal distribution p(y | x = G(z))dz should have high entropy. To capture this intuition, they suggest the metric in equation 1.</p><formula xml:id="formula_0">exp(E x KL(p(z | x) p(y)))<label>(1)</label></formula><p>Another popular metric that provides a measure of diversity on synthetically generated samples is the Frechet Inception Distance (FID) score <ref type="bibr" target="#b27">[28]</ref>. This is a metric that considers location and ordering of the data along the function space. Taking the activations of the penultimate layer of a given model to represent features of a given dataset x and considering only the first two moments i.e., the mean and covariance, the FID assumes that the coding units of the model f (x) follow a multi-dimensional Gaussian, therefore have maximum entropy distribution for a given mean and covariance. If the model f (x),generates embeddings with mean and covariance (m,C) given the synthetic data p(.) and (m w , C w ) for real data p w (.), then FID is defined as:</p><formula xml:id="formula_1">d 2 ((m, C), (m w , C w ) = ||m -m w || 2 2 + T r(C + c w -2(CC w ) 1/2 )<label>(2)</label></formula><p>Other metrics that have been proposed to evaluate diversity, include precision and recall metrics <ref type="bibr">[29] [30]</ref>. One major problem with these metrics is that they assume existence of reference samples where the generated samples can be compared to <ref type="bibr" target="#b29">[30]</ref>. In our case, we seek to evaluate the diversity of the questions generated without comparing to any reference questions. To achieve this, we use Vendi score (VS), a metric proposed for diversity evaluation in the absence of reference data. VS is defined as</p><formula xml:id="formula_2">V S(X) = exp(- s i λ i logλ i )<label>(3)</label></formula><p>Here</p><formula xml:id="formula_3">X = {x i , • • • , x n } is the input data whose diversity is to be evaluated. λ i , i = {1, • • • , n} are the eigenvalues of a positive semidefinite matrix K/n whose entries are K ij = k(x i , x j )</formula><p>where k is a positive semidefinite similarity function with k(x, x) = 1 for all x. This metric which is like effective rank <ref type="bibr" target="#b30">[31]</ref> seeks to quantify the geometric transformation induced by performing a linear mapping of a vector x from a vector space R n to R m by a matrix A i.e Ax. Normally, the number of dimensions retained by a linear transformation Ax is captured by the rank of the matrix A. The rank however is silent on the shape induced by the transformation. Effective rank introduced by <ref type="bibr" target="#b30">[31]</ref> seeks to capture the shape that results due to the linear mapping. Effective rank therefore can be used to capture the spread of data hence ideal to measure diversity. To compute the diversity of questions generated by the two LLMs, we execute the following steps:</p><p>1. Prompt the LLM to generate a set of questions Q given an input text.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Replicate the set</head><formula xml:id="formula_4">Q 1 = {q 1 , • • • , q n } to get a copy of the questions Q 2 = {q 1 , • • • , q n }.</formula><p>Designate Q 1 as the reference set and Q 2 as the candidate set.</p><p>3. Pass the set Q 1 and Q 2 through the BERTScore<ref type="foot" target="#foot_2">foot_2</ref> to extract the cosine similarity matrix K.</p><p>4. Use the VS package <ref type="foot" target="#foot_3">4</ref> to extract the VS score diversity value.</p><p>5. Compare the VS score diversity value to human generated diversity score</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.1">Human generated diversity score</head><p>We engage independent human evaluators to annotate each reference question by attaching a sub-topic they think a given question is addressing in each storybook. We then aggregate all the subtopics generated by the human-annotators. We adopt an annotation by majority. We calculate diversity score of all the storybooks by computing the average number of all the sub-topics generated from all the storybooks' questions i.e., average diversity= N B i.e., total number of subtopics generated N divided by total number of books B. Intuitively average diversity represents the number of different sub-topics per storybook.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Ability to generate questions that differ in difficulty</head><p>On top of generating questions that cover the whole content, it is desirable for LLMs to generate wide range of questions from low to high cognitive challenge questions. This will make students to answer questions that address all the cognitive domains. Low cognitive question mostly requires short answers which require affirmation or not (e.g. "Did the queen have golden hair ?"). Conversely high cognitive challenge questions require explanations, evaluations and some speculations on the extension of text <ref type="bibr" target="#b10">[11]</ref>(e.g., "Why did the king's advisors fail to find the right wife for him ?"). The purpose of low cognitive challenge questions is to evaluate the basic understanding of the text by the students and ease them into the study interaction <ref type="bibr" target="#b10">[11]</ref>. However, they have the potential of promoting over-dominance of teachers . On the other hand, high cognitive questions foster greater engagement of the students, generate inferential responses and promote better comprehension of the reading material <ref type="bibr" target="#b10">[11]</ref>. In <ref type="bibr" target="#b10">[11]</ref>, the two categories of questions are differentiated by exploiting the syntactic structure of the question. The high cognitive challenge questions are signalled by wh-word i.e., questions that use words such as what, why, how, or when. These questions are also composed of a continuum of high to low challenge questions. Specifically, wh-pronoun and wh-determinat questions that start with who, whom, whoever, what, which, whose, whichever and whatever require low challenge literal responses. However, the wh-adverb questions such how, why, where, and when are more challenging since they require more abstract and inferential responses involving explanation of causation and evaluation (e.g., "Why was the king sad?"; "How did the king's daughter receive the news of her marriage?"). The low cognitive challenge questions are generally non wh-word questions. It has been suggested in <ref type="bibr" target="#b20">[21]</ref>[32] that teachers should generally seek to ask high challenge questions as opposed to low challenge questions whenever possible. In our case we seek to establish the types of questions preferred by the two LLMs based on their level of challenge. To evaluate this, we adopt three categories of questions i.e., confirmative, explicit and implicit. Explicit are non-confirmative questions that require low challenge literal responses i.e., where answers can be retrieved from the text without much inference while implicit are questions that require inferential responses. To evaluate the type of questions generated, we employ the following steps:</p><p>1. Given a paragraph of text we prompt the LLM to generate questions based on the text. 2. We provide the questions generated to human evaluators and ask them to read the text and answer the questions. 3. Human evaluators then annotate each question whether it is confirmative , explicit and implicit. 4. For each question, we select the most popular annotation i.e., annotation where most evaluators agree. 5. We compute percentages of each category.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">Ability to recommend section of text</head><p>Based on the responses to the teacher's questions, the teacher can detect students' weaknesses and their demands <ref type="bibr" target="#b32">[33]</ref>. While it was difficult to design an evaluation on LLMs that can uncover students' weaknesses based on their responses, we resorted to evaluate their ability to recommend part of text where the student needs to re-read based on the responses provided to the questions. Basically, we evaluate the ability of a LLM to detect part of the text that the student did not understand. This we believe plays some part in diagnosing student's need. To perform our evaluation, we execute the following steps:</p><p>1. We pass a three-paragraph text to a large language model and prompt it to generate questions from the text. 2. We annotate the generated questions based on the paragraph in which they were extracted from i.e &lt; p i , q i &gt; where p i is the paragraph i = 1, 2, 3 and q i are the questions i = 1, • • • , n, linked to paragraph p i . 3. We prompt the large language model to answer all the questions generated. We then deliberately alter a set of answers belonging to questions from a given paragraph to be wrong. All the answers from other two paragraphs remain as generated by the LLM. 4. We then prompt LLM to evaluate all the answers( for all the questions) generated in the previous step.</p><p>5. We prompt LLMs to suggest the section of the text that the student did not comprehend based on the responses in the previous step.</p><p>6. We compute the BERTScore between the recommended text and the paragraph which had all question altered to be wrong.</p><p>4 Experimental setup</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Dataset</head><p>We use the FairytaleQA dataset <ref type="bibr" target="#b8">[9]</ref> to perform evaluation. The dataset contains 278 annotated storybooks which is composed of 232 storybooks for training a given question generation model, 23 books for testing and 23 for validation. Each book contains multiple paragraphs. Each paragraph of a book is annotated with several educational question-answer pairs. The questions have different types of annotation with our main concern being annotations linked to the difficulty attached to answering the questions. The question difficulty is annotated as either implicit (high challenge questions) or explicit (low challenge questions). The dataset covers storybooks for children between kindergarten and eighth grade.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Baseline models</head><p>For question generation, we compare the performance of ChatGPT and Bard with selected models that were specifically developed for questions generations and were evaluated in FairytaleQA dataset. The models include: QAG <ref type="bibr" target="#b8">[9]</ref>: The model relies on semantic role labelling to identify entities and events. The identified entities and events are then used to generate questions. We use the results reported in <ref type="bibr" target="#b9">[10]</ref>. The questions used in evaluation include top 10/5/3/2/1 generated questions by QAG, labeled here as (top 10), QAG (top 5), QAG (top 3), QAG (top 1) respectively. E2E: This model is proposed in <ref type="bibr" target="#b9">[10]</ref> where one BART-large model is trained on FairytaleQA dataset to generate questions.</p><p>BERT based model: <ref type="bibr" target="#b9">[10]</ref>. This model adapts and trains BERT to learn question type distribution.</p><p>Using the question type distribution as a control signal, they then train BART summarization model using FairytaleQA dataset question-answer annotation to learn the event-centric summary generation task.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Human evaluators</head><p>Human evaluators used in the study were recruited through post-graduate social media page in Kenya.</p><p>An advert was posted on the page where 109 Msc. and PhD students responded positively indicating their willingness to participate. Out of these we selected 36 students who are doing research in various topics in NLP. Each student was paid $30 once the annotation task was completed. We conducted one day online training via zoom on the annotation process.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Quality of questions generated</head><p>The results of the similarity of the questions generated by Bard and ChatGPT as compared to FairytaleQA dataset human annotated questions are shown in table 2. We only used the 46 storybooks which are contained in the test and validation set. This is to enable direct comparison with baseline models which also use the two sets. Table <ref type="table" target="#tab_0">2</ref> also shows the performance of the baseline models.</p><p>Based on the results, both ChatGPT and Bard register a slight performance advantage in their fmeasure values. The lack of significant advantage of LLMs over the baseline models is surprising given the high quality of questions they generated based on human evaluation. We hypothesise that the evaluation based on matching of similar tokens (used in ROUGE-L ) may not be ideal for this set-up since both ChatGPT and Bard were trained using very large text datasets that have extensive vocabularies, therefore they have a wide space of vocabularies to use while asking a question. Hence some of their vocabulary's choices may not be present in the reference questions. Table <ref type="table">1</ref> shows some examples where the questions are semantically similar, but Rouge-L values are low. Further unlike baseline models, ChatGPT and Bard were not trained exclusively on FairytaleQA dataset question-answer pair, hence their style of asking questions may be significantly different from the reference questions. However, the superiority of LLMs is demonstrated when using BERTScore Table <ref type="table">1</ref>: Sample questions where ChatGPT uses diverse vocabulary.</p><p>Reference Questions ChatGPT generated question Precision Recall f-measure What kind of hair did the wife have ?</p><p>What was the Queen's hair color? 0.2857 0.2500 0.2667 Why did the councillors say the king had to marry again?</p><p>Why was the King advised to re-marry ? 0.4545 0.62500 0.5263 Who did the king's wife send for when she felt that she would soon die Who did the Queen send for when she fell sick ? 0.4375 0.700 0.5384 metric. Here, they outperform the baseline models in precision, recall and f-measure values. Their superior performance demonstrates that LLMs are able to generate meaningful educational questions that mimic how a human-teacher would ask questions. The FairytaleQA dataset has 23 books to be used for model testing and 23 for validation. We use these 46 books to evaluate if ChatGPT and Bard can cover all the subtopics of a storybook while asking questions. To do this we use the evaluation criteria described in section 3.2. Question-topic diversity is evaluated on per book basis. For a given book, we generate questions by passing one or merged paragraphs and a prompt into a large language model. We iterate through all the paragraphs of the book and aggregate generated questions into a set Q. We then replicate the questions to get another set Q . BERTScore is then exploited to generate the similarity matrix K. The established matrix K is used to compute VS value for that book. To get an idea of how a given large language model generates diverse questions, we average the VS values over the 46 books. We also engage human annotators to annotate FairytaleQA reference questions based on the 46 books. The annotators are supposed to label each question with the sub-topic that the question addresses. We do not restrict the possible topics but allow annotators to come up with their own based on reading the storybooks excerpts and the questions. Annotations are adopted by majority. From human evaluators, we generated an average diversity score of 66.8 from the 46 excerpts of the storybooks. The question-topic diversity results are shown in table 3,4 and 5. We increase the input text by varying the number of paragraphs from 1 to 3. From the results in table1, when one paragraph is used as input, taking human annotation as the baseline, ChatGPT generates questions that cover slightly above 61 sub-topics in each storybook. This represents 91.9% of the total sub-topics. Bard large language model covers 64 sub-topics per given storybook. This represents 96.1% of the subtopics. In general, both LLMs generate questions that exhibit high diversity when compared to human generated diversity. However, as the size of input increases from 1 to 2 merged paragraphs, the diversity score of both LLMs drop to 54.4% and 56.2% for ChatGPT and Bard respectively. A further increase of input to 3 merged paragraphs reduces the diversity score to 49.4% and 48.2% for ChatGPT and Bard respectively. This is an indication LLMs are still limited on the amount of content that they can effectively handle.  <ref type="bibr" target="#b10">[11]</ref> confirms that the current trend of human teachers is to ask more low challenge questions as compared to high cognitive questions, LLMs significantly over-generate low challenge questions as compared to the baseline. Therefore, there is need to moderate the questions to reflect acceptable human-teachers way of asking questions. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">Text recommendation</head><p>Here, we report the results of text recommendation of ChatGPT and Bard based on its ability to evaluate the responses and select part of text that the student did not understand. Both language models perform highly in text recommendation. This is an indication that they have the ability to summarize the student's responses and extract section of the story that the student needs to re-read. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="9">Limitations</head><p>In our evaluation, we used a dataset that has storybooks that cover children from Kindergarten to eighth grade. The evaluation needs to be extended to storybooks covering more advanced levels of students. This will evaluate the ability of LLMs to generate high levels questions no-matter the cognitive level of the input text. A good part of the study relied on restricted number of human evaluators. While we ensured that we eliminated detected biases, the study can be replicated by increasing the number of human evaluators and choosing a more diverse population in-terms of location and level of education. There is also an opportunity to re-look at the text semantic similarity comparison metrics where one model is able to generate sentences based of a large sample space as compared to restricted vocabulary of the reference text. Learning is a complex process that is influenced by many parameters, therefore the use of non-human teachers on students needs to be thoroughly investigated before deploying LLMs based tools.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="10">Conclusion</head><p>The results presented in this paper demonstrates that large language models have made significant progress in text comprehension and have the potential of being exploited by teachers as tools to assist during guided reading process. However, further validation of the results is needed by evaluating LLMs using diverse datasets, performing an in-depth analysis of the type of questions generated and how they directly correlate with human-teacher questions. Its social impact on teachers and students needs to be evaluated before they are deployed as reading guide assisting tools.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="3,108.00,140.79,447.20,327.60" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 2 :</head><label>2</label><figDesc>Evaluation of quality of questions generated by ChatGPT and Bard.</figDesc><table><row><cell cols="3">Rouge-L results on validation/test dataset</cell><cell></cell></row><row><cell>Model</cell><cell>Precision</cell><cell>Recall</cell><cell>f-measure</cell></row><row><cell>E2E</cell><cell cols="3">16.32/15.76 36.21/35.89 20.29/19.73</cell></row><row><cell>QAG(top-1)</cell><cell cols="3">34.58/32.33 19.56/19.69 22.88/22.29</cell></row><row><cell>QAG(top-2)</cell><cell cols="3">28.45/26.58 30.51/30.34 26.76/25.67</cell></row><row><cell>QAG(top-3)</cell><cell cols="3">24.29/22.74 36.80/36.31 26.67/25.50</cell></row><row><cell>QAG(top-5)</cell><cell cols="3">20.38/19.25 43.45/43.04 25.55/24.53</cell></row><row><cell>QAG(top-10)</cell><cell cols="3">18.12/17.26 46.57/47.04 24.05/23.34</cell></row><row><cell>BERT based model[10]</cell><cell cols="3">33.49/37.50 37.50/31.54 31.81/30.58</cell></row><row><cell>ChatGPT</cell><cell cols="3">31.21/33.45 39.78/42.33 34.98/37.36</cell></row><row><cell>Bard</cell><cell cols="3">21.62/26.12 38.09/45.89 27.58/33.29</cell></row><row><cell cols="3">BERTScore results on validation/test dataset</cell><cell></cell></row><row><cell>E2E</cell><cell cols="3">88.55/88.39 84.25/84.07 86.32/86.15</cell></row><row><cell>QAG(top-1)</cell><cell cols="3">85.99/86.23 87.76/87.70 86.84/86.94</cell></row><row><cell>QAG(top-2)</cell><cell cols="3">88.30/88.105/ 87.45/87.02 87.86/87.54</cell></row><row><cell>QAG(top-3)</cell><cell cols="3">88.66/88.46/ 86.63/86.29 87.61/87.34</cell></row><row><cell>QAG(top-5)</cell><cell cols="3">88.83/88.62 85.71/85.40 87.22/86.96</cell></row><row><cell>QAG(top-10)</cell><cell cols="3">88.73/88.48 85.03/84.72 86.81/86.54</cell></row><row><cell>BERT based model[10]</cell><cell cols="3">89.15/88.62 88.86/89.30 88.98/88.93</cell></row><row><cell>ChatGPT</cell><cell cols="3">96.92/96.31 95.03/96.01 95.96/96.15</cell></row><row><cell>Bard</cell><cell cols="3">97.12/93.31 95.43/96.34 96.27/94.80</cell></row><row><cell cols="2">6 Question diversity on topic coverage</cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 3 :</head><label>3</label><figDesc>sub-topic diversity evaluation of LLMs with a one paragraph input.</figDesc><table><row><cell cols="2">Rouge-L results on validation/test dataset</cell></row><row><cell>Model</cell><cell>VS</cell></row><row><cell>Human Evaluators</cell><cell>66.8</cell></row><row><cell>ChatGPT</cell><cell>61.4</cell></row><row><cell>Bard</cell><cell>64.2</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 4 :</head><label>4</label><figDesc>sub-topic diversity evaluation of LLMs with two merged paragraphs as input.</figDesc><table><row><cell cols="2">Rouge-L results on validation/test dataset</cell></row><row><cell>Model</cell><cell>VS</cell></row><row><cell>Human Evaluators</cell><cell>66.8</cell></row><row><cell>ChatGPT</cell><cell>54.4</cell></row><row><cell>Bard</cell><cell>56.2</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 5 :</head><label>5</label><figDesc>sub-topic diversity evaluation LLMs with three merged paragraphs as input.Based on the results in table 6, baseline questions contain 53.22 % low challenge questions( i.e., conformative and explicit questions) while ChatGPT and Bard generate 70.26% and 73.38% low challenge questions respectively. This is approximately a 20 % deviation from the baseline. While research in</figDesc><table><row><cell cols="2">Rouge-L results on validation/test dataset</cell></row><row><cell>Model</cell><cell>VS</cell></row><row><cell>Human Evaluators</cell><cell>66.8</cell></row><row><cell>ChatGPT</cell><cell>49.4</cell></row><row><cell>Bard</cell><cell>48.2</cell></row><row><cell>7 Question diversity based on difficulty results</cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 6 :</head><label>6</label><figDesc>Cognitive level of questions asked by LLMs</figDesc><table><row><cell></cell><cell cols="2">What Questions Do LLMs Ask?</cell><cell></cell><cell></cell></row><row><cell cols="5">Question Source total questions confirmative explicit implicit</cell></row><row><cell>Baseline</cell><cell>2030</cell><cell>0</cell><cell>1121</cell><cell>909</cell></row><row><cell>ChatGPT</cell><cell>3006</cell><cell>109</cell><cell>2003</cell><cell>894</cell></row><row><cell>Bard</cell><cell>3546</cell><cell>97</cell><cell>2505</cell><cell>947</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 7 :</head><label>7</label><figDesc>LLMs' ability to recommend relevant text.</figDesc><table><row><cell></cell><cell></cell><cell cols="2">BERTScore values</cell></row><row><cell cols="4">LLM Precsion Recall f-measure</cell></row><row><cell>ChatGPT</cell><cell>98.22</cell><cell>99.1</cell><cell>98.65</cell></row><row><cell>Bard</cell><cell>97.3</cell><cell>98.7</cell><cell>97.99</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://openai.com/blog/chatgpt</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>https://bard.google.com/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>https://github.com/Tiiiger/bert_score</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>https://github.com/vertaix/Vendi-Score</p></note>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">B</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">M</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+		<ptr target="https://commoncrawl.org/the-data/" />
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Palm: Scaling language modeling with pathways</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Barham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">W</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Schuh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Tsvyashchenko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Maynez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Barnes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Prabhakaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Reif</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Hutchinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Pope</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Bradbury</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Austin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Isard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Gur-Ari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Duke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Levskaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ghemawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Dev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Michalewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Garcia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Misra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Robinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Ippolito</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Spiridonov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Sepassi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Omernick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">S</forename><surname>Pillai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pellat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Lewkowycz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Moreira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Polozov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Saeta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Diaz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Firat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Catasta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Meier-Hellstern</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Eck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Dean</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Petrov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Fiedel</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2204.02311</idno>
+		<ptr target="http://arxiv.org/abs/2204.02311" />
+		<imprint>
+			<date type="published" when="2022">4 2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">R</forename><surname>Taylor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Kardas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Cucurull</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Scialom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Hartshorn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Saravia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Poulton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Kerkez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Stojnic</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2211.0908</idno>
+		<ptr target="http://arxiv.org/abs/2211.09085" />
+		<title level="m">Galactica: A large language model for science</title>
+		<imprint>
+			<date type="published" when="2022">11 2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Llama: Open and efficient foundation language models</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-A</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Azhar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rodriguez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Grave</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Lample</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<ptr target="http://arxiv.org/abs/2302.13971" />
+		<imprint>
+			<date type="published" when="2023-02">2 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Potential use of chat gpt in global warming</title>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">S</forename><surname>Biswas</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Annals of Biomedical Engineering</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Chatgpt applications and challenges in controlling monkey pox in pakistan</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Hasnain</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/s10439-023-03231-z</idno>
+		<ptr target="https://link.springer.com/10.1007/s10439-023-03231-z" />
+	</analytic>
+	<monogr>
+		<title level="j">Annals of Biomedical Engineering</title>
+		<imprint>
+			<date type="published" when="2023-05">5 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Chatting about chatgpt: How may ai and gpt impact academia and libraries?</title>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">D</forename><surname>Lund</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wang</surname></persName>
+		</author>
+		<ptr target="https://ssrn.com/abstract=4333415" />
+	</analytic>
+	<monogr>
+		<title level="j">Library Hi Tech News</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Chatgpt for good? on opportunities and challenges of large language models for education</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Kasneci</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Sessler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">K</forename><surname>Uchemann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bannert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dementieva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Fischer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">U</forename><surname>Gasser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Groh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">G</forename><surname>Unnemann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Krusche</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Kutyniok</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Michaeli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Nerdel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">U</forename><surname>Pfeffer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Poquet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Sailer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Schmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Seidel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Stadler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Weller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kuhn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Kasneci</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Learning and Individual Differences</title>
+		<imprint>
+			<biblScope unit="volume">103</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">It is ai&apos;s turn to ask humans a question: Question-answer pair generation for children&apos;s story books</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">J</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">-J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2109.03423</idno>
+		<ptr target="http://arxiv.org/abs/2109.03423" />
+		<imprint>
+			<date type="published" when="2021-09">9 2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Educational question generation of children storybooks via question type distribution learning and event-centric summarization</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Ma</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.14187</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="5073" to="5085" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Question asking during reading comprehension instruction: A corpus study of how question type influences the linguistic complexity of primary school students&apos; responses</title>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">P</forename><surname>Blything</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Hardie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Cain</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Reading Research Quarterly</title>
+		<imprint>
+			<biblScope unit="volume">55</biblScope>
+			<biblScope unit="page">2020</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Recent advances in neural question generation</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Lei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T.-S</forename><surname>Chua</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-Y</forename><surname>Kan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1905.08949</idno>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Automatic factual question generation from text</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Heilman</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2011">2011</date>
+		</imprint>
+		<respStmt>
+			<orgName>Carnegie Mellon University</orgName>
+		</respStmt>
+	</monogr>
+	<note type="report_type">Ph.D. dissertation</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Towards automatic topical question generation</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chali</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">A</forename><surname>Hasan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of COLING 2012</title>
+		<meeting>COLING 2012</meeting>
+		<imprint>
+			<date type="published" when="2012">2012</date>
+			<biblScope unit="page" from="475" to="492" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Neural machine translation by jointly learning to align and translate</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Bahdanau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Cho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bengio</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1409.0473</idno>
+		<ptr target="http://arxiv.org/abs/1409.0473" />
+		<imprint>
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Łukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="s">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="page" from="5999" to="6009" />
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Learning to ask: Neural question generation for reading comprehension</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Shao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Cardie</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1705.00106</idno>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Question generation for question answering</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Duan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2017 conference on empirical methods in natural language processing</title>
+		<meeting>the 2017 conference on empirical methods in natural language processing</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="866" to="874" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Neural question generation from text: A preliminary study</title>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Bao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Natural Language Processing and Chinese Computing: 6th CCF International Conference</title>
+		<meeting><address><addrLine>Dalian, China</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2017-11-08">2017. November 8-12, 2017. 2018</date>
+			<biblScope unit="volume">6</biblScope>
+			<biblScope unit="page" from="662" to="671" />
+		</imprint>
+	</monogr>
+	<note>NLPCC</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Neural generation of diverse questions using answer focus, contextual and linguistic features</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Harrison</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Walker</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1809.02637</idno>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Complex questions promote complex thinking</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Degener</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Berne</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Reading Teacher</title>
+		<imprint>
+			<biblScope unit="volume">70</biblScope>
+			<biblScope unit="page">2017</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Guided reading: What&apos;s new, and what&apos;s next</title>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">P</forename><surname>Ford</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Capstone</title>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Guided reading: Good first teaching for all children</title>
+		<author>
+			<persName><forename type="first">I</forename><forename type="middle">C</forename><surname>Fountas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">S</forename><surname>Pinnell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ERIC</title>
+		<imprint>
+			<date type="published" when="1996">1996</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Rouge: A package for automatic evaluation of summaries</title>
+		<author>
+			<persName><forename type="first">C.-Y</forename><surname>Lin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Text summarization branches out</title>
+		<imprint>
+			<date type="published" when="2004">2004</date>
+			<biblScope unit="page" from="74" to="81" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Bertscore: Evaluating text generation with bert</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Kishore</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">Q</forename><surname>Weinberger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Artzi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1904.09675</idno>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Improved techniques for training gans</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Salimans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Goodfellow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Zaremba</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Cheung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">29</biblScope>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Generative adversarial networks</title>
+		<author>
+			<persName><forename type="first">I</forename><surname>Goodfellow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Pouget-Abadie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Mirza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Warde-Farley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ozair</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Courville</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bengio</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Communications of the ACM</title>
+		<imprint>
+			<biblScope unit="volume">63</biblScope>
+			<biblScope unit="page" from="139" to="144" />
+			<date type="published" when="2020">10 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Gans trained by a two time-scale update rule converge to a local nash equilibrium</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Heusel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Ramsauer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Unterthiner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Nessler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Hochreiter</surname></persName>
+		</author>
+		<ptr target="http://arxiv.org/abs/1706.08500" />
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Assessing generative models via precision and recall</title>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">S</forename><surname>Sajjadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Bachem</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lucic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Bousquet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gelly</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">31</biblScope>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">Revisiting precision and recall definition for generative model evaluation</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Simon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Webster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Rabin</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1905.05441</idno>
+		<ptr target="http://arxiv.org/abs/1905.05441" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">The effective rank: A measure of effective dimensionality,&quot; in 2007 15th European signal processing conference</title>
+		<author>
+			<persName><forename type="first">O</forename><surname>Roy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Vetterli</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2007">2007</date>
+			<publisher>IEEE</publisher>
+			<biblScope unit="page" from="606" to="610" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Preschool teachers&apos; literal and inferential questions and children&apos;s responses during whole-class shared reading</title>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">A</forename><surname>Zucker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">M</forename><surname>Justice</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">B</forename><surname>Piasta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">N</forename><surname>Kaderavek</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Early Childhood Research Quarterly</title>
+		<imprint>
+			<biblScope unit="volume">25</biblScope>
+			<biblScope unit="page" from="65" to="83" />
+			<date type="published" when="2010">3 2010</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Assessment of reading comprehension</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Habib</surname></persName>
+		</author>
+		<idno type="DOI">10.18662/rrem/2016.0801.08</idno>
+		<ptr target="http://dx.doi.org/10.18662/rrem/2016.0801.08" />
+	</analytic>
+	<monogr>
+		<title level="j">Revista Romaneasca pentru Educatie Multidimensionala</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="page" from="125" to="147" />
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

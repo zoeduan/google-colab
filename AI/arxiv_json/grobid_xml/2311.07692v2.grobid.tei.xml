@@ -1,0 +1,1590 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">On the Truthfulness of &apos;Surprisingly Likely&apos; Responses of Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2025-01-25">25 Jan 2025</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Naman</forename><surname>Goel</surname></persName>
+							<email>naman.goel@cs.ox.ac.uk</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Oxford</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">On the Truthfulness of &apos;Surprisingly Likely&apos; Responses of Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2025-01-25">25 Jan 2025</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">C752290F0454C4F0BE7A8090C8B2AB1D</idno>
+					<idno type="arXiv">arXiv:2311.07692v2[cs.LG]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:32+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>The principle of rewarding a crowd for surprisingly common answers has been used in the literature for designing a number of truthful information elicitation mechanisms <ref type="bibr" target="#b0">[1,</ref><ref type="bibr" target="#b1">2,</ref><ref type="bibr" target="#b2">3,</ref><ref type="bibr" target="#b3">4,</ref><ref type="bibr" target="#b4">5,</ref><ref type="bibr" target="#b5">6,</ref><ref type="bibr" target="#b6">7]</ref>. A related method has also been proposed in the literature for better aggregation of crowd wisdom <ref type="bibr" target="#b7">[8]</ref>. Drawing a comparison between crowd based collective intelligence systems and large language models, we define the notion of 'surprisingly likely' textual response of a large language model. This notion is inspired by the surprisingly common principle, but tailored for text in a language model. Using benchmarks such as TruthfulQA and openly available LLMs: GPT-2 and LLaMA-2, we show that the surprisingly likely textual responses of large language models are more accurate in many cases compared to standard baselines. For example, we observe up to 24 percentage points aggregate improvement on TruthfulQA and up to 70 percentage points improvement on individual categories of questions in this benchmark. We also provide further analysis of the results, including the cases when surprisingly likely responses are less or not more accurate.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Recent demonstrations of the promising capabilities of large language models (LLMs) have raised hopes about their successful deployment in a wide range of useful applications. However, one major issue with state-of-the-art LLMs that casts doubts on this optimism is their tendency to generate factually incorrect text. There are various ongoing efforts to address this issue. Promising efforts include scaling <ref type="bibr" target="#b8">[9]</ref>, retrieval augmentation/grounding <ref type="bibr" target="#b9">[10]</ref>, in-context learning <ref type="bibr" target="#b10">[11]</ref>, chain-of-thought reasoning <ref type="bibr" target="#b11">[12]</ref> and other prompting, self-consistency <ref type="bibr" target="#b12">[13]</ref>, advanced decoding techniques <ref type="bibr" target="#b13">[14]</ref>, uncertainty measurement based techniques <ref type="bibr" target="#b14">[15]</ref>, self-improvement <ref type="bibr" target="#b15">[16]</ref>, shifting model activations during inference <ref type="bibr" target="#b16">[17]</ref>, locating and editing factual information <ref type="bibr" target="#b17">[18]</ref>, learning from human feedback <ref type="bibr" target="#b18">[19]</ref>, learning from AI feedback <ref type="bibr" target="#b19">[20,</ref><ref type="bibr" target="#b20">21,</ref><ref type="bibr" target="#b21">22,</ref><ref type="bibr" target="#b22">23]</ref>, etc. While very useful, none of these efforts have fully solved the problem. Many scholars believe that the LLM architectures are fundamentally limited <ref type="bibr" target="#b23">[24,</ref><ref type="bibr" target="#b24">25,</ref><ref type="bibr" target="#b25">26]</ref> and thus, cannot be guaranteed to always generate factually correct text. Despite this, it remains an interesting research direction to understand the various sources of this multi-faceted problem <ref type="bibr" target="#b26">[27]</ref>, and the strengths and weaknesses of various complementary approaches for improvement.</p><p>It is plausible that in some cases, LLMs generate incorrect information due to non-truthful objective. LLMs are commonly trained to generate answers that have the maximum probability conditioned on the prompt <ref type="bibr" target="#b27">[28]</ref>. The probability depends on the data points in its noisy training set. Given various data points in the training set, an LLM may generate correct or incorrect answers. An interesting demonstration is due to <ref type="bibr">Lin et al., 2022 [29]</ref>, who showed that LLMs generated false answers that mimic popular misconceptions from human texts. For example, when asked "Which forbidden fruit Adam and Eve eat in the Garden of Eden?", an LLM may answer that Adam and Eve eat an apple, which is a popular misconception; the correct answer is that the Bible does not specify the fruit. In this paper, we investigate whether and to what extent, the surprisingly common principle from the game-theoretic truthful information elicitation literature can be useful in avoiding this behaviour.</p><p>There is a significant literature on game-theoretic incentive mechanisms for eliciting information from a crowd of agents. The mechanisms are also referred to as the peer-prediction or peer-consistency mechanisms <ref type="bibr" target="#b6">[7]</ref>. A seminal contribution in this literature is due to <ref type="bibr" target="#b0">Prelec, 2004</ref>  <ref type="bibr" target="#b0">[1]</ref>. Prelec designs a mechanism (called the Bayesian Truth Serum) such that an agent answering a question, can maximize its expected incentive score by telling what the agent believes to be the correct answer, instead of telling what it believes most of the other agents would tell. The key idea in the Bayesian Truth Serum (BTS) is to reward surprisingly common answer (i.e. the answer that is more commonly reported than predicted a priori by agents, instead of the answer that is merely the most commonly reported one). Interesting examples, where BTS is particularly useful, include eliciting objective information that is rare or difficult to obtain and subjective information (e.g. subjective opinions) that is impossible to verify. Theoretical guarantees apply more generally beyond these examples. Besides incentive-compatibility, it has also been shown that an information aggregation method based on the surprisingly common principle can be used to select more correct answers in crowdsourcing <ref type="bibr" target="#b7">[8]</ref>. Further research in this area used motivation from the surprisingly common principle of the BTS to design mechanisms for various crowdsourcing settings. While the BTS asks agents to submit two reports for a question to determine which answers are surprisingly common, the "minimal" mechanisms proposed later in the literature, ask agents to submit only one. We discuss this in further detail in Section 2.1.</p><p>An LLM is very different from a crowd of agents in many ways. For example, the agents in crowdsourcing literature are assumed to be able to make independent observations about the world by incurring variable cost, form and update beliefs, and strategically (mis-)report their beliefs to maximize the incentives. On the other hand, the same cannot be said about a a pre-trained language model. Therefore, the theory of incentive mechanisms for crowd does not apply verbatim to an LLM. However, as we will discuss in Section 3.1, a comparison between crowdsourcing and how an LLM "aggregates" information from its training data points and generates answers when prompted, motivates us to take a step towards exploring the connections between the two fields of research. In this paper, we restrict the discussion on "truth" to objective information that can be clearly categorized as correct or incorrect (please see Section 6 for critical discussion on the scope of this work).</p><p>We define the notion of 'surprisingly likely' textual response of a large language model. It is inspired from the surprisingly common principle developed in the information elicitation literature. In particular, we draw inspiration from the peer-truth serum mechanism <ref type="bibr" target="#b3">[4]</ref>. While the peer-truth serum and other related mechanisms were developed for eliciting numerical or categorical answers from a crowd of agents, our 'surprisingly likely' measure is adapted for textual responses of a single LLM that has been pre-trained on data from various sources. Through experiments on TruthfulQA, COPA and StoryCloze benchmarks, we show that surprisingly likely answers in large language models are indeed more correct in several cases. For example, on the Truth-fulQA benchmark, we find significant gains in accuracy across different LLMs (up to 24 percentage points).</p><p>We also analyze the performance by different categories of questions and observe that the trend of significant accuracy gains holds across most (but not all) categories, with some categories showing up to 70 percentage points improvement.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Background</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Surprisingly Common Principle in Crowdsourcing</head><p>The problem of information elicitation without verification (i.e. when correct information is not available for scoring and when agents in a crowd need to be incentivized for providing correct information) is modelled as a game between multiple agents in the literature <ref type="bibr" target="#b5">[6]</ref>. One of earlier incentive mechanisms in this space is known as the Bayesian Truth Serum <ref type="bibr" target="#b0">[1]</ref>. BTS asks every agent to submit two reports for a question. The first report is what agents believe is the correct answer to the question and in the second report, the agents predict the distribution of answers given by other agents. The reward of an agent is the sum of two reward terms. The first term (called the information score) measures the log of the ratio between the frequency of the reported answer and the geometric mean of the predictions about the answer. The second term (called prediction score) measures how close is the prediction of the agent about the distribution of other agents' answers to the actual distribution. The second term exists only to reward honest second report, but it is the first term (the information score) that is the interesting one. The resulting reward is shown to be incentive-compatible i.e. in equilibrium, agents can maximize their expected reward by telling what they believe is the correct answer.</p><p>A number of other BTS motivated reward/scoring mechanisms advanced this field of research. We focus on proposals that are suitable for crowdsourcing without requiring the agents to explicitly submit their prediction about other agents' answers. Consider for example, a crowdsourcing task of measuring pollution at locations, where no independent ground truth measurement exists. Multiple independent agents (peers) measure and report the value at a given location to a centre, but there is no trusted verification of the ground truth. Agents have to exert effort to accurately measure the value, and the centre needs to provide a reward to compensate the agents. Peer-prediction mechanisms <ref type="bibr" target="#b5">[6]</ref> consider this setting as a game among the agents, where each tries to maximize the expected reward attributed to their report. The simplest form is output agreement <ref type="bibr" target="#b29">[30]</ref>, where reports are rewarded proportionally to the frequency of the same report among peers. However, it has been shown that the best strategies for the participating agents are always uninformative, e.g. all report the same value <ref type="bibr" target="#b30">[31]</ref>. Mechanisms, that address this issue in output agreement, are all based on the surprisingly common principle but mathematical models and game-theoretic arguments differ in different mechanisms. In a recent survey, Faltings, 2023 <ref type="bibr" target="#b6">[7]</ref> identifies three types of mechanisms. The first is agreement, where the reward is proportional to the frequency of the answer among other responses, often calibrated by the overall chance of agreement <ref type="bibr" target="#b29">[30,</ref><ref type="bibr" target="#b1">2,</ref><ref type="bibr" target="#b2">3]</ref>. The second is information-theoretic, where the reward is proportional to the pairwise mutual information between the answer and the answers given by peers <ref type="bibr" target="#b0">[1,</ref><ref type="bibr" target="#b4">5,</ref><ref type="bibr" target="#b31">32,</ref><ref type="bibr" target="#b32">33]</ref>. The third computes the reward based on the improvement in the quality of the resulting model (the Peer Truth Serum) <ref type="bibr" target="#b3">[4,</ref><ref type="bibr" target="#b33">34,</ref><ref type="bibr" target="#b34">35,</ref><ref type="bibr" target="#b35">36]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">The Peer Truth Serum</head><p>The most relevant mechanism for this paper is the Peer Truth Serum or the PTS mechanism. In the running example of pollution measurement: if an agent i reported the pollution measurement at location l, PTS calculates the reward for the agent as follows. PTS selects another agent p (called peer) who also submitted pollution measurement for the same location l (or approximately same location neighbourhood). Suppose that the agent i submitted x i and the peer p submitted x p . Here, x i , x p ∈ X are pollution measurement values. For e.g., X = {low, moderate, high, very high}.</p><p>The reward of agent i under the PTS mechanism is proportional to:</p><formula xml:id="formula_0">½ xi=xp R i (x i ) where R i (x i ) = num i (x i )/ x∈X num i (x)</formula><p>, and num i (x) is a function that counts occurrences of x in the values reported by other agents, across a large number of other locations that are a priori statistically similar.</p><formula xml:id="formula_1">½ xi=xp is indicator function (1 if x i = x p , 0 otherwise).</formula><p>Observe that, in expectation, the PTS does not just reward the answer which is most likely to be given by peer, but it also scales the reward inversely by a 'prior' for the answer. This prior is estimated from the answers collected from the crowd across a number of a priori statistically similar questions. This is how the PTS mechanism operationalizes the surprisingly common principle. In this paper, we take inspiration from the PTS mechanism to define a related notion of 'surprisingly likely' textual responses of a language model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Surprisingly Likely Responses of Large Language Models</head><p>We now define the notion of 'surprisingly likely' responses of large language models. Consider the following example. A question (q) asked to an LLM is "According to the Bible, what forbidden fruit did Adam and Eve eat in the Garden of Eden?". A response (r) for this question may be "The Bible does not specify what kind of fruit Adam and Eve ate" (or "According to the Bible, Adam and Eve ate an apple" ... etc).</p><p>We assign a response r a score τ (r, q) as follows:</p><formula xml:id="formula_2">τ (r, q) = P (r|q) P (r|'?')<label>(1)</label></formula><p>where P (r|q) is the conditional probability of the response in the language model, given the question. P (r|'?') is the conditional probability of the response in the language model, given '? ′ . We call P (r|'?') as the 'prior' of the response in the language model. In equation 1, we use just a question mark '? ′ for calculating the prior, but there might also be other possibilities. For e.g., an empty string or another reduced and similar context (examples to follow in further section). The prior might also be calculated using an average of priors obtained by conditioning on several different reduced and similar contexts. Note that marginalizing over all possible questions (question text minus '?') leads to just the probability conditioned on '?'.</p><p>We call a response r surprisingly likely, if the score τ (r, q) is higher compared to other responses.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Discussion</head><p>We now draw a comparison between the Peer Truth Serum based information elicitation discussed in Section 2.2 and LLM response generation. For answering the questions that have right and wrong answers, we can think of an LLM as modeling the frequency of occurrence of different answer strings following the question string, among all the text data used in training. We can consider each occurrence of these text snippets in training data as a separate report of the answer to the question. Reports might come from different sources of information on the Web and other sources in the training data. The score τ assigned to an answer is computed as: the probability that the same answer occurs in another text snippet following the question, divided by the probability of that answer overall in all text snippets in training. Thus, similar to the PTS reward (recall the discussion in Section 2.2), selecting the answer with high τ can be understood as equivalent to rewarding the LLM to generate surprisingly likely answer for the context, unlike the default LLM reward of generating answer with the highest value of the numerator in the reward score τ . Some questions that naturally follow from the above discussion are: can this strategy improve the accuracy of LLM generated responses?, why?, and in which scenarios it may not work? In this paper, we take an empirical approach to address these questions. A theoretically rigorous treatment to these specific questions should be interesting future work.</p><p>As an example, consider the question: Which city in the Netherlands has the headquarters of the Dutch government? The correct answer for this question is The Hague. Suppose we used the following reduced and similar context for calculating the prior: Which city in the Netherlands has the headquarters of Z? In this case, Amsterdam could be the most likely guess (since it is the biggest city). Another reduced context could be: Which city has the headquarters of Z? In this case, probably London or New York would be the most likely guess. Similarly, we could consider: Which city? In all these cases, The Hague is very unlikely. The surprisingly likely score compensates for this low prior of The Hague compared to Amsterdam, London and New York.</p><p>This was one example of the types of questions and answers, for which we conjecture that the LLM accuracy would improve by generating surprisingly likely answers. In further sections, we analyze the promise and limitations of this approach by conducting a series of experiments with different datasets and language models. Before presenting the experimental settings and results, we summarize some most closely related work in language modeling literature.</p><p>4 Related Work</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">PMI in Computational Linguistics</head><p>The information-theoretic measure of pointwise mutual information (PMI) <ref type="bibr" target="#b36">[37]</ref> is a well-known concept in computation linguistics and natural language processing literature <ref type="bibr" target="#b37">[38]</ref>. It has been used in use-cases such as words association <ref type="bibr" target="#b38">[39]</ref>, keyword generation improving diversity of text <ref type="bibr" target="#b39">[40,</ref><ref type="bibr" target="#b40">41,</ref><ref type="bibr" target="#b41">42,</ref><ref type="bibr" target="#b42">43,</ref><ref type="bibr" target="#b43">44]</ref>, increasing agreement with grounding <ref type="bibr" target="#b44">[45]</ref>, abstractive summarization <ref type="bibr" target="#b45">[46]</ref> etc. <ref type="bibr">Holtzman et al., 2021 [47]</ref> argue that since LLMs assign probability to every possible string while generating response, it creates 'surface form competition' between different strings that represent the same concept. When the LLM has to make a selection from a given list of options in multiple choice questions, the correct option is not chosen because its probability mass in the LLM is shared with another similar and correct concept that may not be in the list of options to choose from. The authors showed that PMI can be helpful in that setting. Surface form competition thus is another reason that may affect the accuracy of LLMs, but it is different from the non-truthfulness problem we discussed earlier (which, for example, leads to an LLM generating answers mimicking popular human misconceptions as demonstrated by the TruthfulQA benchmark). PMI like measure is also popular in the game-theoretic information elicitation literature, albeit the definitions, the methods of measuring it and the purpose of its application are different.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Other Closely Related Work</head><p>Prior work <ref type="bibr" target="#b10">[11,</ref><ref type="bibr" target="#b47">48]</ref> has shown that calibration techniques can help in improving accuracy in few-shot learning settings for multiple-choice question answering in language models. While they consider specific fewshot learning setting, our focus is on more general settings. We also show the results on the TruthfulQA benchmark. Further, Kumar, 2022 <ref type="bibr" target="#b48">[49]</ref> proposed to subtract the context-independent probability to avoid context-independent bias. This idea will be the motivation of one of the baselines in our work and we will also evaluate it on the TruthfulQA benchmark.</p><p>5 Experiments</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">Benchmarks</head><p>TruthfulQA: The TruthfulQA benchmark <ref type="bibr" target="#b28">[29]</ref> comprises 817 questions that span 38 categories, including health, law, finance and politics etc. The authors of the benchmark observed that, for questions in this benchmark, models generated many false answers that mimic popular misconceptions; in the same way as some humans would answer due to false beliefs and misconceptions. It was also observed that larger models performed worse than smaller models. Most state-of-the-art large language models continue to perform poorly on this benchmark <ref type="bibr" target="#b49">[50,</ref><ref type="bibr" target="#b50">51]</ref>. In addition to the questions, the benchmark also contains several possible answers for each question: one of the answers is marked as best answer and other answers are marked as either correct or incorrect answers. There are between 3 and 25 answers for every question in the benchmark.</p><p>On average, there are 7.6 answers per question: 4.12 are incorrect, 3.47 are correct/best.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>COPA:</head><p>The Choice Of Plausible Alternatives (COPA) benchmark <ref type="bibr" target="#b51">[52]</ref> consists of 1000 questions, split equally into development and test sets of 500 questions each. We used the development set in our experiments. Each question is composed of a premise and two alternatives, where the task is to select the alternative that more plausibly has a causal relation with the premise. The correct alternative is randomized so that the expected performance of randomly guessing is 50%.</p><p>Story Cloze: Story Cloze is a commonsense reasoning test <ref type="bibr" target="#b52">[53]</ref>; it asks a system to choose the correct ending to a four-sentence story. The benchmark contain two ending choices for each of the four-sentence story, out of which one is correct. We used the development set in our experiments which has 1871 stories.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Measuring Conditional Probabilities in LLMs</head><p>For our experiments with the TruthfulQA dataset, we used the logits in the pre-trained large language models for the strings '?'+r and q + r to obtain the cross entropy for tokens in r; giving us the negative of log of the conditional probabilities in the denominator and numerator respectively in equation 1 (i.e. -log P (r| ′ ? ′ ) and -log (P (r|q))).</p><p>For experiments with the Story Cloze benchmark, we used a similar strategy as above except that we conditioned on the last punctuation from the last input sentence of the story (instead of '?') for measuring the prior.</p><p>For the COPA benchmark, we condition on 'because' or 'so' depending on question tag ('cause'/'effect') instead of '?' for measuring the prior. The use of last punctuation and 'because' or 'so' for these two benchmarks is consistent with <ref type="bibr" target="#b46">[47]</ref>, where similar idea was used (for a different reason and explanation i.e. for removing surface-form-competition; see Section 4.1).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3">Models</head><p>We used openly available pre-trained models GPT-2 (from OpenAI) <ref type="bibr" target="#b53">[54]</ref> and LLaMA-2 (from Meta) <ref type="bibr" target="#b50">[51]</ref> in our experiments. Specifically, we used the following models: GPT-2 S (124 million parameters), GPT-2 M (355 million parameters), GPT-2 L (774 million parameters), GPT-2 XL (1558 million parameters), LLaMA-2 7B (7 billion parameters), LLaMA-2 13B (13 billion parameters) and LLaMA-2 70B (70 billion parameters). For LLaMA-2 70B, we used the 4-bit version due to compute resource constraints on our end; for all other models, we used their full precision versions. All models were obtained through Hugging Face <ref type="bibr" target="#b54">[55]</ref> <ref type="foot" target="#foot_0">foot_0</ref> . We used the publicly released base versions of GPT-2 and LLaMA-2 for probability calculations in our experiments. Experiments were run on NVIDIA A100 with a renting cost of less than GBP 100.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.4">Accuracy Measure</head><p>We measured accuracy as the fraction of questions for which the selected answer (by the respective method) was either the best answer or one of the correct answers in the benchmark.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.5">Baselines and Nomenclature</head><p>For brevity, in discussion of the results, we will use the following nomenclature for various methods used in the comparison. 'MaxPost' refers to a baseline standard method that selects the response with the maximum conditional probability given the question text. 'MaxPostN' refers to another baseline method in which the conditional probability given the question text is normalized by the number of tokens in the response and the response with the highest normalized probability score is selected. 'Top2MinPr' refers to a baseline method of shortlisting top 2 responses with highest conditional probability given the question text, and then selecting the one with the smaller prior. 'Top2MaxPr' refers to the selection method of shortlisting top 2 responses with highest conditional probability given the question text, and then selecting the one with the higher prior. 'Top2MaxPr' alludes to a completely opposite method i.e. selecting the unsurprisingly likely responses.</p><p>'MaxRatio' refers to the surprisingly likely selection method introduced in Section 3, i.e. selecting the response with the highest ratio of the two conditional probabilities. 'MaxDiff' refers to yet another baseline method that selects the response with the highest difference between the two conditional probabilities (instead of the ratio). This baseline method is motivated from the explanation by Kumar 2022 <ref type="bibr" target="#b48">[49]</ref>, as discussed in Section 2.1.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.6">Scope of the Experiments</head><p>We do not use closed models such as GPT-3.5/4 in our experiments because there is lack of transparency in model development and further steps like reinforcement learning. Thus, using probability outputs (if available) from these models are not ideal for research. We note however that state-of-the-art open models (at the time of writing the paper) like LLaMA-2 are competitive in capabilities <ref type="bibr" target="#b50">[51]</ref> to GPT-3.5. Further, like all commercial products in this space, closed models tend to be updated frequently, and research using such products is difficult to reproduce. In this paper, we make no claim of establishing a new state-of-the-art or beating commercial products. This work is an academic investigation, with limited compute resources, into a very specific research question introduced in Section 1.</p><p>We acknowledge that there are a number of new models and new benchmarks being continuously developed and released, as we write this paper. We do not believe that there is any consensus in the community regarding which benchmarks or which models are gold standard or ideal for which kind of research. We do not test all models and all benchmarks in this work, and leave this for a future endeavour with a larger research budget.</p><p>We also do not use any fine-tuned models in our experiments. The reason is that fine-tuning is a supervised approach, requiring labeled data to improve accuracy of question-answering in LLM, whereas the approach described in the paper is an unsupervised approach (i.e. it can improve the performance of base models even when no supervision data is available for such fine-tuning). </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>LLM</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.7">Results</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.7.1">TruthfulQA Benchmark: Aggregate Performance Improvement</head><p>We first discuss the results on the TruthfulQA benchmark. Table <ref type="table" target="#tab_0">1</ref> shows the accuracy of different methods over all the questions in the TruthfulQA dataset. It is clear from the table that the surprisingly likely method beats all other baseline selection methods by significant margins. For example, the difference between the MaxPost and the MaxRatio methods is of 16 percentage points for GPT-2 XL and LLaMA-2 13B models. For the LLaMA-2 70B model, the difference is even bigger (24 percentage points). In general, the Top2MinPr Further, authors of the TruthfulQA dataset noted that the performance of language models decreased with increasing size of the models for GPT-2 and GPT-3. We observe from Table <ref type="table" target="#tab_0">1</ref> that unlike MaxPost and MaxPostN methods, the MaxRatio method is quite robust to such 'inverse scaling' phenomenon.</p><p>Finally, it is also interesting to note that 4-bit quantization in LLaMA-2 70B causes a significant drop in accuracy for other methods, but MaxRatio appears quite robust to quantization as well.</p><p>Remark: We also noticed that raising k to a higher value in the TopkMinPr method can appear to perform better on this dataset. A higher value of k in TopkMinPr implies giving more weight to smaller values of the prior. A very high value of k would be equivalent to almost ignoring the conditional probability given the question text. But ignoring the context almost entirely does not translate to a generally meaningful approach for response generation given a context, and it will make things worse on other kinds of benchmarks. We will discuss further in Section 5.7.5 that we seek an approach that not only shows better performance on TruthfulQA but the same approach should work more generally for other benchmarks too. Therefore, we report results for k = 2 only. No such improvement in accuracy was observed for high values of k for the TopkMaxPr method. For brevity, complete experimental data is available in supplementary material.<ref type="foot" target="#foot_1">foot_1</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.7.2">TruthfulQA Benchmark: Performance Improvement By Question Type</head><p>Out of the 817 questions in the TruthfulQA benchmark, 437 are adversarially filtered questions and the rest 380 are unfiltered questions. The adversarially filtered questions were the ones that the authors of TruthfulQA selected based on the observed pattern of LLM producing wrong answers for them. The unfiltered questions did not go through similar filtering but they too were crafted based on the expectation that LLMs would produce wrong answers for them. Table <ref type="table" target="#tab_1">2</ref> shows the comparison of MaxPost and MaxRatio methods for the unfiltered and filtered questions using different LLMs. We observe from the table that the aggregate gain in accuracy for MaxRatio over MaxPost that we saw earlier comes from both types of questions. We also observe that there is generally a trend that adversarially filtered questions contribute slightly more gain in accuracy than unfiltered.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.7.3">TruthfulQA Benchmark: Performance Improvement By Answer Type</head><p>We also investigated how many questions that were correctly answered by MaxPost but incorrectly by MaxRatio and how many questions that were correctly answered by both MaxPost and MaxRatio. for this error analysis is to confirm that the accuracy gain for MaxRatio is not due to simply selecting an opposite answer than MaxPost. For LLaMA-2 7B, we observed that for 313 questions MaxPost was wrong but MaxRatio was correct, and for 161 questions both gave correct answers. In contrast, for 120 questions, Max-Post gave correct answers but MaxRatio gave incorrect answers. For the remaining 223 questions, both gave incorrect answers. For brevity, we do not report these numbers for other models in the paper, but instance level data is available in supplementary material.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.7.4">TruthfulQA Benchmark: Performance Improvement By Question Category</head><p>The questions in the TruthfulQA are also categorised by labels such as economics, education, health, distraction, misconceptions, conspiracies, history, misinformation, politics, nutrition etc. There are 38 diverse categories in the benchmark. Table <ref type="table" target="#tab_2">3</ref> shows the breakdown of performance of MaxPost and MaxRatio by question categories. For brevity, we report this breakdown for GPT-2 XL, LLaMA-2 7B and LLaMA-2 13B. We observe from the table that for majority of the question categories, MaxRatio performs better than Max-Post. For example, in the case of LLaMA-2 7B: in 28 categories MaxRatio works better, in 7 categories MaxPost works better, and in 3 categories both methods perform same. This shows that the improvement by MaxRatio is not due to a few types of questions only but can be observed across the wide spectrum of questions. In some categories, there is an improvement of up to 70 percentage points. We do acknowledge however that these numbers get less conclusive since the benchmark is now divided into 28 smaller categories and it would be useful in the future to find bigger benchmarks on each of these categories and evaluate the methods on each benchmark.</p><p>We did not find an obvious pattern about the types of questions where MaxPost works better than MaxRatio but a few observations are worth noting. For example, the category Logical Falsehood is about tautology, like "Are all real numbers real numbers?". MaxRatio does not work well on these kinds of questions. Considering the motivation for the surprisingly likely method, we did not expect the method to improve accuracy on such questions, but the fact that accuracy decreased is a negative result. Further, we also noted that for many of the categories where MaxPost does better (e.g., for Indexical Error: Time and Misinformation categories, that have significant drop), the correct and best answers in the benchmark is just "I have no comment.". We conjecture that it may be possible to handle these categories of questions (or answers) based on a hybrid method that also uses a minimum threshold for conditional probability in the numerator or for the ratio. For example, "No, all real numbers are not real numbers?" has a low conditional probability given the question text "Are all real numbers real numbers?". This threshold would become a hyper-parameter of the method and would need to be tuned to maximize the accuracy across different tasks and question categories. Similarly, an uninformative answer "I have no comment." can be encouraged if the conditional probability in the numerator or the ratio is not high enough for possible generations. It would be interesting to investigate this further in future work.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.7.5">COPA and StoryCloze Benchmarks</head><p>The results on the TruthfulQA benchmark show that the surprisingly likely method does help with the nontruthfulness problem in LLMs in most categories of questions. We next also test the methods on two other benchmarks (COPA and StoryCloze) to show that the surprisingly likely method, at least, does not make things worse on these other benchmarks. This test is important because TruthfulQA is a somewhat special benchmark (it contains questions that LLMs are more likely to get wrong than to get right). While it is easy to develop methods that appear to work well only on such special benchmarks (for example, by simply flipping the answers), it is difficult to design general methods that work well on special benchmarks without degrading performance on others benchmarks. Due to the constraints on computational resources, we can not perform exhaustive testing on all other benchmarks. However, by testing on COPA and StoryCloze, we conduct a preliminary investigation in that direction.</p><p>COPA and StoryCloze benchmarks have only two choices in the dataset. We do not report Top2MinPr and Top2MaxPr for these benchmarks because that would be equivalent to ignoring the context and choosing an answer only based on prior of the answers, which does not translate to a generally meaningful approach for response generation given a context (as was also discussed in Section 5.7.1 for high values of k in the TruthfulQA benchmark). We observe from Tables <ref type="table" target="#tab_3">4</ref> and <ref type="table">5</ref> that the surprisingly likely criterion either improves the performance or in a few cases leaves the performance unchanged <ref type="foot" target="#foot_2">3</ref> . This provides preliminary evidence that the surprisingly likely method does offer benefit on the TruthfulQA benchmark without decreasing the accuracy on other benchmarks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Limitations</head><p>The notions of 'truth' and 'truthfulness' are difficult to formalize and there is often much philosophical debate about these terms. In this paper, we restricted our discussion to questions in which it is reasonable to assume that there exist objectively correct and incorrect responses. Further, we also assume that given a sufficiently clear prompt, the desired behaviour of LLMs is to generate a correct response. For example, consider the question, "Which city is the capital of Brazil?". We assume that the desired behaviour of LLM for this clearly written prompt is not to generate "São Paulo" or "Rio de Janeiro"; instead it is to generate "Brasília". We hypothesized that, besides other possible reasons, LLMs may produce incorrect response (i.e. be non-truthful) Table 5: Results on the StoryCloze Benchmark for such questions due to mis-specified (non-truthful) training objective, or due to incorrect or sub-optimal aggregation of information in its noisy training data.</p><p>In this paper, we did not delve into the discussion on subjective information like opinions or beliefs. Inherently subjective information can not be categorized as correct or incorrect in the same way as objective information; a possible ground truth in such cases is perhaps the underlying distribution of subjective opinions or beliefs across the specified population. Further, in such cases, truthful behaviour of an agent is generally defined as answering honestly or not lying about its opinions and beliefs. These notions of truth and truthfulness are included in the broader truthful information elicitation literature, but were not discussed for LLMs in our work. The reason we did not discuss these is that the interpretation of terms like opinions, beliefs and honesty in the case of LLMs is not quite the same as in the case of agents in a crowd. Separate careful discussion is required to understand when it makes sense to responsibly use these terms in the case of LLMs and what these terms mean precisely in given context. We leave this discussion for future work.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Conclusions and Future Work</head><p>In this paper, we defined the notion of 'surprisingly likely' textual response of a large language model. This notion was inspired by the surprisingly common principle in the crowdsourcing literature, but tailored for text in a language model. We observed that surprisingly likely responses of large language models are more accurate on the TruthfulQA benchmark compared to baselines. We also discussed the strengths and limitations of this approach by analysing performance across different types of questions/answers. This work is one of the early attempts to bridge two different research fields of language modeling and collective intelligence systems, and we hope that it will motivate further research at the intersection of the two research fields.</p><p>For example, an interesting future work that may directly follow this work is to construct theoretical models to provably explain the observations on different categories of questions and further understand the strengths and weakness of the approach. Finally, while our experiments show that the surprisingly likely responses are indeed more correct, it remains future work to show how this can be best implemented to make LLMs generate more correct responses in the first place. It would also allow researcher to obtain results on benchmarks other than multiple choice questions benchmarks (e.g., open-ended questions benchmarks). Possible ideas include intervening at decoding stage or at pre-training or later stages through reinforcement learning.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Accuracy of various methods with the 7 LLMs on the TruthfulQA Benchmark.</figDesc><table><row><cell></cell><cell></cell><cell></cell><cell></cell><cell>Method</cell><cell></cell><cell></cell></row><row><cell></cell><cell cols="6">MaxPost MaxRatio MaxDiff MaxPostN Top2MinPr Top2MaxPr</cell></row><row><cell>GPT-2 S</cell><cell>0.42</cell><cell>0.51</cell><cell>0.42</cell><cell>0.4</cell><cell>0.52</cell><cell>0.47</cell></row><row><cell>GPT-2 M</cell><cell>0.38</cell><cell>0.50</cell><cell>0.36</cell><cell>0.39</cell><cell>0.48</cell><cell>0.44</cell></row><row><cell>GPT-2 L</cell><cell>0.37</cell><cell>0.50</cell><cell>0.35</cell><cell>0.38</cell><cell>0.48</cell><cell>0.44</cell></row><row><cell>GPT-2 XL</cell><cell>0.36</cell><cell>0.52</cell><cell>0.33</cell><cell>0.36</cell><cell>0.47</cell><cell>0.43</cell></row><row><cell>LLaMA-2 7B</cell><cell>0.34</cell><cell>0.58</cell><cell>0.32</cell><cell>0.54</cell><cell>0.47</cell><cell>0.40</cell></row><row><cell>LLaMA-2 13B</cell><cell>0.43</cell><cell>0.59</cell><cell>0.45</cell><cell>0.55</cell><cell>0.54</cell><cell>0.47</cell></row><row><cell>LLaMA-2 70B (4bit)</cell><cell>0.37</cell><cell>0.58</cell><cell>0.36</cell><cell>0.51</cell><cell>0.50</cell><cell>0.41</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 :</head><label>2</label><figDesc>Accuracy on the TruthfulQA Benchmark: Separated by Adversarially Filtered vs Unfiltered Questions method also improves results but is not as good as the MaxRatio method. MaxDiff method does not work that well and seems to reduce accuracy slightly compared to MaxPost.</figDesc><table><row><cell>LLM</cell><cell>Method</cell><cell cols="2">Filtered Questions Unfiltered Questions</cell></row><row><cell>GPT-2 S</cell><cell>MaxPost MaxRatio</cell><cell>0.41 0.50</cell><cell>0.44 0.53</cell></row><row><cell>GPT-2 M</cell><cell>MaxPost MaxRatio</cell><cell>0.37 0.46</cell><cell>0.40 0.54</cell></row><row><cell>GPT-2 L</cell><cell>MaxPost MaxRatio</cell><cell>0.34 0.48</cell><cell>0.40 0.52</cell></row><row><cell>GPT-2 XL</cell><cell>MaxPost MaxRatio</cell><cell>0.33 0.49</cell><cell>0.41 0.55</cell></row><row><cell>LLaMA-2 7B</cell><cell>MaxPost MaxRatio</cell><cell>0.31 0.56</cell><cell>0.38 0.61</cell></row><row><cell>LLaMA-2 13B</cell><cell>MaxPost MaxRatio</cell><cell>0.43 0.59</cell><cell>0.44 0.59</cell></row><row><cell>LLaMA-2 70B (4bit)</cell><cell>MaxPost MaxRatio</cell><cell>0.33 0.59</cell><cell>0.43 0.56</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 3 :</head><label>3</label><figDesc>Accuracy on the TruthfulQA Benchmark: Separated by Question Categories</figDesc><table><row><cell>The motivation</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 4 :</head><label>4</label><figDesc>Results on the COPA Benchmark</figDesc><table><row><cell>LLM</cell><cell cols="4">Method MaxPost MaxRatio MaxDiff MaxPostN</cell></row><row><cell>GPT-2 S</cell><cell>0.61</cell><cell>0.63</cell><cell>0.62</cell><cell>0.63</cell></row><row><cell>GPT-2 M</cell><cell>0.67</cell><cell>0.70</cell><cell>0.67</cell><cell>0.66</cell></row><row><cell>GPT-2 L</cell><cell>0.70</cell><cell>0.69</cell><cell>0.70</cell><cell>0.68</cell></row><row><cell>GPT-2 XL</cell><cell>0.69</cell><cell>0.72</cell><cell>0.69</cell><cell>0.68</cell></row><row><cell>LLaMA-2 7B</cell><cell>0.82</cell><cell>0.83</cell><cell>0.82</cell><cell>0.69</cell></row><row><cell>LLaMA-2 13B</cell><cell>0.61</cell><cell>0.65</cell><cell>0.49</cell><cell>0.51</cell></row><row><cell>LLaMA-2 70B (4bit)</cell><cell>0.88</cell><cell>0.88</cell><cell>0.87</cell><cell>0.74</cell></row><row><cell>LLM</cell><cell cols="4">Method MaxPost MaxRatio MaxDiff MaxPostN</cell></row><row><cell>GPT-2 S</cell><cell>0.58</cell><cell>0.67</cell><cell>0.58</cell><cell>0.60</cell></row><row><cell>GPT-2 M</cell><cell>0.62</cell><cell>0.71</cell><cell>0.62</cell><cell>0.67</cell></row><row><cell>GPT-2 L</cell><cell>0.64</cell><cell>0.72</cell><cell>0.64</cell><cell>0.69</cell></row><row><cell>GPT-2 XL</cell><cell>0.67</cell><cell>0.76</cell><cell>0.67</cell><cell>0.72</cell></row><row><cell>LLaMA-2 7B</cell><cell>0.77</cell><cell>0.82</cell><cell>0.69</cell><cell>0.68</cell></row><row><cell>LLaMA-2 13B</cell><cell>0.54</cell><cell>0.63</cell><cell>0.52</cell><cell>0.53</cell></row><row><cell>LLaMA-2 70B (4bit)</cell><cell>0.77</cell><cell>0.85</cell><cell>0.68</cell><cell>0.70</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://huggingface.co/models</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>Instance level data is available in supplementary material, not just aggregate accuracy measures presented here. The readers can therefore also investigate the results by individual question.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>There is an unexplained observation in Tables</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>and</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" xml:id="foot_4"><p>5: for LLaMA-2 13 B, all methods perform relatively bad. We double-checked our code and experiment data and also re-ran the experiments/calculations, but the reason of this anomaly is not clear.</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">Acknowledgements</head><p>The author was supported by Oxford Martin's programme on 'Ethical Web and Data Architectures (EWADA) in the Age of AI'. Special thanks to Prof Boi Faltings for his participation in many discussions that significantly helped the author while writing the paper. The author also thanks Dr. Debjit Paul for his kind help in running an earlier version of our code on a compute cluster. Any errors in the paper are of the author only.</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">A bayesian truth serum for subjective data</title>
+		<author>
+			<persName><forename type="first">Drazen</forename><surname>Prelec</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">science</title>
+		<imprint>
+			<biblScope unit="volume">306</biblScope>
+			<biblScope unit="issue">5695</biblScope>
+			<biblScope unit="page" from="462" to="466" />
+			<date type="published" when="2004">2004</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Crowdsourced judgement elicitation with endogenous proficiency</title>
+		<author>
+			<persName><forename type="first">Anirban</forename><surname>Dasgupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arpita</forename><surname>Ghosh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 22nd international conference on World Wide Web</title>
+		<meeting>the 22nd international conference on World Wide Web</meeting>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="319" to="330" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Informed truthfulness in multitask peer prediction</title>
+		<author>
+			<persName><forename type="first">Victor</forename><surname>Shnayder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arpit</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rafael</forename><surname>Frongillo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><forename type="middle">C</forename><surname>Parkes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2016 ACM Conference on Economics and Computation</title>
+		<meeting>the 2016 ACM Conference on Economics and Computation</meeting>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="page" from="179" to="196" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Incentives for effort in crowdsourcing using the peer truth serum</title>
+		<author>
+			<persName><forename type="first">Goran</forename><surname>Radanovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boi</forename><surname>Faltings</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Radu</forename><surname>Jurca</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Transactions on Intelligent Systems and Technology (TIST)</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="1" to="28" />
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">An information theoretic framework for designing information elicitation mechanisms that reward truth-telling</title>
+		<author>
+			<persName><forename type="first">Yuqing</forename><surname>Kong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Grant</forename><surname>Schoenebeck</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Transactions on Economics and Computation (TEAC)</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="1" to="33" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Game theory for data science: Eliciting truthful information</title>
+		<author>
+			<persName><forename type="first">Boi</forename><surname>Faltings</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Goran</forename><surname>Radanovic</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<publisher>Springer Nature</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Game-theoretic mechanisms for eliciting accurate information</title>
+		<author>
+			<persName><forename type="first">Boi</forename><surname>Faltings</surname></persName>
+		</author>
+		<idno type="DOI">10.24963/ijcai.2023/740</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Thirty-Second International Joint Conference on Artificial Intelligence, IJCAI-23</title>
+		<editor>
+			<persName><forename type="first">Edith</forename><surname>Elkind</surname></persName>
+		</editor>
+		<meeting>the Thirty-Second International Joint Conference on Artificial Intelligence, IJCAI-23</meeting>
+		<imprint>
+			<publisher>Survey Track</publisher>
+			<date type="published" when="2023">8 2023</date>
+			<biblScope unit="page" from="6601" to="6609" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">A solution to the single-question crowd wisdom problem</title>
+		<author>
+			<persName><forename type="first">Dražen</forename><surname>Prelec</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Seung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Mccoy</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Nature</title>
+		<imprint>
+			<biblScope unit="volume">541</biblScope>
+			<biblScope unit="issue">7638</biblScope>
+			<biblScope unit="page" from="532" to="535" />
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Emergent abilities of large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishi</forename><surname>Bommasani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dani</forename><surname>Yogatama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Donald</forename><surname>Metzler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tatsunori</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oriol</forename><surname>Vinyals</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Dean</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Fedus</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=yzkSU5zdwD" />
+	</analytic>
+	<monogr>
+		<title level="m">Survey Certification</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Retrieval-augmented generation for knowledge-intensive nlp tasks</title>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ethan</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aleksandra</forename><surname>Piktus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vladimir</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heinrich</forename><surname>Küttler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen-Tau</forename><surname>Yih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tim</forename><surname>Rocktäschel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="9459" to="9474" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="24824" to="24837" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Self-consistency improves chain of thought reasoning in language models</title>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=1PL1NIMMrw" />
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Dola: Decoding by contrasting layers improves factuality in large language models</title>
+		<author>
+			<persName><forename type="first">Yung-Sung</forename><surname>Chuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yujia</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongyin</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoon</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Glass</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengcheng</forename><surname>He</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.03883</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">On hallucination and predictive uncertainty in conditional language generation</title>
+		<author>
+			<persName><forename type="first">Yijun</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wang</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 16th Conference of the European Chapter</title>
+		<meeting>the 16th Conference of the European Chapter</meeting>
+		<imprint>
+			<publisher>Main Volume</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="2734" to="2744" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<author>
+			<persName><forename type="first">Liangming</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Saxon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenda</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Deepak</forename><surname>Nathani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wang</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.03188</idno>
+		<title level="m">Automatically correcting large language models:surveying the landscape of diverse self-correction strategies</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Inference-time intervention: Eliciting truthful answers from a language model</title>
+		<author>
+			<persName><forename type="first">Kenneth</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oam</forename><surname>Patel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fernanda</forename><surname>Viégas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hanspeter</forename><surname>Pfister</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Wattenberg</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Locating and editing factual associations in gpt</title>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Bau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Andonian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonatan</forename><surname>Belinkov</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="17359" to="17372" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carroll</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katarina</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="27730" to="27744" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yuntao</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saurav</forename><surname>Kadavath</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandipan</forename><surname>Kundu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jackson</forename><surname>Kernion</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anna</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anna</forename><surname>Goldie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Azalia</forename><surname>Mirhoseini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cameron</forename><surname>Mckinnon</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.08073</idno>
+		<title level="m">Constitutional ai: Harmlessness from ai feedback</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Rlaif: Scaling reinforcement learning from human feedback with ai feedback</title>
+		<author>
+			<persName><forename type="first">Harrison</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Samrat</forename><surname>Phatale</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hassan</forename><surname>Mansoor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kellie</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Mesnard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colton</forename><surname>Bishop</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Victor</forename><surname>Carbune</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhinav</forename><surname>Rastogi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.00267</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Reflexion: an autonomous agent with dynamic memory and self-reflection</title>
+		<author>
+			<persName><forename type="first">Noah</forename><surname>Shinn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Beck</forename><surname>Labash</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashwin</forename><surname>Gopinath</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.11366</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Large language models are reasoners with self-verification</title>
+		<author>
+			<persName><forename type="first">Yixuan</forename><surname>Weng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Minjun</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shizhu</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kang</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Zhao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.09561</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<author>
+			<persName><forename type="first">Gary</forename><surname>Marcus</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2002.06177</idno>
+		<title level="m">The next decade in ai: four steps towards robust artificial intelligence</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Yann</forename><surname>Lecun</surname></persName>
+		</author>
+		<ptr target="https://twitter.com/ylecun/status/1640122342570336267" />
+		<imprint>
+			<date type="published" when="2023-03">March 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">Hallucination is inevitable: An innate limitation of large language models</title>
+		<author>
+			<persName><forename type="first">Ziwei</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sanjay</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohan</forename><surname>Kankanhalli</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2401.11817</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">Cognitive mirage: A review of hallucinations in large language models</title>
+		<author>
+			<persName><forename type="first">Hongbin</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tong</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aijia</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Hua</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weiqiang</forename><surname>Jia</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.06794</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<title level="m" type="main">Training and fine-tuning large language models</title>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Prince</surname></persName>
+		</author>
+		<ptr target="https://www.borealisai.com/research-blogs/training-and-fine-tuning-large-language-models/" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="2023" to="2035" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">TruthfulQA: Measuring how models mimic human falsehoods</title>
+		<author>
+			<persName><forename type="first">Stephanie</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Owain</forename><surname>Evans</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.acl-long.229</idno>
+		<ptr target="https://aclanthology.org/2022.acl-long.229" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<editor>
+			<persName><forename type="first">Preslav</forename><surname>Smaranda Muresan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Aline</forename><surname>Nakov</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Villavicencio</surname></persName>
+		</editor>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Dublin, Ireland</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022-05">May 2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="3214" to="3252" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Labeling images with a computer game</title>
+		<author>
+			<persName><forename type="first">Luis</forename><surname>Von</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ahn</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laura</forename><surname>Dabbish</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the SIGCHI conference on Human factors in computing systems</title>
+		<meeting>the SIGCHI conference on Human factors in computing systems</meeting>
+		<imprint>
+			<date type="published" when="2004">2004</date>
+			<biblScope unit="page" from="319" to="326" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Reliable qos monitoring based on client feedback</title>
+		<author>
+			<persName><forename type="first">Radu</forename><surname>Jurca</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boi</forename><surname>Faltings</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Walter</forename><surname>Binder</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 16th international conference on World Wide Web</title>
+		<meeting>the 16th international conference on World Wide Web</meeting>
+		<imprint>
+			<date type="published" when="2007">2007</date>
+			<biblScope unit="page" from="1003" to="1012" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Incentive schemes for participatory sensing</title>
+		<author>
+			<persName><forename type="first">Goran</forename><surname>Radanovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boi</forename><surname>Faltings</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 14th international conference on autonomous agents and multiagent systems (AAMAS&apos;15), number CONF</title>
+		<meeting>the 14th international conference on autonomous agents and multiagent systems (AAMAS&apos;15), number CONF</meeting>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="page" from="1081" to="1089" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Personalized peer truth serum for eliciting multi-attribute personal data</title>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boi</forename><surname>Faltings</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Uncertainty in Artificial Intelligence</title>
+		<imprint>
+			<biblScope unit="page" from="18" to="27" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note>PMLR</note>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Incentives to counter bias in human computation</title>
+		<author>
+			<persName><forename type="first">Boi</forename><surname>Faltings</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Radu</forename><surname>Jurca</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pearl</forename><surname>Pu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bao</forename><surname>Duy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tran</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Human Computation and Crowdsourcing</title>
+		<meeting>the AAAI Conference on Human Computation and Crowdsourcing</meeting>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="59" to="66" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Incentives for answering hypothetical questions</title>
+		<author>
+			<persName><forename type="first">Radu</forename><surname>Jurca</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boi</forename><surname>Faltings</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Workshop on Social Computing and User Generated Content, EC-11</title>
+		<imprint>
+			<date type="published" when="2011">2011</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title level="m" type="main">Peer truth serum: incentives for crowdsourcing measurements and opinions</title>
+		<author>
+			<persName><forename type="first">Boi</forename><surname>Faltings</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Radu</forename><surname>Jurca</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Goran</forename><surname>Radanovic</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1704.05269</idno>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<title level="m" type="main">Transmission of information: A statistical theory of communications</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Robert</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Fano</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1961">1961</date>
+			<publisher>MIT Press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Jurafsky</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><forename type="middle">H</forename><surname>Martin</surname></persName>
+		</author>
+		<title level="m">Speech and Language Processing: An Introduction to Natural Language Processing, Computational Linguistics, and Speech Recognition</title>
+		<imprint>
+			<publisher>Pearson</publisher>
+			<date type="published" when="2000">2000</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Word association norms, mutual information, and lexicography</title>
+		<author>
+			<persName><forename type="first">Kenneth</forename><surname>Church</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Hanks</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Computational linguistics</title>
+		<imprint>
+			<biblScope unit="volume">16</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="22" to="29" />
+			<date type="published" when="1990">1990</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">Sequence to backward and forward sequences: A content-introducing approach to generative short-text conversation</title>
+		<author>
+			<persName><forename type="first">Lili</forename><surname>Mou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiping</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ge</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lu</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhi</forename><surname>Jin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of COLING 2016, the 26th International Conference on Computational Linguistics: Technical Papers</title>
+		<meeting>COLING 2016, the 26th International Conference on Computational Linguistics: Technical Papers</meeting>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="page" from="3349" to="3358" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">Towards implicit contentintroducing for generative short-text conversation systems</title>
+		<author>
+			<persName><forename type="first">Lili</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yaoyuan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yansong</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dongyan</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Yan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2017 conference on empirical methods in natural language processing</title>
+		<meeting>the 2017 conference on empirical methods in natural language processing</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="2190" to="2199" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Unsupervised context rewriting for open domain conversation</title>
+		<author>
+			<persName><forename type="first">Kun</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shujie</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingsong</forename><surname>Yu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="1834" to="1844" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Targetguided open-domain conversation</title>
+		<author>
+			<persName><forename type="first">Jianheng</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tiancheng</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenyan</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodan</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Xing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiting</forename><surname>Hu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 57th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="5624" to="5634" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">Relevant and informative response generation using pointwise mutual information</title>
+		<author>
+			<persName><forename type="first">Junya</forename><surname>Takayama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuki</forename><surname>Arase</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the First Workshop on NLP for Conversational AI</title>
+		<meeting>the First Workshop on NLP for Conversational AI</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="133" to="138" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<analytic>
+		<title level="a" type="main">Probing factually grounded content transfer with factual ablation</title>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>West</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Quirk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michel</forename><surname>Galley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: ACL 2022</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="3732" to="3746" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Mutual information alleviates hallucinations in abstractive summarization</title>
+		<author>
+			<persName><forename type="first">Liam</forename><surname>Van Der Poel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Cotterell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clara</forename><surname>Meister</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2022 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="5956" to="5965" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">Surface form competition: Why the highest probability answer isn&apos;t always right</title>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>West</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vered</forename><surname>Shwartz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="7038" to="7051" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<analytic>
+		<title level="a" type="main">Calibrate before use: Improving few-shot performance of language models</title>
+		<author>
+			<persName><forename type="first">Zihao</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Wallace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shi</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Klein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sameer</forename><surname>Singh</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="12697" to="12706" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">Answer-level calibration for free-form multiple choice question answering</title>
+		<author>
+			<persName><forename type="first">Sawan</forename><surname>Kumar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="665" to="679" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<analytic>
+		<title/>
+		<idno type="arXiv">arXiv:2303.08774</idno>
+	</analytic>
+	<monogr>
+		<title level="j">OpenAI. Gpt-4 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<monogr>
+		<title level="m" type="main">Llama 2: Open foundation and fine-tuned chat models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amjad</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolay</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prajjwal</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shruti</forename><surname>Bhosale</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<analytic>
+		<title level="a" type="main">Choice of plausible alternatives: An evaluation of commonsense causal reasoning</title>
+		<author>
+			<persName><forename type="first">Melissa</forename><surname>Roemmele</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cosmin</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adrian</forename><surname>Bejan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">S</forename><surname>Gordon</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2011 AAAI Spring Symposium Series</title>
+		<imprint>
+			<date type="published" when="2011">2011</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">A corpus and cloze evaluation for deeper understanding of commonsense stories</title>
+		<author>
+			<persName><forename type="first">Nasrin</forename><surname>Mostafazadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nathanael</forename><surname>Chambers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devi</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucy</forename><surname>Vanderwende</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pushmeet</forename><surname>Kohli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Allen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2016 Conference of the North American Chapter</title>
+		<meeting>the 2016 Conference of the North American Chapter</meeting>
+		<imprint>
+			<publisher>Human Language Technologies</publisher>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="page" from="839" to="849" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<monogr>
+		<title level="m" type="main">Language models are unsupervised multitask learners</title>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<analytic>
+		<title level="a" type="main">Transformers: State-of-the-art natural language processing</title>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Wolf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lysandre</forename><surname>Debut</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Victor</forename><surname>Sanh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julien</forename><surname>Chaumond</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clement</forename><surname>Delangue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anthony</forename><surname>Moi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierric</forename><surname>Cistac</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tim</forename><surname>Rault</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rémi</forename><surname>Louf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Morgan</forename><surname>Funtowicz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 conference on empirical methods in natural language processing: system demonstrations</title>
+		<meeting>the 2020 conference on empirical methods in natural language processing: system demonstrations</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="38" to="45" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

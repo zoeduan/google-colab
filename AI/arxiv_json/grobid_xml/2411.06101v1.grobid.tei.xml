@@ -1,0 +1,1089 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Detecting Reference Errors in Scientific Literature with Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-11-09">9 Nov 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Tianmai</forename><forename type="middle">M</forename><surname>Zhang</surname></persName>
+							<email>tianmai@uw.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Washington</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Neil</forename><forename type="middle">F</forename><surname>Abernethy</surname></persName>
+							<email>neila@uw.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Washington</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Detecting Reference Errors in Scientific Literature with Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-11-09">9 Nov 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">27C1F3A50E6EC5A69685A5A434C37BA8</idno>
+					<idno type="arXiv">arXiv:2411.06101v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:42+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Reference errors, such as citation and quotation errors, are common in scientific papers. Such errors can result in the propagation of inaccurate information, but are difficult and timeconsuming to detect, posing a significant challenge to scientific publishing. To support automatic detection of reference errors, this work evaluated the ability of large language models in OpenAI's GPT family to detect quotation errors. Specifically, we prepared an expertannotated, general-domain dataset of statementreference pairs from journal articles. Large language models were evaluated in different settings with varying amounts of reference information provided by retrieval augmentation. Our results showed that large language models are able to detect erroneous citations with limited context and without fine-tuning. This study contributes to the growing literature that seeks to utilize artificial intelligence to assist in the writing, reviewing, and publishing of scientific papers. Potential avenues for further improvements in this task are also discussed.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Background and Introduction</head><p>Researchers cite literature as references and supporting evidence when reporting their work in papers. The reliability of referencing is usually taken for granted. However, previous citation verification studies in multiple scientific domains have revealed that reference errors of varying degrees are common in scientific papers, with prevalence rates ranging from 11% to 41%, depending on the domain, journal, and methodology <ref type="bibr" target="#b5">(Goldberg et al., 1993;</ref><ref type="bibr" target="#b11">Lee and Lee, 1999;</ref><ref type="bibr" target="#b3">Fenton et al., 2000;</ref><ref type="bibr" target="#b7">Gosling et al., 2004;</ref><ref type="bibr">Lukić et al., 2004;</ref><ref type="bibr" target="#b22">Todd et al., 2010;</ref><ref type="bibr" target="#b9">Jergas and Baethge, 2015;</ref><ref type="bibr" target="#b15">Mogull, 2017;</ref><ref type="bibr" target="#b0">Armstrong et al., 2018;</ref><ref type="bibr" target="#b21">Smith and Cumberledge, 2020;</ref><ref type="bibr">Pavlovic et al., 2021;</ref><ref type="bibr" target="#b2">Cobb et al., 2024)</ref>. Reference errors could result in the propagation of inaccurate information <ref type="bibr" target="#b21">(Smith and Cumberledge, 2020)</ref>, undermining the credibility of scientific research and sometimes leading to serious consequences <ref type="bibr">(Pavlovic et al., 2021)</ref>. For example, hundreds of uncritical citations of a 1980 letter published in the New England Journal of Medicine may have contributed to the opioid crisis in the United States <ref type="bibr" target="#b12">(Leung et al., 2017)</ref>.</p><p>Previous studies defined two major types of reference errors: citation errors and quotation errors. Citation errors usually refer to typographical errors in referencing, such as incorrect reference information (e.g., incorrect authors, title, journal, or year) or the erroneous arrangement of references <ref type="bibr" target="#b21">(Smith and Cumberledge, 2020)</ref>. Citation errors have become less common in the era of digitization and citation managers, although these same factors may enable the propagation of pre-existing citation errors. In contrast, a quotation error specifically refers to the situation where a reference fails to support the statement for which it is cited <ref type="bibr" target="#b21">(Smith and Cumberledge, 2020)</ref>. Notably, these two definitions are not mutually exclusive, as an incorrect assignment of reference indices can manifest as a quotation error in an individual statement-reference pair. Recent studies on referencing errors sometimes use different terms for quotation errors, such as "content errors" <ref type="bibr" target="#b15">(Mogull, 2017)</ref>, "inaccurate citations" <ref type="bibr">(Pavlovic et al., 2021)</ref>, or "miscitations" <ref type="bibr" target="#b2">(Cobb et al., 2024)</ref>. Quotation errors are difficult and timeconsuming to detect, and they often require domain expertise when comparing a statement to relevant information in the reference article <ref type="bibr" target="#b21">(Smith and Cumberledge, 2020)</ref>. Previous studies on reference errors typically utilized domain experts to manually examine samples of scientific papers. The difficulty of detecting quotation errors poses a significant challenge to scientific publishing, as it requires additional efforts by editors and reviewers in peer review. Given the exploding number of papers being published each year, this task is becoming increasingly demanding.</p><p>Fully substantiated: The reference article fully substantiates the relevant part of the statement. Partially substantiated: According to the reference article, there is a minor error in the statement, but the error does not invalidate the purpose of the statement. Unsubstantiated: The reference part does not substantiate any part of the statement. This could be because the statement is contradictory to, unrelated to, or simply missing from the reference article.</p><p>Table 1: Label definitions.</p><p>Recent advances in natural language processing (NLP) have demonstrated astounding capabilities of large language models (LLMs) to perform various types of text-based tasks <ref type="bibr" target="#b17">(Ouyang et al., 2022;</ref><ref type="bibr" target="#b23">Touvron et al., 2023;</ref><ref type="bibr" target="#b16">OpenAI et al., 2024;</ref><ref type="bibr" target="#b6">Google, 2024)</ref>, providing a strong baseline for application in the real world. Researchers have also started exploring ways NLP can assist with paper writing and peer review <ref type="bibr" target="#b10">(Kuznetsov et al., 2024)</ref>. However, none of these studies examined reference error detection. To fill this gap and encourage future attempts to automate reference error detection, this study performed a general-domain evaluation of the capability of LLMs to detect quotation errors in scientific papers.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Task and Related Work</head><p>The quotation error detection task of this work is defined as follows: given a statement s and a reference article r that the statement cites, a model should predict a label f (s, r) ∈ {Fully substantiated, Partially substantiated, Unsubstantiated} to indicate whether the statement-reference pair contains a quotation error. The names and definitions of the labels follow previous citation verification studies <ref type="bibr" target="#b21">(Smith and Cumberledge, 2020;</ref><ref type="bibr" target="#b2">Cobb et al., 2024)</ref>. Complete definitions of the labels are listed in Table <ref type="table">1</ref>.</p><p>There have been some studies in the computer science domain that both utilized citations and employed a similar task or methodology (to ours) but were for different scenarios. Motivated by factchecking claims related to COVID-19, <ref type="bibr" target="#b24">Wadden et al. (2020)</ref> proposed a scientific claim verification task in which each atomic statement/claim is verified against a corpus of paper abstracts to determine whether it is supported or refuted by the</p><p>Label n (%) Unsubstantiated 112 (44.8) Partially substantiated 14 (5.6) Fully substantiated 124 (49.6) Domain n (%) Biology or Medicine 85 (34.0) Chemistry or Material Science 57 (22.8) Physics 26 (10.4) Social Science 26 (10.4) Earth or Environmental Science 24 (9.6) Engineering 17 (6.8) Computer Science 15 (6.0) Reference Availability n (%) Has abstract 242 (96.8) Has PDF 244 (97.6) Has abstract or PDF 250 (100)</p><p>Table 2: Dataset characteristics.</p><p>literature. Several teams of researchers, including Wadden et al. themselves, subsequently developed models for this shared task using the same dataset <ref type="bibr" target="#b19">(Pradeep et al., 2021;</ref><ref type="bibr" target="#b13">Li et al., 2021;</ref><ref type="bibr" target="#b27">Zhang et al., 2021;</ref><ref type="bibr" target="#b25">Wadden et al., 2022)</ref>. Notably, the scientific claim verification task labels a claim that is neither supported nor refuted by the corpus as "Not Enough Information". Furthermore, the scope of the scientific claim verification task was limited to biomedicine. In terms of LLM-generated citations, Wu et al. examined the quality of web-based, instead of peer-reviewed article based, citations generated by LLMs in response to medical questions <ref type="bibr" target="#b26">(Wu et al., 2024)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Dataset and Experiments</head><p>The evaluation dataset is available on GitHub<ref type="foot" target="#foot_0">foot_0</ref> . Distributions of labels, domains, and reference availability in the dataset are summarized in Table <ref type="table">2</ref>. Some examples of quotation errors in the dataset as well as data collection and quality control details are provided in Appendix A and B, respectively. LLMs were given task instructions and information about both the citing article and the reference. The prompt template (Appendix C) was finalized before the start of the experiment. To investigate the impact of information completeness, LLMs were tested in 3 settings with different amounts of information from the reference: (1) With only the title of the reference provided; (2) With both the title and abstract provided; (3) With the title, abstract, and excerpts provided.</p><p>Local retrieval of excerpts from the main body of a reference followed a 3-step retrieval-augmented generation (RAG) <ref type="bibr" target="#b4">(Gao et al., 2024)</ref> pipeline. First, the full text of a reference was extracted from its PDF file by GROBID<ref type="foot" target="#foot_1">foot_1</ref> . The extracted full text was then split into 256-token chunks with 20-token overlaps using LlamaIndex<ref type="foot" target="#foot_2">foot_2</ref> . In the experiment, the embeddings of the chunks were compared to that of the input statement using LlamaIndex, and the top 3 chunks with the highest match to the statement were retrieved and included in the prompt to the LLMs.</p><p>Additionally, we included OpenAI's Assistant API in the experiment since it provides a proprietary RAG workflow for LLMs to utilize information in PDF attachments. The assistant received the same prompt format containing the title of the reference, plus instructions to see the attached PDF file for the full text of the reference.</p><p>Three LLMs in OpenAI's GPT family were evaluated in the experiment: gpt-3.5-turbo-0125, gpt-4-0125-preview, and gpt-4o-2024-05-13. LLMs were prompted to respond with a JSON object containing a predicted label and an explanation for their selection. All LLM experiments were conducted using OpenAI's Python API with temperature set to 0. Model performance was measured by label accuracy. Since <ref type="bibr">Wadden et al.'s (2020)</ref> scientific claim verification task also applies to single statement-reference pairs, relevant models were also tested on our dataset for comparison.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Results</head><p>Table <ref type="table" target="#tab_3">3</ref> provides by-class and overall performance of the models in different settings. GPT-4 Turbo and GPT-4o performed much better than GPT-3.5 Turbo at detecting Unsubstantiated cases, especially when information about the reference article is limited. Provision of more information or the Assistant pipeline did not necessarily improve LLM performance, especially for GPT-3.5 Turbo which performed much better on Fully substantiated cases in the title-only setting than with more information. The models for Wadden et al.'s (2020) scientific claim verification task predicted all statement-reference pairs in our dataset as "Not Enough Information" when using abstracts as ref- erences, suggesting that these models may not be directly applicable to our quotation error detection task. Therefore, they are excluded from Table <ref type="table" target="#tab_3">3</ref>.</p><p>Error analysis revealed that LLMs with low accuracy on Fully substantiated pairs predicted most of them as Partially substantiated. This was frequently the case when a statement contained multiple sub-claims, and LLMs were "confused" by the ambiguity in the span of the part to be verified. For instance, the statement in error example 1 of Appendix D cites the reference article to support its data from South China only. GPT-4 Turbo assumed that the reference should substantiate the entire statement and predicted this case as Partially substantiated because the reference does not support other locations mentioned (Greenland and Svalbard).</p><p>Considering both the rareness of Partially substantiated pairs in the dataset and their relatively low importance from a practical perspective, we then merged Partially and Fully substantiated predictions and performed a secondary analysis of model performance. Two-class performance (Figure <ref type="figure" target="#fig_0">1</ref>) clearly shows that more reference information improved LLM predictions in general.</p><p>A scrutiny of errors and explanations of LLMs revealed distinct model behaviors that are consistent with the trends in model performance. LLM explanations typically begin with a summary of the two articles followed by a comparison of them, clearly showing how a model made its prediction. When only the title of the reference is given, LLMs are forced to rely on superficial relations between the statement and the reference. GPT-3.5 Turbo tends to be permissive as long as the two articles seem to belong to the same research area. When more information is provided, GPT-3.5 Turbo would still rely on such superficial relations, and additional text from the reference that is not directly related to the statement would cause GPT-3.5 Turbo to regard the two articles as not so related. This also explains why GPT-3.5 Turbo's performance on Unsubstantiated cases increased dramatically when more information was provided. Unlike GPT-3.5 Turbo, GPT-4 Turbo and GPT-4o tend to be much stricter in error detection, paying attention to small differences between the statement and the reference, although such differences are usually acceptable for humans since researchers frequently rephrase, abstract, and generalize statements from references, or even combine them with additional information. For instance, the statement in error example 2 of Appendix D mentions copper as an example of transition metal catalysts while introducing Grignard reagents, and GPT-4 Turbo predicted this statement as Partially substantiated because the reference article about Grignard reagents does not mention copper explicitly.</p><p>Considering that hallucination can be a major threat to LLM generation, we carefully reviewed LLM-generated explanations during error analysis. No significant sign of hallucination was found.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Discussion</head><p>Scientific scholarship depends heavily on the ability to trust, verify, replicate, or refute prior research. The increasing availability of electronic publications, advanced search, and citation managers has expanded the ability of researchers to cite existing findings, yet this process is still prone to the introduction of reference errors.</p><p>This study contributes to the growing literature that seeks to utilize artificial intelligence to assist in the writing, reviewing, and publishing of scientific papers by providing a general-domain dataset of statement-reference pairs to encourage future studies in this field. We found that LLMs can detect quotation errors in scientific papers with limited context and without fine-tuning. We also quantified the relative contributions of model versions and increasing levels of context which could affect cost and speed in a production environment. During data collection, we also observed that a higher frequency of major reference errors in a paper appears to reflect citation manipulation behaviors. Given the capability of LLMs to detect quotation errors, this work may also contribute to reducing academic misconduct and fake papers that are polluting the scientific literature <ref type="bibr" target="#b20">(Sanderson, 2024)</ref>.</p><p>Our results reveal misalignment in the comprehension of reference errors between humans and LLMs, which points the way to several promising avenues for further research. Interrogation into the features and mechanisms of quotation error detection may yield insights into which models, training corpora, or fine-tuning schemes would further improve performance. Prompt engineering (e.g. fewshot learning, multi-step chain-of-thought reasoning), ensemble methods, and other approaches are likely to demonstrate further gains in accuracy. Certain domains or types of complex statements appear more resistant to accurate classification; identifying these would help improve performance, characterize system limitations, and develop products to aid comprehensive and efficient systems for editorial and fact-checking tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Limitation</head><p>Our study was limited in size and scope. During the progress of the study, new variants of Claude, Gemini, Llama, and GPT became available, some of which support a long enough context window to accept an entire reference article as input. Other models such as AI21 have more extensive token dictionaries. It is likely that the out-of-the-box performance on this task will continue to advance.</p><p>Other limitations included our reliance on publicized and crowd-sourced datasets, the use of a simple sentence pair annotation scheme, and the treatment of all reference pairs as being equivalent despite potential multiple rationales for citation. In addition, all statement-references pairs in our dataset came from journal articles and were predominantly in natural science domains. Such characteristics limit the generalizability of our findings to papers that are published through other channels (e.g., conferences and preprint platforms) or in research domains that are underrepresented in this study. Further study would benefit from an expanded dataset labeled by multiple domain experts, and a randomly sampled and multilingual dataset indexed by year. We know that oxytocin is released when listening to music, and importantly, oxytocin is increased when participating in several forms of group singing, including improvisation [citation mark].</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Examples of Quotation Errors</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Reference:</head><p>We quantified mood and salivary OXT and cortisol (CORT) concentrations... Happiness was increased, and worry and sadness as well as salivary CORT concentrations were reduced, after both choir and solo singing. Label source: Journal correction</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Data Collection Details</head><p>Statement-reference pairs in the dataset were collected through the following channels: (1) 163 (65.2%) pairs are from previous citation verification studies that either provided traceable examples of quotation errors or shared annotated datasets <ref type="bibr" target="#b11">(Lee and Lee, 1999;</ref><ref type="bibr" target="#b3">Fenton et al., 2000;</ref><ref type="bibr" target="#b7">Gosling et al., 2004;</ref><ref type="bibr">Lukić et al., 2004;</ref><ref type="bibr" target="#b1">Buchan et al., 2005;</ref><ref type="bibr" target="#b8">Handoll and Atkinson, 2015;</ref><ref type="bibr" target="#b21">Smith and Cumberledge, 2020)</ref>. Since the annotated datasets may not provide sufficient details about the specific sentence to be verified, we reviewed each citing article to locate the statement to which the label was assigned. (2) 80 (32.0%) pairs are from PubPeer<ref type="foot" target="#foot_3">foot_3</ref> , a platform for researchers to leave comments on others' publications. While collecting annotations from this source, we cross-referenced papers retracted in 2022 and 2023 due to "concerns or issues about referencing or attributions" in the Retraction Watch Database<ref type="foot" target="#foot_4">foot_4</ref> with those receiving comments mentioning problematic citations on PubPeer; (3) 7 (2.8%) pairs are from corrections, errata, and corrigenda available in the PubMed database.</p><p>Three additional inclusion criteria were applied to the dataset to ensure data quality and experiment reproducibility. First, both the citing and the reference article should have digital versions that are findable through search engines. Second, the reference should be a journal article such that text extraction from the PDF and embedding-based retrieval of text chunks are feasible. Third, the statement to be verified can be uniquely identified in the citing article. The last criterion is necessary because a reference can be cited multiple times for different statements in a paper.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C Prompt Template</head><p>User: You are an experienced scientific writer and editor. You will be given a statement from an article that cites a reference article and information from the reference article. You will determine and explain if the reference article supports the statement. Specifically, choose a label from "Fully substantiated", "Partially substantiated", and "Unsubstantiated". Further explanations of the labels are as follows: "Fully substantiated": The reference article fully substantiates the relevant part of the statement from the present article. "Partially substantiated": According to the reference article, there is a minor error in the statement but the error does not invalidate the purpose of the statement. "Unsubstantiate": The reference part does not substantiate any part of the statement. This could be because the statement is contradictory to, unrelated to, or simply missing from the reference article.</p><p>Format your answer in JSON with two elements-"label" and "explanation". Your explanation should be short and concise. # The citing article Title: {title} Statement: {statement} # The reference article Title: {reference_title} Abstract: {reference_abstract} Excerpts: {reference_excerpts}</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Two-class performance of LLMs. "T", "A", "E" stand for title, abstract, and excerpts, respectively.</figDesc><graphic coords="3,306.14,70.87,218.26,161.10" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>Example 1: Partially substantiated Reason: Incorrect number Statement:The relative topography of the origins of the renal aa. from the aorta was found to be variable, thus confirming earlier observations from angiographic studies in which the right a. arose more proximally in 65% of cases [citation mark].Reference:The ostium of the right renal a. was more cranial than the ostium of the left renal a. (53.3%) ... Label source: (Smith and Cumberledge, 2020) Example 2: Partially substantiated Reason: Missing condition Statement: At very high crystallinities (very low melt permeabilities), gas-generated overpressures can fracture and brecciate the solidifying mush [citation mark]. Reference: ... for overpressure to develop, the combined crystallization expansion of plagioclase and exsolution of water is required to overcome the crystallization contraction of the other crystallizing phases... The requirement that plagioclase joins the liquidus for crystallization overpressure to develop is significant... Label source: (Smith and Cumberledge, 2020) Example 3: Unsubstantiated Reason: Irrelevant reference Statement: There is an extremely significant positive correlation between students' behavioral participation, cognitive participation, emotional participation, and their variables and translation performance in high school translation classrooms [citation mark]. Reference: (Title) Strong negative correlation between codon usage bias and protein structural disorder impedes protein expression after codon optimization Label source: PubPeer Example 4: Unsubstantiated Reason: Contradiction Statement:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 3 :</head><label>3</label><figDesc>LLM performance on quotation error detection.</figDesc><table><row><cell>Model</cell><cell>Given Information</cell><cell cols="3">Accuracy by Class</cell><cell>Accuracy</cell></row><row><cell></cell><cell></cell><cell cols="3">Un Partially Fully</cell><cell>Overall</cell></row><row><cell cols="2">GPT-3.5 Turbo Title</cell><cell>64.3</cell><cell>14.3</cell><cell>73.4</cell><cell>66.0</cell></row><row><cell></cell><cell>Title + Abstract</cell><cell>84.8</cell><cell>57.1</cell><cell>30.6</cell><cell>56.4</cell></row><row><cell></cell><cell cols="2">Title + Abstract + Excerpts 79.5</cell><cell>57.1</cell><cell>30.6</cell><cell>54.0</cell></row><row><cell></cell><cell>Title + PDF (Assistant)</cell><cell>79.5</cell><cell>14.3</cell><cell>63.7</cell><cell>68.0</cell></row><row><cell>GPT-4 Turbo</cell><cell>Title</cell><cell>89.3</cell><cell>14.3</cell><cell>36.3</cell><cell>58.8</cell></row><row><cell></cell><cell>Title + Abstract</cell><cell>89.3</cell><cell>35.7</cell><cell>39.5</cell><cell>61.6</cell></row><row><cell></cell><cell cols="2">Title + Abstract + Excerpts 83.9</cell><cell>21.4</cell><cell>62.9</cell><cell>70.0</cell></row><row><cell></cell><cell>Title + PDF (Assistant)</cell><cell>84.8</cell><cell>35.7</cell><cell>55.6</cell><cell>67.6</cell></row><row><cell>GPT-4o</cell><cell>Title</cell><cell>90.2</cell><cell>14.3</cell><cell>29.8</cell><cell>56.0</cell></row><row><cell></cell><cell>Title + Abstract</cell><cell>92.0</cell><cell>28.6</cell><cell>13.7</cell><cell>49.6</cell></row><row><cell></cell><cell cols="2">Title + Abstract + Excerpts 86.6</cell><cell>50.0</cell><cell>34.7</cell><cell>58.8</cell></row><row><cell></cell><cell>Title + PDF (Assistant)</cell><cell>83.9</cell><cell>21.4</cell><cell>58.9</cell><cell>68.0</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://github.com/tianmai-zhang/ ReferenceErrorDetection</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>https://github.com/kermitt2/grobid</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>https://github.com/jerryjliu/llama_index</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>https://pubpeer.com/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_4"><p>http://retractiondatabase.org/</p></note>
+		</body>
+		<back>
+
+			
+			<div type="acknowledgement">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Acknowledgments</head><p>The authors received no funding for this study.</p></div>
+			</div>
+
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D Examples of Incorrect Predictions</head><p>Abstract and excerpts of the reference were provided in the experiment but omitted here.</p><p>Example 1 from GPT-4 Turbo Title of the citing article: Snowball Earth climate dynamics and Cryogenian geology-geobiology Statement:</p><p>In East Greenland, East Svalbard, and South China [citation mark], 0.2 to 0.3 km (uncompacted) of fine-grained terrigenous strata appear. Title of the reference: Reconstruction of paleo-redox conditions and early sulfur cycling during deposition of the Cryogenian Datangpo Formation in South China Gold label: Fully substantiated LLM label: Partially substantiated LLM explanation:</p><p>The reference article focuses on the paleo-redox conditions, sulfur cycling, and the deposition environment of the Datangpo Formation in South China during the Cryogenian period, without mentioning the specific thickness of uncompacted fine-grained terrigenous strata in East Greenland, East Svalbard, and South China. Therefore, it does not substantiate the statement regarding the thickness of terrigenous strata in these locations.</p><p>Example 2 from GPT-4 Turbo Title of the citing article: Transition metal-catalyzed alkyl-alkyl bond formation: Another dimension in cross-coupling chemistry Statement:</p><p>In early studies, primary alkyl electrophiles were coupled with alkylmagnesium reagents (Grignard reagents) in the presence of transition metal catalysts such as copper [citation mark]. Title of the reference: New developments in palladium catalysed cross coupling: The coupling of alkyl iodides with alkyl Grignard reagents Gold label: Fully substantiated LLM label: Partially substantiated LLM explanation:</p><p>The reference article supports the use of alkylmagnesium reagents (Grignard reagents) in cross-coupling reactions with alkyl electrophiles, specifically alkyl iodides, in the presence of a transition metal catalyst (palladium). However, it does not mention copper as a catalyst, focusing instead on a palladium-based system. Thus, while the reference article substantiates the general process of alkyl-alkyl bond formation using transition metal catalysts and Grignard reagents, it does not support the specific mention of copper as a catalyst.</p><p>Example 3 from GPT-4 Turbo Title of the citing article: Solar radiation impact on ferrofluid convection with applying electric field Statement:</p><p>The nanoliquids are a mixture of typical fluids with nano-powders illustrating great range of heat transfer [citation mark]. Title of the reference: Comprehensive evaluation of flat plate and parabolic dish solar collectors' performance using different operating fluids and MWCNT nanofluid in different climatic conditions Gold label: Unsubstantiated LLM label: Fully substantiated LLM explanation:</p><p>The reference article directly supports the statement by demonstrating that the addition of nanoparticles (e.g., MWCNT) to base fluids increases the thermal conductivity of the fluid, thereby illustrating a great range of heat transfer enhancement. This is evidenced by the specific mention of increased thermal conductivity and better performance of solar systems using nanofluids.</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Reference errors in otolaryngology-head and neck surgery literature</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Michael</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">H</forename><surname>Armstrong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><forename type="middle">E</forename><surname>Conduff</surname><genName>III</genName></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">H</forename><surname>Fenton</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Coelho</surname></persName>
+		</author>
+		<idno type="DOI">10.1177/0194599818772521</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Otolaryngology-Head and Neck Surgery</title>
+		<imprint>
+			<biblScope unit="volume">159</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="249" to="253" />
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Accuracy of referencing in the ophthalmic literature</title>
+		<author>
+			<persName><forename type="first">John</forename><forename type="middle">C</forename><surname>Buchan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Norris</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannah</forename><surname>Kuper</surname></persName>
+		</author>
+		<idno type="DOI">10.1016/j.ajo.2005.07.018</idno>
+	</analytic>
+	<monogr>
+		<title level="j">American Journal of Ophthalmology</title>
+		<imprint>
+			<biblScope unit="volume">140</biblScope>
+			<biblScope unit="issue">6</biblScope>
+			<biblScope unit="page" from="1146" to="1148" />
+			<date type="published" when="2005">2005</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">The problem of miscitation in psychological science: Righting the ship</title>
+		<author>
+			<persName><forename type="first">Cory</forename><forename type="middle">L</forename><surname>Cobb</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brianna</forename><surname>Crumly</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pablo</forename><surname>Montero-Zamora</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Seth</forename><forename type="middle">J</forename><surname>Schwartz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><forename type="middle">R</forename><surname>Martínez</surname><genName>Jr</genName></persName>
+		</author>
+		<idno type="DOI">10.1037/amp0001138</idno>
+	</analytic>
+	<monogr>
+		<title level="j">American Psychologist</title>
+		<imprint>
+			<biblScope unit="volume">79</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="299" to="311" />
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">The accuracy of citation and quotation in otolaryngology/head and neck surgery journals</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E</forename><surname>Fenton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Brazier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">De</forename><surname>Souza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">P</forename><surname>Hughes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">P</forename><surname>Mcshane</surname></persName>
+		</author>
+		<idno type="DOI">10.1046/j.1365-2273.2000.00322.x</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Clinical Otolaryngology and Allied Sciences</title>
+		<imprint>
+			<biblScope unit="volume">25</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="40" to="44" />
+			<date type="published" when="2000">2000</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Retrieval-augmented generation for large language models: A survey</title>
+		<author>
+			<persName><forename type="first">Yunfan</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yun</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyu</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kangxiang</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinliu</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxi</forename><surname>Bi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiawei</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haofen</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2312.10997</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Computing Research Repository</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Reference accuracy in the emergency medicine literature</title>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Goldberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edward</forename><surname>Newton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julie</forename><surname>Cameron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raymond</forename><surname>Jacobson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linda</forename><surname>Chan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">Richard</forename><surname>Bukata</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amine</forename><surname>Rakab</surname></persName>
+		</author>
+		<idno type="DOI">10.1016/s0196-0644(05)81995-x</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Annals of Emergency Medicine</title>
+		<imprint>
+			<biblScope unit="volume">22</biblScope>
+			<biblScope unit="issue">9</biblScope>
+			<biblScope unit="page" from="1450" to="1454" />
+			<date type="published" when="1993">1993</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Gemini: A family of highly capable multimodal models</title>
+		<author>
+			<persName><forename type="first">Gemini</forename><surname>Team</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Google</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:2312.11805</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Computing Research Repository</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Referencing and quotation accuracy in four manual therapy journals</title>
+		<author>
+			<persName><forename type="first">Cameron</forename><surname>Mcr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gosling</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melainie</forename><surname>Cameron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><forename type="middle">F</forename><surname>Gibbons</surname></persName>
+		</author>
+		<idno type="DOI">10.1016/s1356-689x(03)00056-0</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Manual Therapy</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="36" to="40" />
+			<date type="published" when="2004">2004</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Snowballing citations</title>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">G</forename><surname>Helen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Greg</forename><surname>Handoll</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Atkinson</surname></persName>
+		</author>
+		<idno type="DOI">10.1136/bmj.h6309</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Clinical research</title>
+		<imprint>
+			<biblScope unit="page" from="351" to="6309" />
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+	<note>BMJ</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Quotation accuracy in medical journal articles-a systematic review and meta-analysis</title>
+		<author>
+			<persName><forename type="first">Hannah</forename><surname>Jergas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Baethge</surname></persName>
+		</author>
+		<idno type="DOI">10.7717/peerj.1364</idno>
+	</analytic>
+	<monogr>
+		<title level="j">PeerJ</title>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+	<note>3:e1364</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">What can natural language processing do for peer review?</title>
+		<author>
+			<persName><forename type="first">Ilia</forename><surname>Kuznetsov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Osama</forename><surname>Mohammed Afzal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Koen</forename><surname>Dercksen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nils</forename><surname>Dycke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Goldberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Hope</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dirk</forename><surname>Hovy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><forename type="middle">K</forename><surname>Kummerfeld</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anne</forename><surname>Lauscher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Leyton-Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Margot</forename><surname>Mausam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aurélie</forename><surname>Mieskes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danish</forename><surname>Névéol</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lizhen</forename><surname>Pruthi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roy</forename><surname>Qu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><forename type="middle">A</forename><surname>Schwartz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thamar</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingyan</forename><surname>Solorio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2405.06563</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Computing Research Repository</title>
+		<editor>
+			<persName><forename type="first">B</forename><surname>Nihar</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Iryna</forename><surname>Shah</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Gurevych</surname></persName>
+		</editor>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<pubPlace>Anna Rogers</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">A survey of reference accuracy in two asian dermatologic journals (the journal of dermatology and the korean journal of dermatology)</title>
+		<author>
+			<persName><forename type="first">Sung</forename><surname>Yul</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lee</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jong</forename><surname>Suk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lee</forename></persName>
+		</author>
+		<idno type="DOI">10.1046/j.1365-4362.1999.00706.x</idno>
+	</analytic>
+	<monogr>
+		<title level="j">International Journal of Dermatology</title>
+		<imprint>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="issue">5</biblScope>
+			<biblScope unit="page" from="357" to="360" />
+			<date type="published" when="1999">1999</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">A 1980 letter on the risk of opioid addiction</title>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">M</forename><surname>Pamela</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erin</forename><forename type="middle">M</forename><surname>Leung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><forename type="middle">B</forename><surname>Macdonald</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Irfan</forename><forename type="middle">A</forename><surname>Stanbrook</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><forename type="middle">N</forename><surname>Dhalla</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Juurlink</surname></persName>
+		</author>
+		<idno type="DOI">10.1056/NEJMc1700150</idno>
+	</analytic>
+	<monogr>
+		<title level="j">The New England Journal of Medicine</title>
+		<imprint>
+			<biblScope unit="volume">376</biblScope>
+			<biblScope unit="issue">22</biblScope>
+			<biblScope unit="page" from="2194" to="2195" />
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">A paragraph-level multi-task learning model for scientific fact-verification</title>
+		<author>
+			<persName><forename type="first">Xiangci</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gully</forename><surname>Burns</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nanyun</forename><surname>Peng</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2012.14500</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Computing Research Repository</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Vedran Katavić, Vladimira Vucenik, and Ana Marusić. 2004. Citation and quotation accuracy in three anatomy journals</title>
+		<author>
+			<persName><forename type="first">Ivan</forename><surname>Kresimir Lukić</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anita</forename><surname>Lukić</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vicko</forename><surname>Gluncić</surname></persName>
+		</author>
+		<idno type="DOI">10.1002/ca.10255</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Clinical Anatomy</title>
+		<imprint>
+			<biblScope unit="volume">17</biblScope>
+			<biblScope unit="issue">7</biblScope>
+			<biblScope unit="page" from="534" to="539" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Accuracy of cited &quot;facts&quot; in medical research articles: A review of study methodology and recalculation of quotation error rate</title>
+		<author>
+			<persName><forename type="first">Scott</forename><forename type="middle">A</forename><surname>Mogull</surname></persName>
+		</author>
+		<idno type="DOI">10.1371/journal.pone.0184727</idno>
+	</analytic>
+	<monogr>
+		<title level="j">PLOS ONE</title>
+		<imprint>
+			<biblScope unit="volume">12</biblScope>
+			<biblScope unit="issue">9</biblScope>
+			<biblScope unit="page">184727</biblScope>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Ilge Akkaya, Florencia Leoni Aleman, Diogo Almeida, Janko Altenschmidt, Sam Altman</title>
+		<author>
+			<persName><forename type="first">Josh</forename><surname>Openai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Adler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lama</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ahmad</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.08774</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Gpt-4 technical report. Computing Research Repository</title>
+		<editor>
+			<persName><forename type="first">Shyamal</forename><surname>Anadkat</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Red</forename><surname>Avila</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Igor</forename><surname>Babuschkin</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Suchir</forename><surname>Balaji</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Valerie</forename><surname>Balcom</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Paul</forename><surname>Baltescu</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Haiming</forename><surname>Bao</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Mohammad</forename><surname>Bavarian</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jeff</forename><surname>Belgum</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">.</forename><forename type="middle">.</forename></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</editor>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carroll</forename><forename type="middle">L</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katarina</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Schulman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fraser</forename><surname>Kelton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Miller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maddie</forename><surname>Simens</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Welinder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Christiano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Lowe</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Computing Research Repository</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title level="m" type="main">Andrija Pavlovic, Ranine Ghamrawi, Vesna Garovic, and Natasa Milic. 2021. How accurate are citations of frequently cited papers in biomedical literature? Clinical science</title>
+		<author>
+			<persName><forename type="first">Vedrana</forename><surname>Pavlovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tracey</forename><surname>Weissgerber</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dejana</forename><surname>Stanisavljevic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tatjana</forename><surname>Pekmezovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ognjen</forename><surname>Milicevic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jelena</forename><surname>Milin Lazovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andja</forename><surname>Cirkovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marko</forename><surname>Savic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nina</forename><surname>Rajovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pavle</forename><surname>Piperac</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nemanja</forename><surname>Djuric</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Petar</forename><surname>Madzarevic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ana</forename><surname>Dimitrijevic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simona</forename><surname>Randjelovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emilija</forename><surname>Nestorovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Remi</forename><surname>Akinyombo</surname></persName>
+		</author>
+		<idno type="DOI">10.1042/CS20201573</idno>
+		<imprint>
+			<date type="published" when="1979">1979</date>
+			<biblScope unit="volume">135</biblScope>
+			<biblScope unit="page" from="671" to="681" />
+			<pubPlace>London, England</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Scientific claim verification with vert5erini</title>
+		<author>
+			<persName><forename type="first">Ronak</forename><surname>Pradeep</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xueguang</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rodrigo</forename><surname>Nogueira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jimmy</forename><surname>Lin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 12th International Workshop on Health Text Mining and Information Analysis</title>
+		<meeting>the 12th International Workshop on Health Text Mining and Information Analysis</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="94" to="103" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Science&apos;s fake-paper problem: high-profile effort will tackle paper mills</title>
+		<author>
+			<persName><forename type="first">Katharine</forename><surname>Sanderson</surname></persName>
+		</author>
+		<idno type="DOI">10.1038/d41586-024-00159-9</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Nature</title>
+		<imprint>
+			<biblScope unit="volume">626</biblScope>
+			<biblScope unit="issue">7997</biblScope>
+			<biblScope unit="page" from="17" to="18" />
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Quotation errors in general science journals</title>
+		<author>
+			<persName><forename type="first">Neal</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaron</forename><surname>Cumberledge</surname></persName>
+		</author>
+		<idno type="DOI">10.1098/rspa.2020.0538</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Proceedings of the Royal Society A: Mathematical, Physical and Engineering Sciences</title>
+		<imprint>
+			<biblScope unit="volume">476</biblScope>
+			<biblScope unit="page">20200538</biblScope>
+			<date type="published" when="2020">2020. 2242</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">One in four citations in marine biology papers is inappropriate</title>
+		<author>
+			<persName><forename type="first">Peter</forename><forename type="middle">A</forename><surname>Todd</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><forename type="middle">R</forename><surname>Guest</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junxiu</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Loke</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Chou</surname></persName>
+		</author>
+		<idno type="DOI">10.3354/MEPS08587</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Marine Ecology Progress Series</title>
+		<imprint>
+			<biblScope unit="volume">408</biblScope>
+			<biblScope unit="page" from="299" to="303" />
+			<date type="published" when="2010">2010</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Llama: Open and efficient foundation language models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Faisal</forename><surname>Azhar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aurelien</forename><surname>Rodriguez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Armand</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edouard</forename><surname>Grave</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lample</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Computing Research Repository</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Fact or fiction: Verifying scientific claims</title>
+		<author>
+			<persName><forename type="first">David</forename><surname>Wadden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shanchuan</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyle</forename><surname>Lo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucy</forename><forename type="middle">Lu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Madeleine</forename><surname>Van Zuylen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arman</forename><surname>Cohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannaneh</forename><surname>Hajishirzi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.emnlp-main.609</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="7534" to="7550" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Multivers: Improving scientific claim verification with weak supervision and full-document context</title>
+		<author>
+			<persName><forename type="first">David</forename><surname>Wadden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyle</forename><surname>Lo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucy</forename><forename type="middle">Lu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arman</forename><surname>Cohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iz</forename><surname>Beltagy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannaneh</forename><surname>Hajishirzi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.findings-naacl.6</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: NAACL 2022</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="61" to="76" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">How well do llms cite relevant medical references? an evaluation framework and analyses</title>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ally</forename><surname>Cassasola</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angela</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Teresa</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sith</forename><surname>Riantawan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patricia</forename><surname>Shi Riantawan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">E</forename><surname>Ho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Zou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.02008</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Computing Research Repository</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Abstract, rationale, stance: A joint model for scientific claim verification</title>
+		<author>
+			<persName><forename type="first">Zhiwei</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiyi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fumiyo</forename><surname>Fukumoto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanming</forename><surname>Ye</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.emnlp-main.290</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="3580" to="3586" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

@@ -1,0 +1,1734 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">An Open-Source Data Contamination Report for Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Yucheng</forename><surname>Li</surname></persName>
+							<email>yucheng.li@surrey.ac.uk</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Surrey</orgName>
+								<address>
+									<country key="GB">UK</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Frank</forename><surname>Guerin</surname></persName>
+							<email>f.guerin@surrey.ac.uk</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Surrey</orgName>
+								<address>
+									<country key="GB">UK</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Chenghua</forename><surname>Lin</surname></persName>
+							<email>chenghua.lin@manchester.ac.uk</email>
+							<affiliation key="aff1">
+								<orgName type="institution">University of Manchester</orgName>
+								<address>
+									<country key="GB">UK</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">An Open-Source Data Contamination Report for Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">63FA040CF300DC11B3CA26DB29B3AB96</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:21+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Data contamination in model evaluation has become increasingly prevalent with the growing popularity of large language models. It allows models to "cheat" via memorisation instead of displaying true capabilities. Therefore, contamination analysis has become an crucial part of reliable model evaluation to validate results. However, existing contamination analysis is usually conducted internally by large language model developers and often lacks transparency and completeness. This paper presents an extensive data contamination report for over 15 popular large language models across six popular multiple-choice QA benchmarks. We also introduce an open-source pipeline that enables the community to perform contamination analysis on customised data and models. Our experiments reveal varying contamination levels ranging from 1% to 45% across benchmarks, with the contamination degree increasing rapidly over time. Performance analysis of large language models indicates that data contamination does not necessarily lead to increased model metrics: while significant accuracy boosts of up to 14% and 7% are observed on contaminated C-Eval and Hellaswag benchmarks, only a minimal increase is noted on contaminated MMLU. We also find larger models seem able to gain more advantages than smaller models on contaminated test sets.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Recent years have seen remarkable progress in language models pre-trained on massive text corpora scraped from the web. However, many widely used evaluation benchmarks are also constructed from similar web sources, leading to a concerning issue of data contamination where examples from test sets are unintentionally included in training data. Contamination enables models to "cheat" via memorisation of test data rather than displaying true generalisation <ref type="bibr">(Marie, 2023)</ref>, which creates an illusion of progress, distorts model comparisons, and undermines the utility of benchmarks <ref type="bibr" target="#b16">(Jacovi et al., 2023;</ref><ref type="bibr" target="#b23">Sainz et al., 2023)</ref>.</p><p>Contamination analysis therefore became a crucial part of reliable LLM evaluation to validate the results. However, existing contamination analysis is often conducted internally by LLM developers and often lacks transparency and completeness. For instance, OpenAI's contamination study for <ref type="bibr">GPT-4 (OpenAI, 2023)</ref> only covered the pre-training data and omitted later fine-tuning stages. Llama-2 <ref type="bibr">(Touvron et al., 2023b)</ref> only reported contamination statistics for 2 of the 20+ benchmarks used in their evaluation. In addition, their implementation details of contamination identification remains unclear. Overall, existing internal contamination studies tend to lack sufficient transparency, with minimal sharing of comprehensive contamination measurements across all evaluation benchmarks, as well as training data details and code to reproduce the results. This prevents the wider research community from fully auditing the credibility of reported metrics and model capabilities.</p><p>This paper presents an open contamination analysis for over 15 popular large language models on six common multiple-choice benchmarks, aiming to provide more comprehensive measurements and insights compared to limited existing studies. The analysis includes a range of foundation models such as LLaMA <ref type="bibr">(Touvron et al., 2023a)</ref>, Llama-2, Yi <ref type="bibr" target="#b32">(Yi, 2023)</ref>, Mistral <ref type="bibr">(Jiang et al., 2023)</ref>, Baichuan <ref type="bibr">(Yang et al., 2023)</ref>, and Qwen <ref type="bibr">(Bai et al., 2023)</ref> across multiple model sizes (7B, 13B, 30B, 34B, 65B, 70B parameters) as well as instruct-tuned models built on these foundations like Llama-2 Chat and Mistral-Instruct. Six widely used multi-choice benchmarks are assessed: Winogrande <ref type="bibr" target="#b24">(Sakaguchi et al., 2021)</ref>, AI2_ARC <ref type="bibr" target="#b10">(Clark et al., 2018)</ref>, CommonsenseQA <ref type="bibr" target="#b27">(Talmor et al., 2018)</ref>, HellaSwag <ref type="bibr" target="#b33">(Zellers et al., 2019)</ref>, MMLU <ref type="bibr">(Hendrycks et al., 2021a)</ref>, and C-Eval <ref type="bibr">(Huang et al., 2023)</ref>. Our methodology proceeds in four steps: arXiv:2310.17589v3 [cs.CL] 29 Jan 2024 first, we verify whether test examples appear in Common Crawl 1 , a popular large corpus often used in language model pre-training. If a test example is found verbatim in Common Crawl, it was very likely included in the pre-training phrase of language models, making it a "contaminated" sample. Based on the presence of test samples, we then categorise benchmarks into the clean set and contaminated set. Finally, we compare model performance on these subsets to assess the impact of data contamination on evaluation results. At the end of the paper, we compare our analysis to Llama-2's original contamination results and discuss the effectiveness of existing contamination mitigation methods.</p><p>Our analysis reveals the following key findings: 1) we detect varying levels of data contamination across benchmarks, with 1% to 45.8% of examples showing verbatim overlap with Common Crawl; 2) by comparing the contamination degree between Common Crawl Dec 2020 to Oct 2023, we find data contamination grows rapidly through time; 3) data contamination does not necessarily lead to increased model performance: we found significant accuracy boosts of 14% and 7% on C-Eval and Hellaswag, but very little increase on MMLU; 4) we also find a tendency that larger models seems to obtain more advantages than smaller models from data contamination, perhaps due to the more powerful memorisation capacities of larger models; 5) finally, we show our results align well with Llama's original contamination reports, demonstrating the effectiveness of our method.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Data Contamination</head><p>What is data contamination? Data contamination refers to the phenomenon that examples from the test set are also found in the training data. This might lead to the evaluation failing to accurately reflect models' capabilities, as models can cheat by memorising instead of learning to generalise. There are two primary types of data contamination <ref type="bibr" target="#b12">(Dodge et al., 2021)</ref>: input contamination refers to only the input appearing in the pretraining corpus, and input-and-label contamination is when both inputs and their labels are present. The latter is generally more problematic, as models can directly memorise input-output pairs. But the first can still cause issues as models may gain an advantage even if only the input is learned (see §6 for details), espe-1 <ref type="url" target="https://commoncrawl.org/">https://commoncrawl.org/</ref> cially for assessing few-shot and zero-shot learning capabilities.</p><p>How common is data contamination? Data contamination appears to be quite widespread across commonly used NLP benchmark datasets based on findings from recent studies. <ref type="bibr" target="#b12">Dodge et al. (2021)</ref> revealed exact match contamination rates ranging from under 2% to over 50% on various GLUE benchmarks when compared to the C4 pretraining data. The GPT-3 study <ref type="bibr" target="#b4">(Brown et al., 2020)</ref> found over 90% of examples in Quac, SQuADv2, and DROP were flagged as contaminated. FLAN <ref type="bibr" target="#b30">(Wei et al., 2021)</ref> evaluations identified 7 out of 26 datasets exhibiting a serious contamination ratio of 50% and over. Llama-2 <ref type="bibr">(Touvron et al., 2023a)</ref> reported over 16% of MMLU examples are contaminated and about 11% are seriously contaminated (more than 80% token leakage). <ref type="bibr">GPT-4 (OpenAI, 2023)</ref> use academic exams instead of NLP benchmarks for model evaluation. While 4 out of 34 exams are found have zero contamination (e.g., Leetcode and Bar Exam), 9 out of 34 showed over 20% of instances are marked as dirty examples. In summary, we found data contamination is becoming an increasingly prevalent issue for LLMs, which must be carefully measured and accounted for in order to accurately assess model performance.</p><p>How to identify data contamination? <ref type="bibr" target="#b12">Dodge et al. (2021)</ref> takes a straightforward approach to detect exact matches between test set examples and the pretraining data after normalising for capitalisation and punctuation. The exact match here means the entire input of an evaluation text is found in the training data. The GPT-3 paper <ref type="bibr" target="#b4">(Brown et al., 2020)</ref> uses n-gram overlap to identify contamination, treating any examples with 13-gram co-occurrence in both test sets and training data as dirty examples. PaLM <ref type="bibr">(Chowdhery et al., 2022)</ref> considers a sample to be contaminated if 70% of its 8-grams can be found at least once in the training data. Llama-2 matches on verbalised and tokenized input to allow a token-level approach to identify contamination. It also involves a "skipgram budget" to allow slight variants in overlapping. Overall, existing approaches usually use substring matching between evaluation examples and training data to identify data contamination. However, if we have no access to the training data, which is often the case for most recent closed models, it is extremely difficult to reveal contamination by observing models themselves. In this paper, we utilise a pipeline consisting of a search engine and Common Crawl index for detecting potentially contaminated test samples, avoiding the need for full training data. This enables the community and third parties to conduct contamination analysis.</p><p>To what extent does data contamination affect model evaluation? While contaminated data can potentially inflate scores, models do not necessarily perform worse on clean subsets or better on dirty subsets across all datasets. The degree of impact likely depends on factors like the dataset characteristics, model scale, and nature of the pretraining data. For instance, GPT-3 <ref type="bibr" target="#b4">(Brown et al., 2020)</ref> showed a small 1-2% performance drop on clean subsets for PIQA and ReCoRD, comparing to a significant 6% drop on clean set of SQuAD as 94% of its test examples were contaminated. The LLaMA model <ref type="bibr">(Touvron et al., 2023a)</ref> did not show significant gaps between clean and dirty subset performance. On HellaSwag, LLaMA's 70B model showed a 15.3 point gap between clean (63.5) and dirty (78.8) subsets. Detecting and accounting for data contamination remains an active area of research, as there is no consensus yet on best methodologies and acceptable contamination levels.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Benchmarks for Language Models</head><p>Clean and robust benchmarks are the key to guide further progress of various models in NLP. Popular benchmarks used to evaluate large language models include:</p><p>Comprehensive: MMLU, Big Bench <ref type="bibr" target="#b26">(Srivastava and et al., 2023)</ref>, AGI Eval <ref type="bibr" target="#b34">(Zhong et al., 2023)</ref></p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>, C-Eval</head><p>Commonsense reasoning: PIQA <ref type="bibr" target="#b3">(Bisk et al., 2019)</ref>, SIQA <ref type="bibr" target="#b25">(Sap et al., 2019)</ref>, HellaSwag, WinoGrande, ARC, Open-BookQA <ref type="bibr" target="#b20">(Mihaylov et al., 2018)</ref>, Com-monsenseQA World knowledge: NaturalQuestions <ref type="bibr" target="#b19">(Kwiatkowski et al., 2019)</ref>, TriviaQA <ref type="bibr" target="#b18">(Joshi et al., 2017)</ref> Reading comprehension: SQuAD <ref type="bibr" target="#b22">(Rajpurkar et al., 2018)</ref>, QuAC <ref type="bibr" target="#b7">(Choi et al., 2018)</ref>, BoolQ <ref type="bibr" target="#b9">(Clark et al., 2019)</ref> Math: GSM8K <ref type="bibr" target="#b11">(Cobbe et al., 2021)</ref>, MATH <ref type="bibr">(Hendrycks et al., 2021b)</ref> Code: HumanEval <ref type="bibr" target="#b11">(Chen et al., 2021)</ref>, MBPP <ref type="bibr" target="#b0">(Austin et al., 2021)</ref> As many of their construction rely heavily on online materials, they are highly prone to data contamination as their source spread on the internet. In this paper, we analyse six representative multi-choice QA benchmarks: MMLU, C-Eval, Winogrande, CommonsenseQA, ARC, and Hellaswag. These benchmarks have been selected due to their varied sources and potential susceptibility to data contamination. MMLU, ARC, and C-Eval, which are academic test-based benchmarks, were compiled from online .docx/.pdf files using techniques like OCR, typically assumed to be less affected by data contamination as such files are often not indexed by online crawlers. However, C-Eval stands out as it is a non-English (Chinese) benchmark, offering an opportunity to assess the impact of non-English benchmarks on language models. Winogrande, uniquely human-authored from scratch, allows examination of whether manually created benchmarks are less prone to data contamination. CommonsenseQA and Hellaswag, both internetsourced, differ in their source popularity; while CommonsenseQA is built upon the less influential ConceptNet, Hellaswag is sourced from the more popular WikiHow. This selection of benchmarks provides a comprehensive overview of how different sourcing and construction methods might influence the presence and extent of data contamination in language model evaluations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Our Approach</head><p>The central goal of data contamination analysis is to categorise test samples as either clean or contaminated and then evaluate models separately on the clean and contaminated samples to assess the impact of contamination on the performance metrics. In this section, we describe our methodology to identify contaminated test samples. The basic idea of detecting contaminated examples in our method is to check whether test examples appear verbatim in Common Crawl. We base on Common Crawl because it is completely open-sourced and often comprises the majority of pre-training data for large language models, e.g., Common Crawl weights over 80% in GPT-3 and LLaMA training data <ref type="bibr" target="#b4">(Brown et al., 2020;</ref><ref type="bibr">Touvron et al., 2023a)</ref>.</p><p>We tailor our search window based on each model's training data collection period. For example, LLaMA models use Common Crawl dumps from 2017 to 2020, which makes our contamination search window 2017-2020. For models with To construct the search queries, we verbalise examples accordingly and make sure the question and the correct answer are involved in the queries. For example:</p><p>Question: The flaw in Anderson's ACT theory was that some considered it ____.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Choices:</head><p>A: 'Only applicable to a motor system', B: 'Untestable and thus, of uncertain scientific value', C: 'Lacking in definition for its elements', D: 'Overly complex in explaining the operation of cognition', Answer: B Verbalised Query: The flaw in Anderson's ACT theory was that some considered it untestable and thus, of uncertain scientific value.</p><p>We verbalise this multi-choice question to a query by filling the correct answer to the blank. We do not include other options in the query, because, as discussed in section 2, the presence of other options does not matter. The question and answer are the key for identifying data contamination. If there is no blank in the question, we simply append the answer after the question to form the query.</p><p>To identify overlapping between test samples and training data, existing methods often rely on exact string matches. For example, <ref type="bibr" target="#b4">Brown et al. (2020)</ref> use N-gram overlapping ranging from 8grams to maximum 13-grams for all evaluation tasks. GPT-4's criterion for contamination is substring matching with at least 50 characters (Ope-nAI, 2023). However, according on our manual analysis, we find the approach of exact string matches often lead to false negative in our pipeline. <ref type="bibr">Touvron et al. (2023b)</ref> propose a more fine-grained method that assesses contamination in token-level and involves a small "skipgram budget" to accommodate slight variations of sequences. However, their exact implementation details remain unclear. We instead simply compute METEOR <ref type="bibr" target="#b2">(Banerjee and Lavie, 2005)</ref> score between matched pages and the queries to quantify the extent of oerlap. We consider examples with a METEOR recall score over 0.75 as contaminated cases. This method tolerates minor inserted phrases and word form variations, which greatly mitigates false negative issue that strict string matching would miss. To avoid po- tential false positives, we configure our method with two key settings: 1) an order penalty (gamma of 0.8) for METEOR ensures matches respect sequence; 2) matching is constrained to a window up to 2x the query length, preventing partial or out-ofcontext matches. We compare our approach against to Llama-2's in section 7.2. According to section 2, here we distinguish two types of data contamination: 1) input contamination where only question is presented in the matched pages but not answer; 2) input-and-label contamination where both question and answer occur in the matched pages. In the upcoming sections, these two types of data contamination are compared and analysed separately.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Contamination Statistics for Multi-Choice Benchmarks</head><p>Our analysis reveals varying levels of data contamination across six multi-choice QA benchmarks, as shown in Table <ref type="table" target="#tab_0">1</ref>. According to the table, we have the following key findings. First, Academic test-based benchmarks like MMLU and C-Eval, despite being collected through methods like OCR, exhibit the highest levels of contamination (29.1% and 45.8%, respectively). This high rate is attributed to the widespread distribution and communication of academic test examples, making them more prone to sharing and discussion. In contrast, benchmarks manually created from scratch like Winogrande demonstrate minimal contamination (1.1%), as they avoided using internet resources in their benchmark construction. Third, we find significant differences among internet-sourced benchmarks. For example, CommonsenseQA has low contamination (1.6%) but HellaSwag has a rather significant higher overlap (12.4%). This variation might stem from different popularity of the sources: ConceptNet, as the source of CommonsenseQA is less popular than WikiHow, the source of Hel-laSwag. Finally, we find most contamination be- longs to input-and-label contamination, indicating models can often find the answer alongside with the question for contaminated test samples. We also illustrate how data contamination increase over time, as shown in Figure <ref type="figure" target="#fig_1">2</ref>. In the figure, benchmarks such as CommonsenseQA and Winogrande maintain very low rates of contaminated data, with increases of just 0.3% and 0.2% over the past three years. However, benchmarks collected from academic tests like ARC, MMLU, and C-Eval have experienced substantial increase in contamination, with up to 21% of examples flaged as contaminated during the same period. This shows how test content in academic benchmarks can easily propagate across the internet, which can be a serious issue for academic test based language model benchmarks. We also observe a moderate 8.3% increase for Hellaswag, further demonstrating the increasing risk of data contamination for internet sourced benchmarks.</p><p>In Figure <ref type="figure" target="#fig_2">3</ref>, we illustrate where these Hellaswag contaminated test samples come from. We discover that data contamination manifests in a centralised fashion, which means contaminated test samples are not evenly distributed across domains. Instead, </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Impact of Contamination on Model Performance</head><p>To assess how data contamination impacts model evaluation, we assess over 20 popular large language models on contaminated and clean splits of each benchmark.</p><p>Contaminated subsets contain examples identified in the previous section as having verbatim matches in the Common Crawl training dataset. Clean subsets on the contrary, contain examples have no matches with the training set. We employ the third party LLMs evaluation platform OpenCompass (OpenCompass, 2023) in our experiments to provide in-context demonstrations, prompts, and metrics computing. Following (Touvron et al., 2023b; OpenAI, 2023), we evaluated Winogrande, ARC, CommonsenseQA, and HellaSwag in zero-shot setting by prompting only with the question and choices, but 5 examples are provided as context for MMLU and C-Eval. Accuracy was used as the metric. And we use perplexity to obtain the inference result, i.e., taking the choice with the lowest ppl as the predicted answer. The results are presented in Table 2. Note that the Dirty i. set contains both input-only contamination and input-and-label contamination, but the Dirty ii. set is solely for input-and-label contamination. We place a ↑ for a result on dirty samples if they gain an advantage against the clean set, otherwise we add a ↓. For Llama-1,2 series models, we use the search window of 2017-2020 according to their reported training data collection period. For all other models we use an estimated search window of 2017.01-2023.10 as their exact training data collection period are unknown.</p><p>English Benchmarks. Based on the table, we find data contamination does not uniformly improve model performance. Instead, the impact depends on both the specific benchmark and model scale.</p><p>On Hellaswag and ARC benchmarks, most models achieve better metrics on contaminated subsets. However, on MMLU tasks we observe no consistent enhancement across models. We also find that larger language models appear more capable of exploiting data contamination to achieve better performance. For instance, LLaMA-2 70B displays increased metrics on most contaminated subsets.</p><p>In contrast, the 13B LLaMA-2 only outperforms on contaminated ARC. In addition, LLaMA-2 70B realises larger gains on contaminated sets (6% and 11% boosts on Hellaswag and ARC) than the 7B variant (5% and 6%). This could due to the more powerful memorisation capacity in larger language models <ref type="bibr" target="#b5">(Carlini et al., 2022)</ref>. Finally, most models achieve the highest scores on the input-and-label contaminated subset versus input-only or clean sets. This proves contamination of both inputs and labels can severely affect model evaluation results. Fine-tuned models like the Llama Chat variants exhibit generally lower overall metrics compared to their foundation counterparts, but they demonstrate comparable gains on contaminated splits of Hellaswag and ARC. Specifically, the fine-tuned chat models realise similar absolute performance increases on the dirty subsets of these benchmarks as their corresponding foundation versions.</p><p>Non-English Benchmark. In Table <ref type="table">3</ref>, we present contamination analysis on the non-English benchmark C-Eval. Among the tested models, Llama and Mistral are considered pure English models, while Yi, Qwen, and Baichuan are pre-trained as multilingual language models. We find the pure English models, Llama and Mistral, do not exhibit notable performance increases on C-Eval's contaminated subsets. However, the multilingual large language models all demonstrate significant performance advantages on dirty subsets. Yi 6B even achieves a 14% higher accuracy score on the input-and-label contaminated set, proving the potential for serious distortion of evaluation results.</p><p>What is the threshold of overlap for a test example to affect model prediction? We illustrate how the METEOR score, which measures sentence similarity, correlates with model performance on test samples. The METEOR metric measures the similarity between two sentences. For instance, a test sample with a METEOR score of 0.8 indicates high equivalence between that test case and sentences in training data. In Figure <ref type="figure" target="#fig_3">4</ref>, we group test samples by METEOR score and present the accuracy achieved on those groups by Llama-2 70B across four benchmarks. On ARC, Hellaswag, and C-Eval, a general upwards accuracy trend emerges as METEOR rises, indicating models attain higher metrics when more verbatim overlapping samples exist in the training data. In essence, substantial text duplication enables exploitation through memorisation, inflating model scores.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Discussion</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.1">Existing Methods to Mitigate Data Contamination</head><p>Several techniques have been proposed to mitigate data contamination issue in language model evaluation previously. Our findings provide some novel insights on the effectiveness of these approaches. Blocklisting benchmark sources. Blocking sources of benchmarks in training data collection is a common way to avoid data contamination. In our paper, we further demonstrate the feasibility of this method. As shown in Figure <ref type="figure" target="#fig_2">3</ref>, the distribution of data contamination is very centralised, so blocking only a small set of domains can significantly alleviate the issue of data contamination. However, we also find blocklisted links quickly expire but content spreads, making the blocklist ineffective over time. For instance, we test the contamination blocklist in the first release of MMLU<ref type="foot" target="#foot_0">foot_0</ref> , and we found the given blocklist only avoids 1.5% of contaminated cases we detected in §5. If we adopt a more aggressive method that skips all domains in the blocklist, it still just avoids 21% of contaminated cases. This suggests content used in MMLU spreads rapidly, which emphasises the necessity to update the blocklists regularly.</p><p>Avoid using data that appears with its solution on the internet <ref type="bibr" target="#b16">(Jacovi et al., 2023)</ref>. According to our results, avoiding the presence of answer can indeed prevent memorising exact answers. As shown in Table <ref type="table">4</ref>, we found models perform generally worse on input-only contamination compare to input-and-label contamination, or sometimes even worse than the clean set. This suggest that preventing input-and-label contamination is the key to mitigate data contamination issue. However, our analysis also identify several cases where inputonly contamination provides unfair advantages. For example, most models obtain higher accuracy on the input-only contaminated subset of ARC. As a result, completely avoiding using online resources is the best practice in benchmark construction. Winogrande is a role model in avoiding contamination by using only human-authored content.</p><p>Protecting test data from automatic crawlers via encryption and forbidding further distribution <ref type="bibr" target="#b16">(Jacovi et al., 2023)</ref>. Forbidding further distribution of benchmarks can indeed prevent data contamination to some extent. This was proven in our Figure <ref type="figure" target="#fig_2">3</ref>, where some contaminated cases are from huggingface.co, a dataset sharing platform. However, forbidding further distribution of the test data also significantly limits the popularity of benchmarks. For example, benchmarks such as Hellaswag and C-Eval make their test sets nonpublic to avoid potential data contamination issues. However, this also makes popular third party model evaluation platforms turn to using their validation sets instead of the test sets, as the platform hosts can access the answers in the validation sets to conduct the assessment (OpenCompass, 2023). Actually, most researchers tend to evaluate their models on publicly available splits rather than restricted ones, even if the latter have lower contamination risk. Therefore, benchmarks should consider balancing robustness against ease of adoption by the community.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.2">Comparison to Llama's Original Contamination Report</head><p>The data contamination analysis in the original Llama-2 paper is quite incomplete, presenting results for only Hellaswag and MMLU benchmarks. However, we can still compare our contamination analysis results to theirs for these two datasets.</p><p>As explained in §6, we use a search window of 2017-2020 for Llama-1,2 series model. In Hellaswag, we detected a similar percentage of contamination (8.3%) to what was reported in Llama-2 (848 out of 10042 examples, 8.4%). For MMLU, we identified a slightly lower ratio of data contamination, with 8.7% flagged as contaminated versus 11% marked as contaminated in the original Llama-2 paper. Touvron et al. (2023b) showed Llama-2 70B's performance gain on HellaSwag from dirty to not dirty<ref type="foot" target="#foot_1">foot_1</ref> data was .0742, while our method demonstrated advantages of .0726 for input-and-label contamination and .0622 for all contamination types. On MMLU, Touvron et al. (2023b) only observed a performance boost from contamination on MMLU-Humanities, where Llama-2 70B had a gain (dirty to not dirty) of .0980 on MMLU-Humanities. In contrast, our method showed a slightly lower increase of .0845 on MMLU-Humanities (shown in Table 5). Overall, our results align well with Llama-2's original contamination reports, demonstrating the effectiveness of our methodology.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">Conclusion</head><p>This paper conducted an extensive data contamination analysis for popular large language models on six multi-choice QA benchmarks. We identified varying levels of test set contamination, ranging from 1% to 47% across benchmarks. We also find data contamination does not necessarily lead to increased metrics: data contamination in ARC and Hellaswag generally allow models to achieve significant higher accuracy, but contamination in MMLU has little impact on model's performance.</p><p>Our findings offer a transparent perspective on data contamination, emphasising its significance as an urgent issue within the evaluation community.</p><p>Our pipeline leverages search engines followed by querying Common Crawl index. This avoids the access of full training dataset locally, which is often not open-sourced for modern large language models. However, relying on search APIs incurs notable costs -around $15 per 1000 queries with Bing. We spent about $900 in total calling Bing search API. Additionally, search engines restrict query lengths, which prevents analysis of benchmarks with long input passages like reading comprehension. Moreover, large language model developers may also use customised data collected from crowd sourcing or non-public databases. In this case, our search engine plus Common Crawl pipeline may be unable to identify data contamination from these hidden data sources. Future attempts may directly query the complete Common Crawl corpus hosted on AWS S3 services. This would enable scanning of lengthy input examples but at a higher financial cost. Alternatively, developing perplexity-based approaches to detect contaminated examples without requiring full passage matching could prove A More Information about Contamination in Multi-Choice QA Benchmarks</p><p>To provide a straightforward impression, we provide some example of data contamination from the MMLU benchmark as shown in Figure <ref type="figure">7</ref>. In Figure <ref type="figure">7</ref> (a), the METEOR recall score between the test question and matched example was 0.9275, well above the 0.8 contamination threshold, indicating a clear leakage of this test example in the training data of Llama models. While minor formatting differences exist, the near-complete overlap constitutes concerning input-and-label contamination that allows models to memorise rather than generalise. However, in Figure <ref type="figure">7</ref> (b) we find no answer choices and the correct answer in that page, which makes it a input-only contamination case. While input-only contamination poses a lower risk for direct label leakage, it can still allow models unfair advantage if exposed to the questions during training.</p><p>We also present the domain visualisation for contaminated test sample in ARC (see Figure <ref type="figure" target="#fig_4">5</ref>) and MMLU (see Figure <ref type="figure" target="#fig_5">6</ref>).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B More Results on Contaminated Subsets</head><p>We further present models' performance on the clean, input-only contaminated, and input-andlabel contaminate subsets, as well as the results on the entire test set in Table <ref type="table">4</ref>. We found models perform generally worse on input-only contamination compare to input-and-label contamination, or sometimes even worse than the clean set. In Table 5, we present more detailed statistics of Llama models' performance on different categorises of MMLU benchmark.  </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: The categorisation of contaminated test samples.</figDesc><graphic coords="4,116.22,70.87,362.84,160.89" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Increase in Data Contamination from 2017-2020 to 2020-2023. CSQA stands for Common-senseQA.</figDesc><graphic coords="5,306.14,214.93,218.27,145.51" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Domains analysis for data contamination in Hellaswag.</figDesc><graphic coords="6,92.69,70.86,174.61,261.92" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Accuracy of Llama-2 70B for test examples with different METEOR score.</figDesc><graphic coords="7,322.51,318.11,185.52,126.04" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Domains analysis for data contamination in ARC.</figDesc><graphic coords="12,81.78,421.44,196.44,314.31" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 6 :</head><label>6</label><figDesc>Figure 6: Domains analysis for data contamination in MMLU.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="13,70.87,488.43,453.54,180.28" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Data contamination statistics for multi-choice QA benchmarks. Search window: 2020.10-2023.10.</figDesc><table><row><cell>Dataset</cell><cell cols="3">Split #Total #Online</cell><cell>#All Dirty (in</cell><cell>#Input-only</cell><cell>#Input-and-label</cell></row><row><cell></cell><cell></cell><cell></cell><cell></cell><cell>CommonCrawl)</cell><cell>Contamination</cell><cell>Contamination</cell></row><row><cell>ARC_c</cell><cell>Test</cell><cell>1172</cell><cell>372</cell><cell>336 (28.7%)</cell><cell>53 (4.5%)</cell><cell>283 (24.1%)</cell></row><row><cell cols="2">CommonsenseQA Dev</cell><cell>1221</cell><cell>44</cell><cell>20 (1.6%)</cell><cell>3 (0.2%)</cell><cell>17 (1.4%)</cell></row><row><cell>Winogrande</cell><cell>Dev</cell><cell>1267</cell><cell>54</cell><cell>14 (1.1%)</cell><cell>0 (0.0%)</cell><cell>14 (1.1%)</cell></row><row><cell>C-Eval</cell><cell>Dev</cell><cell>1346</cell><cell>618</cell><cell>616 (45.8%)</cell><cell>69 (5.1%)</cell><cell>547 (40.6%)</cell></row><row><cell>Hellaswag</cell><cell cols="2">Dev 10042</cell><cell>1690</cell><cell>1247 (12.4%)</cell><cell>46 (0.4%)</cell><cell>1201 (12.0%)</cell></row><row><cell>MMLU</cell><cell cols="2">Test 13987</cell><cell>4285</cell><cell>4077 (29.1%)</cell><cell>678 (4.8%)</cell><cell>3399 (24.3%)</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 2 :</head><label>2</label><figDesc>Dirty ii. Clean Dirty i. Dirty ii. Clean Dirty i. Dirty ii. Clean Dirty i. Dirty ii. LLaMA 7B .3518 .3577 ↑ .3488 ↓ .6394 .6696 ↑ .6727 ↑ .3627 .3448 ↓ .3167 ↓ .4513 .4574 ↑ .4461 ↓ LLaMA 13B .4429 .4309 ↓ .4884 ↑ .7073 .7913 ↑ .7909 ↑ .3924 .3563 ↓ .3333 ↓ .5142 .5262 ↑ .5375 ↑ LLaMA 30B .5381 .5447 ↑ .5930 ↑ .7412 .7913 ↑ .7909 ↑ .4249 .4598 ↑ .4667 ↑ .5681 .5986 ↑ .6169 ↑ LLaMA 65B .6316 .5447 ↓ .6279 ↓ .7613 .8087 ↑ .8091 ↑ .4276 .4713 ↑ .4667 ↑ .6068 .6082 ↑ .6346 ↑ Llama-2 7B .4180 .4309 ↑ .4535 ↑ .6746 .7217 ↑ .7182 ↑ .3803 .4368 ↑ .4167 ↑ .4910 .5298 ↑ .5295 ↑ Llama-2 13B .5596 .5285 ↓ .5814 ↑ .8254 .8087 ↓ .8000 ↓ .4221 .4368 ↑ .4167 ↓ .6024 .5913 ↓ .5994 ↓ Llama-2 70B .6763 .6667 ↓ .7093 ↑ .7726 .8348 ↑ .8455 ↑ .4555 .5632 ↑ .5667 ↑ .6348 .6882 ↑ .7072 ↑ Llama-2 Chat 7B .4062 .3851 ↓ .4060 ↓ .6760 .7605 ↑ .7632 ↑ .3701 .4474 ↑ .5000 ↑ .4841 .5310 ↑ .5564 ↑ Llama-2 Chat 13B .5417 .5098 ↓ .5279 ↓ .7341 .8055 ↑ .8100 ↑ .4334 .5526 ↑ .5769 ↑ .5698 .6226 ↑ .6383 ↑ Llama-2 Chat 70B .6324 .6159 ↓ .6392 ↑ .7576 .8273 ↑ .8341 ↑ .4343 .4737 ↑ .4615 ↑ .6081 .6390 ↑ .6450 ↑ Mistral 7B .6501 .6291 ↓ .6463 ↓ .8533 .8287 ↓ .8326 ↓ .4720 .5263 ↑ .5769 ↑ .6585 .6614 ↑ .6853 ↑ Mistral-FT 7B .5576 .5403 ↓ .5588 ↑ .7168 .6691 ↓ .6727 ↓ .4426 .5000 ↑ .5577 ↑ .5723 .5698 ↓ .5964 ↑ Yi 6B .6481 .6386 ↓ .6551 ↑ .7628 .7533 ↓ .7617 ↓ .4380 .4868 ↑ .5000 ↑ .6163 .6262 ↑ .6389 ↑ Qwen 7B .5785 .5665 ↓ .5825 ↑ .9153 .9144 ↓ .9186 ↑ .4096 .4605 ↑ .4423 ↑ .6345 .6471 ↑ .6478 ↑ Baichuan2 7B .5594 .5320 ↓ .5491 ↓ .7494 .7199 ↓ .7240 ↓ .3710 .3158 ↓ .3654 ↓ .5599 .5226 ↓ .5462 ↓Model performance on the clean, not clean (denoted as Dirty i., including both input-only and input-andlabel contaminated samples), and input-and-label contaminated (denoted as Dirty ii.) subsets.</figDesc><table><row><cell>MMLU</cell><cell>Hellaswag</cell><cell>ARC</cell><cell>Average</cell></row><row><cell>Clean Dirty i.</cell><cell></cell><cell></cell><cell></cell></row></table><note><p>C-Eval</p><p>Clean Dirty i. Dirty ii. Llama-2 7B .3135 .3344 ↑ .3364 ↑ Mistral 7B .4715 .4545 ↓ .4607 ↓ Yi 6B .6718 .8003 ↑ .8117 ↑ Qwen 7B .5619 .6169 ↑ .6289 ↑ Baichuan2 7B .5508 .5649 ↑ .5887 ↑ Average .4582 .4912 ↑ .5012 ↑ Table 3: Data contamination analysis on C-Eval.</p></note></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_0"><p>https://people.eecs.berkeley.edu/~hendrycks/ data.tar</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>This not dirty set here is not the same as our clean set. See their paper for more details.</p></note>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Austin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Augustus</forename><surname>Odena</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maxwell</forename><surname>Nye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henryk</forename><surname>Michalewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellen</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carrie</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Terry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><surname>Le</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2108.07732</idno>
+		<title level="m">Program synthesis with large language models</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Jinze</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuai</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunfei</forename><surname>Chu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zeyu</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Dang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenbin</forename><surname>Ge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Binyuan</forename><surname>Hui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luo</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junyang</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Runji</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dayiheng</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengqiang</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keming</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianxin</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Men</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xingzhang</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuancheng</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chuanqi</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sinan</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianhong</forename><surname>Tu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shijie</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shengguang</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benfeng</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jin</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">An</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shusheng</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bowen</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongyi</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianwei</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xingxuan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yichang</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhenru</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chang</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingren</forename><surname>Zhou</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>Xiaohuan Zhou, and Tianhang Zhu. 2023. Qwen technical report</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Meteor: An automatic metric for mt evaluation with improved correlation with human judgments</title>
+		<author>
+			<persName><forename type="first">Satanjeev</forename><surname>Banerjee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alon</forename><surname>Lavie</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the acl workshop on intrinsic and extrinsic evaluation measures for machine translation and/or summarization</title>
+		<meeting>the acl workshop on intrinsic and extrinsic evaluation measures for machine translation and/or summarization</meeting>
+		<imprint>
+			<date type="published" when="2005">2005</date>
+			<biblScope unit="page" from="65" to="72" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yonatan</forename><surname>Bisk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rowan</forename><surname>Zellers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Ronan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianfeng</forename><surname>Bras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Choi</surname></persName>
+		</author>
+		<title level="m">Piqa: Reasoning about physical commonsense in natural language</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>Carlini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daphne</forename><surname>Ippolito</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Jagielski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katherine</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>Tramer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chiyuan</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2202.07646</idno>
+		<title level="m">Quantifying memorization across neural language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jerry</forename><surname>Tworek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heewoo</forename><surname>Jun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiming</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henrique</forename><surname>Ponde De Oliveira Pinto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harri</forename><surname>Edwards</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuri</forename><surname>Burda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>Joseph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Greg</forename><surname>Brockman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raul</forename><surname>Puri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Petrov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heidy</forename><surname>Khlaaf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brooke</forename><surname>Chan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikhail</forename><surname>Pavlov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alethea</forename><surname>Power</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Bavarian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philippe</forename><surname>Tillet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felipe</forename><forename type="middle">Petroski</forename><surname>Such</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dave</forename><surname>Cummings</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Plappert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fotios</forename><surname>Chantzis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elizabeth</forename><surname>Barnes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Hebgen Guss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Nichol</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Paino</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolas</forename><surname>Tezak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Igor</forename><surname>Babuschkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suchir</forename><surname>Balaji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shantanu</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Saunders</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">N</forename><surname>Carr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Josh</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vedant</forename><surname>Misra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Evan</forename><surname>Morikawa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Knight</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Miles</forename><surname>Brundage</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mira</forename><surname>Murati</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katie</forename><surname>Mayer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Welinder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bob</forename><surname>Mcgrew</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>Ilya Sutskever, and Wojciech Zaremba. 2021. Evaluating large language models trained on code</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">Eunsol</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">He</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohit</forename><surname>Iyyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Yatskar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wentau</forename><surname>Yih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1808.07036</idno>
+		<title level="m">Quac: Question answering in context</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gaurav</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Barham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyung</forename><forename type="middle">Won</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Parker</forename><surname>Schuh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kensen</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sasha</forename><surname>Tsvyashchenko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joshua</forename><surname>Maynez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhishek</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Parker</forename><surname>Barnes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emily</forename><surname>Vinodkumar Prabhakaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Reif</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ben</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reiner</forename><surname>Hutchinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Pope</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Bradbury</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Austin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guy</forename><surname>Isard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengcheng</forename><surname>Gur-Ari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Toju</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anselm</forename><surname>Duke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sanjay</forename><surname>Levskaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sunipa</forename><surname>Ghemawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henryk</forename><surname>Dev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Michalewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vedant</forename><surname>Garcia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Misra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liam</forename><surname>Robinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daphne</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Ippolito</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyeontaek</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Lim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Spiridonov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Sepassi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shivani</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Omernick ; Oleksandr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katherine</forename><surname>Polozov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zongwei</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brennan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Saeta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Orhan</forename><surname>Diaz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michele</forename><surname>Firat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Catasta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kathy</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Douglas</forename><surname>Meier-Hellstern</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Eck</surname></persName>
+		</author>
+		<editor>M. Dai, Thanumalayan Sankaranarayana Pillai, Marie Pellat, Aitor Lewkowycz, Erica Moreira, Rewon Child,</editor>
+		<imprint>
+			<pubPlace>Jeff Dean, Slav Petrov</pubPlace>
+		</imprint>
+	</monogr>
+	<note>and Noah Fiedel. 2022. Palm: Scaling language modeling with pathways</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Kwiatkowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Collins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1905.10044</idno>
+		<title level="m">Boolq: Exploring the surprising difficulty of natural yes/no questions</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Think you have solved question answering? try arc, the ai2 reasoning challenge</title>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Isaac</forename><surname>Cowhey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oren</forename><surname>Etzioni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tushar</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Sabharwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carissa</forename><surname>Schoenick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oyvind</forename><surname>Tafjord</surname></persName>
+		</author>
+		<idno>ArXiv, abs/1803.05457</idno>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Karl</forename><surname>Cobbe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vineet</forename><surname>Kosaraju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Bavarian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heewoo</forename><surname>Jun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Plappert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jerry</forename><surname>Tworek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reiichiro</forename><surname>Nakano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Schulman</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note>Training to solve math word problems</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jesse</forename><surname>Dodge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Sap</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ana</forename><surname>Marasović</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Agnew</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriel</forename><surname>Ilharco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dirk</forename><surname>Groeneveld</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2104.08758</idno>
+		<title level="m">Documenting large webtext corpora: A case study on the colossal clean crawled corpus</title>
+		<imprint>
+			<date type="published" when="2021">Margaret Mitchell, and Matt Gardner. 2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Dawn Song, and Jacob Steinhardt. 2021a. Measuring massive multitask language understanding</title>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Hendrycks</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Collin</forename><surname>Burns</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Basart</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>Zou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mantas</forename><surname>Mazeika</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Learning Representations (ICLR)</title>
+		<meeting>the International Conference on Learning Representations (ICLR)</meeting>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Dawn Song, and Jacob Steinhardt. 2021b. Measuring massive multitask language understanding</title>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Hendrycks</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Collin</forename><surname>Burns</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Basart</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>Zou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mantas</forename><surname>Mazeika</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<title level="m" type="main">Maosong Sun, and Junxian He. 2023. Ceval: A multi-level multi-discipline chinese evaluation suite for foundation models</title>
+		<author>
+			<persName><forename type="first">Yuzhen</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuzhuo</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhihao</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junlei</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinghan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tangjun</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junteng</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chuancheng</forename><surname>Lv</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yikai</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiayi</forename><surname>Lei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yao</forename><surname>Fu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.08322</idno>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Stop uploading test data in plain text: Practical strategies for mitigating data contamination by evaluation benchmarks</title>
+		<author>
+			<persName><forename type="first">Alon</forename><surname>Jacovi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Avi</forename><surname>Caciularu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omer</forename><surname>Goldman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Goldberg</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Albert</forename><forename type="middle">Q</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Sablayrolles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Bamford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Singh Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diego</forename><surname>De Las Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>Bressand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianna</forename><surname>Lengyel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lample</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucile</forename><surname>Saulnier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Renard</forename><surname>Lélio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lavaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Teven</forename><surname>Stock</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Le Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lacroix</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>and William El Sayed. 2023. Mistral 7b</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title level="m" type="main">Triviaqa: A large scale distantly supervised challenge dataset for reading comprehension</title>
+		<author>
+			<persName><forename type="first">Mandar</forename><surname>Joshi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eunsol</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">S</forename><surname>Weld</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Natural questions: a benchmark for question answering research</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Kwiatkowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jennimaria</forename><surname>Palomaki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olivia</forename><surname>Redfield</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Collins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ankur</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Alberti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danielle</forename><surname>Epstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="page" from="2023" to="2027" />
+			<date type="published" when="2019">2019. 2023</date>
+			<pubPlace>Benjamin Marie</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Can a suit of armor conduct electricity? a new dataset for open book question answering</title>
+		<author>
+			<persName><forename type="first">Todor</forename><surname>Mihaylov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tushar</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Sabharwal</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Conference on Empirical Methods in Natural Language Processing</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<ptr target="https://github.com/open-compass/opencompass" />
+		<title level="m">Gpt-4 technical report. OpenCompass. 2023. Opencompass: A universal evaluation platform for foundation models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Rajpurkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robin</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1806.03822</idno>
+		<title level="m">Know what you don&apos;t know: Unanswerable questions for squad</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">NLP evaluation in trouble: On the need to measure LLM data contamination for each benchmark</title>
+		<author>
+			<persName><forename type="first">Oscar</forename><surname>Sainz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jon</forename><surname>Campos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iker</forename><surname>García-Ferrero</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julen</forename><surname>Etxaniz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2023</title>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="10776" to="10787" />
+		</imprint>
+	</monogr>
+	<note>Oier Lopez de Lacalle, and Eneko Agirre Singapore</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Winogrande: An adversarial winograd schema challenge at scale. Communications of the</title>
+		<author>
+			<persName><forename type="first">Keisuke</forename><surname>Sakaguchi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Ronan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chandra</forename><surname>Bras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Bhagavatula</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Choi</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<publisher>ACM</publisher>
+			<biblScope unit="volume">64</biblScope>
+			<biblScope unit="page" from="99" to="106" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Sap</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannah</forename><surname>Rashkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Derek</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ronan</forename><surname>Lebras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1904.09728</idno>
+		<title level="m">Socialiqa: Commonsense reasoning about social interactions</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">Beyond the imitation game: Quantifying and extrapolating the capabilities of language models</title>
+		<author>
+			<persName><forename type="first">Aarohi</forename><surname>Srivastava</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">Alon</forename><surname>Talmor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Herzig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>Lourie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Berant</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1811.00937</idno>
+		<title level="m">Commonsenseqa: A question answering challenge targeting commonsense knowledge</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<title level="m">Faisal Azhar, et al. 2023a. Llama: Open and efficient foundation language models</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amjad</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolay</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prajjwal</forename><surname>Bhargava</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+		<title level="m">Shruti Bhosale, et al. 2023b. Llama 2: Open foundation and fine-tuned chat models</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Vincent</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kelvin</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adams</forename><forename type="middle">Wei</forename><surname>Guu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Lester</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">M</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc V</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Le</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2109.01652</idno>
+		<title level="m">Finetuned language models are zero-shot learners</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Aiyuan</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bin</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bingning</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Borong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ce</forename><surname>Bian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenxu</forename><surname>Chao Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Da</forename><surname>Lv</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dian</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fan</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Feng</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Feng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guangwei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guosheng</forename><surname>Ai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haizhou</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hang</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haoze</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongda</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hui</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaming</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Juntao</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kun</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Fang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liang</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lifeng</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liyun</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luyao</forename><surname>Ru</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mang</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mickel</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mingan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peidong</forename><surname>Nie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruiyang</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tao</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianpeng</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weipeng</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangrong</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaochuan</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoxi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Men</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuehai</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanjun</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiding</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiyu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Youxin</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuchen</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yupeng</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhang</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>Zenan Zhou, and Zhiying Wu. 2023. Baichuan 2: Open large-scale language models</note>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">A series of large language models trained from scratch by developers at 01-ai</title>
+		<author>
+			<persName><surname>Yi</surname></persName>
+		</author>
+		<ptr target="https://github.com/01-ai/Yi" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<author>
+			<persName><forename type="first">Rowan</forename><surname>Zellers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonatan</forename><surname>Bisk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ali</forename><surname>Farhadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1905.07830</idno>
+		<title level="m">Hellaswag: Can a machine really finish your sentence? arXiv preprint</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title level="m" type="main">Agieval: A human-centric benchmark for evaluating foundation models</title>
+		<author>
+			<persName><forename type="first">Wanjun</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruixiang</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiduo</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yaobo</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuai</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanlin</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amin</forename><surname>Saied</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Duan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.06364.LLaMA7b.3427.3367.3223.3356.7634.5769.7089.7560.3627.4167.3077.3614</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">Table 4: Llama models&apos; performance comparison. Here Dirty i. denotes input-only contamination and Dirty ii. demotes input-and-label contamination. All denotes the performance on the entire test set</title>
+	</analytic>
+	<monogr>
+		<title level="m">Model MMLU MMLU-Humanities MMLU-STEM MMLU-Social-Science MMLU-Other Clean Dirty i Dirty ii Clean Dirty i Dirty ii Clean Dirty i Dirty ii Clean Dirty i Dirty ii Clean Dirty i Dirty ii Llama 7B 34</title>
+		<imprint>
+			<biblScope unit="page" from="27" to="33" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<title level="m" type="main">Table 5: Llama series models&apos; performance across different categories of MMLU. Figure 7: An example of input-and-label (a) and input-only (b) contamination from MMLU</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

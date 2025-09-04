@@ -1,0 +1,1677 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Exploring Large Language Models for Hate Speech Detection in Rioplatense Spanish</title>
+				<funder ref="#_a4vxRnE">
+					<orgName type="full">Universidad de Buenos Aires</orgName>
+				</funder>
+				<funder ref="#_mr52PxP">
+					<orgName type="full">unknown</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-10-16">16 Oct 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Juan</forename><surname>Manuel Pérez</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Paula</forename><surname>Miguel</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Viviana</forename><surname>Cotik</surname></persName>
+						</author>
+						<author>
+							<affiliation key="aff0">
+								<orgName type="institution">Instituto de Cs. de la Computación CONICET</orgName>
+								<address>
+									<country>UBA</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff1">
+								<orgName type="department">Departamento de Computación</orgName>
+								<orgName type="institution" key="instit1">Instituto Gino Germani FSOC</orgName>
+								<orgName type="institution" key="instit2">UBA CONICET</orgName>
+								<orgName type="institution" key="instit3">Instituto de Cs. de la Computación</orgName>
+								<orgName type="institution" key="instit4">FCEN UBA CONICET</orgName>
+								<address>
+									<country>UBA</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Exploring Large Language Models for Hate Speech Detection in Rioplatense Spanish</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-10-16">16 Oct 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">C6F6F1ED3E7BEBDE8DF7E9F1F58CB8E0</idno>
+					<idno type="arXiv">arXiv:2410.12174v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:41+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Hate speech detection deals with many language variants, slang, slurs, expression modalities, and cultural nuances. This outlines the importance of working with specific corpora, when addressing hate speech within the scope of Natural Language Processing, recently revolutionized by the irruption of Large Language Models. This work presents a brief analysis of the performance of large language models in the detection of Hate Speech for Rioplatense Spanish. We performed classification experiments leveraging chain-of-thought reasoning with ChatGPT 3.5, Mixtral, and Aya, comparing their results with those of a state-of-theart BERT classifier. These experiments outline that, even if large language models show a lower precision compared to the fine-tuned BERT classifier and, in some cases, they find hard-to-get slurs or colloquialisms, they still are sensitive to highly nuanced cases (particularly, homophobic/transphobic hate speech). We make our code and models publicly available for future research.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>In recent years, an increasingly unfolding of violent, discriminatory and hateful speeches can be found on digital platforms, media and networks <ref type="bibr" target="#b4">(Berecz and Devinat, 2017;</ref><ref type="bibr" target="#b48">Woods and Hahner, 2019;</ref><ref type="bibr" target="#b23">Hodge and Hallgrímsdóttir, 2021)</ref>. While discriminatory discourses emerge in different enunciation areas and modalities, we are particularly interested in the way this kind of problematic speech is spreed along with certain themes in the public arena and the circulation of news <ref type="bibr" target="#b1">(Assimakopoulos et al., 2017)</ref>. The news published on social net-works encourages the debate or discussion of public issues and problems among users. And many times the tweets displaying hate speech are reactions to that news tweets, meaning the context of those messages is extremely important <ref type="bibr" target="#b12">(Cotik et al., 2020)</ref>. Social media, such as Twitter, offers valuable data access to a relatively natural environment for the study of hate speech, being particularly interesting the activation of hate speech regarding public topics, for example topics triggered by news that are subject of discussion <ref type="bibr" target="#b52">(Zannettou et al., 2020;</ref><ref type="bibr" target="#b17">Erjavec and Kovačič, 2012)</ref>.</p><p>Hate speech detection, from the Natural Language Processing (NLP) perspective, has to deal with languages crossed by variants, slang, slurs, and other specific modalities found <ref type="bibr" target="#b29">(Nunberg, 2018;</ref><ref type="bibr" target="#b15">Diaz-Legaspe, 2020)</ref>. Being aware of cultural nuances and specific contexts of use is crucial to address this task and shows the relevance of developing dialectal corpora and analysis that allows to automatically detect specific hateful expressions in different lexical contexts.</p><p>Regarding this issue, a particular interest arises in the performance of large language models (LLMs) by analyzing hate speech in relation to local expression nuances. LLMs have shown to be effective in a wide range of NLP tasks <ref type="bibr" target="#b6">(Brown et al., 2020;</ref><ref type="bibr" target="#b46">Wei et al., 2021;</ref><ref type="bibr" target="#b31">Ouyang et al., 2022)</ref>. Given that GPT-3.5 (also known as ChatGPT) is one of the most popular and emerging large language models <ref type="bibr" target="#b49">(Wu et al., 2023;</ref><ref type="bibr" target="#b14">Deng and Lin, 2022)</ref>, we have the question of how well it can detect hateful messages in a specific dialectal variant of Spanish, focusing on the Rioplatense variety.</p><p>With over 450 million native speakers, primarily in Latin America, Spain, and also parts of the US <ref type="bibr" target="#b16">(Eberhard, David M. and Simons, Gary F., and Fennig, Charles D., 2024)</ref>, Spanish includes many varieties and dialects. Each one represents a common cultural background and semantic field, expressing different uses for some words or, contrary wise, the use of specific words or phrases addressing the same purpose. Among them, Rioplatense Spanish, mainly spoken both in Argentina and Uruguay, is thought to be spoken by more than one-tenth of Spanish native speakers <ref type="bibr" target="#b27">(Lipski, 2012;</ref><ref type="bibr">Coloma, 2018)</ref>.</p><p>One of the most interesting features of Rioplatense Spanish is that includes ruralisms, indigenisms, argot and slang, especially lunfardo, among other vocabularies. While almost all languages have repertoires of expression outside of general use, the case of lunfardo constitutes a linguistic phenomenon in which words and expressions of very diverse origin converge (Italian, popular Spanish, French, Portuguese, Guaraní, Quechua, among others), as result of the migratory processes in Argentina, with its epicenter in Buenos Aires, especially during the 19th century and the first half of the 20th century <ref type="bibr">(de Letras, 2003;</ref><ref type="bibr" target="#b11">Conde, 2013)</ref>. Lunfardo shows as an integrated lexical repertoire, which has around 6,000 voices, of which only about 300 are recognized by the Dictionary of the Royal Spanish Academy,<ref type="foot" target="#foot_0">foot_0</ref> such as the term "laburar", from Italian "lavorare", standing as the verb "to work" or "trabajar" in Spanish. Many words have other meanings, for example "trola" means a lie o deceit in Iberian Spanish, but in Rioplatense Spanish it refers to "whore", and it also has a masculine form "trolo" that means "faggot". These terms are commonly used to derogatorily address both women and gays. These examples point out that the understanding of many expressions constitutes a challenge even to Spanish native speakers unfamiliar with the Rioplatense variant. Would that be the case of LLMs?</p><p>Following that question, this paper develops an exploratory approach to the effectiveness of LLMs addressing the task of detecting specific texts and tagging corpora linked to hate speech. We take as a benchmark a fine-tuned BERT classifier trained with a corpus of news articles and Twitter's comments in Rioplatense Spanish, annotated to detect hate speech <ref type="bibr" target="#b34">(Pérez et al., 2023)</ref>. We performed classification experiments leveraging the chain-ofthought (CoT) reasoning within the LLMs Chat-GPT, Mixtral and Aya, and compare their results against a fine-tuned BERT classifier. Our experiments point out that LLMs show a lower precision compared to the fine-tuned BERT classifier, but a higher recall for highly nuanced cases (particularly, homophobic/transphobic hate speech). However, explanations given by ChatGPT are -while not equal to human annotators-convincing in most cases.</p><p>The results of this work, focused in Rioplatense Spanish, contribute to understanding possible forms of bias and to evaluate the specificity of Rioplatense variant that is not part of the typical corpus used for training LLMs. This highlights its unique characteristics and the importance of developing and working with dialect-specific corpora for the automated detection of hate speech. Focusing exclusively on Rioplatense Spanish is a first step in addressing cultural nuances and specific local expressions inherent in this dialect, particularly in relation to the performance of LLMs. Future work could be pursued on this basis, aiming to compare Rioplatense Spanish with other variants, such as Mexican or Iberian Spanish.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related work</head><p>There is a plethora of resources for automatic detection of hate speech in English. Nevertheless, when it comes to Spanish, despite being one of the main languages in terms of the number of native speakers worldwide <ref type="bibr" target="#b16">(Eberhard, David M. and Simons, Gary F., and Fennig, Charles D., 2024)</ref>, corpora are scarce, with only a few datasets publicly available. Some of the main references of published and available resources in Spanish are found in datasets like IberEval, which presents a ~4k Twitter dataset for the Automatic Misogyny Identification (AMI) <ref type="bibr" target="#b19">(Fersini et al., 2018)</ref>; those released by the MEX-A3T task, that included a dataset of 11k Mexican Spanish tweets annotated for aggressiveness <ref type="bibr" target="#b0">(Álvarez-Carmona et al., 2018)</ref>; and the dataset launched in the context of the Hat-Eval challenge, a ~6.6k tweets dataset annotated for misogyny and xenophobia <ref type="bibr" target="#b2">(Basile et al., 2019)</ref>. To the best of our knowledge, only one dataset annotated for hate speech detection is available in Rioplatense <ref type="bibr" target="#b34">(Pérez et al., 2023)</ref>. This highlights the positive impact of contributions tending to build resources in Spanish and its variants.</p><p>Regarding the automatic detection and treatment of hate speech, a broad amount of literature has been published. We refer the readers to <ref type="bibr" target="#b36">Poletto et al. (2021)</ref>; <ref type="bibr" target="#b41">Schmidt and Wiegand (2017)</ref>; <ref type="bibr" target="#b20">Fortuna and Nunes (2018)</ref> for extensive reviews of work in the field of NLP. In this section, we focus on the most recent work on hate speech detection, explanation, and treatment using LLMs.</p><p>Upon the blazing development of LLMs <ref type="bibr" target="#b6">(Brown et al., 2020;</ref><ref type="bibr" target="#b46">Wei et al., 2021;</ref><ref type="bibr" target="#b31">Ouyang et al., 2022)</ref>, some studies have been conducted to evaluate their performance in hate speech detection, explanation and treatment. <ref type="bibr" target="#b40">Sap et al. (2020)</ref> used GPT-2 to detect and generate hate speech explanations. <ref type="bibr" target="#b35">Plaza-del arco et al. (2023)</ref> assessed the performance of several language models (such as the instruction-finetuned mT0 <ref type="bibr" target="#b28">(Muennighoff et al., 2023)</ref> and <ref type="bibr">FLAN-T5 (Chung et al., 2022)</ref> in zeroshot setting over several hate speech and toxicity datasets. <ref type="bibr" target="#b45">Wang et al. (2023)</ref>; <ref type="bibr" target="#b24">Huang et al. (2023)</ref> evaluated the performance of GPT-3/GPT-3.5 to detect and explain hate speech messages, finding that LLM-generated explanations are equally good (and even preferred to) human-written explanations. Some of these explanations are inducted by chainof-thought reasoning <ref type="bibr" target="#b47">(Wei et al., 2022)</ref>, also known as the "let's think step by step" technique. <ref type="bibr" target="#b30">Oliveira et al. (2023)</ref> tested ChatGPT for hate speech detection in Portuguese, particularly in its Brazilian dialect, achieving almost state-of-the-art results in a zero-shot setting. Çam and Özgür (2023) performed experiments for Turkish, with similar results.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Data</head><p>Our experiments are based on an anonymized dataset available in Rioplatense Spanish, consisting of Twitter replies to posts from Argentinean news outlets; with models, partitions and class distributions arealso available <ref type="bibr" target="#b34">(Pérez et al., 2023)</ref>. In this dataset, comments to news posted by regional users were annotated for the presence of hate speech and categorized into one or more of eight possible types: politics, misogyny, homophobia/transphobia, racism/xenophobia, class hatred, appearance, hate against criminals and disabled people. All annotated instances have a context (the tweet posted by the news outlet, plus the news title and whole text content of the news) and the text being analyzed and annotated for hate speech (each Twitter user's comment). This is important as con-textual information situates the comment and that it has been shown to be relevant to detect hate speech <ref type="bibr" target="#b42">(Sheth et al., 2022;</ref><ref type="bibr" target="#b50">Xenos et al., 2021)</ref>. Along with the annotated dataset, another unannotated dataset suitable for unsupervised training is provided. The unsupervised corpus used to continue pre-training includes around 5,000,000 Rioplatense tweets comments, with a contextual information of 288,000 news tweets and full articles.</p><p>In this work, we address the presence of hate speech linked to four possible types: misogyny, homophobia/transphobia, racism/xenophobia, and class hatred/classism, according to the attacked characteristics, from now on dubbed WOMEN, LGBTI, RACISM, and CLASS (see Appendix A.1 for a broader definition). The selection of those categories was made based on the prevalence of each category among hateful speech and their societal impact. Also, these topics are widely covered and considered in the available literature, meaning the results could be a useful contribution to standard ground and state of the art <ref type="bibr" target="#b32">(Paz et al., 2020;</ref><ref type="bibr" target="#b43">Tontodimamma et al., 2021)</ref>.</p><p>We used the same train and development samples as Pérez et al. ( <ref type="formula">2023</ref>) (36, 420 and 9120 examples respectively), but, for budget reasons, we subsampled the test set to 5670 examples (50% of the original test set). Among these, 479 comments contain hate speech, distributed as shown in Table <ref type="table">1</ref>. Some comments express attacks to more than one category. In those cases, we find two relevant combinations: RACISM associated with CLASS (21 cases), followed by the association of WOMEN and LGBTI (10 cases). Only one comment targeted 3 categories at the same time. Table <ref type="table">2</ref> shows some examples of the dataset.</p><p>In order to assess whether the large language models were able to capture the meaning of regional terms and expressions or not, we marked the test dataset for the presence of regionalisms. We referred to regionalisms as idiomatic phrases, words</p><p>Category Number Percentage RACISM 230 4.06 % WOMEN 131 2.31 % LGBTI 88 1.55 % CLASS 76 1.34 % TOTAL 479 8.45 % Table 1: Number and percentage of messages containing hate speech in each category. Comment WOMEN Mia Khalifa: acted in porn videos for a few months, became world famous and now fights to erase her past HAHAHA KEEP SUCKING.... LGBTI The story of the Colombian trans model kissing the belly of her eight-month pregnant husband A male kissing another male RACISM Yanzhong Huang: "It is quite likely that a Covid-21 is already brewing" Urgent bombs to that damned race CLASS Social movements cut off 9 de Julio Av.: they demand a minimum wage of $45,000 get to work, mfs</p><p>Table 2: Hateful examples from the analyzed dataset.</p><p>exclusively used in Rioplatense Spanish, or with a meaning that is differentially used in Argentina or only in Rioplatense-speaking countries (eg. "pelotudo" for "asshole"). As aforementioned, there is a vacancy area regarding Rioplatense: resources are scarce and, when available, they are not the best to work with. Therefore, we generated a very basic and not exhaustive list of regional terms, scraped from an crowd-sourced dictionary of regionalisms in Rioplatense Spanish. 2</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Classification experiments</head><p>We compared two kinds of classification algorithms:</p><p>• Pre-trained language models based on BERT: fine-tuned on supervised data from the corpus.</p><p>• Large Language Models (LLMs) using fewshot learning and chain-of-thought reasoning (CoT) <ref type="bibr" target="#b47">(Wei et al., 2022)</ref>.</p><p>For the first group of classifiers, we tested two pre-trained models in Spanish: BETO <ref type="bibr" target="#b8">(Cañete et al., 2020), and</ref><ref type="bibr">RoBERTuito (Pérez et al., 2022)</ref>. For each model, we performed a small hyperparameter search following the guidelines of <ref type="bibr" target="#b21">Godbole et al. (2023)</ref>, searching for the best-performing values for the number of epochs, the learning rate and warm-up ratio. To track our experiments, we used the wandb library (Biewald, 2020). For each of the pre-trained models, we previously fine-tuned them on the unsupervised corpus provided along with the used dataset <ref type="bibr" target="#b34">(Pérez et al., 2023)</ref>, as it has been shown to improve the performance in domainspecific tasks <ref type="bibr" target="#b22">(Gururangan et al., 2020)</ref>.</p><p>The fine-tuning process of the supervised models followed standard practices in fine-tuning BERTlike models. The classifiers were trained with 2 <ref type="url" target="https://www.diccionarioargentino.com/">https://www.diccionarioargentino.com/</ref> Adam (Kingma and Ba, 2014) as the optimizer with weight decay, and a triangular learning rate schedule.</p><p>Table <ref type="table">3</ref> outlines the spectrum of values applied to each hyperparameter. For every model, task, and language, we conducted between 30 and 60 runs, choosing the optimal model based on the Macro F1 score from the validation set. We adopted a batch size of 32, tailored to accommodate our GPU memory limitations (either a GTX 1080Ti or Tesla T4, with memory ranging from 11 to 14GB). The best hyperparameters found in the tuning process were roughly the same for all the models: 0.1 for warmup ratio, 3 and 4 (only RoBERTuito on its nonfinetuned version) the number of training epochs, and finally 6e -5 for the learning rate.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Prompting strategies</head><p>Regarding the large language models, we selected three models that show good performance in Spanish to run the experiments and prompts:</p><p>• GPT-3.5 turbo-0125 <ref type="bibr" target="#b31">(Ouyang et al., 2022)</ref>: a closed-source large language model provided by OpenAI, that has an outstanding performance in several tasks.</p><p>• Mixtral (Jiang et al., 2024): a mixture-ofexperts open-source language model pretrained in English, French, Italian, German and Spanish. Hyperparameter Values Epochs 3, 4, 5 Batch Size 32 Learning Rate 2e-5, 3e-5, 5e-5, 6e-5, 7e-5, 8e-5, 1e-4 Weight Decay 0.1 Warmup Ratio 0.06, 0.08, 0.10</p><p>Table 3: Hyperparameter search space considered for each model.</p><p>• Aya (Üstün et al., 2024): a massivelymultilingual sequence-to-sequence language model, that follows the architecture of T5 (Raffel et al., 2020), pre-trained in 101 languages.</p><p>Mixtral and Aya were run in two NVIDIA A30, using the Transformers library. The same prompt was used for the three LLMs.</p><p>To build the prompt, we resorted to few-shot or in-context learning. Early experiments using zeroshot, one-shot settings and few-shot learning were conducted. Then, different prompts were evaluated in the development split until no improvement in performance was observed.</p><p>That prompt engineering process led to the following prompt: 3 Determine if the following text, corresponding to a tweet, presented with a context, contains hate speech. We understand that there is hate speech if it has statements of an intense and irrational nature of rejection, enmity, and abhorrence against an individual or against a group, being the targets of these expressions for possessing a protected characteristic. The protected characteristics we consider are:</p><p>• WOMEN: refers to women or the feminist movement</p><p>• LGBTI: refers to gays, lesbians, transgender individuals, and other gender identities • RACISM: refers to immigrants, xenophobia, or against indigenous peoples • CLASS: refers to low-income people or class-related issues The tweets are written in Rioplatense Spanish, and within the cultural context of Argentina. Respond with one or more of the characteristics separated by commas, or "nothing" if there is no hate speech. Think and justify the response step by step before answering.</p><p>We leveraged chain-of-thought reasoning <ref type="bibr" target="#b47">(Wei et al., 2022)</ref> to both enhance the model's performance and to provide an explanation for the prediction. The model was prompted with a total of 12 3 Originally in Rioplatense Spanish (see in Appendix), translated to English for the purpose of this paper.</p><p>WOMEN RACISM LGBTI CLASS Macro BETO 0.366 0.698 0.414 0.473 0.570 RoBERTuito 0.414 0.675 0.435 0.451 0.582 BETO (FT) 0.422 0.736 0.468 0.511 0.614 RoBERTuito (FT) 0.405 0.694 0.474 0.471 0.598 Table 4: F1 scores for the considered BERT classifiers. FT stands for fine-tuned, marking those pre-trained models that were further fine-tuned in the unsupervised corpus. examples of hate speech considering the different characteristics. The examples were selected from the training set, and consisted of three lines, such as this: context: Wuhan celebrates the end of the coronavirus quarantine with a message for the rest of the world: "Learn from our mistakes" text: Motherfuckers! I wish you all chinese people die output: The text wishes that Chinese people would die, blaming them for the COVID-19 pandemic. answer is "racism".</p><p>The output consisted of a natural language explanation.</p><p>The 12 examples considered the different characteristics and target labels and were balanced by their labels. They also included "nothing" examples, that pointed out cases where there was no hate speech towards the targeted categories (women, LGBTI, racism or class). The selection of examples provided in the prompt had the following distribution of categories: 2 examples for racism, 2 for LGBTI, 2 for women and 2 for "nothing"; 1 example for classism; and 1 multi-class example for racism and class. The full list of examples and the original prompt in Spanish can be found in Appendix A.2.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Evaluation</head><p>To evaluate the performance of the classifiers, we assessed the precision, recall, and F1-score for each class, in a multi-label classification schema. We get bootstrap 95%-CI intervals using the confidenceintervals library <ref type="bibr" target="#b18">(Ferrer and Riera, 2023)</ref>. We also evaluated a subset of the dataset, that specifically contains regional terms.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Results</head><p>Table <ref type="table">4</ref> shows the F1 scores for all the considered BERT classifiers. As mentioned in Section 4, we Table <ref type="table">5</ref> shows the results for the multi-label classification task, represented as the macro averages of F1, Precision and Recall. We report only the results of the best BERT classifier, the fine-tuned version of BETO. While the BETO classifier outperforms their counterparts in terms of precision and F1, the LLMs have higher recall. As Aya model performed poorly, qualitative analysis is focused on the LLMs GPT-3.5 and Mixtral.</p><p>A closer inspection of each of the considered characteristics is presented in the multi-label classification results, shown in Figure <ref type="figure" target="#fig_1">1</ref>. It is shown that Mixtral obtains a better recall for all of the characteristics but at the cost of low precision, while GPT-3.5 has a better trade-off between them. The case of the LGBTI characteristic, is particularly interesting given that is the case where GPT-3.5 outperforms the fine-tuned classifier (F 1 = 49.9 ± 4.4 for GPT-3.5 and F 1 = 45.7±5.1 for BETO, Mann-Whitney U=16386.5, p ≤ 1 * 10 -6 ). This is particularly relevant as this characteristic is difficult to detect, as it often involves culturally complex language, irony and metaphors and where BERT-based classifiers show a significant gap compared to humans <ref type="bibr" target="#b51">(Yigezu et al., 2023;</ref><ref type="bibr" target="#b34">Pérez et al., 2023)</ref>.</p><p>Focusing in those messages that contain regionalisms, no conclusive differences are detected. As seen in 6, in general, the performance of all the classifiers follows similar patterns: they stay equal or get better when regionalisms are present in the text. This might be due to the fact that regionalisms are likely to be matched with slang slurs which both the BETO and the LLMs (particularly, GPT-3.5) leverage for this detection task. Indeed, hate speech Model BETO GPT-3.5 Mixtral Regionalism reg. wo. reg. reg. wo. reg. reg. wo. reg. CLASS 0.67 0.30 0.46 0.11 0.28 0.09 LGBTI 0.47 0.44 0.50 0.48 0.44 0.47 RACISM 0.70 0.76 0.60 0.54 0.56 0.50 WOMEN 0.51 0.27 0.42 0.25 0.39 0.20 Macro 0.60 0.48 0.50 0.37 0.42 0.32 Table 6: F1 by category for messages containing regionalism (reg.) and those not containing it (wo. reg.).</p><p>messages represented 9% of the original dataset, and this rises to a 16% of hateful messages within those that have regionalisms. Following up, for example, in CLASS category, words such as planero, villero, constituted part of the repertoire of classist denigrational speech; and regionalisms in form of slurs against WOMEN (trola, yegua, abortera) are also very common. These two classes are, in fact, those with more hateful comments containing regionalisms: 71% of CLASS hateful messages contains regionalisms and the same account for 62% of those against women. These slur, regional expressions may make the task of flagging hateful speech easier compared to comments lacking it.</p><p>In the case of LGBTI hateful instances, when hate speech detection task faces subtle, non-slur, slang related language attacking transgender peo-</p><p>News Context Reaction Tweet GPT-3.5 output Mixtral output BETO false negatives correctly classified by LLMs After a barrage of more than 20 shots, a trans woman was murdered in Rosario The prostate should not appear in the autopsy by law!</p><p>The message refers to the gender identity of the trans woman murdered in a discriminatory manner, using an emoji to mock the situation. The final answer is "LGBTI".</p><p>The text refers to the victim as "a man" and denies her gender identity. The final answer is "LGBTI". ¿More Rial found love in a personal trainer? The mediatic shared a live broadcast with a handsome personal trainer where they looked very intimate That one sees a pingo (Arg. for "horse", but also "dick") and jumps on.</p><p>The text refers to More Rial's sexuality in a derogatory way, using the term "pingo" in a pejorative way to refer to a penis. The final answer is "woman".</p><p>The text refers to More Rial as "that one" and accuses her of getting on a man because of her physical attractiveness. This is sexist and derogatory. The final answer is "woman". Mara Gómez: the story of the first trans soccer player in the Argentine championship Ponga huevos, Mara ponga huevos... (Eggs on [winning], Mara, Eggs on! Here "eggs" stands for testicles)</p><p>The text cheers Mara Gómez as a soccer player, but she uses the expression "ponga huevos" in a discriminatory way, with the aim of questioning her masculinity and her gender identity as a trans woman. The final answer is "LGBTI".</p><p>The text alludes to Mara Gómez's lack of "huevos", a term used to refer to the lack of courage or bravery. This is offensive and derogatory. The final answer is "woman, LGBTI."</p><p>Incorrectly classified or incorrect explanations by LLMs British arrived in Peru for 10 days and stayed for love: she lives without safe water and among insects The Peruvian's "gaver". Mother. ("gaver" stands for "verga", meaning dick. It is a sexist comment, not racist)</p><p>The text contains a derogatory comment towards Peruvians, using a vulgar and discriminatory term. The final answer is "racism."</p><p>The text refers to Peruvians as "gaver", a derogatory term. The final answer is "racism."</p><p>Mara Gómez: the story of the first trans soccer player in the Argentine championship It comes to bring what the team lacks: goals and a lot of "eggs" (in the sense of courage or bravery, refering to testicles. The comment should be tagged as LGBTI.)</p><p>The text praises Mara Gómez's soccer skills and mentions that she plans to contribute goals and effort to the team. It does not contain hate speech or mention any protected characteristics. The final answer is "nothing."</p><p>The text alludes to Mara Gómez's ability as a footballer, without making any allusion to a protected characteristic. The final answer is 'nothing'.</p><p>Tension in Villa Mascardi: Mapuches resist the eviction of a usurped property.</p><p>How strange, [Joe] Lewis and the millionaire squatters are not going to be evicted.</p><p>The text mentions the Mapuches in a derogatory manner and suggests preferential treatment towards non-indigenous occupants. Although protected characteristics are not directly mentioned, the comment denotes prejudice towards the Mapuche people. The final answer is "racism."</p><p>The text compares the Mapuches with the "millionaire squatters", suggesting that they are equal. This shows contempt for indigenous peoples and their fight for their lands. The final answer is "racism."</p><p>Regional slangs and some cultural nuances detected by LLMs Hebe de Bonafini 4 criticized supermarkets and called for "replacing meat with rice, chickpeas and lentils" @usuario Old "chupa pi." ("pi." stands for "pija" ("cock"), meaning "cocksucker"), you like "morcilla" (literaly "blood sausage", but also "dick").</p><p>The text contains an insult towards Hebe de Bonafini, calling her an "vieja chupa pi." (old cocksucker), but also makes derogatory reference to her diet, using a sexist and vulgar comment. The final answer is "woman."</p><p>The text insults Hebe de Bonafini by calling her a "vieja chupa pi." (old cocksucker), a derogatory expression. Additionally, she makes fun of her dietary preferences. The final answer is "woman." China: another virus identified "with the potential to become pandemic" #NewVirus #China First they morfan (Arg. lunf. "eat") bats, now they must have garchado (Arg. "fucked") a pig.</p><p>The text contains a derogatory comment towards Chinese, alluding to their eating habits and suggesting a repulsive sexual intercourse with a pig. The final answer is "racism".</p><p>The text shows contempt for Chinese culture and its relation to animals. The final answer is "racism."</p><p>Table 7: Examples of LLMs results</p><p>ple, most explanations generated by LLMs were correct, getting to detect difficult-to-tag messages that were overlooked by the BETO classifier. Table <ref type="table">7</ref> shows some examples of those cases. <ref type="foot" target="#foot_1">5</ref>These results suggest that despite possible preconceptions about the lack of cultural grounding of LLMs, they are somehow able to grasp cultural nuances from Rioplatense Spanish and Argentinian culture, even compared to fine-tuned BERT modeled to address that specific dialect. Some of the examples in Table <ref type="table">7</ref> show that LLMs, sometimes are able to detect, explain, and provide information about regional slang not detected by the fine-tuned BETO classifier.</p><p>However, LLMs show a higher rate of false posi-tives than the fine-tuned BETO classifier, when it comes to the reference of majority-vote labels in the dataset. <ref type="foot" target="#foot_2">6</ref> This might indicate, first, that these models are more sensitive to the presence of hate speech and toxicity (probably due to preference tuning or some other safety mechanisms ) and second, that the comparison against one single binary label might not be the best way to evaluate these models. Evaluating some of their explanations with other metrics, such as human evaluation of soundness, informativeness, among others <ref type="bibr" target="#b45">(Wang et al., 2023)</ref>, or also by using a perspectivist framework taking into account the disagreement of the annotations <ref type="bibr">(Sachdeva et al., 2022;</ref><ref type="bibr" target="#b36">Basile et al., 2021)</ref> may provide a better comparison between these models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Conclusions</head><p>The culture and communication of Latin America is diverse and full of different expressions, idioms, slang, specific uses, and adaptations of, among others, the Spanish language, which embodies subtle differences that are often context-dependent and cannot be captured outside of their context of use.</p><p>We believe this work is a first step toward filling a gap in resources regarding Rioplatense, a particular variety of Spanish, and aims to contribute to the understanding of how large language models perform in these specific, "under-resourced" language varieties and their cultural contexts, which is particularly important when addressing the phenomenon of hate speech.</p><p>This study shows the effectiveness of ChatGPT and Mixtral classifiers in the task of hate speech detection, specifically in the context of cultural and linguistic complexities present in Rioplatense Spanish tweets. The findings highlight that while Mixtral excels in recall across various characteristics, it does so at the expense of precision. Conversely, ChatGPT offers a more balanced performance, particularly in detecting the LGBTI characteristic, where it outperforms traditional fine-tuned classifiers, such as BETO. Comparing LLMs with a state-of-the-art fine-tuned BETO classifier, Chat-GPT and Mixtral showed a lower precision but a higher recall in some categories, particularly in difficult cases that the supervised classifier was not able to detect. These results underline the potential for LLMs to capture cultural nuances and regional expressions effectively and to interpret culturally sensitive language rich with ironies and metaphors. The results of ChatGPT to identify hate speech laden with regionalisms show ability in processing colloquial language. Notably, the prevalence of regional slurs in classist and misogynistic discourse appears to indicate the importance of incorporating regional context to improve hate speech detection. However, the observed higher rate of false positives in LLM classifications relative to BETO emphasizes the need for careful evaluation metrics when assessing the efficacy of these models.</p><p>While LLMs have proven to be a powerful tool for hate speech detection, supervised classifiers still outperform them in the general case and are more suitable for detecting hate speech at large scale. Regarding cultural and linguistic nuances, we found that LLMs were able to detect some of them, but not all, missing some slurs, expressions and insults typical of the Rioplatense dialect.</p><p>The insights from this study emphasize the importance of building models that are sensitive to cultural and linguistic diversity, while also highlighting the value of producing corpora on specific topics and linguistic variants that serve as benchmarks. In that sense, this paper contributes to variant-focused research in NLP, being in this case Rioplatense Spanish, underlining the importance of a comprehensive understanding of variants, its cultural nuances and language uses as a vital step in addressing hate speech in a linguistically diverse context.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Limitations</head><p>One of the main challenges faced in this work is related to the task itself: hate speech detection, which tries to capture a complex social phenomenon. Additionally, it is important to note that the original dataset lacked natural language explanations for the annotations.</p><p>Also, the task of regionalism detection could be enhanced, whether by human annotation or by dictionary enrichment, based on human annotations.</p><p>Finally, the analysis of LLMs explanations was performed in a very limited way, being their soundness assessed solely by the authors. A deeper analysis of those explanations could be of interest, by including larger samples, more annotators, and the use of other metrics (such as informativeness).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">Future work</head><p>As a future work, it would be interesting to develop a multi-variant of Spanish evaluation, as this kind of analytic effort and experiments were out of the scope of this work at this stage. In particular, it could be of interest to conduct similar experiments with other Spanish variants, such as Iberian, where there are more available corpora and/or Mexican Spanish, which represents the major variant of spoken Spanish.</p><p>It also could be worthwhile to consider regional specificity and/or contextual information, to distinguish text containing challenging elements, such as wordplays, metaphors related to regional knowledge, idiomatic expressions, and instances of irony. Taking that into account, would lead to better identification of regional terms, and future work could be enhanced by exploring in depth different categories of hate speech and the specific use of slang and colloquialisms tied to them. Along with this, future work could focus on improving the prompting engineering to have a better handling of dialectal variants.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Appendix</head><p>In this appendix, we present the definition of each targeted class of hate speech and we describe details of the original prompt and instruction provided to the LLMs</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.1 Classes Definition</head><p>Definition of each class addressed in hate speech detection according to the Plan Nacional contra la Discriminación (Argentinean National Plan Against Discrimination) guidelines (Presidencia de la Nación, 2006).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.1.1 RACISM</head><p>Racism can be defined as a set of beliefs, attitudes and practices that discriminate against individuals or groups based on their race, ethnicity, or physical characteristics, denying them equal rights and dignity. This discrimination can be both individual and institutional and can occur in various ways: Individual racism; Institutional racism; Structural racism; Cultural racism; Xenophobia (rejection or fear of people from other countries or cultures); and also includes Antisemitism, Arabophobia, Islamophobia and Afrophobia.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.1.2 WOMEN</head><p>Discrimination against women is a social phenomenon that manifests itself as a set of actions and beliefs that devalue women compared to men, through attitudes, practices and structures that perpetuate gender inequality and limit women's access to resources, rights and opportunities in various areas of life. Discrimination against women can be expressed in different areas, such as Economic Inequality; Gender Violence; Access to Education; Political Representation; Cultural Norms and Stereotypes; among others. Added to this is intersectional discrimination (women who belong to minority groups may experience additional forms of discrimination, which further complicates their situation).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.1.3 LGBTI</head><p>Gender-based discrimination refers to attitudes, behaviors, and policies that marginalize and devalue people based on their sexual orientation or gender identity. This form of discrimination manifests itself in various dimensions and contexts, affecting the daily lives and fundamental rights of LGBTQ+ people. Gender-based discrimination can be expressed as violence and harassment; legal inequality; social stigmatization; unequal access to services; non-positive media representation; among others. Likewise, gender-based discrimination can intersect with other forms of discrimination, such as racism or poverty, exacerbating the difficulties faced by individuals belonging to multiple marginalized groups.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.1.4 CLASS</head><p>Class-based discrimination refers to attitudes, practices, and social structures that marginalize people based on their socioeconomic status/poverty. This form of discrimination manifests itself in various dimensions, affecting access to resources, rights, and opportunities, and perpetuating social exclusion. Expressing itself, for example, as Limited Access to Resources; Social Stigmatization; Labor Inequality; Violence and Crime; Lack of Political Representation, among others. Furthermore, class-based discrimination can intersect with other forms of discrimination, such as racism or sexism, exacerbating the difficulties faced by individuals belonging to multiple marginalized groups.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.2 Original prompt and examples</head><p>In this subsection, we present the original prompt and the provided examples for the few-shot scenario, both in Spanish. Instrucción stands for Instruction, Ejemplos for Example, Contexto, Texto and Salida for Context, Text, and Output.</p><p>Instrucción: "Determinar si el siguiente texto, correspondiente a un tweet y presentado con un contexto, contiene discurso de odio. Entendemos que hay discurso de odio si tiene declaraciones de carácter intenso y/o irracional de rechazo, enemistad o aborrecimiento contra un individuo o contra un grupo, siendo el individuo o el grupo objetivo de las expresiones por poseer una característica protegida. Las características protegidas que contemplamos son:</p><p>• mujer: hace referencia a mujeres o al movimiento feminista.</p><p>• lgbti: hace referencia a gays, lesbianas, transexuales y otras identidades de género.</p><p>• racismo: hace referencia a inmigrantes, xenofobia, o a pueblos aborígenes.</p><p>• clase: hace referencia a personas de bajos recursos o motivos de clase.</p><p>Los tweets están escritos en español rioplatense, y dentro del contexto cultural de Argentina. Responder una o varias de las características separadas por coma, o bien "nada" si no hay discurso de odio. Pensar y justificar paso a paso la respuesta antes de responder."</p><p>Ejemplos:</p><p>contexto: 'Wuhan celebra el fin de la cuarentena por el coronavirus con un mensaje para el resto del mundo: "Aprendan de nuestros errores"' texto: "Chinos culiados de mierda ojalá se mueran todos" salida: 'El texto insulta a los chinos ("culiados") y desea que se mueran, implicando que son los culpables del COVID-19. La respuesta final es "racismo".' contexto:"Al borde del llanto, Nati Jota pidió disculpas por sus repudiables tuits pero los justificó: 'Quería sumar seguidores'" texto: "Show o nada mi amorrr!! Sos una imbesil!" salida: 'El texto contiene un insulto pero no menciona nada relacionado a las características protegidas, pese a mencionar a una mujer. La respuesta final es "nada".' contexto:'Funcionario público y drag queen: la "doble vida" del político que representa a Salta en tacos, peluca y barba con brillos', texto: "Que asco..!'", salida:'El texto expresa desagrado hacia la identidad de género de la persona. La respuesta final es "lgbti" contexto: "Violento motín en la cárcel de Devoto: tomaron e incendiaron pabellones", texto: "Hermanito lo que son esos grones. Ahí adentro le robaron la billetera al coronavirus" salida: 'El texto utiliza la palabra "grones", que significa negros (se obtiene "grones" a partir de "negros" cambiando el orden de las sílabas). Negro o grone es una manera despectiva de refererirse a alguien por su color de piel. Además, da a entender que los presos son ladrones. La respuesta final es "racismo".' context:'Mayra Mendoza criticó el banderazo contra el Gobierno: "No tiene sentido y es antidemocrático"' text: "Que negrita villera....ni con la plata q roba puede arreglarse" output: 'El texto alude al color de piel de Mayra Mendoza ("negrita") y a su condición social ("villera") de manera discriminatoria. La respuesta final es "racismo, clase".' context: "No da tregua: sin ropa y desafiante Flor Peña volvió a mostrar su lado más hot" text: "K lado hot tiene más varices k mi abuela. Tiene mas puesta de espalda k karagian trola" output: 'El texto alude al aspecto de Flor Peña (sus várices) y la desprecia por "trola", un insulto que significa "prostituta".</p><p>La respuesta final es "mujer".' context: "Otro ataque de furia contra un colectivero: una mujer trans le pateó la unidad y le tiró un ladrillazo" text: "Un tipo operado. Con la fuerza de un hombre y no la de una mujer" output: "salida": 'El texto asegura que la mujer trans es "un tipo operado", implicando que en los hechos es un hombre y negando su identidad de género. La respuesta final es "lgbti"' context:'Elisa Carrió denunció que el Gobierno usa la pandemia para "establecer un estado de sitio"' text: "Gorda psiquiátrica" output: 'El texto habla de su aspecto (gorda) y la acusa de tener problemas psiquiátricos. Sin embargo, no hace ninguna alusión a una característica protegida. La respuesta final es "nada". context: 'Loly Antoniale mostró su impresionante casa en Miami: "Soy la reina de mi castillo"' text: "No pudo enganchar al viejo famoso..se busco otro..y este le puso su castillo en Miami..." output: 'El texto alude a la vida amorosa de Loly Antoniale, sugiriendo que busca hombres por interés económico. Esta apreciación es sexista y despectiva. La respuesta final es "mujer".' context: "Les darán DNI provisorio a personas en situación vulnerable, para que puedan empezar a cobrar planes sociales" text: "Seguimos alimentando vagos" output: 'El texto se refiere a quienes cobran planes sociales como vagos a quienes hay que alimentar. Esto muestra un desprecio hacia las clases bajas que requieren de la asistencia estatal. La respuesta final es "clase".' context: "Los dos presos heridos de bala en el motín de Devoto tienen Covid-19 y uno quedó hemipléjico" text: "justicia divina!" output: "salida": "El comentario contiene una celebración frente a un ataque a presos. A pesar de ser sumamente ofensivo, no hace ninguna alusión a una característica protegida. La respuesta final es 'nada'."</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><figDesc>± 0.8 11.9 ± 0.5 93.0 ± 1.2 GPT-3.5 47.8 ± 1.8 39.2 ± 1.8 61.2 ± 2.2 Mixtral 38.6 ± 1.3 25.1 ± 1.0 83.8 ± 1.7 BETO 63.5 ± 1.8 72.9 ± 2.4 56.3 ± 2.1 Table 5: Classification results for LLMs and fine-tuned BETO, expressed as macro averages of F1, Precision and Recall for all the considered labels.considered BETO (Cañete et al., 2020) and RoBER-Tuito (Pérez et al., 2022), and also their fine-tuned versions in the unsupervised corpus provided by the considered dataset (Pérez et al., 2023). We can observe that, although RoBERTuito performs better in the non-finetuned version, BETO achieves the best results after the pre-training process.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Precision, recall and F1 of the classifiers: ChatGPT 3.5, Aya, Mixtral and the fine-tuned BETO classifier.</figDesc><graphic coords="6,296.22,259.51,226.78,93.33" type="bitmap" /></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>The Royal Spanish Academy (RAE) is a cultural institution dedicated to linguistic regularization in the Spanishspeaking world.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_1"><p>The analysis is shown for GPT 3.5 and Mixtral (with the benchmark of fine-tuned Beto), as Aya underperformed at this task.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_2"><p>In the original dataset, each comment was annotated by three annotators. Therefore, it was used a majority-vote label.</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgements</head><p>This research has been supported by funds for interdisciplinary projects evaluated and accredited by the <rs type="funder">Universidad de Buenos Aires</rs>, Argentina (PIUBA-2020-3; <rs type="grantNumber">PIUBA-2022-04-02</rs>; <rs type="grantNumber">PIUBA-2023</rs>). The authors would like to thank to the research team members for their collaboration in previous work. They also thank the <rs type="institution">National Council for Scientific and Technical Research (CONICET)</rs> for their support. The authors are specially grateful to the <rs type="projectName">CCAD</rs>, <rs type="institution">Universidad Nacional de Córdoba</rs>, 7 part of <rs type="affiliation">SNCAD-MinCyT, Argentina</rs>, for providing access to the computational resources used in this work.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_a4vxRnE">
+					<idno type="grant-number">PIUBA-2022-04-02</idno>
+				</org>
+				<org type="funded-project" xml:id="_mr52PxP">
+					<idno type="grant-number">PIUBA-2023</idno>
+					<orgName type="project" subtype="full">CCAD</orgName>
+				</org>
+			</listOrg>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Overview of mex-a3t at ibereval 2018: Authorship and aggressiveness analysis in mexican spanish tweets</title>
+		<author>
+			<persName><forename type="first">Miguel</forename><surname>Ángel Álvarez-Carmona</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Estefanía</forename><surname>Guzmán-Falcón</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manuel</forename><surname>Montes-Y Gómez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hugo</forename><forename type="middle">Jair</forename><surname>Escalante</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luis</forename><surname>Villasenor Pineda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Verónica</forename><surname>Reyes-Meza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antonio</forename><forename type="middle">Rico</forename><surname>Sulayes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IberEval@ SEPLN</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="74" to="96" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Online hate speech in the European Union: a discourse-analytic perspective</title>
+		<author>
+			<persName><forename type="first">Stavros</forename><surname>Assimakopoulos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Fabienne</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharon</forename><surname>Baider</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Millar</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<publisher>Springer Nature</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Semeval-2019 task 5: Multilingual detection of hate speech against immigrants and women in twitter</title>
+		<author>
+			<persName><forename type="first">Cristina</forename><surname>Valerio Basile</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elisabetta</forename><surname>Bosco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Debora</forename><surname>Fersini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Viviana</forename><surname>Nozza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Francisco</forename><surname>Patti</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Manuel Rangel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paolo</forename><surname>Pardo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manuela</forename><surname>Rosso</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Sanguinetti</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 13th international workshop on semantic evaluation</title>
+		<meeting>the 13th international workshop on semantic evaluation</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="54" to="63" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Massimo Poesio, and Alexandra Uma. 2021. We need to consider disagreement in evaluation</title>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Valerio Basile</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tommaso</forename><surname>Fell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dirk</forename><surname>Fornaciari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Silviu</forename><surname>Hovy</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Paun</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.bppf-1.3</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 1st Workshop on Benchmarking: Past, Present and Future</title>
+		<meeting>the 1st Workshop on Benchmarking: Past, Present and Future<address><addrLine>Barbara Plank</addrLine></address></meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<biblScope unit="page" from="15" to="21" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Relevance of cyber hate in europe and current topics that shape online hate speech</title>
+		<author>
+			<persName><forename type="first">Tamás</forename><surname>Berecz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charlotte</forename><surname>Devinat</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">INACH</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="page">2020</biblScope>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+		<respStmt>
+			<orgName>EU</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Experiment tracking with weights and biases</title>
+		<ptr target="https://ccad.unc.edu.ar/LukasBiewald.2020" />
+		<imprint/>
+	</monogr>
+	<note>Software available from wandb.com</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Evaluation of chatgpt and bert-based models for turkish hate speech detection</title>
+		<author>
+			<persName><forename type="first">Nur</forename><surname>Bengisu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Çam</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arzucan</forename><surname>Özgür</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 8th International Conference on Computer Science and Engineering (UBMK)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="229" to="233" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">José</forename><surname>Cañete</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriel</forename><surname>Chaperon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rodrigo</forename><surname>Fuentes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jou-Hui</forename><surname>Ho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hojin</forename><surname>Kang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jorge</forename><surname>Pérez</surname></persName>
+		</author>
+		<idno>PML4DC at ICLR</idno>
+		<title level="m">Spanish Pre-Trained BERT Model and Evaluation Data</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><forename type="first">Chung</forename><surname>Hyung Won</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shayne</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunxuan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostafa</forename><surname>Dehghani</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.11416</idno>
+		<title level="m">Siddhartha Brahma, et al. 2022. Scaling instruction-finetuned language models</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Argentine spanish</title>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of the International Phonetic Association</title>
+		<imprint>
+			<biblScope unit="volume">48</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="243" to="250" />
+			<date type="published" when="2018">2018</date>
+			<publisher>Germán Coloma</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<author>
+			<persName><forename type="first">Oscar</forename><surname>Conde</surname></persName>
+		</author>
+		<title level="m">Lunfardo rioplatense: delimitación, descripción y evolución. De parces y troncos. Nuevos enfoques sobre los argots hispánicos</title>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="77" to="106" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">A study of hate speech in social media during the COVID-19 outbreak</title>
+		<author>
+			<persName><forename type="first">Viviana</forename><surname>Cotik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Natalia</forename><surname>Debandi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Franco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paula</forename><surname>Luque</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Agustín</forename><surname>Miguel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Juan</forename><surname>Moro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pablo</forename><surname>Manuel Pérez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joaquin</forename><surname>Serrati</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Demián</forename><surname>Zajac</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zayat</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m">Diccionario del habla de los argentinos</title>
+		<imprint>
+			<publisher>Academia Argentina de Letras</publisher>
+			<date type="published" when="2003">2003</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">The benefits and challenges of chatgpt: An overview</title>
+		<author>
+			<persName><forename type="first">Jianyang</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yijia</forename><surname>Lin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Frontiers in Computing and Intelligent Systems</title>
+		<imprint>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="81" to="83" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">What is a slur?</title>
+		<author>
+			<persName><forename type="first">Justina</forename><surname>Diaz-Legaspe</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Philosophical Studies</title>
+		<imprint>
+			<biblScope unit="volume">177</biblScope>
+			<biblScope unit="issue">5</biblScope>
+			<biblScope unit="page" from="1399" to="1422" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Ethnologue: Languages of the World</title>
+		<author>
+			<persName><forename type="first">David</forename><forename type="middle">M</forename><surname>Eberhard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gary</forename><forename type="middle">F</forename><surname>Simons</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><forename type="middle">D</forename><surname>Fennig</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<publisher>SIL International</publisher>
+			<pubPlace>Dallas, Texas</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">you don&apos;t understand, this is a new war!&quot; analysis of hate speech in news web sites&apos; comments</title>
+		<author>
+			<persName><forename type="first">Karmen</forename><surname>Erjavec</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melita</forename><surname>Poler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kovačič</forename></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2012">2012</date>
+			<publisher>Mass Communication and Society</publisher>
+			<biblScope unit="volume">15</biblScope>
+			<biblScope unit="page" from="899" to="920" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title level="m" type="main">Confidence Intervals for evaluation in machine learning</title>
+		<author>
+			<persName><forename type="first">Luciana</forename><surname>Ferrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pablo</forename><surname>Riera</surname></persName>
+		</author>
+		<idno>Original- date: 2023-12-06T12:26:21Z</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Overview of the task on automatic misogyny identification at ibereval 2018</title>
+		<author>
+			<persName><forename type="first">Elisabetta</forename><surname>Fersini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paolo</forename><surname>Rosso</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maria</forename><surname>Anzovino</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Ibereval@ sepln</title>
+		<imprint>
+			<biblScope unit="volume">2150</biblScope>
+			<biblScope unit="page" from="214" to="228" />
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">A survey on automatic detection of hate speech in text</title>
+		<author>
+			<persName><forename type="first">Paula</forename><surname>Fortuna</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sérgio</forename><surname>Nunes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Computing Surveys (CSUR)</title>
+		<imprint>
+			<biblScope unit="volume">51</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="1" to="30" />
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Deep learning tuning playbook</title>
+		<author>
+			<persName><forename type="first">Varun</forename><surname>Godbole</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">George</forename><forename type="middle">E</forename><surname>Dahl</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Justin</forename><surname>Gilmer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><forename type="middle">J</forename><surname>Shallue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zachary</forename><surname>Nado</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Don&apos;t Stop Pretraining: Adapt Language Models to Domains and Tasks</title>
+		<author>
+			<persName><forename type="first">Suchin</forename><surname>Gururangan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ana</forename><surname>Marasović</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Swabha</forename><surname>Swayamdipta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyle</forename><surname>Lo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iz</forename><surname>Beltagy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Doug</forename><surname>Downey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><forename type="middle">A</forename><surname>Smith</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.acl-main.740</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="8342" to="8360" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Networks of hate: the alt-right,&quot;troll culture&quot;, and the cultural geography of social movement spaces online</title>
+		<author>
+			<persName><forename type="first">Edwin</forename><surname>Hodge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Helga</forename><forename type="middle">Kristín</forename><surname>Hallgrímsdóttir</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">British Columbia&apos;s Borders in Globalization</title>
+		<imprint>
+			<publisher>Routledge</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="102" to="119" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Is chatgpt better than human annotators? potential and limitations of chatgpt in explaining implicit hate speech</title>
+		<author>
+			<persName><forename type="first">Fan</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haewoon</forename><surname>Kwak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jisun</forename><surname>An</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Companion Proceedings of the ACM Web Conference 2023</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="294" to="297" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Albert</forename><forename type="middle">Q</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Sablayrolles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Roux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Blanche</forename><surname>Savary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Bamford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Singh Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diego</forename><surname>De Las Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emma</forename><forename type="middle">Bou</forename><surname>Hanna</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>Bressand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianna</forename><surname>Lengyel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Bour</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lample</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Renard</forename><surname>Lélio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucile</forename><surname>Lavaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Saulnier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandeep</forename><surname>Stock</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sophia</forename><surname>Subramanian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Szymon</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Teven</forename><surname>Antoniak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Théophile</forename><surname>Le Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Gervet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lacroix</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>and William El Sayed. 2024. Mixtral of Experts</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<author>
+			<persName><forename type="first">P</forename><surname>Diederik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jimmy</forename><surname>Kingma</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ba</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1412.6980</idno>
+		<title level="m">Adam: A method for stochastic optimization</title>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<title level="m" type="main">Geographical and social varieties of spanish: An overview. The handbook of Hispanic linguistics</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>John</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lipski</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2012">2012</date>
+			<biblScope unit="page" from="1" to="26" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Crosslingual generalization through multitask finetuning</title>
+		<author>
+			<persName><forename type="first">Niklas</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lintang</forename><surname>Sutawika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stella</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Teven</forename><surname>Le Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Saiful Bari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng Xin</forename><surname>Yong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hailey</forename><surname>Schoelkopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangru</forename><surname>Tang</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.acl-long.891</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<editor>
+			<persName><forename type="first">Dragomir</forename><surname>Radev</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Alham</forename><surname>Fikri Aji</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Khalid</forename><surname>Almubarak</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Samuel</forename><surname>Albanie</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Zaid</forename><surname>Alyafeai</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Albert</forename><surname>Webson</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Edward</forename><surname>Raff</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</editor>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics<address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="15991" to="16111" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">The social life of slurs. New work on speech acts</title>
+		<author>
+			<persName><forename type="first">Geoffrey</forename><surname>Nunberg</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="237" to="295" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">How good is chatgpt for detecting hate speech in portuguese?</title>
+		<author>
+			<persName><forename type="first">Amanda</forename><forename type="middle">S</forename><surname>Oliveira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pedro Hl</forename><surname>Thiago C Cecote</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jadson</forename><forename type="middle">C</forename><surname>Silva</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Gertrudes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">S</forename><surname>Vander</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eduardo Js</forename><surname>Freitas</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Luz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Anais do XIV Simpósio Brasileiro de Tecnologia da Informação e da Linguagem Humana</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="94" to="103" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carroll</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katarina</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="27730" to="27744" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Hate speech: A systematized review</title>
+		<author>
+			<persName><forename type="first">Antonia</forename><surname>María</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julio</forename><surname>Paz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alicia</forename><surname>Montero-Díaz</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Moreno-Delgado</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Sage Open</title>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page">2158244020973022</biblScope>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Robertuito: a pre-trained language model for social media text in spanish</title>
+		<author>
+			<persName><forename type="first">Juan</forename><surname>Manuel Pérez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Damián</forename><surname>Ariel Furman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laura</forename><surname>Alonso Alemany</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Franco M Luque</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Thirteenth Language Resources and Evaluation Conference</title>
+		<meeting>the Thirteenth Language Resources and Evaluation Conference</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="7235" to="7243" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Assessing the impact of contextual information in hate speech detection</title>
+		<author>
+			<persName><forename type="first">Juan</forename><surname>Manuel Pérez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Demian</forename><surname>Franco M Luque</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martín</forename><surname>Zayat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Agustín</forename><surname>Kondratzky</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pablo</forename><forename type="middle">Santiago</forename><surname>Moro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joaquín</forename><surname>Serrati</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paula</forename><surname>Zajac</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Natalia</forename><surname>Miguel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Agustín</forename><surname>Debandi</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Gravano</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Access</title>
+		<imprint>
+			<biblScope unit="volume">11</biblScope>
+			<biblScope unit="page" from="30575" to="30590" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">Respectful or toxic? using zero-shot learning with language models to detect hate speech</title>
+		<author>
+			<persName><forename type="first">Flor</forename><surname>Miriam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Plaza-Del</forename><surname>Arco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Debora</forename><surname>Nozza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dirk</forename><surname>Hovy</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.woah-1.6</idno>
+	</analytic>
+	<monogr>
+		<title level="m">The 7th Workshop on Online Abuse and Harms (WOAH)</title>
+		<meeting><address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="60" to="68" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Resources and benchmark corpora for hate speech detection: a systematic review</title>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Poletto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Valerio</forename><surname>Basile</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manuela</forename><surname>Sanguinetti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cristina</forename><surname>Bosco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Viviana</forename><surname>Patti</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Language Resources and Evaluation</title>
+		<imprint>
+			<biblScope unit="volume">55</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="477" to="523" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Hacia un plan nacional contra la discriminación</title>
+	</analytic>
+	<monogr>
+		<title level="j">Boletín Oficial</title>
+		<imprint>
+			<biblScope unit="page">30</biblScope>
+			<date type="published" when="2006">2006</date>
+			<publisher>Presidencia de la Nación</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Exploring the limits of transfer learning with a unified text-to-text transformer</title>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katherine</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Matena</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanqi</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><forename type="middle">J</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">21</biblScope>
+			<biblScope unit="issue">140</biblScope>
+			<biblScope unit="page" from="1" to="67" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">Alexander Sahn, Claudia von Vacano, and Chris Kennedy. 2022. The measuring hate speech corpus: Leveraging rasch measurement theory for data perspectivism</title>
+		<author>
+			<persName><forename type="first">Pratik</forename><surname>Sachdeva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Renata</forename><surname>Barreto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Geoff</forename><surname>Bacon</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 1st Workshop on Perspectivist Approaches to NLP @LREC2022</title>
+		<meeting>the 1st Workshop on Perspectivist Approaches to NLP @LREC2022<address><addrLine>Marseille, France</addrLine></address></meeting>
+		<imprint>
+			<biblScope unit="page" from="83" to="94" />
+		</imprint>
+	</monogr>
+	<note>European Language Resources Association</note>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">Social bias frames: Reasoning about social and power implications of language</title>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Sap</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saadia</forename><surname>Gabriel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianhui</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Jurafsky</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><forename type="middle">A</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="5477" to="5490" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">A survey on hate speech detection using natural language processing</title>
+		<author>
+			<persName><forename type="first">Anna</forename><surname>Schmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Wiegand</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the fifth international workshop on natural language processing for social media</title>
+		<meeting>the fifth international workshop on natural language processing for social media</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="1" to="10" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Defining and detecting toxicity on social media: context and knowledge are key</title>
+		<author>
+			<persName><forename type="first">Amit</forename><surname>Sheth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Valerie</forename><forename type="middle">L</forename><surname>Shalin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ugur</forename><surname>Kursuncu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Neurocomputing</title>
+		<imprint>
+			<biblScope unit="volume">490</biblScope>
+			<biblScope unit="page" from="312" to="318" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">Thirty years of research into hate speech: topics of interest and their evolution</title>
+		<author>
+			<persName><forename type="first">Alice</forename><surname>Tontodimamma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eugenia</forename><surname>Nissi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Annalina</forename><surname>Sarra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lara</forename><surname>Fontanella</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Scientometrics</title>
+		<imprint>
+			<biblScope unit="volume">126</biblScope>
+			<biblScope unit="page" from="157" to="179" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ahmet</forename><surname>Üstün</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Viraat</forename><surname>Aryabumi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng-Xin</forename><surname>Yong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Yin</forename><surname>Ko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D'</forename><surname>Daniel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gbemileke</forename><surname>Souza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Neel</forename><surname>Onilude</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shivalika</forename><surname>Bhandari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hui-Lee</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amr</forename><surname>Ooi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Freddie</forename><surname>Kayid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phil</forename><surname>Vargus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shayne</forename><surname>Blunsom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niklas</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marzieh</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julia</forename><surname>Fadaee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sara</forename><surname>Kreutzer</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hooker</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2402.07827</idno>
+		<title level="m">Aya Model: An Instruction Finetuned Open-Access Multilingual Language Model</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Evaluating gpt-3 generated explanations for hateful content moderation</title>
+		<author>
+			<persName><forename type="first">Han</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Shan Hee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Md</forename><surname>Rabiul Awal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenny</forename><surname>Tsu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Choo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roy Ka-Wei</forename><surname>Lee</surname></persName>
+		</author>
+		<idno type="DOI">10.24963/ijcai.2023/694</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Thirty-Second International Joint Conference on Artificial Intelligence, IJCAI-23</title>
+		<meeting>the Thirty-Second International Joint Conference on Artificial Intelligence, IJCAI-23</meeting>
+		<imprint>
+			<publisher>AI for Good</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="6255" to="6263" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">Finetuned language models are zero-shot learners</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vincent</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kelvin</forename><surname>Guu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adams</forename><forename type="middle">Wei</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Lester</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc V</forename><surname>Le</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<analytic>
+		<title level="a" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="24824" to="24837" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<monogr>
+		<title level="m" type="main">Make America meme again: The rhetoric of the Alt-Right</title>
+		<author>
+			<persName><forename type="first">Suzanne</forename><surname>Heather</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leslie</forename><forename type="middle">A</forename><surname>Woods</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hahner</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<publisher>Peter</publisher>
+			<pubPlace>Lang New York</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<analytic>
+		<title level="a" type="main">A brief overview of chatgpt: The history, status quo and potential future development</title>
+		<author>
+			<persName><forename type="first">Tianyu</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shizhu</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingping</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siqi</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kang</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qing-Long</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Tang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE/CAA Journal of Automatica Sinica</title>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="issue">5</biblScope>
+			<biblScope unit="page" from="1122" to="1136" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">Context sensitivity estimation in toxicity detection</title>
+		<author>
+			<persName><forename type="first">Alexandros</forename><surname>Xenos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Pavlopoulos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ion</forename></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.woah-1.15</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 5th Workshop on Online Abuse and Harms (WOAH 2021)</title>
+		<meeting>the 5th Workshop on Online Abuse and Harms (WOAH 2021)</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">Androutsopoulos. 2021</date>
+			<biblScope unit="page" from="140" to="145" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<monogr>
+		<title level="m" type="main">Transformer-based hate speech detection for multiclass and multi-label classification</title>
+		<author>
+			<persName><forename type="first">Gemeda</forename><surname>Mesay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olga</forename><surname>Yigezu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Grigori</forename><surname>Kolesnikova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><forename type="middle">F</forename><surname>Sidorov</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Gelbukh</surname></persName>
+		</author>
+		<editor>IberLEF@ SEPLN</editor>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">Measuring and characterizing hate speech on news websites</title>
+		<author>
+			<persName><forename type="first">Savvas</forename><surname>Zannettou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mai</forename><surname>Elsherief</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elizabeth</forename><surname>Belding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shirin</forename><surname>Nilizadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianluca</forename><surname>Stringhini</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 12th ACM conference on web science</title>
+		<meeting>the 12th ACM conference on web science</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="125" to="134" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

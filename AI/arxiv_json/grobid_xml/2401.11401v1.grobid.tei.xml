@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">LLMRA: Multi-modal Large Language Model based Restoration Assistant</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-01-21">21 Jan 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Xiaoyu</forename><surname>Jin</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yuan</forename><surname>Shi</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Bin</forename><surname>Xia</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="institution">The Chinese University of Hong Kong</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Wenming</forename><surname>Yang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">LLMRA: Multi-modal Large Language Model based Restoration Assistant</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-01-21">21 Jan 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">D430E9C7FD53BF38802DB9A26B542B4F</idno>
+					<idno type="arXiv">arXiv:2401.11401v1[cs.CV]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:33+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Multi-modal Large Language Models (MLLMs) have a significant impact on various tasks, due to their extensive knowledge and powerful perception and generation capabilities. However, it still remains an open research problem on applying MLLMs to low-level vision tasks. In this paper, we present a simple MLLM-based Image Restoration framework to address this gap, namely Multimodal Large Language Model based Restoration Assistant (LLMRA). We exploit the impressive capabilities of MLLMs to obtain the degradation information for universal image restoration. By employing a pretrained multi-modal large language model and a vision language model, we generate text descriptions and encode them as context embedding with degradation information for the degraded image. Through the proposed Context Enhance Module (CEM) and Degradation Context based Transformer Network (DC-former), we integrate these context embedding into the restoration network, contributing to more accurate and adjustable image restoration. Based on the dialogue with the users, our method leverages image degradation priors from MLLMs, providing low-level attributes descriptions of the input low-quality images and the restored high-quality images simultaneously. Extensive experiments demonstrate the superior performance of our LLMRA in universal image restoration tasks.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Recently, Multi-modal Large Language Models (MLLMs), such as LLaVA <ref type="bibr">[Liu et al., 2023]</ref>, <ref type="bibr">MiniGPT-4 [Zhu et al., 2023]</ref>, and InstructBLIP <ref type="bibr" target="#b2">[Dai et al., 2023]</ref>, have garnered significant attention. Building upon the remarkable comprehension and reasoning capabilities of LLMs, MLLMs have transcended beyond the boundaries of textual inputs, harnessing their remarkable power in various domains.</p><p>However, the current exploration of MLLMs has primarily focused on high-level perception and understanding of images. The application of MLLMs only emerges in a limited range of vision-language tasks, such as image caption-ing <ref type="bibr">[Chen et al., 2015]</ref>, visual question answering <ref type="bibr" target="#b0">[Antol et al., 2015]</ref>, and conventional computer vision tasks like segmentation <ref type="bibr" target="#b4">[Lai et al., 2023</ref>] and text-to-image generation <ref type="bibr">[Xia et al., 2023a]</ref>. Recently, a benchmark called Q-bench <ref type="bibr">[Wu et al., 2023]</ref> can evaluate the performance of MLLMs in lowlevel vision tasks, specifically in perceiving and describing low-level quality-related information using natural language. The results demonstrate that MLLMs exhibit a notable perceptual ability towards low-level visual attributes.</p><p>Image restoration is a fundamental task in the field of lowlevel vision, with the primary objective of recovering highquality images from degraded counterparts. This task encompasses a diverse range of subtasks, including but not limited to image denoising, deblurring, deraining, and low-light enhancement. Presently, the existing methods predominantly concentrate on addressing specific types of image degradation, and are trained on datasets featuring only a single degradation, thereby imposing limitations on their ability to effectively restore other forms of degradation. In recent times, there has been a notable surge of interest in the task of unified image restoration. Researchers are challenged to develop a single model capable of handling images with diverse types of degradation. Several approaches have been proposed to tackle this challenge, employing techniques like degradation encoder, contrastive learning <ref type="bibr" target="#b6">[Li et al., 2022]</ref>, and prompt learning <ref type="bibr">[Potlapalli et al., 2023]</ref> to achieve promising results. Some approaches also leverage visual language models (VLMs) to handle a wide range of degradations <ref type="bibr">[Luo et al., 2023]</ref>. However, when it comes to complex real-world degradations, the processing and storage capabilities of these encoders and VLMs are still limited. In particular, these methods can only directly restore images and cannot accept other instructions for restoration or optimization, which limits the application scenarios.</p><p>In this paper, we combine large-scale pretrained multimodal large language model with image restoration networks and introduce an effective framework for universal image restoration. We refer to this novel framework as MLLM based image Restoration Assistant (LLMRA). Specifically, we utilize IDEFICS <ref type="bibr">[Huggingface, 2023]</ref>, an open-source multi-modal language model based on Flamingo <ref type="bibr" target="#b0">[Alayrac et al., 2022]</ref>, to generate textual descriptions of the input degraded images. The text encoder of CLIP <ref type="bibr" target="#b8">[Radford et al., 2021]</ref> (a large-scale pretrained vision-language model)  • We propose a multi-modal large language model based image restoration framework, which is capable of generating restored high-quality image automatically or according to the dialogue with the users. To the best of our knowledge, LLMRA is the first work that applies MLLMs in the domain of unified image restoration.</p><p>• To better incorporate text features into the restoration network, we propose CEM (Context Enhance Module) and DC-former (Degradation Context based Transformer Network). CEM enhances the text features and DC-former propagates the degraded information from textual features to the restoration network effectively. • Our extensive experiments demonstrate the effectiveness of LLMRA, as it achieves state-of-the-art performance on various image restoration tasks, including image denoising, deraining, and low-light image enhancement.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related Works</head><p>Unified Image Restoration. Although there has been considerable attention given to single degradation image restoration methods <ref type="bibr">[Zamir et al., 2022;</ref><ref type="bibr">Xia et al., 2023b]</ref>, the exploration of unified image restoration for multi-degradation remains limited. Some research has focused on addressing image degradation caused by various weather conditions such as snow, fog, and rain <ref type="bibr" target="#b5">[Li et al., 2020;</ref><ref type="bibr">Valanarasu et al., 2022]</ref>. However, these studies often train specific encoders or decoders for each weather degradation, which lacks scalability as it requires prior knowledge of specific degradation </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Proposed Method</head><p>In this section, we present a comprehensive description of the proposed method, which encompasses the generation of text features, the network architectures and the loss functions.</p><p>Training. As illustrated in Figure <ref type="figure" target="#fig_2">2</ref>, with the instruction &lt;refine&gt;, the restoration network is first trained with accurate LQ image degradation descriptions, where the descriptions are artificially generated. Subsequently, under the &lt;re-store&gt;instruction, the Context Embedding Module (CEM) is incorporated. During this process, the textual input of degradation descriptions is provided by the MLLM. CEM is responsible for leveraging the features of the image to enhance the description generated by MLLM, thereby making it more closely aligned with the accurate depiction of degradation. For the task of unified image restoration, we consider three commonly encountered degradation types: noise, rain, and low illumination. These degradation types encompass both additive and multiplicative forms of degradation, thereby exhibiting generalization capabilities.</p><p>Inference.</p><p>When presented with the instruction &lt;restore &gt;, the process initiates by taking a given degraded image I LQ and a text prompt that solicits information regarding the degradation. These inputs are fed into the MLLM. Subsequently, the MLLM generates a descriptive text that effectively captures the low-level characteristics of the LQ image. The resulting text description is then encoded using the CLIP text encoder, yielding text feature T f ea . These features are subsequently processed by the Context Enhance Module (CEM) and the Context Transformer (CT) to obtain the degra-dation context Z. Finally, the context Z is supplied to the DC-former network for the restoration of the degraded images. When received the &lt;refine&gt;instruction, the CEM step is omitted. The restoration takes the dialogue with the users as the text input to realize adjustable restoration.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Generation of the Text Feature</head><p>Figure <ref type="figure" target="#fig_2">2</ref>(a) illustrates the process of generating text features that contain information about image degradation in our approach. We utilized idefics-9b-instruct [Huggingface, 2023], a Multi-modal Large Language Model with 9 billion parameters, as the foundation of our approach. This model is designed to process both image and text sequences as input and generate coherent text as output.</p><p>To fully leverage the vast knowledge and amazing perceptual capabilities of MLLMs, We carefully devised instructions for text input. These instructions include three specific questions related to the mentioned degradation types (i.e., noise, rain, and low-light conditions). As depicted in Figure <ref type="figure" target="#fig_1">1</ref>, the large-scale model can generate promising responses to user queries based on the image information.</p><p>Next, these output text descriptions are encoded into text features T f ea ∈ R 77×512 , using the text encoder of CLIP. The aforementioned procedure employs pretrained models, we do not need fine-tuning on them. By denoting the input text instructions and degraded image as T input and I LQ , this process can be formulated as:  </p><formula xml:id="formula_0">T f ea = F CLIP (F M LLM (T input , I LQ )),<label>(1)</label></formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Context Enhance Module</head><p>Under the instruction &lt;refine&gt;training recipe, the textual descriptions are artificially generated, which is accurate and directly corresponds to the specific type of image degradation. </p><formula xml:id="formula_1">T ′ f ea = CEM(I LQ , T f ea )<label>(2)</label></formula><p>where T ′ f ea ∈ R 77×512 refers to the enhanced text features. After that, T ′ f ea (or T f ea ) is processed by Context Transformer (CT) to get the degradation context embeddings Z.</p><p>CT is a single vanilla transformer <ref type="bibr">[Vaswani et al., 2017]</ref> consists of a self attention and multi-layer perceptron.</p><p>As mentioned above, we need to bring Z as close as possible to accurate representations of image degradation. To this end, we leverage an triplet loss to learn Z by maximizing the consistency with the postive inputs while minimizing the consistency between the negative ones. To be specific, for a degradation context Z, Z + and Z -are the corresponding positive and negative counterpart, respectively. Then, the triplet loss L tri could be reformulated as:</p><formula xml:id="formula_2">L tri = N i=1 Z i -Z + i 2 2 -Z i -Z - i 2 2 + α + (3)</formula><p>where α refers to the margin of the loss.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Degradation Context based Transformer</head><p>With the degradation context Z obtained from CT, the Degradation Context based Transformer Network (DC-former) is employed to restore the high-quality image from the input with unknown degradation. The architecture of DC-former, depicted in Figure <ref type="figure" target="#fig_2">2</ref>(a), consists of multiple stacked basic transformer blocks and Degradation Modulation Modules (DMM), organized in a UNet-shaped architecture. This design allows for effective information flow and contextual understanding, enabling the model to restore the image while considering the specific degradation characteristics.</p><p>As shown in Figure <ref type="figure" target="#fig_4">3</ref>, each DMM consists of an image cross attention transformer (yellow box), a Concatenate Attention Feature Fusion (CAFF) module and a basic transformer block (blue box) from Restormer <ref type="bibr">[Zamir et al., 2022]</ref>. The basic transformer block is composed of a Multi-Dconv head transposed attention (MDTA) and Gated-Dconv feedforward network (GDFN), which allow more effective feature interactions. The process is formulated as:</p><formula xml:id="formula_3">X i+1 = DMM(X i , Z)<label>(4</label></formula><p>) where X i and X i+1 denote the input and output feature maps.</p><p>In CAFF, we first concatenate X i and Y i as XY i . Inspired by <ref type="bibr" target="#b1">[Dai et al., 2021]</ref>, the feature maps are processed with two branch to get local and global information and aggregated at the end. The local channel context L(XY i ) ∈ R C×H×W is computed via a bottleneck structure as follows:</p><formula xml:id="formula_4">L(XY i ) = Norm(PWConv 2 ( δ(Norm(PWConv 2 (XY i )))))<label>(5)</label></formula><p>where Norm refers to Layer Normalization (LN), PWConv 2 denotes point-wise convolution (PWConv), δ denotes the Rectified Linear Unit (ReLU). Note that the kernel sizes of the two PWConv</p><formula xml:id="formula_5">2 are 2C × 2C × 1 × 1 and 2C × C × 1 × 1,</formula><p>respectively. As a result, L(X i ) preserves the same shape as the input feature, allowing for the preservation and emphasis of intricate details in the low-level features.</p><p>In the global branch, the features are first processed through a global average pooling (GAP), followed by similar operations as PWConv 1 , LN, ReLU, PWConv 1 and LN, finally get the global channel context G(XY i ). The PWConv 1 here is for one dimension. It is formulated as:</p><formula xml:id="formula_6">G(XY i ) = Norm(PWConv 1 ( δ(Norm(PWConv 1 (GAP(XY i ))))))<label>(6)</label></formula><p>By incorporating the global channel context G(XY i ) and local channel context L(XY i ) the modulated feature X ′ i can be obtained as follows:</p><formula xml:id="formula_7">X ′ i = X i ⊗ W(XY i ) + (1 -W(XY i )) ⊗ Y i (7) W(XY i ) = σ((L(XY i ) ⊕ G(XY i )),<label>(8</label></formula><p>) where σ denotes Sigmoid operation, W denotes the attention weights. ⊕ denotes the broadcasting addition and ⊗ denotes the element-wise multiplication.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">The Objective Function</head><p>As mentioned above, when training the models using the &lt;re-store&gt;and &lt;refine&gt;instructions, we employ distinct objective functions to optimize the process.  </p><formula xml:id="formula_8">L ref ine = L rec (9) L restore = L rec + L tri<label>(</label></formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Experiments</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Experimental Settings</head><p>To demonstrate the effectiveness of the proposed LLMRA, we perform the evaluation on three representative image restoration tasks: image denoising, image deraining, and low light image enhancement. We train a unified model that can recover images across all three degradation types.</p><p>Implementation Details. The architecture of the DCformer consists of a 4-level encoder-decoder, with varying numbers of Transformer blocks at each level, specifically <ref type="bibr" target="#b10">[4,</ref><ref type="bibr" target="#b14">6,</ref><ref type="bibr" target="#b14">6,</ref><ref type="bibr">8]</ref> from level-1 to level-4. We employ one DMM between every two consecutive decoder levels, totaling 4 DMMs in the overall DC-former network. The channel size of DC-former is set to 48. The model is trained with a batch size of 4. The network is optimized with Adam optimizer (β 1 = 0.9, β 2 = 0.999) with learning rate 1e -4 for 800k iters. During training, we utilize cropped patches of size 128 x 128 as input, and to augment the training data, random horizontal and vertical flips are applied to the input images.</p><p>Table <ref type="table">1</ref>: Denoising comparisons in the single-task setting on BSD68 and Urban100 datasets. Top rows: methods under the single-task setting. Bottom rows: methods under the all-in-one setting. The optimal and sub-optimal PSNR/SSIM↑ results are highlighted using bold and underlined, respectively.  In our experiments, we prepare several datasets for the training of these three tasks. For image denoising, we use WED <ref type="bibr" target="#b7">[Ma et al., 2016]</ref> for training, which contains 4744 images. Testing is performed on BSD68 <ref type="bibr" target="#b7">[Martin et al., 2001]</ref> and Urban100 <ref type="bibr" target="#b3">[Huang et al., 2015]</ref> datasets. From clean images of WED BSD68 and Urban100, we generate the noisy images by adding Gaussian noise with different noise levels σ ∈ {15, 25, 50}. For image deraining, we use the data from <ref type="bibr">[Yang et al., 2019]</ref>, including 1800 paired light rainy images for training and 100 images for testing. For low light image enhancement, we use LOL-v1 dataset <ref type="bibr" target="#b11">[Wei et al., 2018]</ref>, including 485 low/normal light images pairs for training and another 15 images for testing.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>BSD68</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Comparison with State-of-the-Art Approaches</head><p>For comparing with the SOTA approaches, we trained the proposed LLMRA in all-in-one settings by optimizing the network (without CEM) with L ref ine (equation 9). We compare our LLMRA with several unified image restoration approaches as well as specific degradation restoration methods on three tasks. More precisely, we compare DnCNN <ref type="bibr">[Zhang et al., 2017a]</ref>, IRCNN <ref type="bibr">[Zhang et al., 2017b]</ref>, FFDNet <ref type="bibr" target="#b14">[Zhang et al., 2018]</ref>, AirNet <ref type="bibr" target="#b6">[Li et al., 2022]</ref>, PromptIR <ref type="bibr">[Potlapalli et al., 2023]</ref> and DA-CLIP <ref type="bibr">[Luo et al., 2023]</ref> for image denoisig. We compare UMR <ref type="bibr">[Yasarla and Patel, 2019]</ref>, SIRR <ref type="bibr" target="#b11">[Wei et al., 2019]</ref>, MSPFN <ref type="bibr" target="#b4">[Jiang et al., 2020]</ref>, <ref type="bibr">Restormer [Zamir et al., 2022]</ref>, AirNet <ref type="bibr" target="#b6">[Li et al., 2022]</ref>, <ref type="bibr">PromptIR [Potlapalli et al., 2023]</ref>, and DA-CLIP <ref type="bibr">[Luo et al., 2023]</ref> for image deraining. We compare Retinex <ref type="bibr" target="#b11">[Wei et al., 2018]</ref>, UFormer <ref type="bibr" target="#b10">[Wang et al., 2022]</ref>, EnGAN <ref type="bibr" target="#b4">[Jiang et al., 2021]</ref>, KinD <ref type="bibr" target="#b14">[Zhang et al., 2019]</ref> URetinex-Net <ref type="bibr">[Wu et al., 2022]</ref>, <ref type="bibr">Restormer [Zamir et al., 2022]</ref> and DA-CLIP <ref type="bibr">[Luo et al., 2023]</ref> for low light image enhancement.</p><p>Quantitative Comparison. Table <ref type="table">1</ref> presents results of image denoising. It shows that our LLMRA achieves 0.39dB for PSNR improvement over PromptIR for noise level σ = 50 on Urban100 dataset. Similar trends can be observed for deraining tasks. On the deraining task (Table <ref type="table" target="#tab_1">2</ref>), our method yields performance gains of 1.61 dB over PropmtIR. For low light image enhancement , our LLMRA achieves 0.035 for SSIM improvement over DA-CLIP. Our method even outperforms the restormer for image deraining and low-light image enhancement, which is trained in the single-task settings.</p><p>Qualitative Comparison. In addition, we provide visual examples to illustrate the effectiveness of our proposed method. Figure <ref type="figure" target="#fig_7">4</ref> showcases the results of the three tasks. For image denoising, our LLMRA outperforms other stateof-the-art methods by effectively removing noise from the image without excessively blurring it. Similarly, the middle rows demonstrate the efficacy of our approach in the deraining task, as it successfully eliminates rain streaks and produces rain-free images. For low light image enhancement, previous methods often suffered from issues such as color distortion, over/underexposed regions, or failure to suppress noise in specific areas. In contrast, our approach excels in enhancing visibility, reliably enhancing the image without introducing artifacts, and robustly preserving the natural color.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Impact of the Text Inputs</head><p>We manage to use text information to assist image restoration, as text input is more readily available and allows for adjustable and interactive restoration manner through dialogue   <ref type="figure" target="#fig_8">5</ref>, it is evident that the presence of ground truth text input results in effective noise removal without any other modifications. Conversely, when ground false text input is used, the noise persists but the lighting is enhanced. Similar clue could also be drawn from the quantitative results in Table <ref type="table" target="#tab_3">4</ref>, when confronted with accurate and erroneous textual input, the disparity in the results of restoration is substantial.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Ablation study</head><p>Impact of CEM. To verify the impact of Context Enhance Module (CEM) on enhancing the text descriptions obtained from the MLLM in the universal image restoration task, we carry out some experiments. In this section, a set of predefined specific questions related to the mentioned degradation types (i.e., noise, rain, and low-light conditions) are sent to the MLLM, and it would generate corresponding responses to be the text descriptions for further guiding the restoration. We restore the images with and without CEM under these conditions. The results are shown in Table <ref type="table" target="#tab_1">2</ref>, revealing a sig-</p><p>Table 5: Ablation study on the impact of CEM. Results are reported on BSD68 (σ = 50), Rain100L and LOLv1 datasets. The best results are shown in boldface. w.o. CEM Ours BSD68 25.18/0.6913 28.11/0.7964 Rain100L 26.54/0.8838 38.64/0.9831 LoLv1 17.51/0.6999 20.19/0.8243 Table 6: Ablation study on the way of modulating the text features. Results are reported on BSD68 (σ = 50), Rain100L and LOLv1 datasets. The best results are shown in boldface. w.o. DMM Ours BSD68 28.02/0.7913 28.13/0.7930 Rain100L 37.71/0.9796 38.93/0.9842 LoLv1 19.40/0.8013 23.30/0.8457 nificant improvement in the restoration outcomes when CEM is incorporated.</p><p>The way of modulating the text features. In the domain of text-to-image generation <ref type="bibr">[Rombach et al., 2022]</ref>, researchers commonly employ a denoising UNet with a cross transformer as the basic module to modulate the text features. However, in our proposed method, we utilize DMMs for the degradation context modulation. In order to validate the effectiveness of our method, we follow the approach of these text-to-image generation methods by removing the CAFF modules and stacking the cross transformers in the decoder. The experimental results are presented in Table <ref type="table">6</ref>, which demonstrates the effectiveness of the proposed DMM.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>This paper introduces LLMRA, a novel framework that leverages multi-modal large language models for universal image restoration. The core contribution of our framework is utilizing the MLLM and a text-guided restoration network to realize a more accurate, adjustable and interactive restoration manner. The Context Enhance Module and the Degradation Context based Transformer Network are proposed to effectively enhance the degradation information and incorporate it into the restoration network. Experimental evaluation on unified image restoration tasks demonstrates that LLMRA leads to significant performance on image denoising, image deraining, and low light image enhancement. Nevertheless, it is important to acknowledge some limitations of the proposed LLMRA. The performance of LLMRA may fluctuate with the performance of MLLM, as it may provide uninformative or even harmful answers of the degradation information, thus affecting the quality of restoration. Fortunately, users can &lt;re-fine&gt;the results by engaging in subsequent dialogue. More ever, our experiments are currently limited to only three tasks. Although these three tasks are representative to some extent, as they encompass both additive and multiplicative degradation. In future research, we aim to broaden the scope of our investigation to encompass a wider range of restoration tasks involving different types of degradation.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><figDesc>Now I will show you an image, are you ready to answer somes questions about it? I'm ready! Describe the quality and low-level appearance of the image. The image is a blurry and pixelated depiction of a sunset over the ocean. Describe the lighting, if there are areas in the image that are dark; Describe if there is rain streaks degradation in this image; Describe if this image have gaussian noise degradation and the noise level. The sky is dark. Yes, there are rain streaks degradation. Yes, the image has gaussian noise degradation and the noise level is high. I still think this image is dark, what is your opinion? &lt;refine&gt; I think the image is dark. Here is the refined image. I think this image is too bright this time, what is your opinion? &lt;refine&gt; I agree, the image is too bright. Here is the refined image. Now I am satisfied with this image. Great! I'm glad I could help. &lt;restore&gt; (restore the image automatically )No problem, here is the restored image.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Example of the proposed LLMRA for universal image restoration. Based on the input image and the text input asking for the lowlevel attributes of the image, our method is capable of providing corresponding descriptions. Upon the &lt;restore &gt;instruction, our LLMRA leverages the degradation descriptions from the MLLM automatically to restore the image. On the other hand, when instructed with the &lt;refine&gt;command, LLMRA performs image restoration based on the content of the dialogue. is employed to encode the text descriptions into text features. Using a Context Refine Module (CRM) and Context transformer, these degradation aware text features are enhanced. Finally, we incorporate them into the Degradation Context based Transformer Network (DC-former) through a Degradation Modulation Module. By effectively utilizing the image degradation priors obtained from the MLLMs, this framework enables the restoration network to achieve more accurate and adjustable image restoration. Our main contributions are summarised as follows:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: The overview of the proposed LLMRA. (a) The proposed LLMRA Framework. DEN, CT and DC-former are used to refine and incorporate the degradation information into the restoration network. (b) Context Enhance Module (CEM). (c) Context Transformer (CT).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>Figure2(a) illustrates the process of generating text features that contain information about image degradation in our approach. We utilized idefics-9b-instruct[Huggingface, 2023], a Multi-modal Large Language Model with 9 billion parameters, as the foundation of our approach. This model is designed to process both image and text sequences as input and generate coherent text as output.To fully leverage the vast knowledge and amazing perceptual capabilities of MLLMs, We carefully devised instructions for text input. These instructions include three specific questions related to the mentioned degradation types (i.e., noise, rain, and low-light conditions). As depicted in Figure1, the large-scale model can generate promising responses to user queries based on the image information.Next, these output text descriptions are encoded into text features T f ea ∈ R 77×512 , using the text encoder of CLIP. The aforementioned procedure employs pretrained models, we do not need fine-tuning on them. By denoting the input text instructions and degraded image as T input and I LQ , this process can be formulated as:T f ea = F CLIP (F M LLM (T input , I LQ )),(1)where F M LLM and F CLIP indicate the text encoders of IDEFICS and CLIP, respectively.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Degradation Modulation Module (DMM) in DC-former.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><figDesc>While the instruction &lt;restore &gt;requires the model to automatically restore the image without other priors. Due to the potential inaccuracies in the descriptions generated by MLLM, the context Enhance Module (CEM) is proposed to utilize the image features to enhance the degradation descriptions generated by MLLM. The goal is to bring these descriptions as close as possible to accurate representations of image degradation. As shown in Figure 2 (b), for an input LQ image I LQ ∈ R 3×H×W , we obtain the shallow image feature through a convolutional ResBlock. Combining the shallow image feature, we process the text features T f ea through two text cross transformers, this process is formulated as:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><figDesc>10)where L tri refers to the triplet loss (equation 3) and L rec = I HQ -ÎHQ 1 represents the reconstruction loss, which caculates the L1 norm between the ground truth I HQ and the recovered high quality image ÎHQ .</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Visual comparisons with the SOTA methods. Rows 1-2, 3-4, 5-6 rows display the results of image denoising, image deraining and low light image enhancement, respectively. The test images are from Urban100, Rain100L and LOLv1. Zoom in for better visualization.</figDesc><graphic coords="5,264.10,453.49,96.05,72.12" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Impact of the text input.</figDesc><graphic coords="7,136.40,170.05,78.00,52.02" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 :</head><label>2</label><figDesc>Deraining results on Rain100L. Left columns: methods under single-task setting. Right columns: methods under all-in-one setting. The optimal and sub-optimal results are highlighted using bold and underlined, respectively.</figDesc><table><row><cell>Urban100</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 3 :</head><label>3</label><figDesc>Low light image enhancement results on LOL-v1. Left columns: methods under single-task setting. Right columns: methods under all-in-one setting. The optimal and sub-optimal results are highlighted using bold and underlined, respectively.</figDesc><table><row><cell></cell><cell cols="8">Retinex-Net UFormer EnGAN KinD URetinex-Net Restormer DA-CLIP Ours</cell></row><row><cell>PSNR↑</cell><cell>16.40</cell><cell>16.36</cell><cell>17.56</cell><cell>20.86</cell><cell>21.33</cell><cell>22.43</cell><cell>23.40</cell><cell>23.30</cell></row><row><cell>SSIM↑</cell><cell>0.500</cell><cell>0.771</cell><cell>0.665</cell><cell>0.790</cell><cell>0.834</cell><cell>0.823</cell><cell>0.811</cell><cell>0.846</cell></row><row><cell>Datasets.</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 4 :</head><label>4</label><figDesc>Quantitative results for the impact of the text input, evaluated on BSD68 (σ = 50), Rain100L and LOLv1 dataset. "with gt text" means input ground truth text descriptions. "with gf text" means input ground false text descriptions.</figDesc><table><row><cell></cell><cell>with gf text</cell><cell>with gt text</cell></row><row><cell>BSD68</cell><cell cols="2">14.46/0.4790 28.13/0.7930</cell></row><row><cell cols="3">Rain100L 20.11/0.8302 38.93/0.9842</cell></row><row><cell>LoLv1</cell><cell cols="2">7.59/0.1440 23.30/0.8457</cell></row><row><cell cols="3">with the MLLMs. To verify the impact of the text inputs,</cell></row><row><cell cols="3">we prepared two set of text descriptions for the test datasets,</cell></row><row><cell cols="3">which are called "ground truth" and "ground false" text in-</cell></row><row><cell cols="3">put. As shown in Figure 5, the task is image denoising for the</cell></row><row><cell cols="3">first row (14037.png from BSD68 with σ = 50), the ground</cell></row><row><cell cols="3">truth text description could be "The image is well lit. No</cell></row><row><cell cols="3">rain streaks detected. The image has gaussian noise degrada-</cell></row><row><cell cols="3">tion and the noise level is high." Conversely, the ground false</cell></row><row><cell cols="3">text description is would be completely opposite, like "The</cell></row><row><cell cols="3">image is dark. The image is degraded by rain streaks. No</cell></row><row><cell cols="2">noise detected." From Figure</cell></row></table></figure>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Vqgan-clip: Open domain image generation and editing with natural language guidance</title>
+		<author>
+			<persName><surname>Abdal</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1504.00325</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Microsoft coco captions: Data collection and evaluation server</title>
+		<editor>
+			<persName><forename type="first">Hao</forename><surname>Chen</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Tsung-Yi</forename><surname>Fang</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ramakrishna</forename><surname>Lin</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Saurabh</forename><surname>Vedantam</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Piotr</forename><surname>Gupta</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">C</forename><surname>Dollár</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Zitnick</forename><surname>Lawrence</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Stella Biderman, Daniel Kornis</addrLine></address></meeting>
+		<imprint>
+			<publisher>Louis Castricato, and Edward Raff</publisher>
+			<date type="published" when="2015">2022. 2022. 2022. 2022. 2015. 2015. 2023. 2023. 2015. 2015. 2022</date>
+			<biblScope unit="page" from="1" to="9" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Flamingo: a visual language model for few-shot learning VQA: Visual Question Answering ICCV Instructpix2pix: Learning to follow image editing instructions CVPR SIG-GRAPH Crowson et al., 2022 Clip2stylegan: Unsupervised extraction of stylegan edit directions ECCV</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title/>
+		<author>
+			<persName><surname>Dai</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Attentional feature fusion. In WACV</title>
+		<imprint>
+			<biblScope unit="issue">4</biblScope>
+			<date type="published" when="2021">2021. 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Instructblip: Towards general-purpose vision-language models with instruction tuning</title>
+		<author>
+			<persName><surname>Dai</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.06500</idno>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Instructdiffusion: A generalist modeling interface for vision tasks</title>
+		<author>
+			<persName><surname>Geng</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.03895</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Jia-Bin Huang, Abhishek Singh, and Narendra Ahuja</title>
+		<imprint>
+			<date type="published" when="2015">2023. 2023. 2015. 2015. 2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page">3</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Single image super-resolution from transformed self-exemplars CVPR Huggingface, 2023] Huggingface. Introducing idefics: An open reproduction of state-of-the-art visual language model</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Multi-scale progressive fusion network for single image deraining</title>
+		<author>
+			<persName><surname>Jiang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.00692</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Reasoning segmentation via large language model</title>
+		<imprint>
+			<date type="published" when="2020">2020. 2020. 2021. 2021. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Enlightengan: Deep light enhancement without paired supervision Lai et al., 2023 CVPR</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">All in one bad weather removal using architectural search</title>
+		<author>
+			<persName><surname>Li</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2020">2020. 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Blip-2: Bootstrapping language-image pretraining with frozen image encoders and large language models</title>
+		<author>
+			<persName><surname>Li</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.12597</idno>
+		<idno>arXiv:2310.01018</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Controlling vision-language models for universal image restoration</title>
+		<imprint>
+			<date type="published" when="2006">2022. 2022. 1, 2, 6. 2023. 2023. 2023. 2023. 1, 2, 6</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>All-in-one image restoration for unknown corruption Visual instruction tuning. NeurIPS, 2023. 1, 2 [Luo et al., 2023 CVPR</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">A database of human segmented natural images and its application to evaluating segmentation algorithms and measuring ecological statistics</title>
+		<author>
+			<persName><surname>Ma</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.13090</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Promptir: Prompting for all-in-one blind image restoration</title>
+		<editor>
+			<persName><forename type="first">Syed</forename><surname>Potlapalli</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Salman</forename><surname>Waqas Zamir</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Fahad</forename><surname>Khan</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Shahbaz Khan</surname></persName>
+		</editor>
+		<imprint>
+			<date type="published" when="2001">2016. 2016. 2001. 2001. 2023. 1, 2, 6</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Waterloo exploration database: New challenges for image quality assessment models Potlapalli et al., 2023 ICCV</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Learning transferable visual models from natural language supervision</title>
+		<author>
+			<persName><surname>Radford</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">ICML</title>
+		<meeting><address><addrLine>Robin Rombach, Andreas</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2021">2021. 2021</date>
+		</imprint>
+	</monogr>
+	<note>Rombach et al., 2022</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Transweather: Transformerbased restoration of images degraded by adverse weather conditions</title>
+		<author>
+			<persName><forename type="first">Dominik</forename><surname>Blattmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Lorenz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Björn</forename><surname>Esser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">;</forename><surname>Ommer</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Taori</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<ptr target="https://github.com/tatsu-lab/stanfordalpaca" />
+	</analytic>
+	<monogr>
+		<title level="m">Faisal Azhar, et al. Llama: Open and efficient foundation language models</title>
+		<editor>
+			<persName><forename type="first">Noam</forename><surname>Vaswani</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Niki</forename><surname>Shazeer</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jakob</forename><surname>Parmar</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Llion</forename><surname>Uszkoreit</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Jones</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Łukasz</forename><surname>Gomez</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Illia</forename><surname>Kaiser</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Polosukhin</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Eric Hambro</publisher>
+			<date type="published" when="2017">2022. 2023. 2023. 2023. 2022. 2017. 2017</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>CVPR Stanford alpaca: An instruction-following llama model Valanarasu et al., 2022 High-resolution image synthesis with latent diffusion models CVPR Attention is all you need. NeurIPS</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Uformer: A general u-shaped transformer for image restoration</title>
+		<author>
+			<persName><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2022">2022. 2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Uretinexnet: Retinex-based deep unfolding network for low-light image enhancement</title>
+		<author>
+			<persName><surname>Wei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1808.04560</idno>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2018">2018. 2018. 2019. 2019. 2022. 2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Deep retinex decomposition for low-light enhancement Semi-supervised transfer learning for image rain removal CVPR</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Q-bench: A benchmark for general-purpose foundation models on low-level vision</title>
+		<author>
+			<persName><surname>Wu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.14181</idno>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Uncertainty guided multi-scale residual learning-using a cycle spinning cnn for single image de-raining</title>
+		<author>
+			<persName><surname>Xia</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.16500</idno>
+		<idno>arXiv:2303.09472</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Multimodal large language model based generation assistant</title>
+		<editor>
+			<persName><forename type="first">Waqas</forename><surname>Zamir</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Aditya</forename><surname>Arora</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Salman</forename><surname>Khan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Munawar</forename><surname>Hayat</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Fahad</forename><surname>Shahbaz Khan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ming-Hsuan</forename><surname>Yang</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Kai Zhang, Wangmeng Zuo</publisher>
+			<date type="published" when="2017">2023. 2023. 2023. 2019. 2019. 2019. 2019. 2022. 2, 4. 2017</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Xia et al., 2023b Diffir: Efficient diffusion model for image restoration Yasarla and Patel Rajeev Yasarla and Vishal M Patel Joint rain detection and removal from a single image with contextualized deep networks CVPR Zamir et al., 2022 Restormer: Efficient transformer for high-resolution image restoration CVPR Yunjin Chen, Deyu Meng, and Lei Zhang. Beyond a gaussian denoiser: Residual learning of deep cnn for image denoising TIP</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Ffdnet: Toward a fast and flexible solution for cnn-based image denoising</title>
+		<author>
+			<persName><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">ACM MM</title>
+		<imprint>
+			<date type="published" when="2017">2017. 2017. 2018. 2018. 2019. 2019</date>
+		</imprint>
+	</monogr>
+	<note>Learning deep CNN denoiser prior for image restoration Kindling the darkness: A practical low-light image enhancer CVPR</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<title level="m" type="main">Minigpt-4: Enhancing vision-language understanding with advanced large language models</title>
+		<author>
+			<persName><surname>Zhu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.10592</idno>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

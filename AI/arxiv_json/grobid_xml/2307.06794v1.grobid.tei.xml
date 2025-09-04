@@ -1,0 +1,1071 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Negated Complementary Commonsense using Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Navid</forename><surname>Rezaei</surname></persName>
+							<email>nrezaeis@ualberta.ca</email>
+						</author>
+						<author>
+							<persName><forename type="first">Marek</forename><forename type="middle">Z</forename><surname>Reformat</surname></persName>
+							<email>reformat@ualberta.ca</email>
+						</author>
+						<author>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">ECE</orgName>
+								<orgName type="institution" key="instit2">University of Alberta Edmonton</orgName>
+								<address>
+									<postCode>T6G 1H9</postCode>
+									<country key="CA">Canada</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff1">
+								<orgName type="institution" key="instit1">ECE</orgName>
+								<orgName type="institution" key="instit2">University of Alberta Edmonton</orgName>
+								<address>
+									<postCode>T6G 1H9</postCode>
+									<country key="CA">Canada</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff2">
+								<orgName type="institution">University of Social Sciences</orgName>
+								<address>
+									<postCode>90-113</postCode>
+									<settlement>Łódź</settlement>
+									<country key="PL">Poland</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Negated Complementary Commonsense using Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">F65E658A62FE6E45C272D0FFE038B2C8</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:53+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Larger language models, such as GPT-3, have shown to be excellent in many tasks. However, we demonstrate that out-of-ordinary questions can throw the model off guard. This work focuses on finding answers to negated complementary questions in commonsense scenarios. We illustrate how such questions adversely affect the model responses. We propose a model-agnostic methodology to improve the performance in negated complementary scenarios. Our method outperforms few-shot generation from GPT-3 (by more than 11 points) and, more importantly, highlights the significance of studying the response of large language models in negated complementary questions. The code, data, and experiments are available under: <ref type="url" target="https://github.com/navidre/negated_complementary_commonsense">https://github.com/navidre/  negated_complementary_commonsense</ref>.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>The larger the language models (LLMs) become, the better they demonstrate new, outstanding capabilities. For example, one is conducting a conversation about commonsense scenarios. However, our interaction with LLMs has led us to observe that the models tend to emphasize the normal flow of events and seem to struggle with questions involving a negated form of verbs, such as not or cannot. An example of that is in Figure <ref type="figure">1</ref>. Therefore, in this paper, we focus on demonstrating the issue and then suggest an approach to remedy the problem.</p><p>To better clarify the problem statement, we start with an example and then formalize it using elements of the set theory. Let us look at the scenario in Figure <ref type="figure">1</ref>; the standard question is "Who Per-sonX can be?". The answer to this question is Santa Claus. The answer to the negated complementary question -"Who PersonX cannot be?"should be all valid answers which are not the answer to the standard (can be) question. A valid answer fits the scenario described. In this case, we</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>GPT-3</head><p>PersonX is wearing red and white clothes and is going down a stranger's home's chimney.</p><p>Who PersonX cannot be? ask about a person, so a non-person cannot be a valid answer. To better illustrate the concept of a negated complementary question, we refer to the basic notion of the complement of a set, Figure <ref type="figure">2</ref>. Furthermore, we define a set of correct answers to a negated complementary, Equation 1.</p><formula xml:id="formula_0">NC = V ∩ A ′ = {x | x ∈ V ∧ x / ∈ A} (1)</formula><p>where NC represents answers to the negated complementary question, V is the set of all valid answers, A is the set of correct answers to the standard question, and A ′ is the complement of A under the universal set of all answers (U ). We focus our efforts on commonsensical ques-</p><p>arXiv:2307.06794v1 [cs.CL] 13 Jul 2023 tions as the uncertainty of results depends on the context and experiences of people answering the questions. As defined in (LeCun, 2022), commonsense is a collection of world models representing what is likely, plausible, or impossible. In light of that, our goal is to assess the ability of LLMs to answer plausible questions that could be refuted or accepted in a given context. Given their pre-training nature, we hypothesize that LLMs have an inherent bias towards likely scenarios, which are the most repeated in the common text. Most of the text available on the web contains information supporting answers to 'positive' questions, like, how to do things or where to go, not to questions such as how things could not be done or where not to go. It results in an imbalance of the training datasets due to the sparsity of plausible or impossible scenarios. In this paper, we demonstrate that LLMs have difficulty answering negated complementary questions, which results in responses representing plausible, but not impossible, answers. Although LLMs are shown to have this shortcoming, we claim that enough instructions and examples, especially showing reasoning processes, can guide the LLMs into the right path to answer negated complementary questions with commonsense context.</p><p>Our contributions are as follows.</p><p>(1) We present an analysis exposing the shortcomings of LLMs when it comes to negated complementary questions in commonsensical scenarios. (2) We propose a novel methodology to improve the performance of the GPT-3 model when negated complementary questions are asked; compare the results with the results obtained using conventional methods. Our code, human-evaluation process, and data will be publicly available.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related Work</head><p>Language models with transformer architectures have revolutionized the natural language processing landscape in recent years <ref type="bibr" target="#b11">(Vaswani et al., 2017;</ref><ref type="bibr" target="#b3">Devlin et al., 2019)</ref>. It is shown that improved performance and new capabilities emerge when scaling up the size of language models <ref type="bibr" target="#b0">(Brown et al., 2020;</ref><ref type="bibr">Chowdhery et al., 2022)</ref>, although more is needed in challenging tasks, such as commonsense <ref type="bibr">(Rae et al., 2021)</ref>.</p><p>A body of research focuses on analyzing and extracting commonsense from language models <ref type="bibr" target="#b13">(West et al., 2022;</ref><ref type="bibr" target="#b10">Rezaei and Reformat, 2022;</ref><ref type="bibr" target="#b5">Hwang et al., 2021;</ref><ref type="bibr" target="#b2">Da et al., 2021)</ref>. Authors of <ref type="bibr" target="#b6">(Jiang et al., 2021)</ref> focus on implications of negated statements and contradictions, where in a commonsense triple relationship (head-relation-tail), the head is either contradicted or logically negated. Comparably this paper focuses on negating relations instead of the head, as explained in Section 4.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Commonsense Data</head><p>The commonsense dataset used in this paper is the ATOMIC-2020 dataset <ref type="bibr" target="#b5">(Hwang et al., 2021)</ref>. It includes general purpose commonsense knowledge, divided into three main categories -physical, eventcentered, and social commonsense. The ATOMIC 2020 dataset is licensed under CC-BY and we use it according to the license.</p><p>In our experiments, ten relation types are selected from the twenty-three relations from the ATOMIC-2020 dataset. These ten relation types performed worse in our initial evaluation of negated complementary questions. The relations are: xWant, xReact, oWant, CapableOf, Desires, HinderedBy, isBefore, isAfter, AtLocation, Has-SubEvent. The worse-performer triples are intuitively more common in the normal format in written language than their negated complementary versions, which can result in unbalanced training data.</p><p>The dataset is formatted in a triple style.</p><p>Each atomic piece of data contains ⟨head -relation -tail⟩.</p><p>For example, ⟨a curved yellow f ruit (head) -CanBe (relation) -banana (tail)⟩.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Methodology</head><p>We propose a pipeline system to improve the performance on negated complementary commonsense questions. The pipeline consists of an input prompting technique and a post-processing module. The input prompt adds relevant context and logic in the form of chain-of-thought prompting <ref type="bibr" target="#b12">(Wei et al., 2022)</ref> to improve the LLM performance. The postprocessing module selects the outputs with a higher chance of correctness and filters out the rest.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Generating Negated Complementary Questions</head><p>As described in Section 3, the used dataset is in the format of triples. To form a standard question, we use the head and the relation nodes and leave out the tail to be answered. By standard, we mean</p><p>a curved yellow fruit can be cannot be negate verbalize verbalize What can be a curved yellow fruit? What cannot be a curved yellow fruit? utilizing the head, relation, and tail, without any modifications. Assuming a triple, a curved yellow fruit (head), CanBe (relation), banana (tail), the standard question is What can be a curved yellow fruit?. The negated complementary question is formed by negating the relation and verbalizing the resulting triple in question format: What cannot be a curved yellow fruit? A valid answer to the standard question is banana, and a reasonable response to the negated complementary question is apple. The process is visualized in Figure <ref type="figure" target="#fig_1">3</ref>. For the complete list of triple verbalizations, please see Appendix A.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Prompting Technique</head><p>The proposed methodology to improve the performance of LLMs relies on building an adequate prompt. It starts with a general introduction of what negations are and emphasizes a need to pay special attention to the word Not. The chain-ofthought prompt in each answer has five sections in sequence: 1) phrasing standard question; 2) standard question reasoning, 3) standard question answer; 4) negation logic, and 5) negated complementary question answer. The steps are visualized in Figure <ref type="figure" target="#fig_2">4</ref>. For a fair comparison, we used the same number of five question/answer examples in the prompts. We also used the same questions for all prompts.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Post Processing</head><p>Inspired by <ref type="bibr" target="#b7">(Kadavath et al., 2022)</ref>, we feed the question and answer pair back to the GPT-3 model and ask if it considers a question/answer pair correct. The prompt has instructions for assessing an answer and includes five sample questions/answer pairs. Interestingly, this extra step can improve the results by almost one percent. To better understand the effect of this step, please refer to Table <ref type="table">2</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Experiments</head><p>Experiments are conducted on each type of relation mentioned in Section 3. A hundred data points (triples) are sampled randomly from the dataset. The head and relation from each triple are verbalized and fed into the GPT-3 model (text-davinci-002). The goal is to predict the tail for two forms of questions: (1) standard question; (2) negated complementary question. For each question, three responses are requested from the model. They are then parsed, and the answers (tails) are automatically extracted. Therefore, three possible tails are obtained for each head and relation, which results in 600 total answers per method.</p><p>In social commonsense scenarios, PersonX and PersonY are used in place of gender-specific pronouns to make the questions and answers genderneutral.</p><p>The experiments are done using the GPT-3 model <ref type="bibr" target="#b0">(Brown et al., 2020)</ref> with version textdavinci-002, which has 175 billion parameters. The temperature is set to 0.7, and in case of no answer, it is increased to 1.0. The maximum length of the output is set between 100 and 150 tokens, depending on the method. The presence and frequency penalties are set to 0. GPT-3 is commercially available, and we have used it within its intended usage and terms of service.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">Human Evaluations</head><p>We use Amazon mTurk evaluations via AWS Sage-Maker to evaluate the results. Each answer is written in a sentence format and given to nine different annotators for assessment. Instructions and examples are provided with each question to assist the annotators better. The options to choose from are:</p><p>(1) Makes sense; (2) Sometimes makes sense; (3) Does not make sense or incorrect; (4) The first part and the second part are not related; or not enough information to judge; (5) Unfamiliar to me to judge. The first two options are considered correct, the second two are considered incorrect, and the last is considered unfamiliar. To measure inter-rater reliability, we use Krippendorff's alpha and make sure the value is above acceptable amounts (minimum 0.667) <ref type="bibr" target="#b4">(Hayes and Krippendorff, 2007)</ref>. The evaluators were paid based on AWS guidelines.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>PersonX accepts PersonY's invitation. As a result, what PersonY does not feel?</head><p>Name three.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Q:</head><p>Phrasing standard question</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A:</head><p>Standard question reasoning Standard question answer 1.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>2.</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>3.</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>4.</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>5.</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Negation logic</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Negated complementary answer</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Let's first answer what PersonY feels if PersonX accepts PersonY's invitation.</head><p>By Accepting PersonX's invitation, PersonY intends to attend PersonX's event.</p><p>Therefore, PersonY feels happy and appreciated.</p><p>To answer "does not", you need to negate the feeling of happiness and appreciation.</p><p>The answers are: sad; alone; rejected. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Method Standard Negated Complementary</head><p>Few-shot 88.7%</p><p>78.7% Ours 88.1%</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>89.8%</head><p>Table <ref type="table">1</ref>: Our method compared with the few-shot method when applied to ATOMIC-2020 dataset.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Results</head><p>As seen in Table <ref type="table">1</ref>, our method outperforms the fewshot method by more than eleven percentage points when answering negated complementary questions.</p><p>The few-shot method includes five different questions in the prompt with their answers without chain-of-thought prompting. The performance of our method can mainly be attributed to the specific chain-of-thought prompting with negation logic description, Figure <ref type="figure" target="#fig_2">4</ref>. More information about the main contributing factors is in Section 5.3. Although chain-of-thought prompting seems to help the negated complementary questions, it adversely affects answers to the standard questions. Please note that the chain-of-thought prompt for the standard questions does not include negation logic, and a post-processing technique similar to negated complementary questions is performed.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3">Ablation Studies</head><p>To gain insight into the importance of elements of our method, we perform an ablation study, Table <ref type="table">2</ref>.</p><p>As we can see, adding standard question reasoning (step 2 of Figure <ref type="figure" target="#fig_2">4</ref>) results in more than 7% improvement in the results. Adding the thought process explaining the negation logic (steps 1, 3, and 4 of Figure <ref type="figure" target="#fig_2">4</ref>) adds another 3% performance improvement. Finally, the post-processing (Section 4.3) is responsible for about 1% improvement in the results.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Method</head><p>Neg. Comp. Ours 89.8% Ours-wo-pp 89.0% Ours-wo-nl-pp 86.0% Few-shot 78.7%</p><p>Table <ref type="table">2</ref>: Ablation study of the method: Ours-wo-pp is ours without post-processing; Ours-wo-nl-pp is ours without negation logic and post-processing.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Conclusions</head><p>In this paper, we demonstrate how simple changes in question formats, which can be trivial for humans, can be challenging for large language models (LLMs). We specifically focus on negated complementary questions in a commonsense context, which is constructed by negating a relation in a commonsense triple. Given the vast amount of knowledge embedded in LLMs, we show that by appropriate guidance, the models could perform well on negated complementary tasks. Our method results in more than eleven percent improvement compared to the vanilla few-shot method. Given the widespread usage of LLMs and their growth rate, we believe focusing on and solving the model's weaknesses is imperative. As future work, negated complementary task can be further analyzed in different formats, such as sentence instead of a question, and also different contexts, e.g., new datasets.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Verbalizations</head><p>The questions are verbalized from triples using predefined formats. Table <ref type="table">3</ref> summarizes the verbalizations organized by relation types. The question template formats are inspired by the sentence format used in <ref type="bibr" target="#b5">(Hwang et al., 2021)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Human Evaluation Instructions</head><p>The following instructions are given to each human evaluator to better understand and respond to the task:</p><p>Based on your own commonsense, choose one of the five options. Examples are provided in the description. IMPORTANT: Please note the CAN-NOT, DO Not, and other negated cases.</p><p>Instruction notes: Based on your own commonsense, choose one of the five options. Examples are provided in the description.</p><p>IMPORTANT: Please note the CANNOT, DO Not, and other negated cases.</p><p>1. Instead of names, PersonX and PersonY are used to be gender-neutral.</p><p>2. Please ignore grammatical errors and focus on commonsense.</p><p>3. If a response is vague, such as not fireman, or if a random word does not fit the scenario, please choose 4 (not enough information).</p><p>Added to the instructions, we also provided some examples to clarify the task better:</p><p>Unfamiliar to me to judge: PersonX discovers a new planet. The planet is in the Alpha Centauri system.</p><p>First part and second part are not related! Or not enough information to judge: PersonX rides a bike. Elephants are not birds. (Although the second part is correct, it is not related to the first part)</p><p>Makes sense: It is NOT likely to see an elephant on the table.</p><p>Does not make sense: It is likely to see an elephant on the table.</p><p>The answers are written in a text format to make it easier for human evaluators. Here is an example:. Here is an example:</p><p>PersonX sends PersonY to the showers. PersonX will not be amused.</p><p>Table 3: Question templates for each relation type. The first row for each relation shows the standard question format, and the second row shows the negated complementary format. [head] refers to the head in a triple.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C ChatGPT</head><p>The experiments of this paper were done using textdavinci-002 version of GPT-3. The new version of GPT-3 with reinforcement learning from human feedback (RLHF) is introduced and is called Chat-GPT. Out of curiosity, we did limited experiments with ChatGPT to see if the problem of negated complementary questions persists. Here are a few answers from ChatGPT to the question shown in Figure <ref type="figure">1</ref>: Q: PersonX is wearing red and white clothes and is going down a stranger's home's chimney. Who PersonX cannot be?</p><p>A: It is likely that PersonX is not Santa Claus, as he is commonly depicted wearing red and white clothes and going down chimneys.</p><p>As we can see, the model answers with not Santa Claus and then describes Santa Clause. Asking the same question again, we get the following answer:</p><p>A: PersonX cannot be a real person as it is impossible for someone to physically fit into a chimney. The scenario you described is likely referencing a fictional character, such as Santa Claus, who is often depicted as wearing red and white clothes and entering homes through chimneys on Christmas Eve to deliver presents to children.</p><p>In this answer, there is a good start of context; however, somewhere within the text, the model forgets about the cannot word and again describes Santa Claus. For the third time, we ask the same question and we get the following answer:</p><p>A: It is likely that PersonX is Santa Claus, a fictional figure who is often depicted wearing red and white clothes and delivering presents to children through the chimneys of houses.</p><p>The sentence is technically correct, but it is not what we asked for, which is who cannot be. Therefore, we can consider the last answer incorrect as well.</p><p>Given the limited interaction with ChatGPT, it seems that the negated complementary task issue persists.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :Figure 2 :</head><label>12</label><figDesc>Figure 1: An example of a large language model (GPT-3) generating negated commonsense. Five responses per query are demonstrated. The applied pre-processing and post-processing can improve the performance of the models in negated commonsense cases. Non-specific answers, such as not Santa, are considered incorrect.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: The process to automatically generate negated complementary questions from dataset triples. The head and relation nodes are used to form a question.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Chain-of-thought steps for each answer. The process is to answer the standard question first and then lead the model to answer the negated complementary version.</figDesc></figure>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitations</head><p>The experiments in this paper have focused on the negated complementary task in the context of commonsense and the format of questions. However, it is interesting to experiment with other contexts, such as mathematical datasets and other formats, such as sentences instead of questions.</p><p>This paper only uses the English language in the negated complementary task experiments, so further investigation is needed in other languages to understand better the limitations of large language models across other languages.</p><p>GPT-3 is commercially available, and the cost can be a limitation. For example, the current price for text-davinci-002 model is $0.02 per 1,000 tokens.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Ethics Statement</head><p>Given the widespread use of large language models and their growth, more software systems will depend on them. This could improve productivity and accessibility, but any vulnerability in large language models can propagate through the system and affect the end users. This work focused on distorted commonsense scenarios that are almost trivial for humans but can be challenging for large language models. Not only we highlighted the negated complementary questions issue, but we also suggested practical solutions that do not require extensive computation. We believe this line of research can ultimately benefit end users in terms of productivity, reliability, and accessibility.</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Alec Radford, Ilya Sutskever, and Dario Amodei</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateusz</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Mccandlish</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+	<note>Language models are few-shot learners</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gaurav</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Barham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyung</forename><forename type="middle">Won</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Parker</forename><surname>Schuh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kensen</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sasha</forename><surname>Tsvyashchenko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joshua</forename><surname>Maynez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhishek</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Parker</forename><surname>Barnes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emily</forename><surname>Vinodkumar Prabhakaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Reif</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ben</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reiner</forename><surname>Hutchinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Pope</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Bradbury</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Austin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guy</forename><surname>Isard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengcheng</forename><surname>Gur-Ari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Toju</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anselm</forename><surname>Duke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sanjay</forename><surname>Levskaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sunipa</forename><surname>Ghemawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henryk</forename><surname>Dev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Michalewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vedant</forename><surname>Garcia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Misra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liam</forename><surname>Robinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daphne</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Ippolito</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyeontaek</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Lim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Spiridonov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Sepassi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shivani</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katherine</forename><surname>Omernick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zongwei</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brennan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Saeta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Orhan</forename><surname>Diaz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michele</forename><surname>Firat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Catasta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kathy</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Douglas</forename><surname>Meier-Hellstern</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Eck</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2204.02311</idno>
+		<editor>M. Dai, Thanumalayan Sankaranarayana Pillai, Marie Pellat, Aitor Lewkowycz, Erica Moreira, Rewon Child, Oleksandr Polozov,</editor>
+		<imprint>
+			<pubPlace>Jeff Dean, Slav Petrov</pubPlace>
+		</imprint>
+	</monogr>
+	<note>and Noah Fiedel. 2022. Palm: Scaling language modeling with pathways. CoRR, abs/2204.02311</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Analyzing commonsense emergence in few-shot knowledge models</title>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Da</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Ronan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ximing</forename><surname>Bras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bosselut</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note>rd Conference on Automated Knowledge Base Construction</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">BERT: Pre-training of deep bidirectional transformers for language understanding</title>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/N19-1423</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<title level="s">Long and Short Papers</title>
+		<meeting>the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies<address><addrLine>Minneapolis, Minnesota</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="4171" to="4186" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Answering the call for a standard reliability measure for coding data</title>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">F</forename><surname>Hayes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Klaus</forename><surname>Krippendorff</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Communication Methods and Measures</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="77" to="89" />
+			<date type="published" when="2007">2007</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">(COMET-)ATOMIC 2020: On symbolic and neural commonsense knowledge graphs</title>
+		<author>
+			<persName><forename type="first">Jena</forename><forename type="middle">D</forename><surname>Hwang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chandra</forename><surname>Bhagavatula</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Ronan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Bras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keisuke</forename><surname>Da</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Sakaguchi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Bosselut</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Choi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="6384" to="6392" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">I&apos;m not mad&quot;: Commonsense implications of negation and contradiction</title>
+		<author>
+			<persName><forename type="first">Liwei</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Bosselut</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chandra</forename><surname>Bhagavatula</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.naacl-main.346</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="4380" to="4397" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Language models (mostly) know what they know</title>
+		<author>
+			<persName><forename type="first">Saurav</forename><surname>Kadavath</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Conerly</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">J</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dawn</forename><surname>Drain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ethan</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>Schiefer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zachary</forename><surname>Dodds</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nova</forename><surname>Dassarma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eli</forename><surname>Tran-Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Johnston</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sheer</forename><surname>El-Showk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nelson</forename><surname>Elhage</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tristan</forename><surname>Hume</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anna</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuntao</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Bowman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stanislav</forename><surname>Fort</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Deep</forename><surname>Ganguli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danny</forename><surname>Hernandez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Josh</forename><surname>Jacobson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Kernion</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shauna</forename><surname>Kravec</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liane</forename><surname>Lovitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kamal</forename><surname>Ndousse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Catherine</forename><surname>Olsson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Ringer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><forename type="middle">B</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>Joseph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Olah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Kaplan</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2207.05221</idno>
+		<idno>ArXiv, abs/2207.05221</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yann</forename><surname>Lecun</surname></persName>
+		</author>
+		<title level="m">A path towards autonomous machine intelligence version 0.9</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Jack</forename><forename type="middle">W</forename><surname>Rae</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Trevor</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katie</forename><surname>Millican</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jordan</forename><surname>Hoffmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">Francis</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Aslanides</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sarah</forename><surname>Henderson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roman</forename><surname>Ring</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Susannah</forename><surname>Young</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eliza</forename><surname>Rutherford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Hennigan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Menick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albin</forename><surname>Cassirer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Powell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">George</forename><surname>Van Den Driessche</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lisa</forename><forename type="middle">Anne</forename><surname>Hendricks</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maribeth</forename><surname>Rauh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Po-Sen</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amelia</forename><surname>Glaese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johannes</forename><surname>Welbl</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sumanth</forename><surname>Dathathri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saffron</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Uesato</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Mellor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Irina</forename><surname>Higgins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antonia</forename><surname>Creswell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nat</forename><surname>Mcaleese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amy</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erich</forename><surname>Elsen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Siddhant</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elena</forename><surname>Jayakumar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Buchatskaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Esme</forename><surname>Budden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karen</forename><surname>Sutherland</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michela</forename><surname>Simonyan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laurent</forename><surname>Paganini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lena</forename><surname>Sifre</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Martens</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lorraine</forename><surname>Xiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adhiguna</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aida</forename><surname>Kuncoro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elena</forename><surname>Nematzadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Domenic</forename><surname>Gribovskaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angeliki</forename><surname>Donato</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Lazaridou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jean-Baptiste</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maria</forename><surname>Lespiau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolai</forename><surname>Tsimpoukelli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Doug</forename><surname>Grigorev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibault</forename><surname>Fritz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mantas</forename><surname>Sottiaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Toby</forename><surname>Pajarskas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhitao</forename><surname>Pohlen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Gong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cyprien</forename><surname>Toyama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yujia</forename><surname>De Masson D'autume</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tayfun</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vladimir</forename><surname>Terzi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Igor</forename><surname>Mikulik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidan</forename><surname>Babuschkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diego</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><surname>De Las</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aurelia</forename><surname>Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Guy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Bradbury</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Blake</forename><forename type="middle">A</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laura</forename><surname>Hechtman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iason</forename><surname>Weidinger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><forename type="middle">S</forename><surname>Gabriel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edward</forename><surname>Isaac</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Lockhart</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laura</forename><surname>Osindero</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Rimell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oriol</forename><surname>Dyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kareem</forename><surname>Vinyals</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Ayoub</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lorrayne</forename><surname>Stanway</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bennett</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>Demis Hassabis, Koray Kavukcuoglu, and Geoffrey Irving. 2021. Scaling language models: Methods, analysis and insights from training gopher. CoRR, abs/2112.11446</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Utilizing language models to expand vision-based commonsense knowledge graphs</title>
+		<author>
+			<persName><forename type="first">Navid</forename><surname>Rezaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marek</forename><forename type="middle">Z</forename><surname>Reformat</surname></persName>
+		</author>
+		<idno type="DOI">10.3390/sym14081715</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Symmetry</title>
+		<imprint>
+			<biblScope unit="volume">14</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niki</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jakob</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Llion</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ł Ukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2201.11903</idno>
+		<title level="m">Chain of thought prompting elicits reasoning in large language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Relation Question xWant [head]. What does PersonX want to do? [head]. What does PersonX not want to do? xReact [head]. What does PersonX feel about it? [head]. What does PersonX not feel about it? oWant [head]. What does PersonY want to do? [head]. What does PersonY not want to do? CapableOf What is</title>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>West</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chandra</forename><surname>Bhagavatula</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Hessel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jena</forename><surname>Hwang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liwei</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ronan</forename><surname>Le Bras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ximing</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sean</forename><surname>Welleck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.naacl-main.341</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</meeting>
+		<imprint>
+			<publisher>United States. Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="4602" to="4625" />
+		</imprint>
+	</monogr>
+	<note>Seattle Symbolic knowledge distillation: from general language models to commonsense models What is [head] not capable of? Desires What does [head] desire to do? What does [head] not desire to do? HinderedBy [head What can hinder/obstruct it? [head What cannot hinder/obstruct it? isBefore [head What happens before it? [head What does not happen before it? isAfter What happens after it? [head What does not happen after it? AtLocation Where is the [head] located? Where is the [head] not located? HasSubEvent [head What will you do while: [head]? [head What you will not do while: [head</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

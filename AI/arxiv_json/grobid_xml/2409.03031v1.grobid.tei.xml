@@ -1,0 +1,1066 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Debugging with Open-Source Large Language Models: An Evaluation</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Yacine</forename><surname>Majdoub</surname></persName>
+							<email>yacinemajdoub@fsg.u-gabes.tn</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Gabes</orgName>
+								<address>
+									<country key="TN">Tunisia</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Eya</forename><forename type="middle">Ben</forename><surname>Charrada</surname></persName>
+							<email>eya.bencharrada@fsg.rnu.tn</email>
+							<affiliation key="aff1">
+								<orgName type="institution">University of Gabes</orgName>
+								<address>
+									<country key="TN">Tunisia</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Debugging with Open-Source Large Language Models: An Evaluation</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">3EC164DDFAB110125F17F604C2E515D1</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:40+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Debugging</term>
+					<term>Large Language Models</term>
+					<term>Open-Source LLMs</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large language models have shown good potential in supporting software development tasks. This is why more and more developers turn to LLMs (e.g. ChatGPT) to support them in fixing their buggy code. While this can save time and effort, many companies prohibit it due to strict code sharing policies. To address this, companies can run open-source LLMs locally. But until now there is not much research evaluating the performance of open-source large language models in debugging. This work is a preliminary evaluation of the capabilities of open-source LLMs in fixing buggy code. The evaluation covers five open-source large language models and uses the benchmark DebugBench which includes more than 4000 buggy code instances written in Python, Java and C++. Open-source LLMs achieved scores ranging from 43.9% to 66.6% with DeepSeek-Coder achieving the best score for all three programming languages.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">INTRODUCTION</head><p>"I'd spend an hour figuring out what exactly goes wrong, then five minutes writing the code to fix it, and then half an hour testing the whole thing. That's just over 5% coding vs. almost 95% non-coding. " <ref type="foot" target="#foot_0">1</ref>Debugging is known to be time consuming and frustrating. Therefore it is not surprising to find out that developers are turning to large language models to help them solve their problems. In a study with practitioners, Khojah et al. <ref type="bibr" target="#b0">[1]</ref> found that software engineers were found to turn often to chatGPT for assistance in various software engineering tasks.</p><p>Recent research showed promising results in using LLMs for software Engineering tasks in general and for debugging in particular. For example, LLMs were able to perform well in bug reproduction <ref type="bibr" target="#b1">[2]</ref>, fault localisation <ref type="bibr" target="#b2">[3]</ref> and program repair <ref type="bibr" target="#b3">[4]</ref>. Despite these advantages, using current state of the art LLMs such as ChatGPT can be inappropriate for practitioners due to code sharing policies. In fact, most companies consider their code to be private and don't want it to be sent to LLMs run by third parties. A solution to this problem would be to run an open source LLM locally. So far, there has been very limited assessments of the debugging capabilities of open-source large language models. In fact, earlier works mostly focus on evaluating code generation capabilities, for which many benchmarks exist such as the famous OpenAI's HumanEval <ref type="bibr" target="#b4">[5]</ref> and its descendants (e.g. HumanEval+ <ref type="bibr" target="#b5">[6]</ref> and Multilingual Hu-manEval <ref type="bibr">[7]</ref>) or the Google's MBPP <ref type="bibr" target="#b7">[8]</ref>.</p><p>The goal of this work is to evaluate and compare the capabilities of open-source large language models in performing debugging tasks. We would like to answer the following two research questions:</p><p>• RQ1: How do open source LLMs perform in debugging? To answer this question, we use benchmarking to evaluate five open-source LLMs. The benchmark we used includes more than 4000 buggy code instances in Python, C++ and Java. • RQ2: How does the performance of open-source LLMs in code generation impact their performance in debugging? We compare the scores that the LLMs obtained for debugging with the scores that they achieved for coding as evaluated by the HumanEval Benchmark.</p><p>Our evaluation suggests that although less capable than the most advanced closed source models (e.g. , some open source models were able to achieve decent results compared to their relatively small size. For instance, DeepSeek-coder-instruct, which has only 34B parameters, achieved a score above 63% in all three programming languages. We also found that except for DeepSeek-coder, all models that achieved a higher scores in HumanEval also got better scores in debugging.</p><p>The contributions of this work are:</p><p>• We conduct an empirical study that evaluates the debugging capabilities of open source Large Language Models using a large benchmark that includes a few thousands of buggy code instances</p><p>• We compare the debugging capabilities of the open source LLMs to their coding capabilities as evaluated by the Hu-manEval benchmark • We provide an extensive discussion of the strengths and limitations of current debugging and coding benchmarks arXiv:2409.03031v1 [cs.SE] 4 Sep 2024 ESEM '24, October 24-25, 2024, Barcelona, Spain -</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">OPEN SOURCE LARGE LANGUAGE MODELS</head><p>There are many open-source LLMs available in the market. Although nearly 2 all models use the transformer architecture, they differ in their capabilities due to various factors such as model size, quality and volume of training data, and fine-tuning methods.</p><p>For this evaluation, we selected five reputed models. Four of them are code models, while the last one is a general-purpose model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Code models</head><p>We selected the coding models that achieved the best results on the HumanEval benchmark <ref type="bibr" target="#b4">[5]</ref>. HumanEval is a code generation benchmark released by OpenAI that includes 146 coding tasks.We present each of the coding models in the following paragraphs.</p><p>2.1.1 Code Llama. Code Llama <ref type="bibr" target="#b8">[9]</ref> is a family of large language models that is specialised for code, based on Llama2. Code Llama models have been created by fine-tuning the general language model Llama2 using code specific datasets. The developers of Codellama found that for a given budget, fine-tuning the generic Llama2 to generate code outperforms the same architecture trained on code only. The training was done with publicly available code (mostly near-deduplicated dataset), which includes 8% of natural language text related to code such as discussions or questions and answers including code snippets. In addition to supporting several natural languages, the Code Llama models are trained to handle long contexts of up to 100K tokens. Meta AI released Codellama in three main variants namely (1) Code Llama, which is the foundation model ( <ref type="formula">2</ref>) Code Llama -Python, which is specialized for python code generation and Code Llama -Instruct, which is fine-tuned to follow human instructions. All models are available in four sizes: 7B, 13B, 34B and 70B.</p><p>For this evaluation, we use the Code Llama -Instruct 70B variant. This variant was trained using 1 trillion tokens and achieved the best performance on HumanEval with a 67.8% pass@1.</p><p>2.1.2 Phind-Codellama. Phind-Codellama <ref type="bibr" target="#b9">[10]</ref> is a fine-tuned version of Code Llama 34B. The first version of Phind-Codellama was fine-tuned on a dataset of nearly 80,000 programming problems and their corresponding solutions. The second version is Phind-CodeLlama-34-v2, which was initialised from the first version, was trained on 1.5B additional tokens. Although Phind-Codellama has smaller number of parameters compared to the larger Code Llama 70B, it was able to achive relatively high results on HumanEval. For instance Phind-CodeLlama-34B-v2 achieved 73.8% pass@1 on HumanEval. <ref type="bibr" target="#b10">[11]</ref> is a family of LLMs that use the Evol-Instruct method <ref type="bibr" target="#b11">[12]</ref>, an instruction fine tuning method that makes the code instructions more complex and which enhances the performance of coding models. Wizardcoder is available in five different sizes ranging from 1B to 33B parameters. The 15B version of WizardCoder <ref type="bibr" target="#b10">[11]</ref>, the results of a collaboration between researchers from Microsoft and researchers from Haong Kong Baptist University, is a fine-tuned version of StarCoder <ref type="bibr" target="#b12">[13]</ref> and it achieved 57.3 % pass@1 on HumanEval. The 33B version is trained from the 2 All models we found used the transformer architecture.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.3">WizardCoder. WizardCoder</head><p>DeepSeek-Coder-base model and achieved 79.9% pass@1 on Hu-manEval <ref type="bibr" target="#b4">[5]</ref>. In this evaluation we use the WizardCoder-33B-V1.1. <ref type="bibr" target="#b13">[14]</ref> is a series of code models trained on a dataset comprising 2 trillion tokens from 87 programming languages. The dataset is composed of 87% code and 13% natural language in English and Chinese. The model is available in various sizes, from 1.3B to 33B parameters. The DeepSeek-Coder-Instruct variant is an enhancement of the base model that was fine-tuned with an additional 2 billion tokens of instruction data. This improved the model's ability to execute coding tasks given using human instructions. DeepSeek-Coder-Base 33B achieved 50.3% pass@1 on HumanEval, while DeepSeek-Coder-Instruct-33B achieved 69.2% pass@1 on HumanEval. We used DeepSeek-Coder-Instruct-33B in our evaluation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.4">Deepseek-Coder. DeepSeek-Coder</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">General-Purpose model: Llama 3</head><p>The last model we chose is Llama3, a general purpose LLM. We selected it because it is the best open source LLM available for now, and we wanted to compare its capabilities to the code-specialized large language models.</p><p>LLama3, which is developed by Meta AI, was released in two sizes: 8B and 70B each with a pre-trained and instruction finetuned version. Data quality was a major focus for LLama 3, the model has been pre-trained on over 15 trillion high-quality tokens from publicly available sources, seven times more than LLama 2. The training data incorporates four times more coding data to boost capabilities in that domain and over 5% of the data covers 30+ languages beyond English. The dataset was filtered using a serie of filtering pipelines, heuristic filtering, NSFW detection, deduplication, and quality classifiers. The model also utilizes a more efficient tokenizer compared to the previous models of Meta AI, and it uses grouped query attention (GQA) to improve inference efficiency and to handle sequences of up to 8,192 tokens.</p><p>Llama3 8B achieved 62.2% pass@1 on HumanEval while Llama3 70B achieved 81.7% pass@1 <ref type="bibr" target="#b14">[15]</ref>. For this evaluation, we used Llama3 70B.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">STUDY DESIGN</head><p>The evaluation is done with Benchmarking. Benchmarking can be used to efficiently compare different methods, techniques and tools in empirical software engineering <ref type="bibr" target="#b15">[16]</ref> <ref type="bibr" target="#b16">[17]</ref> .</p><p>We have chosen the benchmark DebugBench <ref type="bibr" target="#b17">[18]</ref>, one of the largest and most recent benchmarks for debugging. In this section, we present the benchmark and the experimental setup used for the evaluation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Benchmark</head><p>DebugBench <ref type="bibr" target="#b17">[18]</ref> is a benchmark designed to evaluate the debugging capabilities of Large Language Models. It consists of a dataset of 4,253 instances of buggy code, collected from code solutions in LeetCode. The goal of DebugBench is to provide a larger scale evaluation that covers fine-grained bug types, and mitigates data leakage risks.</p><p>DebugBench has two main advantages: (1) it uses code problems that are quite challenging not only for developers but also for large language models and ( <ref type="formula">2</ref>) it provides a comprehensive test suit that allows verifying whether the bug was fixed or not.</p><p>3.1.1 Data. Tian et al <ref type="bibr" target="#b17">[18]</ref> created the dataset using problem descriptions and code solutions from LeetCode. The authors used GPT-4 to automatically introduce bugs to the code and then used human inspections to check the integrity of the benchmark.</p><p>To minimize the risk of leakage the authors used code that was released on LeetCode after June 2022 with the average release date being April 2023. To ensure that the extracted code is correct, the authors selected only code that passes all the tests related to it.</p><p>The authors of the benchmark develop a bug taxonomy based on Barr's classification criteria that covers four major bug categories (Syntax, Reference, Logic and Multiple) as well as 18 minor bug types. The bugs were introduced by instructing GPT-4 to add a certain type of bugs to the code. Since GPT sometimes fails in including bugs in the code, the authors filtered out the code that does not fail certain tests. The benchmark includes 761 instances with syntax errors, 684 instances with reference errors, 590 instances with logic errors and 2218 instances with multiple errors. A description of the number of instances for each programming language is provided in Table <ref type="table" target="#tab_1">1</ref> 3.1.2 Metrics. DebugBench assesses whether a bug is fixed or not by using a set of tests that is provided by LeetCode. If all tests pass, then the bug is considered to be fixed, otherwise, the bug is not fixed. The metric used in DebugBench is the Pass Rate, which is the number of bugs for which all corresponding tests have passed (repaired bugs) divided by the total number of bugs. <ref type="bibr" target="#b17">[18]</ref>. More formally, the Pass Rate is defined as follows: for each buggy code 𝜃 𝑖 and its fixed version 𝜃 * 𝑖 , there is a set of test cases:</p><formula xml:id="formula_0">(𝑥 0 𝑖 , 𝑦 0 𝑖 ), (𝑥 1 𝑖 , 𝑦</formula><p>1 𝑖 ), ..., (𝑥 𝑚 𝑖 , 𝑦 𝑚 𝑖 ) to test it, where 𝑥 𝑖 is the input and 𝑦 𝑖 is the corresponding desired output. Let 𝑎 𝜃 (𝑥) = 𝑦 denote a program a, based on the script 𝜃 that maps input 𝑥 to output 𝑦 . A bug is considered to be repaired if all tests pass which can be referred to as 𝑚 𝑗=0 [𝑎 𝜃 * 𝑖 (𝑥 𝑗 𝑖 ) = 𝑦 𝑗 𝑖 ]</p><p>This criteria allows for a conservative measure of the bug fixing capabilities. In fact, if the instance contains multiple bugs, it is considered to be repaired only if all bugs within the instance are fixed. For 𝑛 bug instances, the pass rate would be:</p><formula xml:id="formula_1">𝑃𝑅 = 𝑛 ∑︁ 𝑖=0 𝑚 𝑗 𝑗=0 [𝑎 𝜃 * 𝑖 (𝑥 𝑗 𝑖 ) = 𝑦 𝑗 𝑖 ] 𝑛 × 100%</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Experimental setup</head><p>To run the open-source LLMs, we use the platform together.ai <ref type="foot" target="#foot_1">3</ref> . This platform offers an interface that we used to prompt each of the models and get their responses. To test whether the fix is correct or not we use the LeetCode test suite to test the proposed answer. The tests were accessed using an interface to LeetCode. If all tests passed, the fix was considered as successful.</p><p>Prompt design. We used a zero-shot prompting. The prompt given to the LLM contained a description of the problem to be solved, the buggy code, as well as a description of the task to be done, i.e. debugging the code. We tweaked the prompts used by the original DebugBench paper so that we only get the fixed code in the output. The prompt we used is presented in Listing 1. def findComplement ( self , num : int ) -&gt; int : com = '' while num &gt; 0 : if num % 2 == 1: com = '0' + com else : com = '1' + com num = num // 2 return int ( com ,2) Explanation :</p><p>The bug in the code is that the com string is not being updated properly . In the if block , we are adding 0 instead of '0' and in the else block , we are adding 1 instead of '1 '. We need to add the string representation of 0 and 1 to the com string . Also , we need to return the integer value of the binary string , so we need to remove the first character of the string before converting it to integer .</p><p>Experiment repetition. Since there is some randomness in the response of LLMs, we repeated the experiment twice for all five models on the C++ dataset. The goal of the repetition is to verify the reliability of the results. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">RESULTS</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">RQ1: Performance of Open-Source LLMs</head><p>We report in Table <ref type="table" target="#tab_3">2</ref>, the number of fixed problems for each model as well as the achieved pass rate for each programming language. We also report the average pass rate for all languages and the costs of running the evaluation in USD. The evaluated LLMs achieved results ranging from 43.9% to 66.6%. The best score was achieved by the code model DeepSeek-Coder which achieved a pass rate above 63% for each of the languages. Both Codellama-instruct and Phind-Codellama achieved a pass rate below 50%. Still, we notice that Phind-Codellama which is a fine-tuning of the Codellama-34B achieved better results than the larger Codellama-70B. Llama3, which is a general purpose LLM achieved almost 60% pass rate, which is considerably better than Llama2-based code models. In Figure <ref type="figure" target="#fig_0">1</ref> We see that DeepSeek-Coder performed best on all three programming languages, while the Llama-2 based models (Codellama and Phind-Codellama) had the lowest scores for all three languages. This suggests that if a model is fluent in one programming language, then it is also likely to be fluent in other languages. Model size was not a determining factor in the performance of the models. In fact, some medium sized models, such as Phind-Codellama and DeepSeek-Coder, were able to achieve better scores than Codellama which had twice the size.</p><p>Regarding the costs of running the models, smaller models (33B and 34B) costed an average of 0.08 cent per code instance while larger models (70B) costed an average of 0.09 cent per code instance. So the difference in price between the models is negligible.</p><p>Closed source models, namely GPT-4 and GPT-3.5 from OpenAI achieved 75.0% and 62.1% respectively as reported by the Debug-Bench paper <ref type="bibr" target="#b17">[18]</ref>. None of the evaluated tools was able to get a score that is comparable to GPT-4 and only DeepSeek-Coder was able to achieve results that are better than GPT-3.5</p><p>RQ1 answer: There is a lot of variation between the scores of the different models, but some open source models were able to achieve decent results. Compared to top closed source models, only one open source was able to achieve results that are better than the GPT-3.5 score.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">RQ2: Relation between coding and debugging performance</head><p>We report the scores that the models achieved on HumanEval and on DebugBench in Figure <ref type="figure" target="#fig_2">2</ref>. All five models achieved higher scores in the HumanEval coding benchmark compared to the benchmark DebugBench. In fact, all models were able to successfully solve the HumanEval coding problems with a pass rate ranging between 67% and 81%. The only benchmark that showed similar capabilities in coding and debugging is the DeepSeek-Coder model which achieved a pass rate of 69.2% on HumanEval and a pass rate of 66.65% on DebugBench. When comparing the performance of the LLMs on both benchmarks, we see that except for DeepSeek-Coder, the models who had better results on HumanEval also achieved better scores in DebugBench. From these observations, we see that although there is a hint that models that are better in coding might be better in debugging, we see no definite connection between the performance of LLMs in coding, as evaluated by HumanEval, and their performance in debugging as evaluated by DebugBench.</p><p>RQ2 answer: For four out of the five evaluated LLMs we noticed a relation between the performance of the models on HumanEval and their performance on DebugBench.   </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Comparing with previous results</head><p>There has been a few other works that evaluated the capabilities of LLMs for debugging. In this section, we compare our results with the results of other researchers. First, we compare our results to the score reported by Tian et al <ref type="bibr" target="#b17">[18]</ref>, the authors of the DebugBench paper. The authors tested three open source models 𝐵𝑙𝑜𝑜𝑚, 𝑐𝑜𝑑𝑒𝑙𝑙𝑎𝑚𝑎 and 𝑐𝑜𝑑𝑒𝑙𝑙𝑎𝑚𝑎 -𝑖𝑛𝑠𝑡, and got a pass rate of 0.0 for all three of them. This means that none of the open source tools could repair any of the bugs. In our case, the models were able to achieve decent results. This is probably due to the fact that all code models returned answers that contained not only code but also explanatory text. The only model that returned code only was the general purpose llama3. The additional text makes the tests fail on LeetCode and this explains the 0.0 score obtained in the evaluation of Tian et al <ref type="bibr" target="#b17">[18]</ref>. In our experiment, we used a script to extract the code only from the answer and this lead to a positive performance of the models.</p><p>Lee et al. <ref type="bibr" target="#b18">[19]</ref> compared the debugging performance of some closed source and open source LLMs using benchmarks in C, Java and Python. The authors generated 3 patches for each bug and looked for a plausible or correct patch among the generated responses. Codellama generated correct patches for 25/40 bugs in Java and for 33/40 bugs in Python, while DeepSeek-Coder achieved 30/40 and 25/40 correct patches for Java and Python respectively.</p><p>The authors found that both GPT-3.5-Turbo-0125 (175B) and GPT-4 generated a higher number of correct patches than the open source models. In our experiment, DeepSeek-Coder achieved better output than codellama in all programming languages. This difference in the results might be due to the fact that Lee et al. <ref type="bibr" target="#b18">[19]</ref> used the DeepSeek-Coder-Base, while in our experiment we use DeepSeek-Coder-Instruct. The instruct version seems to have better coding capabilities as it is reported to achieve 69.2% pass@1 on HumanEval compared to 50.3% pass@1 for the base version.</p><p>In a study about vulnerability detection, Steenhoek et al. <ref type="bibr" target="#b19">[20]</ref> found that LLMs were unable to differentiate between buggy and fixed code. They report that LLMs performed only sligthly better than random guessing and that they performed far worse on complex debugging tasks from DBGBench. The evaluation was done using 100 functions from the SVEN dataset which is in C/C++ as well as the 27 bugs from DBGBench <ref type="bibr" target="#b20">[21]</ref>. These low results could be explained by the complexity of the tasks performed in <ref type="bibr" target="#b19">[20]</ref>. Previous research by Huang and Changs <ref type="bibr" target="#b21">[22]</ref> has already shown that LLMs seem to be unable to manage complex tasks. The authors also note that existing benchmarks might be too simple to assess reasoning ability correctly <ref type="bibr" target="#b21">[22]</ref>.</p><p>In another evaluation of code generation capabilities by Liu et al. <ref type="bibr" target="#b5">[6]</ref>, the authors used HumanEval+ which is an improvement of the classic HumanEval. The authors found that the two open source models Phind-Codellama and WizardCoder achieved scores that are better than ChatGPT but worse than GPT-4. In our experiment, both open source models achieved a score that is lower than GPT-4 and GPT-3.5. Since the authors did not specify the version of chatGPT that was used, this could be due to the fact that they used a version of chatGPT that is less effective than GPT-3.5.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Contamination</head><p>One of the challenges in the evaluation of LLMs is contamination <ref type="bibr" target="#b22">[23]</ref><ref type="bibr" target="#b23">[24]</ref><ref type="bibr" target="#b24">[25]</ref>. For example, Jain et al. <ref type="bibr" target="#b25">[26]</ref> found that there was a drop in the performance of DeepSeek-Coder-Instruct on LeetCode problems that were released since September 2023, its release date. The authors interpret this as an indication of a potential contamination. Although some research is being conducted on how to evaluate and remove contamination <ref type="bibr" target="#b26">[27]</ref>, decontamination does seem to be an easy task. In a study of code LLMs, Cao et al. <ref type="bibr" target="#b27">[28]</ref> found that existing countermeasures for contamination such as using more recent data, using curated datasets or syntactic refactoring may not be effective. Among the models we evaluated, only two mentioned using a decontamination strategy. OpenAI's decontamination methodology seems to have been applied to the Phind's dataset, and the DeepSeek-Coder developers mention filtering out data from benchmarks such as HumanEval, MBPP, GSM8K and MATH. All other models didn't mention any decontamination strategy. The DebugBench data has been published on GitHub on January 9th, so all evaluated models had a knowledge cutoff date prior to the benchmark release. Although this might decrease the contamination threat, it cannot fully eliminate it due to the fact that the LeetCode problems and solutions might have been used for pre-training the models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3">Result reliability</head><p>LLMs are known to have randomness in their responses. So to check the reliability of the results, we run the experiment twice on the C++ dataset. We report the scores for both experiments in Table <ref type="table" target="#tab_4">3</ref>. We performed a statistical analysis of the results by calculating the mean and the standard deviation for each pair of measurements, the results are reported in the same Table . The deviations for all pair range between 0.29 and 1.59 which is relatively small. This indicates that the measurements are consistent and therefore likely reliable.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">THREATS TO VALIDITY</head><p>Internal validity. Similarly to other LLM evaluations, we face a major internal threat due to the possible overlap between the training data and the evaluation dataset. We have already discussed possible contamination in Section 5.2. DebugBench was published after the knowledge cutoff date of the models. Although this might limit the threat, it cannot be fully eliminated because the used problems and their solutions existed on LeetCode before the benchmark release. The threat might also limited by the fact that the tests used to evaluate the debugging capabilities are not public and are only accessible for running via the LeetCode platform, so we know that these tests were not included in the training data of the evaluated LLMs.</p><p>The randomness in LLMs can also constitute a threat to the internal validity of the experiment. In fact, LLMs can produce different answers for the same prompt. To limit this threat, we repeated the experiment with C++ data twice. Our analysis in Section 5.3 shows that the measurements are consistent and likely to be reliable.</p><p>External validity. The main external validity threat lies in the benchmark code not being generalizable to other types of code. We argue that this threat is limited since the LeetCode dataset covers a variety of coding problems with different levels of difficulties. It also covers code in three different programming languages. Nevertheless, the results might not be generalizable to coding problems that are of different nature such as front-end developement, or code that uses specific libraries. In the future, We will evaluate the LLMs with more datasets.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">RELATED WORK 7.1 Use of LLM for debugging</head><p>The promising results about the capabilities of LLMs in software engineering lead to a surge in approaches that use LLMs to support debugging activities. Kang et al. <ref type="bibr" target="#b28">[29]</ref> introduced AutoSD, a method that leverages large language models and debuggers to automatically generate hypotheses and interact with buggy code, enabling conclusions to be drawn prior to patching. Feng et al. <ref type="bibr" target="#b29">[30]</ref> presented AdbGPT, a lightweight approach that employs prompt engineering to reproduce bugs from reports automatically, without the need for training or hard-coding. Zhong et al. <ref type="bibr" target="#b30">[31]</ref> developed LDB, a debugging framework designed to assist large language models in refining generated programs by utilizing runtime execution data, segmenting programs into basic blocks, and tracking intermediate variable values after each block. Singh et al. <ref type="bibr" target="#b31">[32]</ref> proposed Panda, a framework aimed at providing context grounding to pre-trained large language models, thereby generating more useful and contextually relevant troubleshooting recommendations. Bouzenia et al. <ref type="bibr" target="#b32">[33]</ref> introduced RepairAgent, an autonomous program repair agent that relies on a large language model. RepairAgent interleaves the processes of gathering information about the bug, collecting repair ingredients, and validating fixes, while dynamically deciding which tools to invoke based on the collected information and feedback from previous fix attempts.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.2">Evaluation of LLMs in debugging</head><p>Several evaluations have been conducted to evaluate of the performance of LLMs in debugging. For example, Wu et al. <ref type="bibr" target="#b2">[3]</ref> investigated the capabilities of ChatGPT-3.5 and ChatGPT-4 in fault localisation. Sobania et al. <ref type="bibr" target="#b33">[34]</ref> evaluated the bug fixing performance of chat-GPT using the QuixBugs benchmark. Tian at al. <ref type="bibr" target="#b17">[18]</ref> evaluated the performance of five closed and open-source large language models using DebugBench. Lee et al. <ref type="bibr" target="#b18">[19]</ref> compared their agent to other LLMs including two open-source LLMs, namely CodeLlama and DeepSeek-Coder.</p><p>Most of these works focused on evaluating the performance of the chatGPT, which is a closed source model. Only the works of Tian et al. <ref type="bibr" target="#b17">[18]</ref> and Lee et al. <ref type="bibr" target="#b18">[19]</ref> cover some open source models. In this work, our goal was to evaluate different open-source LLMs and compare their capabilities.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">CONCLUSION AND FUTURE WORK</head><p>In this work, we evaluated the debugging capabilities of five opensource large language models. The evaluation was done using De-bugBench, a benchmark that includes a dataset of 4253 buggy code instances in Python, C++ and Java. Our results show that the capabilities of all the evaluated open-source LLMs are lower than the capabilities of the most recent closed-source model (GPT-4). Still, considering their relatively small size, some open-source LLMs were able to achieve decent results. For instance, DeepSeek-Coder which is only 33B in size achieved a score above 66%.</p><p>One limitation of our evaluation, is that the used code instances are limited to one class only and are mostly solutions to algorithmic problems. So In the future, we would like to evaluate open-source LLMs using a wider variety of code types. Also we would like to evaluate the usefulness of the LLMs for practitioners when performing debugging tasks, with a special focus on complex tasks. Finally, we intend to explore how the debugging performance of open-source LLMs is impacted by prompt engineering and chainof-thought prompting.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Listing 1 :</head><label>1</label><figDesc>PromptObserve the following &lt;&lt; Programming language &gt; &gt; faulty code which is complete with no extra context . Your task is to fix up the code , not change it . You have to write the fixed code ( class Solution ). Do not write anything else beside the fixed code in your response . Buggy Code : &lt;&lt; Buggy code &gt; &gt; Goal : &lt;&lt; Description &gt; &gt; Code extraction. Some models returned additional explanatory text with the code, as shown in the WizardCoder example in Listing 2. To avoid failing the tests because of the additional text, we wrote a script to extract the code (class Solution) from the answer generated by the LLM. The extracted code is then used to run the automated tests. Listing 2: An output example of WizardCoder Solution : class Solution :</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: A visualisation of the debugging performance of the LLMs for code in Python, C++ and Java</figDesc><graphic coords="4,317.96,497.52,251.26,141.70" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Pass rates achieved by the open-source LLMs when evaluated on HumanEval and on DebugBench</figDesc><graphic coords="5,54.65,222.97,238.55,155.72" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>Number of buggy code instances per programming language in DebugBench</figDesc><table><row><cell cols="2">Programming Language Buggy Instances</cell></row><row><cell>C++</cell><cell>1438</cell></row><row><cell>Java</cell><cell>1401</cell></row><row><cell>Python</cell><cell>1414</cell></row><row><cell>Total</cell><cell>4253</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 2 :</head><label>2</label><figDesc>Debugging performance &amp; running costs of the evaluated open-source large language models</figDesc><table><row><cell>Model</cell><cell>Python</cell><cell></cell><cell>Java</cell><cell></cell><cell>C++</cell><cell></cell><cell cols="2">Final score Costs</cell></row><row><cell></cell><cell cols="6">Fixed Problems Pass rate Fixed Problems Pass rate Fixed Problems Pass rate</cell><cell></cell><cell></cell></row><row><cell>Codellama-instruct-70b</cell><cell>589/1414</cell><cell>41.65%</cell><cell>553/1401</cell><cell>39.47%</cell><cell>728/1438</cell><cell>50.62%</cell><cell>43.96%</cell><cell>$4.20</cell></row><row><cell>Phind-codellama-34b-v2</cell><cell>694/1414</cell><cell>49.08%</cell><cell>550/1401</cell><cell>39.25%</cell><cell>830/1438</cell><cell>57.71%</cell><cell>48.76%</cell><cell>$3.80</cell></row><row><cell>WizardCoder_instruct-33b</cell><cell>813/1414</cell><cell>57.49%</cell><cell>708/1401</cell><cell>50.53%</cell><cell>834/1438</cell><cell>58.98%</cell><cell>55.37%</cell><cell>$3.70</cell></row><row><cell cols="2">Deepseek-coder-instruct-33b 893/1414</cell><cell>63.15%</cell><cell>971/1401</cell><cell>69.30%</cell><cell>971/1438</cell><cell>64.81%</cell><cell>66.65%</cell><cell>$3.70</cell></row><row><cell>Llama3-70b</cell><cell>880/1414</cell><cell>62.23%</cell><cell>755/1401</cell><cell>53.89%</cell><cell>859/1438</cell><cell>59.73%</cell><cell>58.61%}</cell><cell>$4.10</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 3 :</head><label>3</label><figDesc>Scores achieved for the C++ dataset during two runs and the calculated Mean and Standard deviation for each model Model First test pass rate Second test pass rate Mean Standard deviation</figDesc><table><row><cell>Codellama-Instruct-70b</cell><cell>50.62%</cell><cell>51.55%</cell><cell>51.08% 0.465</cell></row><row><cell>Phind-Codellama-34b-v2</cell><cell>57.71%</cell><cell>55.94%</cell><cell>56.82% 0.885</cell></row><row><cell>WizardCoder-Instruct-33b</cell><cell>58.98%</cell><cell>55.79%</cell><cell>57.38% 1.595</cell></row><row><cell cols="2">DeepSeek-Coder-Instruct-33b 64.81%</cell><cell>66.33%</cell><cell>65.57% 0.76</cell></row><row><cell>Llama3-70b</cell><cell>59.73%</cell><cell>60.32%</cell><cell>60.02% 0.295</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>text taken from an answer on stackoverflow regarding the time spent debugging https://softwareengineering.stackexchange.com/a/93323</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>https://www.together.ai/</p></note>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Beyond code generation: An observational study of chatgpt usage in software engineering practice</title>
+		<author>
+			<persName><forename type="first">Khojah</forename><surname>Ranim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohamad</forename><surname>Mazen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leitner</forename><surname>Philipp</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Neto</forename><surname>Francisco Gomes De Oliveira</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">In Proc. ACM Softw. Eng</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Large language models are few-shot testers: Exploring llm-based general bug reproduction</title>
+		<author>
+			<persName><forename type="first">Yoon</forename><surname>Kang Sungmin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoo</forename><surname>Juyeon</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Shin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE/ACM 45th International Conference on Software Engineering (ICSE)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="2312" to="2323" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Large language models in fault localisation</title>
+		<author>
+			<persName><forename type="first">Wu</forename><surname>Yonghao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhang</forename><surname>Jie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Papadakis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Harman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>Liu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.15276</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Automated program repair in the era of large pre-trained language models</title>
+		<author>
+			<persName><forename type="first">Chunqiu</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Steven</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhang</forename><surname>Yuxiang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lingming</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE/ACM 45th International Conference on Software Engineering (ICSE)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="1482" to="1494" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jerry</forename><surname>Tworek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heewoo</forename><surname>Jun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiming</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henrique</forename><surname>Ponde De Oliveira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Pinto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wojciech</forename><forename type="middle">.</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zaremba</surname></persName>
+		</author>
+		<title level="m">Evaluating large language models trained on code</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Is your code generated by chatgpt really correct? rigorous evaluation of large language models for code generation</title>
+		<author>
+			<persName><forename type="first">Liu</forename><surname>Jiawei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunqiu</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wang</forename><surname>Steven</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhang</forename><surname>Yuyao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lingming</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">36</biblScope>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Multi-lingual evaluation of code generation models</title>
+		<author>
+			<persName><forename type="first">Athiwaratkun</forename><surname>Ben</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gouda</forename><surname>Sanjay Krishna</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wang</forename><surname>Zijian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Xiaopeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tian</forename><surname>Yuchen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tan</forename><surname>Ming</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ahmad</forename><surname>Wasi Uddin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wang</forename><surname>Shiqi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sun</forename><surname>Qing</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Shang Mingyue</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Program synthesis with large language models</title>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Austin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Augustus</forename><surname>Odena</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maxwell</forename><surname>Nye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henryk</forename><surname>Michalewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellen</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carrie</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Terry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Sutton</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Code llama: Open foundation models for code</title>
+		<author>
+			<persName><forename type="first">Jonas</forename><surname>Baptiste Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabian</forename><surname>Gehring</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sten</forename><surname>Gloeckle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Itai</forename><surname>Sootla</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Gat</surname></persName>
+		</author>
+		<editor>Ellen Tan, ..., and Gabriel Synnaeve</editor>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><surname>Phind</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Phind</surname></persName>
+		</author>
+		<ptr target="https://huggingface.co/Phind/Phind-CodeLlama-34B-v2" />
+		<title level="m">phind/phind-codellama-34b-v2 -hugging face</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ziyang</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Can</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pu</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingfeng</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiubo</forename><surname>Geng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenxiang</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chongyang</forename><surname>Tao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingwei</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daxin</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wizardcoder</surname></persName>
+		</author>
+		<title level="m">Empowering code large language models with evol-instruct</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<author>
+			<persName><forename type="first">Sun</forename><surname>Xu Can</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng</forename><surname>Qingfeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Geng</forename><surname>Kai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhao</forename><surname>Xiubo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Feng</forename><surname>Pu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tao</forename><surname>Jiazhan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiang</forename><surname>Chongyang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Daxin</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wizardlm</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.12244</idno>
+		<title level="m">Empowering large language models to follow complex instructions</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">Raymond</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Loubna</forename><surname>Ben Allal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yangtian</forename><surname>Zi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niklas</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denis</forename><surname>Kocetkov</surname></persName>
+		</author>
+		<title level="m">Chenghao Mou, and Harm de Vries. Starcoder: may the source be with you!</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Deepseek-coder: When the large language model meets programmingthe rise of code intelligence</title>
+		<author>
+			<persName><forename type="first">Qihao</forename><surname>Daya Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dejian</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhenda</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wentao</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guanting</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">K</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fuli</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yingfei</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenfeng</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Liang</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<ptr target="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct" />
+		<title level="m">Meta AI. llama3 • hugging face</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Benchmarking as empirical standard in software engineering research</title>
+		<author>
+			<persName><forename type="first">Hasselbring</forename><surname>Wilhelm</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 25th International Conference on Evaluation and Assessment in Software Engineering</title>
+		<meeting>the 25th International Conference on Evaluation and Assessment in Software Engineering</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="365" to="372" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title/>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Ralph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Baltes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Domenico</forename><surname>Bianculli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yvonne</forename><surname>Dittrich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Felderer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Feldt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">.</forename><forename type="middle">.</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sira</forename><surname>Vegas</surname></persName>
+		</author>
+		<idno>CoRR, abs/2010.03525</idno>
+	</analytic>
+	<monogr>
+		<title level="j">ACM SIGSOFT empirical standards</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<author>
+			<persName><forename type="first">Runchu</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yining</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yujia</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Cong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yankai</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yinxu</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yesai</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiyuan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maosong</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Debugbench</surname></persName>
+		</author>
+		<title level="m">Evaluating debugging capability of large language models</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<author>
+			<persName><forename type="first">Cheryl</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunqiu</forename><surname>Steven Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jen-Tse</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhouruixin</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lingming</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Michael R Lyu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2404.17153</idno>
+		<title level="m">A unified debugging approach via llm-based multiagent synergy</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">A comprehensive study of the capabilities of large language models for vulnerability detection</title>
+		<author>
+			<persName><forename type="first">Steenhoek</forename><surname>Benjamin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rahman</forename><surname>Md Mahbubur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roy</forename><forename type="middle">Monoshi</forename><surname>Kumar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alam</forename><surname>Mirza Sanjida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barr</forename><surname>Earl</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Wei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.17218</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Where is the bug and how is it fixed? an experiment with practitioners</title>
+		<author>
+			<persName><forename type="first">Böhme</forename><surname>Marcel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soremekun</forename><surname>Ezekiel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chattopadhyay</forename><surname>Sudipta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ugherughe</forename><surname>Emamurho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zeller</forename><surname>Andreas</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2017 11th joint meeting on foundations of software engineering</title>
+		<meeting>the 2017 11th joint meeting on foundations of software engineering</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="117" to="128" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Towards reasoning in large language models: A survey</title>
+		<author>
+			<persName><forename type="first">Huang</forename><surname>Jie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chang</forename><surname>Kevin Chen-Chuan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">61st Annual Meeting of the Association for Computational Linguistics, ACL 2023</title>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<biblScope unit="page">2023</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Nlp evaluation in trouble: On the need to measure llm data contamination for each benchmark</title>
+		<author>
+			<persName><forename type="first">Oscar</forename><surname>Sainz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jon</forename><surname>Ander Campos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iker</forename><surname>García-Ferrero</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julen</forename><surname>Etxaniz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oier</forename><surname>Lopez De Lacalle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eneko</forename><surname>Agirre</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.18018</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<author>
+			<persName><forename type="first">Bosheng</forename><surname>Mathieu Ravaut</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fangkai</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hailin</forename><surname>Jiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xingxuan</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruochen</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengwei</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Qin</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2404.00699</idno>
+		<title level="m">Caiming Xiong, and Shafiq Joty. How much are llms contaminated? a comprehensive survey and the llmsanitize library</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Mateusz Lango, and Ondřej Dušek. Leak, cheat, repeat: Data contamination and evaluation malpractices in closed-source llms</title>
+		<author>
+			<persName><forename type="first">Simone</forename><surname>Balloccu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrícia</forename><surname>Schmidtová</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.03927</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">Armando Solar-Lezama, Koushik Sen, and Ion Stoica. Livecodebench: Holistic and contamination free evaluation of large language models for code</title>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">King</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen-Ding</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fanjia</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianjun</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sida</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.07974</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">Rethinking benchmark and contamination for language models with rephrased samples</title>
+		<author>
+			<persName><forename type="first">Shuo</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Lin</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ion</forename><surname>Stoica</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.04850</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jialun</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wuqi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shing-Chi</forename><surname>Cheung</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.16898</idno>
+		<title level="m">Concerned with data contamination? assessing countermeasures in code language model</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Explainable automated debugging via large language model-driven scientific debugging</title>
+		<author>
+			<persName><forename type="first">Chen</forename><surname>Kang Sungmin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoo</forename><surname>Bei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lou</forename><surname>Shin</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Jian-Guang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 45th International Conference on Software Engineering</title>
+		<meeting>the 45th International Conference on Software Engineering</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Prompting is all you need: Automated android bug replay with large language models</title>
+		<author>
+			<persName><forename type="first">Sidong</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chen</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunyang</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 46th IEEE/ACM International Conference on Software Engineering</title>
+		<meeting>the 46th IEEE/ACM International Conference on Software Engineering</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="1" to="13" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">Ldb: A large language model debugger via verifying runtime execution step-by-step</title>
+		<author>
+			<persName><forename type="first">Lily</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zilong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingbo</forename><surname>Shang</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2024-02">February 2024. February 2024</date>
+			<publisher>CoRR</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Panda: Performance debugging for databases using llm agents</title>
+		<author>
+			<persName><forename type="first">Singh</forename><surname>Vikramank</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vaidya</forename><surname>Kapil Eknath</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kumar</forename><surname>Vinayshekhar Bannihatti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Khosla</forename><surname>Sopan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Narayanaswamy</forename><surname>Murali</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gangadharaiah</forename><surname>Rashmi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kraska</forename><surname>Tim</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Amazon Science</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">Repairagent: An autonomous, llm-based agent for program repair</title>
+		<author>
+			<persName><forename type="first">Bouzenia</forename><surname>Islem</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devanbu</forename><surname>Premkumar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pradel</forename><surname>Michael</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.17134</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">An analysis of the automatic bug fixing performance of chatgpt</title>
+		<author>
+			<persName><forename type="first">Sobania</forename><surname>Dominik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Briesch</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hanna</forename><surname>Carol</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Petke</forename><surname>Justyna</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE/ACM International Workshop on Automated Program Repair</title>
+		<imprint>
+			<biblScope unit="page" from="23" to="30" />
+			<date type="published" when="2023">2023. APR. 2023</date>
+			<publisher>IEEE</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

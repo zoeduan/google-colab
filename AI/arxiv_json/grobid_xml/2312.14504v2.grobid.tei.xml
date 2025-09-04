@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Theory of Hallucinations based on Equivariance</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-01-05">January 5, 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Hisaichi</forename><surname>Shibata</surname></persName>
+							<email>sh@g.ecc.u-tokyo.ac.jp</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Radiology</orgName>
+								<orgName type="institution">The University of Tokyo Hospital</orgName>
+								<address>
+									<addrLine>7-3-1 Hongo</addrLine>
+									<postCode>113-8655</postCode>
+									<settlement>Bunkyo</settlement>
+									<region>Tokyo</region>
+									<country key="JP">Japan</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Theory of Hallucinations based on Equivariance</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-01-05">January 5, 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">9B7B84FF68FF2017087029DA8E0B7FF5</idno>
+					<idno type="arXiv">arXiv:2312.14504v2[cs.CL]</idno>
+					<note type="submission">Preprint submitted to arXiv</note>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:33+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Hallucinations</term>
+					<term>Equivariance</term>
+					<term>Large Language Models</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>This study aims to acquire knowledge for creating very large language models that are immune to hallucinations. Hallucinations in contemporary large language models are often attributed to a misunderstanding of real-world social relationships. Therefore, I hypothesize that very large language models capable of thoroughly grasping all these relationships will be free from hallucinations. Additionally, I propose that certain types of equivariant language models are adept at learning and understanding these relationships. Building on this, I have developed a specialized cross-entropy error function to create a hallucination scale for language models, which measures their extent of equivariance acquisition. Utilizing this scale, I tested language models for their ability to acquire character-level equivariance. In particular, I introduce and employ a novel technique based on T5 (Text To Text Transfer Transformer) that efficiently understands permuted input texts without the need for explicit dictionaries to convert token IDs (integers) to texts (strings). This T5 model demonstrated a moderate ability to acquire character-level equivariance. Additionally, I discovered scale laws that can aid in developing hallucination-free language models at the character level. This methodology can be extended to assess equivariance acquisition at the word level, paving the way for very large language models that can comprehensively understand relationships and, consequently, avoid hallucinations.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Introduction</head><p>"Gargling with stones and using the stream as a pillow." This old proverb refers to an attitude of not admitting mistakes. Analyzing the structure of this proverb reveals a misunderstanding in the relationship between action and object. Namely, stones are not for gargling, and a stream is not for resting one's head. Meanwhile, in the modern era, a similar phenomenon occurs even with the latest language models, such as ChatGPT. In reality, when I quoted a dialogue spoken by a character in an anime and asked Chat-GPT to identify who said it, it confidently mentioned the wrong character. Although this is a case of mistaking fictional characters, it is conceivable that similar mistakes can happen with real people, and this misidentification ultimately stems from misrecognizing relationships in the real world. This phenomenon, known as hallucination, poses the greatest challenge even for cutting-edge large-scale language models to overcome.</p><p>Equivariant Models for Language Understanding (A) Sufficient Acquisition of Relations in the Real World Hallucinations-Free Very Large Language Models (B) (C) Hallucination Scale (D)</p><p>Figure <ref type="figure">1</ref>: The goal of this study is to gain insights that contribute to the realization of a hallucination-free, very large language model (corresponding to the diagonal arrows).</p><p>This study proposes a mathematical framework capable of handling such misinterpretations and develops a theory that can contribute to reducing hallucinations in cutting-edge large-scale language models (see Figure <ref type="figure">1</ref>). Discussions on hallucinations not caused by misinterpretations of relationships are avoided. In this research, firstly, it hypothesizes that a model sufficiently acquiring relationships in the real world (as envisioned in a broad and detailed manner, almost logical but also probabilistic, as depicted in Figure <ref type="figure">2a</ref>) can realize a hallucination-free, large-scale language model. Additionally, it argues that a model, in a sense equivariant, corresponds to its sufficient acquisition of relationships. Furthermore, it proposes a Hallucination Scale, an evaluative measure quantifying the acquisition of such equivariance by the model. Lastly, although it is a toy model, it quantifies the intensity of actual hallucinations based on this Hallucination Scale. Particularly, the Hallucination Scale proposed in this research, grounded in the mathematical concept of equivariance, can investigate whether the language model correctly learns and infers all relationships among people, objects, concepts, and subjective experiences in the real world. It quantifies the strength of hallucinations in this sense (in this research, it is considered that the strength of hallucinations increases with the increase in misinterpretations of relationships in the real world). Thus, this paper contributes to the emergence of hallucination-free, large-scale language models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Theory of Hallucinations</head><p>The driving scientific question of this study is, "What are the conditions for the disappearance of hallucinations?" It should be noted that while the theory proposed in this research could potentially be applicable to hallucinations occurring in humans, the focus henceforth will be solely on hallucinations arising in large-scale language models, not humans. The following sections will provide detailed explanations of arrows (A), (B), (C), and (D) as mentioned in Figure <ref type="figure">1</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.">Disappearance of hallucinations through the understanding of relationships (A)</head><p>When processing natural language with digital computers and language models, it is common to convert strings (text) into sequences of token IDs, which are integer values, using a tokenizer. If the tokenizer's dictionary (the correspondence rules between strings and integer values) is damaged (as corresponding to Figure <ref type="figure">2c</ref>), it is known that recovering the dictionary is not easy (corresponding to recovering Figure <ref type="figure">2a</ref> from Figure <ref type="figure">2c</ref>). For example, if a natural sentence like "Apples are red and sweet." is passed through a tokenizer, it might output a sequence of token IDs like "3301, 2, 40, 3, 1, 3235, 10, 5, 7", and then suppose the tokenizer loses its dictionary. If a decoder mistakenly interprets "3301" as "Lemon", then "40, 3", which originally corresponded to "red", is statistically more likely to be interpreted as "yellow" (though difficult to prove conclusively, statistically red lemons</p><p>Hisaichi SHIBATA The University of Tokyo Hospital AI Researchers Journal Reviewers Friend #1 Student #5 Boss #2 Grant #1 (a) (b) The University of Tokyo Hospital AI Researchers Journal Reviewers Friend #1 Student #5 Boss #2</p><p>Grant #1 ??????? ??????? (c) Figure <ref type="figure">2</ref>: Examples of relationships in real society. The words inside the circle include not only names of people and objects but also actions and abstract concepts. Here, relationships are described as undirected graphs, but in reality, they also encompass logical relationships, probabilistic elements, and set relationships. (a) A part of the relationships in real society as seen by the author, (b) the method found in traditional language models (such as BERT <ref type="bibr" target="#b0">[1]</ref>) that estimates specific words from relationships (word gap-filling problem), and (c) the new method proposed in this study, which estimates all words (including the existence of people and objects and concepts) solely from relationships. are less plausible). Similarly, "3235", which corresponded to "sweet", may be statistically more likely to be interpreted as "sour" (again, a hard proof but sweet lemons are less plausible). This could lead to a chain reaction altering the original meaning of the text. However, there's also a possibility that no alternative method exists to recover a dictionary different from the original one, implying that the tokenizer's original dictionary can be uniquely recovered.</p><p>If the text provided during training or inference is extremely scarce, there could be immense possible decoding methods, thus increasing the likelihood of generating misinterpreted text (i.e., the emergence of hallucinations). However, as the volume of text increases, the relationships between token IDs (not just grammar but also the relative relationships of objects in real society as captured by the text) begin to restrict the possible methods of decoding. To summarize abstractly, if one sufficiently acquires the relationships in real society (here, the relative relationships among people, objects, abstract concepts, and any subjective experiences), then hallucinations (misinterpretations of relationships) are likely to disappear, a claim that is tautological but not necessarily obvious. Additionally, in practical terms, it is believed that having sufficiently long training time and a sufficiently large number of model parameters are prerequisites for the disappearance of hallucinations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.">Understanding of relationships and acquisition of equivariance (B)</head><p>In the following, I explain how the function of understanding the relationships between people and objects in real society can be abstractly represented using the mathematical tool of equivariance. Equivariance is an important concept that frequently appears in machine learning, and has recently been featured in Style-GAN-3 <ref type="bibr" target="#b1">[2]</ref>. However, to aid the reader's understanding, I first explain equivariance in the context of image processing. For a model F' with equivariance (for example, think of a segmentation neural network), the output obtained by inputting an image to which operation G' (rotation) has been applied is the same as the result of applying operation G' to the output of the original image input to model F' (a model with rotational equivariance). On the other hand, the language model F with equivariance proposed in this study is defined as a model F whose interpretation results remain invariant between the interpretation of a natural sentence after its token ID representation has been consistently permuted (G) based on a certain invertible dictionary, and the results after an invertible permutation</p><p>There is an apple.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Invertible Permutation Invertible</head><p>Permutation</p><formula xml:id="formula_0">Interpretation &amp; Generation Interpretation &amp; Generation F F G G</formula><p>There is a lemon.</p><p>It is red and sweet.</p><p>It is yellow and sour. The walls of this facility are as red as blood.</p><p>The walls of this hospital are still white.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Invertible Permutation</head><p>That nurse comes over to talk.</p><p>An emotionless monster knocks over an IV stand and attacks. (G) is applied to the interpretation (application of language model F) of the pre-permutation natural sentence (see Figures <ref type="figure" target="#fig_2">3</ref> and <ref type="figure" target="#fig_3">4</ref>). Expressed in mathematical terms, this situation can be represented as:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Invertible</head><formula xml:id="formula_1">F • G = G • F ,<label>(1)</label></formula><p>where this equation must hold for all input texts. In models with this equivariance, the token IDs assigned to words representing all people, objects, etc., can be anything as long as there is no duplication (equivalent to a wild card). A language model that can consistently handle words like wild cards, in other words, can be said to understand the relationships of everything in the real world (real society), and this is a model that has acquired equivariance.</p><p>It is important to note that equivariance is distinctly different from invariance. If we fix the natural sentence and merely change the content (integer values) of the token ID assignment, the meaning of the natural sentence represented by the sequence of token IDs changes (note the change in the meaning of the text before and after the permutation G in Figures <ref type="figure" target="#fig_2">3</ref> and <ref type="figure" target="#fig_3">4</ref>). Therefore, the proposed language model is not a model with invariance to permutation operations. That is, for permutations G other than the identity permutation,</p><formula xml:id="formula_2">F • G = F . (<label>2</label></formula><formula xml:id="formula_3">)</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.">Scales for assessing the ability to acquire equivariance (C)</head><p>When only a large number of token ID sequences representing text (such as "3301, 2, 40, 3, 1, 3235, 10, 5, 7") are provided, it is practically impossible for us humans to manually restore the corresponding dictionary (i.e., to restore words from token IDs).</p><p>On the other hand, if such a task (specifically, having the model output dictionary estimation results and calculating the cross-entropy error with a ground truth dictionary) could be automated through an algorithm, it would be a scale capable of fully automatically assessing the ability to acquire equivariance. Moreover, as discussed in Sub-Section 2.2, there is a close relationship between the state of equivariance acquisition and the strength of hallucinations; therefore, this scale can assess the strength of hallucinations. Hence, in this study, I model the rules for restoring words (or phrases) from token ID sequences using neural networks. This problem is equivalent to deciphering a word substitution cipher (deliberately erasing the dictionary to verify if the language model has sufficiently acquired equivariance).</p><p>Conversely, language models like BERT <ref type="bibr" target="#b0">[1]</ref> learn the structure of text by, for example, hiding parts of a token ID sequence like "3301, 2, 40, 3, 1, 3235, 10, 5, 7" and making predictions. This is equivalent to predicting words with prior knowledge of all words except the ones to be estimated (refer to Figure <ref type="figure">2b</ref>), and compared to the method proposed in this paper, the difficulty of learning and inference is considered significantly lower. However, to rigorously assess and guarantee the absence of any misinterpretation of relationships in a language model, the method proposed in this study, where words are estimated from a state where all words including the ones to be estimated are unknown (Figure <ref type="figure">2c</ref>), is considered a more appropriate approach.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.4.">Emergence of a hallucination-free, very large language model based on the hallucination scale (D)</head><p>If a scale capable of quantifying the strength of hallucinations can be constructed, it increases the likelihood of developing a language model that is free from hallucinations, using this scale as an evaluation metric. Realistically, it is conceivable to discover scaling laws related to the strength of hallucinations and to quantify how many parameters, the number of tokenized texts for training, and how much training time are required for a model to sufficiently suppress hallucinations. In particular, it has been considered a challenging topic to verify how much the frequency of hallucinations decreases when scaling up the amount of training text and increasing the number of constraints compared to traditional approaches. However, by adopting this proposed scale, it is believed that such verification can be mechanically performed.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Related Works</head><p>As previously explained, to confirm that a model can acquire equivariance, one can measure the robustness of the language model F against invertible permutations G of words (or characters or phrases). Invertible permutations have long been known in the field of cryptography as character substitution ciphers. Notably, the dancing men cipher in Arthur Conan Doyle's detective stories is a classic representation of a character substitution cipher.</p><p>Here's the essence of character substitution ciphers: In such ciphers, for example, an invertible correspondence rule is established between the alphabet and space characters as follows:</p><p>Before permutation: abcdefghijklmnopqrstuvwxyz After permutation: mwt qovhdxizaulgcyresjkfpnb An efficient analysis of character substitution ciphers often involves frequency analysis, comparing the statistical frequency of characters in the cipher text with the frequency of characters in natural sentences in real society. However, methods for deciphering character and word substitution ciphers that do not rely on frequency analysis have received less attention. The mechanical decipherment of character substitution ciphers by computers, which have traditionally been heuristically decoded by humans, is an academically intriguing topic. In this study, I achieve a qualitatively new method of decipherment using deep learning technology, specifically T5 <ref type="bibr" target="#b2">[3,</ref><ref type="bibr" target="#b3">4]</ref>, which can handle text transformation rules.</p><p>Aldarrad et al. <ref type="bibr" target="#b4">[5]</ref> adopted a Seq2Seq model to attempt the automatic decryption of character substitution ciphers using machine learning, but they argued that frequency analysis was necessary to achieve sufficient analytical accuracy. Kambhatla et al. <ref type="bibr" target="#b5">[6]</ref> used the decoder block of the Transformer <ref type="bibr" target="#b6">[7]</ref> to successfully achieve sufficient accuracy in the automatic decryption of character substitution ciphers through machine learning, but they did not discuss the extension to word substitution ciphers or their relationship to hallucinations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">Numerical Experiments</head><p>In Sub-Section 2.3, I stated that the ability of a neural network to decipher word substitution ciphers could be used to determine the extent to which the network has acquired equivariance. However, the training cost for such a neural network is expected to be high. Therefore, within the scope of this paper, I discuss modeling character substitution ciphers, which are thought to have dramatically lower computational costs compared to word substitution ciphers, as a toy model.</p><p>In this study, I adopted the T5 models from HuggingFace's Transformers library: google/t5-efficient-tiny (16M parameters), google/t5-efficient-mini (30M parameters), and google/t5-efficient-small (60M parameters). For the test dataset, I used the first 4,096 lines from CC-100 (English). As training data, I extracted an additional 4,096*N lines from the same location (here, N is an integer value proportional to the size of the dataset, set at 1, 8, 16 in this study). All English texts were converted to lower camel case. Punctuation was removed, and a token ID was assigned to spaces between words to learn word boundaries. The number of input tokens was capped at 512. During training, (i) I created a new dictionary containing only 26 alphabetic characters, a space character, and BOS and EOS symbols. (ii) The English texts were encoded using this dictionary to obtain a sequence of token IDs. (iii) Next, the token IDs were substituted using a random but invertible substitution rule (specifically, using the permutation function of the numpy library). The substitution rule was changed for each data, including the test dataset. The model was trained with T5 to output the substitution rule (i.e., the dictionary itself), different from previous studies, using the substituted token ID sequence as input. The loss function was cross-entropy error for the token ID sequence, and T5 learned general rules for predicting output text from input text. The batch size was set at 16. I used the Adam optimizer with a learning rate of 0.0001. Additionally, I called a function to manage the vocabulary size of T5 and modified the vocabulary settings. All calculations in this paper were performed on a laptop equipped with a single NVIDIA-RTX-4090 Mobile, and training was continued for up to 100 epochs for all cases.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">Results</head><p>Figure <ref type="figure" target="#fig_4">5</ref> shows the loss function values (Test Loss) for the test dataset as a function of epoch count, in the case of a language model with parameter count P=60M and training dataset size N=16. Additionally, Figures <ref type="figure" target="#fig_5">6</ref> and <ref type="figure" target="#fig_6">7</ref> present the loss function values for the test dataset, organized by the two hyperparameters (namely, the number of parameters of the language model and the size of the training dataset).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.">Discussion</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.1.">Interpretation of results</head><p>I discuss the results from Figure <ref type="figure" target="#fig_4">5</ref>. Despite changing the substitution rule randomly for each data (text), the Test Loss (representing the crossentropy error of dictionary reconstruction) is decreasing. This implies that T5 is capable of learning meta-rules that do not depend on random character   substitutions, namely, a general method for deciphering character substitution ciphers. In other words, although the focus is on characters rather than words, T5 demonstrates the ability to acquire some level of equivariance.</p><p>From Figures <ref type="figure" target="#fig_5">6</ref> and <ref type="figure" target="#fig_6">7</ref>, a power law can be discerned. Readers may recall the power law in previous research <ref type="bibr" target="#b7">[8]</ref>, where Test Loss due to cross-entropy error was systematically summarized. Although the scale proposed in this study is also based on cross-entropy error, it differs distinctly as it outputs the results of dictionary estimation. In other words, while previous research adopted cross-entropy error in the sense of Figure <ref type="figure">2b</ref>, this study adopts a newly defined cross-entropy error in the sense of Figure <ref type="figure">2c</ref>.</p><p>Regarding Figure <ref type="figure" target="#fig_5">6</ref>, although it is an extreme extrapolation and requires further verification, when the Test Loss becomes sufficiently small (here, less than 0.1), the model's number of parameters is estimated to be over 2 billion. Similarly, the results of Figure <ref type="figure" target="#fig_6">7</ref>, also an extreme extrapolation requiring further verification, suggest that for a model with a sufficient number of parameters and after sufficient computation time for training, about N=300, i.e., more than 6.3 × 10 8 tokens of training text, is required for the Test Loss to be sufficiently small.</p><p>These results are estimates of the conditions necessary to acquire characterlevel equivariance and are distinctly different from those needed to acquire word-level equivariance. It is likely that conducting similar numerical experiments at the word level would yield a similar but different power law.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.2.">Limitations of this study and future directions</head><p>Word substitution ciphers can be interpreted as ciphers with a broader structure than character substitution ciphers. While it is straightforward to extend the model for deciphering character substitution ciphers to word substitution ciphers, there are challenges in its training. Specifically, while the main representations in character substitution ciphers are the 26 letters of the alphabet, the variables in word substitution ciphers correspond to the number of words in the vocabulary, often exceeding 10,000. Therefore, learning their rules is likely to require relatively large computational resources and a large amount of training text.</p><p>In this study, after proposing a general theory, I verified through numerical experiments whether T5 could acquire equivariance at the character level. However, it is necessary to test equivariance at the word level using largescale language models that are publicly available and on par with ChatGPT.</p><p>Beyond the scope of this paper, discussing the degree of freedom of the decoded text, that is, the laxity of equivariance in understanding relationships, may contribute to the invention of language models that surpass human or average societal language processing capabilities.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.">Conclusion</head><p>In this study, I proposed a new hypothesis that hallucinations generated by a language model will disappear if the model sufficiently acquires relationships in real society (A). Next, I explained that the ability to understand text independent of token ID representations can be acquired by the model possessing equivariance (B). Additionally, I proposed a scale to quantify the intensity of hallucinations caused by misunderstandings of relationships, based on cross-entropy error (C). Furthermore, I presented a method for verifying this scale and analyzed it using a toy model (D). Specifically, I measured the deciphering ability of a character substitution cipher by T5, and confirmed that as learning progresses, the value of the loss function incorporating the proposed scale decreases due to the acquisition of equivariance (Figure <ref type="figure" target="#fig_4">5</ref>). Moreover, by varying hyperparameters and conducting numerous numerical experiments, I obtained a power law that is similar to prior research <ref type="bibr" target="#b7">[8]</ref>, but the derived principles and the results obtained should clearly differ. The extrapolation of the obtained power law revealed that to sufficiently acquire character-level equivariance, a minimum of 2 billion parameters, or texts containing more than 6.3 × 10 8 tokens, are required for training, under the discussion of fixing other hyperparameters.</p><p>By scaling up the character-level numerical experiments conducted in this study to the word-level numerical experiments handled by state-of-the-art practical large-scale language models (i.e., learning the rules of deciphering word substitution ciphers and quantifying them with the scale), it is conceivable that we can uniformly discuss the extent to which various types of large-scale language models possess the ability to acquire equivariance that leads to the suppression of hallucinations generated by language models. Furthermore, by extrapolating and utilizing the potentially newly obtained power laws, it can be considered that I will contribute to the discovery and establishment of super large-scale language models freed from hallucinations.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: An example of equivariant models handled in this study (explained using objects)</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: An example of equivariant models handled in this study (explained using fictional subjective experiences)</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Progression of loss function values (for a language model with parameter count P=60M and training dataset size N=16).</figDesc><graphic coords="12,130.29,225.59,349.72,310.72" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 6 :</head><label>6</label><figDesc>Figure 6: Variation in loss function values (local minima) with the number of parameters (for a training dataset size N=1, after 100 epochs, on a log-log graph).</figDesc><graphic coords="13,130.29,225.59,349.72,310.72" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 7 :</head><label>7</label><figDesc>Figure 7: Variation in loss function values (local minima) with the size of the training dataset (for a language model with parameter count P=60M, after 100 epochs, on a loglog graph).</figDesc><graphic coords="14,130.29,219.59,349.72,310.72" type="bitmap" /></figure>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-W</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Toutanova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bert</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:1810.04805</idno>
+		<title level="m">Pre-training of deep bidirectional transformers for language understanding</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Alias-free generative adversarial networks</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Karras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Aittala</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Laine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Härkönen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hellsten</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lehtinen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Aila</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="852" to="863" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Exploring the limits of transfer learning with a unified text-to-text transformer</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Matena</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">J</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">The Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">21</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="5485" to="5551" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Dehghani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Abnar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">W</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Yogatama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Metzler</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2109.10686</idno>
+		<title level="m">Scale efficiently: Insights from pre-training and fine-tuning transformers</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Can sequence-to-sequence models crack substitution ciphers?</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Aldarrab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>May</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</title>
+		<meeting>the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="7226" to="7235" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Decipherment as regression: Solving historical substitution ciphers by learning symbol recurrence relations</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Kambhatla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Born</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sarkar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EACL 2023</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="2091" to="2107" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">30</biblScope>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">B</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2001.08361</idno>
+		<title level="m">Scaling laws for neural language models</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

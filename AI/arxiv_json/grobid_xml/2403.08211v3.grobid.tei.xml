@@ -1,0 +1,1106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Large Language Models are Contrastive Reasoners</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2025-02-17">17 Feb 2025</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Liang</forename><surname>Yao</surname></persName>
+							<email>yaoliang3@mail.sysu.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Sun Yat-sen University Shenzhen</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Large Language Models are Contrastive Reasoners</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2025-02-17">17 Feb 2025</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">C2E833C2906C4136425220B1B93B9706</idno>
+					<idno type="arXiv">arXiv:2403.08211v3[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:36+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Prompting methods play a crucial role in enhancing the capabilities of pre-trained large language models (LLMs). We explore how contrastive prompting (CP) significantly improves the ability of large language models to perform complex reasoning. We demonstrate that LLMs are decent contrastive reasoners by simply adding "Let's give a correct and a wrong answer." before LLMs provide answers. Experiments on various large language models show that zero-shot contrastive prompting improves the performance of standard zero-shot prompting on a range of arithmetic, commonsense, and symbolic reasoning tasks without any handcrafted few-shot examples, such as increasing the accuracy on GSM8K from 35.9% to 88.8% and AQUA-RAT from 41.3% to 62.2% with the state-of-the-art GPT-4 model. Our method not only surpasses zero-shot CoT and few-shot CoT in most arithmetic and commonsense reasoning tasks but also can seamlessly integrate with existing prompting methods, resulting in improved or comparable results when compared to state-of-the-art methods. Our code is available at the following GitHub repository: <ref type="url" target="https://github.com/yao8839836/cp">https://github.com/yao8839836/cp</ref>.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Recent studies <ref type="bibr" target="#b26">(Zhao et al., 2023;</ref><ref type="bibr" target="#b2">Brown et al., 2020;</ref><ref type="bibr" target="#b11">OpenAI, 2023)</ref> have shown that large language models (LLMs) exhibit impressive performance across a wide range of tasks. In particular, the chain-of-thought (CoT) prompting technique has demonstrated the capability of LLMs to handle complex tasks, including math problem solving, by guiding them to generate intermediate reasoning steps <ref type="bibr">(Wei et al., 2022b;</ref><ref type="bibr">Kojima et al., 2022;</ref><ref type="bibr" target="#b25">Zhang et al., 2023)</ref>. These studies spotlight the significance of developing efficient techniques to direct LLMs in their reasoning processes <ref type="bibr" target="#b9">(Liu et al., 2023;</ref><ref type="bibr" target="#b0">Amatriain, 2024;</ref><ref type="bibr" target="#b4">Chia et al., 2023;</ref><ref type="bibr" target="#b23">Yasunaga et al., 2023)</ref>.</p><p>Nevertheless, the current chain-of-thought (CoT) paradigm encounters two main challenges: offering correct guidance or examples of reasoning and reducing the reliance on manual labeling. In particular, Zero-shot- <ref type="bibr">CoT (Kojima et al., 2022)</ref> provides general reasoning guidance by providing instructions like "Think step by step.", but the generated reasoning steps may not be correct and adequate for tasks such as commonsense question-answering (Table <ref type="table" target="#tab_1">1</ref> and <ref type="table">6</ref>). On the other hand, Few-shot-CoT <ref type="bibr">(Wei et al., 2022b)</ref> offers more detailed guidance but necessitates labeled examples of the reasoning process, which can be expensive to obtain for each task. This raises an important research question: Is it possible to generate a more accurate reasoning process without relying on human labeling?</p><p>In this work, we introduce contrastive prompting, a novel prompting approach that automatically directs the reasoning process of large language models. Our inspiration stems from how humans can learn from both their correct and incorrect actions <ref type="bibr" target="#b14">(Roediger and Finn, 2009)</ref>. For instance, when confronted with a math problem (as in Figure <ref type="figure">1</ref>), people may ask "How can we prevent mistakes in each step?" By identifying the steps that are prone to mistakes on their own, they can enhance their ability to avoid mistakes and provide accurate solutions. Our idea is to prompt LLMs to emulate this reasoning process, enabling them to effectively solve new problems.</p><p>Specifically, when presented with a problem to solve, we instruct LLMs to generate both correct and incorrect answers within the given context. To achieve this, we provide prompts such as "Let's give a correct and a wrong answer." Following this, we verify and confirm the correct answer. Our proposed approach offers multiple advantages. It not only generates incorrect answers autonomously but also places a greater emphasis on ensuring the accuracy of the answers. This eliminates the need for Q: Tim grows 5 trees. Each year he collects 6 lemons from each tree. How many lemons does he get in a decade?</p><p>A:The answer (arabic numerals) is (Output) 3000  (a) Zero-shot Q: Tim grows 5 trees. Each year he collects 6 lemons from each tree. How many lemons does he get in a decade? A: Let's give a correct and a wrong answer.</p><p>(Output) Correct Answer: Tim grows 5 trees and each tree gives him 6 lemons per year. So, in one year, he gets 5 * 6 = 30 lemons. A decade is 10 years, so in a decade, he would get 30 * 10 = 300 lemons.  Incorrect Answer: In one year, Tim gets 5 * 6 = 30 lemons. A decade is 20 years, so in a decade, he would get 30 * 20 = 600 lemons. (This is incorrect because a decade is 10 years, not 20 years.) (b) Zero-shot-CP (Ours)</p><p>Figure <ref type="figure">1</ref>: Example inputs and outputs of GPT-4 with (a) standard Zero-shot, and (b) ours (Zero-shot-CP). In contrast to Few-shot-CoT, which requires step-by-step reasoning examples for each task, our approach does not rely on any examples. Instead, we use the same prompt "Let's give a correct and a wrong answer" for all tasks, including arithmetic, symbolic, commonsense, and other logical reasoning tasks. manually labeling reasoning examples for each task and problem, effectively addressing the challenges faced by CoT.</p><p>We evaluate the proposed approach across various reasoning-intensive tasks, including arithmetic reasoning, commonsense reasoning, symbolic reasoning, and other logical reasoning tasks. We employ two state-of-the-art base LLMs GPT-3.5 and <ref type="bibr">GPT-4 (OpenAI, 2023)</ref> and four popular open source LLMs. The experimental findings demonstrate significant improvements in scores compared to the zero-shot baseline across all datasets. Moreover, our method not only surpasses Zero-shot-CoT and Few-shot-CoT in most arithmetic and commonsense reasoning tasks but also achieves better results when combined with zero-shot or few-shot CoT, approaching or even surpassing the performance of existing state-of-the-art methods. These results indicate the effectiveness of generating incorrect answers for individual problems to guide the reasoning process of LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related Works</head><p>Large language models and prompting Recently, LLMs <ref type="bibr" target="#b26">(Zhao et al., 2023)</ref> like ChatGPT and <ref type="bibr">GPT-4 (OpenAI, 2023)</ref> have gained significant attention. Researchers find that scaling pre-trained language models often leads to an improved model capacity on downstream tasks. These large-sized models show different behaviors from smaller models and display surprising abilities in solving a series of complex tasks.</p><p>Prompt engineering is an emerging field ded-icated to the development and optimization of prompts, enabling efficient utilization of LLMs across diverse applications and research domains <ref type="bibr" target="#b0">(Amatriain, 2024;</ref><ref type="bibr" target="#b15">Sahoo et al., 2024)</ref>. Zeroshot prompting involves querying the LLM without any examples while few-shot prompting provides models with a few input-output examples <ref type="bibr" target="#b2">(Brown et al., 2020)</ref>. Chain-of-thought (CoT) <ref type="bibr">(Wei et al., 2022b;</ref><ref type="bibr">Kojima et al., 2022)</ref> prompting enables complex reasoning capabilities through intermediate reasoning steps. Despite its success, Fewshot-CoT <ref type="bibr">(Wei et al., 2022b)</ref> needs human-labeled reasoning steps for each example, while Zero-shot-CoT <ref type="bibr">(Kojima et al., 2022)</ref> may generate incorrect reasoning steps (especially for commonsense and arithmetic reasoning). Several X-of-thought approaches <ref type="bibr">(Yao et al., 2023a,b;</ref><ref type="bibr" target="#b6">Gao et al., 2023;</ref><ref type="bibr" target="#b3">Chen et al., 2022)</ref> extend CoT on reasoning tasks, where X can be a tree, a graph, or a program. Auto-CoT <ref type="bibr" target="#b25">(Zhang et al., 2023)</ref> improves Zero-shot-CoT by providing similar questions as few-shot examples for the target question. Self-consistency <ref type="bibr" target="#b18">(Wang et al., 2023)</ref> sample multiple, diverse reasoning paths through Few-shot-CoT, and use the generations to select the most consistent answer. Analogical prompting <ref type="bibr" target="#b23">(Yasunaga et al., 2023)</ref> leverages LLMs to automatically generate relevant fewshot examples for each question. In contrast to these works, our method emphasizes eliciting selfawareness in LLMs regarding potential errors and actively avoiding them. Learning from Negative Examples Contrastive learning, a widely adopted technique in deep learn-【2nd prompt】 Answer Extraction LLM 300.. The complete process of Zero-shot-CP involves two steps: Firstly, we utilize the initial "reasoning" prompt to extract a comprehensive reasoning process from a LLM. Secondly, we employ the subsequent "answer" prompt to extract the correct answer from the reasoning text.</p><p>ing, aims to enhance the quality of learned representations by training models to differentiate between "positive" and "negative" samples <ref type="bibr" target="#b7">(Jaiswal et al., 2020)</ref>. In the LLMs area, reinforcement learning from human feedback (RLHF) <ref type="bibr" target="#b12">(Ouyang et al., 2022)</ref> and direct preference optimization (DPO) <ref type="bibr" target="#b13">(Rafailov et al., 2023)</ref> fine-tune LLMs with relative human judgments of response quality. Selfreflection <ref type="bibr" target="#b16">(Shinn et al., 2023;</ref><ref type="bibr" target="#b8">Kim et al., 2023;</ref><ref type="bibr" target="#b10">Madaan et al., 2023;</ref><ref type="bibr">Zhang et al., 2024)</ref> incorporates "critic" or review steps to identify errors made by the LLM itself and improve upon them. However, it is important to note that the initial output of the LLM may not contain any errors, and there is a potential risk of the model reinforcing its own errors if it inaccurately evaluates the quality of its responses or generates invalid principles. The closest work to ours is the Contrastive <ref type="bibr">CoT (Chia et al., 2023)</ref> that extends Few-shot-CoT by creating wrong reasoning processes from annotated correct reasoning steps. The main distinction is that the erroneous answers generated by Contrastive CoT still require human-annotated examples, and the random reordering of entities during the reasoning process may not align with the patterns of errors made by LLMs themselves. On the contrary, our approach enables LLMs to generate erroneous answers on their own, which aligns better with their intrinsic knowledge. It does not require human annotation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Contrastive Prompting</head><p>We propose Contrastive Prompting (CP), a template-based prompting approach for contrastive reasoning. Our method can seamlessly integrate with any prompting technique by incorporating a trigger sentence before the LLM provides answers.</p><p>In the following, we first illustrate our method using Zero-shot-CP as an example, which only uses the original question without supporting examples. Next, we will discuss how to combine our method with other prompting techniques.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Two-stage prompting</head><p>Although Zero-shot-CP is straightforward in concept, it utilizes prompting twice to extract both reasoning and answer, as illustrated in Figure <ref type="figure" target="#fig_0">2</ref>.</p><p>1st prompt: reasoning extraction In this step we begin by transforming the input question x into a prompt x ′ using a simple template "Q: [X]. A: [T]". Here [X] represents the input slot for x and [T] represents a slot for a manually crafted trigger sentence t that would extract the reasoning process to answer the question x. For instance, if we use "Let's give a correct and a wrong answer." as a trigger sentence, the prompt x ′ would be "Q: <ref type="bibr">[X]</ref>. A: Let's give a correct and a wrong answer.". Additional trigger examples can be found in Table <ref type="table" target="#tab_3">3</ref>. Prompted text x ′ is then inputted into a LLM, which generates the subsequent sentence z.</p><p>2nd prompt: answer extraction In the second step, we utilize the generated sentence z in conjunction with the prompted sentence x ′ to extract the ultimate answer from the LLM. To provide a more specific explanation, we combine three elements by concatenating them as "[X'] [Z] [A]". Here, [X'] represents the 1st prompt x ′ , [Z] represents the sentence z generated in the first step, and [A] represents a trigger sentence used to extract the answer. The prompt for this step is self-augmented, meaning that it includes the sentence z generated by the same LLM. During the experiment, we employed slightly different answer triggers based on the format of the answer. Please refer to Appendix A.2 for the answer trigger sentences we used in each task. Subsequently, the prompted text is inputted into the LLM to generate sentences y and extract the final answer.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Integrating with other prompting methods</head><p>We can easily integrate our CP with any advanced prompting methods. We name the combined method X-CP, where X can be Zero-shot-CoT, Fewshot-CoT, or any other method. X-CP also has two steps: reasoning extraction and answer extraction. For Zero-shot-CoT-CP, the only distinction is we replace the trigger sentence "Let's give a correct and a wrong answer." with "Let's think step by step and give both a correct answer and a wrong answer.". For Few-shot-CoT-CP, the distinction is that k few-shot examples with reasoning steps are added before "Q: [X]. A: Let's give a correct and a wrong answer.", the resulting prompt x ′ will be "</p><formula xml:id="formula_0">Q: [X 1 ] A: [Z 1 ]. The answer is [Y 1 ]. Q: [X 2 ] A: [Z 2 ]. The answer is [Y 2 ]. ... Q: [X k ] A: [Z k ]. The answer is [Y k ]. Q: [X]</formula><p>. A: Let's give a correct and a wrong answer.", where X i , Z i and Y i are the question, reasoning steps and the final answer for each example i.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Experiment</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Settings</head><p>Datasets We evaluate the effectiveness of our proposal on 12 datasets<ref type="foot" target="#foot_0">foot_0</ref> encompassing four categories of reasoning tasks: arithmetic (Sin-gleEq, AddSub, MultiArith, AQUA-RAT, GSM8K, SVAMP), commonsense (CommonsenseQA, Strat-egyQA), symbolic (Last Letter Concatenation, Coin Flip), and other logical reasoning tasks (Date Understanding, Tracking Shuffled Objects). The detailed description of each dataset can be found in <ref type="bibr">(Kojima et al., 2022)</ref>. We use the few-shot examples with reasoning steps provided by <ref type="bibr">(Wei et al., 2022b)</ref>.</p><p>Baselines We conducted a comprehensive comparison of our CP method with various types of prompting techniques. These include simple zero-shot methods such as Zero-shot and Zeroshot- <ref type="bibr">CoT (Kojima et al., 2022)</ref>, Few-shot and Few-shot-CoT <ref type="bibr">(Wei et al., 2022b)</ref>, X-of-thought approaches like Tree of Thoughts (ToT) <ref type="bibr">(Yao et al., 2023a)</ref>, Graph of Thoughts (GoT) <ref type="bibr">(Yao et al., 2023b)</ref>, Program-aided Language models (PAL) <ref type="bibr" target="#b6">(Gao et al., 2023)</ref>, and Program of thoughts prompting (PoT) <ref type="bibr" target="#b3">(Chen et al., 2022)</ref>. Additionally, we compared our method with other prompting techniques such as Analogical prompting (Selfgenerated Exemplars) <ref type="bibr" target="#b23">(Yasunaga et al., 2023)</ref> and Self-consistency (SC) <ref type="bibr" target="#b18">(Wang et al., 2023)</ref>. Furthermore, we evaluated the effectiveness of selfreflection methods, including Recursive Criticism and Improvement (RCI) <ref type="bibr" target="#b8">(Kim et al., 2023)</ref>, Self-Refine <ref type="bibr" target="#b10">(Madaan et al., 2023)</ref> and Learning Principles from Mistakes (LEAP) <ref type="bibr">(Zhang et al., 2024)</ref>, as well as the closest related work, Contrastive <ref type="bibr">CoT (Chia et al., 2023)</ref>. We also experimented with running CP using Self-consistency (SC). Specifically, we set the temperature parameter of LLMs to 0.7 and sampled 10 correct and incorrect answers. Then, we selected the answer that appeared most frequently among the 10 correct answers as the final answer.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Models</head><p>We use GPT-4 and GPT-3.5-Turbo (0613) as our base models (accessed between Feb 22nd-May 22nd 2024) for main experiments. We also tested our CP on various open LLMs: LLaMA3-8B, LLaMA3-70B <ref type="bibr">(Touvron et al., 2023)</ref>, ChatGLM3-6B <ref type="bibr" target="#b5">(Du et al., 2022)</ref> and Qwen1.5-72B-Chat <ref type="bibr" target="#b1">(Bai et al., 2023)</ref>. All generations (except experiments with Self-consistency) are done by greedy decoding (i.e., sampling with zero temperature) as in the original CoT work <ref type="bibr">(Wei et al., 2022b)</ref>. For GPT models, we use Azure OpenAI services. For open LLMs except ChatGLM3-6B, we use LlamaAPI<ref type="foot" target="#foot_1">foot_1</ref> . For ChatGLM3-6B, we downloaded the model and performed the inference on a Linux server with an A100 GPU.</p><p>Answer filtering We follow Zero-shot-CoT <ref type="bibr">(Kojima et al., 2022)</ref> work and use its original implementation to pick up the final answers.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Results</head><p>Zero-shot Results Table <ref type="table" target="#tab_1">1</ref> presents the accuracy scores achieved by our Zero-shot-CP, standard zero-shot prompting (Zero-shot) and Zeroshot-CoT across five datasets. We ran all methods five times using GPT-3.5-Turbo and report the average scores. We found that the differences in each run were minimal. Zero-shot-CP consistently outperformed Zero-shot-CoT and Zero-shot across most (4 out of 5) datasets.</p><p>Table <ref type="table">5</ref> in Appendix B presents more comprehensive results. Notably, Zero-shot-CP demonstrates significant improvements over Zero-shot on all 12 datasets across various tasks using GPT-3.5-Turbo. For instance, Zero-shot-CP achieves score gains ranging from 14.3% to 73.2% on GSM8K, from 61.2% to 95.2% on MultiArith and from 4.2% to 41.8% on Last Letter Concatenation. Moreover, Zero-shot-CP outperforms Zero-shot on the majority (9 out of 12) of datasets when using GPT-4, with improvements ranging from 35.9% to 88.8% on GSM8K and from 41.3% to 62.2% on AQUA-RAT. These results indicate that eliciting self-awareness in LLMs to compare incorrect and correct answers can help prevent incorrect responses.</p><p>Zero-shot-CP outperforms Zero-shot-CoT in the majority (4 out of 6) of arithmetic reasoning tasks, suggesting that the self-awareness of LLMs regarding incorrect answers may be more crucial than their self-awareness regarding steps in mathematical reasoning. Furthermore, in commonsense reasoning tasks, Zero-shot-CP consistently outperforms Zero-shot (2 out of 2), while Zero-shot-CoT exhibits inferior results. This is likely because commonsense reasoning tasks require fewer steps, making awareness of individual pieces of commonsense knowledge more crucial. However, Zero-shot-CP performs worse than Zero-shot-CoT in symbolic reasoning and other reasoning tasks, indicating that for tasks like Coin Flip and Shuffled Objects, the steps involved are more crucial. Moreover, breaking down the reasoning process into individual steps makes it less likely for LLMs to make mistakes in these tasks, as the action space is very limited. Nevertheless, by combining Zero-shot-CP and Zero-shot-CoT, Zero-shot-CoT-CP achieves better results in most tasks (see Table <ref type="table">4</ref>).</p><p>Table <ref type="table">8</ref> in Appendix B presents the results of using various open-source LLMs: LLaMA3-8B, LLaMA3-70B, ChatGLM3-6B, and Qwen1.5-72B-Chat as base models. The results demonstrate that Zero-shot-CP not only performs well with state-ofthe-art GPT models, but also exhibits significant improvements across multiple sizes of open-source models.</p><p>Qualitative Analysis Table <ref type="table">2</ref> and <ref type="table">Table 6</ref> in Appendix B illustrates examples from SVAMP and CommonsenseQA. For the example from the arithmetic reasoning task SVAMP, we found that the reasoning process of zero-shot is correct, but it produces an incorrect answer "-4". Zero-shot-CoT is disrupted by irrelevant information, resulting in incorrect reasoning processes and answers being generated. Zero-shot-CP, on the other hand, is not disrupted and provides both the correct answer and explanation. We can see that the "wrong answer" "-4" from Zero-shot-CP is a real mistake made by Zero-shot. For the example from the common sense reasoning task CommonsenseQA, contrastive prompting is able to recognize the word "work" in the question and provide the correct answer, while Zero-shot and Zero-shot-CoT cannot.</p><p>In Appendix B, we present responses generated by Zero-shot-CP for each dataset. Figure <ref type="figure" target="#fig_4">5</ref>-16 gives both a positive example and a negative example of Zero-shot-CP on each dataset. From positive examples, we found that Zero-shot-CP can generate "wrong" answers that are indeed incorrect in most cases (11/12), except for Tracking Shuffled Object (Figure <ref type="figure" target="#fig_1">13</ref>). Incorrect answers are generated by intentionally calculating inaccurately (Figure <ref type="figure" target="#fig_0">12</ref>), disregarding important details (Figure <ref type="figure" target="#fig_8">10</ref>), searching for descriptions that are not present in the question (Figure <ref type="figure" target="#fig_7">9</ref>), or deliberately providing explanations that contradict common sense (Figure <ref type="figure" target="#fig_11">15</ref>). From negative examples, We found that the "wrong answers" provided by Zero-shot-CP can actually be valid answers <ref type="bibr">(Figure 6,</ref><ref type="bibr">7,</ref><ref type="bibr">8,</ref><ref type="bibr">12,</ref><ref type="bibr">14 and 15)</ref>. In some other negative examples, both the "correct answers" and "incorrect answers" provided by Zero-shot-CP are inconsistent with the ground truth <ref type="bibr">(Figure 5,</ref><ref type="bibr">9,</ref><ref type="bibr">10,</ref><ref type="bibr">11 and 16)</ref>. From the figures, we found that Zero-shot-CP also outputs reasoning steps in the process of generating correct and incorrect answers, especially for arithmetic reasoning tasks. Furthermore, we manually annotated 10 solved problems and 10 unsolved problems of Zero-shot-CP for each of the 12 datasets. Table 2: An example question from SVAMP and responses from Zero-shot, Zero-shot-CoT, Zero-shot-CP and Zero-shot-CoT-CP. We use GPT-4 as the base model.</p><p>solved problems and 120 unsolved problems. We found that for the solved problems, the majority (112/120) of the given "wrong" answers were indeed incorrect. For the unsolved problems, the majority (91/120) of both the "correct" and "wrong" answers were incorrect, with a portion (23/120) of the "wrong" answers actually being the ground truth. This situation typically occurs in yes or no questions.</p><p>The impact of prompt selection on Zero-shot-CP We explore different contrastive prompts and their combination with Zero-shot-CoT. Table <ref type="table" target="#tab_3">3</ref> outlines performance using 9 different templates with two classes. The first category is related to correct and wrong answers. We found "Let's give a correct and a wrong answer." achieves the best results in general. "Let's first give a wrong answer, then give the correct answer." performs well on AQUA-RAT but it performs worse on other datasets. "Let's first give the correct answer, then give a wrong answer." generally performs well on the four datasets, meaning that providing the correct answer first and then the incorrect answer generally leads to better results. The trigger word "incorrect" performs similarly to "wrong", and the trigger word "Please" performs much worse than "Let's". This is likely because, in the pre-training and fine-tuning data, there are slightly fewer occurrences of "incorrect" compared to "wrong" in samples related to correct and incorrect answers, and "Please" is rarely present as this type of data is generally not dialogue data. "Let's give a correct answer." performs well on the multiple-choice question dataset AQUA-RAT, but the performances on other three mathematical reasoning tasks are not satisfactory. This indicates that, for multiple-choice questions, only providing a correct answer is equivalent to eliminating several incorrect answers. However, for questions without options, outputting an incorrect answer is helpful. Table <ref type="table">9</ref> in Appendix B gives more comparative results between "Let's give a correct and a wrong answer." and "Let's give a correct answer." We find that, except for multiple-choice reasoning tasks, providing a wrong answer is more effective than only giving the correct answer. We also printed the token output probabilities for different prompts. As shown in Figure <ref type="figure">4</ref> in Appendix B, we find that adding prompts to generate incorrect answers changes the output probability distribution, Zeroshot-CP makes GPT-4 more confident in the ground truth answer. Table 4: Comparison with baseline methods using accuracies (in percentage) on MultiArith, GSM8K, StrategyQA, AQUA-RAT and SVAMP. GPT-3.5-Turbo is used as the model if not specified. The baseline results with citations are obtained from corresponding papers. Bolded numbers indicate the best results within each block's column, while underlined numbers indicate the best results across the entire column.</p><p>The second type of template in Table <ref type="table" target="#tab_3">3</ref> connects to Zero-shot-CoT, and we found that starting with the steps performs better than starting with the correct and wrong answers. Overall, it appears that Zero-shot-CoT-CP ("Let's think step by step and give both a correct answer and a wrong answer.") performs the best.</p><p>The impact of number of wrong answers on Zero-shot-CP We explored the impact of the number of incorrect answers on accuracy. We vary the number of wrong answers from 0 to 4, where 0 means standard zero-shot prompting. For k = 1, 2, 3, 4, we use the template "Let's give a correct and k ′ wrong answer(s).", where k ′ can be "a", "two", "three" and "four". Figure <ref type="figure" target="#fig_1">3</ref> plots the results. We found that providing 1-2 incorrect answers yielded the best results in general. The only exception is on AQUA-RAT, where providing more incorrect answers resulted in higher accuracy. This is because the task involves a multiple-choice question with five options, and excluding more incorrect answers makes the LLMs more certain about the correct answer. For math reasoning tasks with an infinite number of answers, providing just one incorrect answer seems to be sufficient. <ref type="table">4</ref> compares the performances on four mathematical reasoning datasets (MultiArith, GSM8K, AQUA-RAT and SVAMP) and one common sense reasoning dataset (StrategyQA) across CP and baselines. We find that Zero-shot-CP not only outperforms Fewshot, but also achieves comparable or even superior results to Few-shot-CoT. For instance, on GSM8K, the absolute accuracy has improved by 2.1%, and on StrategyQA, the absolute accuracy has improved by 5.1%. This suggests that in certain cases, the provided examples and reasoning steps may not be as effective as directly triggering the LLM's self-awareness of errors. By combining CP and Few-shot-CoT, we can achieve even better results. Furthermore, if we utilize the GPT-4 model, we can attain performance that is comparable to or even superior to the current state-of-the-art methods. For example, in AQUA, SVAMP, and GSM8K, we have achieved higher accuracy scores compared to recently published results. When running CP with Self-consistency (SC), the scores can be further improved in both zero-shot and few-shot settings.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Comparison with other baselines Table</head><p>For a more in-depth performance analysis, we note that X-of-thought methods can improve the effectiveness of Few-shot-CoT, indicating that trees, graphs, and code indeed provide richer information and greater flexibility compared to simple chains of thought. Among them, the results reported by the ToT work seem to be more prominent. By sampling multiple reasoning paths and selecting the most consistent answer, Self-consistency (SC) demonstrates excellent performance in mathematical and commonsense reasoning tasks. It can also be effectively combined with other methods such as PoT. Self-generated Exemplars also show better performance than CoT, indicating that allowing the LLM to recall relevant questions and answer them before responding to the original question is helpful. The performance of Self-reflection methods, such as Self-Refine and LEAP, is similar to that of Self-generated Exemplars. RCI performs even better, primarily due to its direct combination with the CoT method. Compared to these methods, our approach is simpler and can also yield comparable results. Compared to the most relevant method Contrastive CoT, our Zero-shot-CP performs better on the StrategyQA and SVAMP datasets. Zero-shot-CoT-CP performs better on AQUA-RAT. However, on GSM8K, Contrastive CoT performs better, indicating that generating incorrect answers by swapping the order of entities is useful for this task.</p><p>The main reasons why CP works well are fourfold: 1) the pre-training data of LLMs contains many correct and incorrect answers to different types of questions. For instance, many web pages and books in Appendix A.3 provide correct and incorrect answers to math reasoning and common sense reasoning questions. Answers to questions on social media platforms like Reddit, Quora, and Zhihu can be voted on by others through "upvotes" or "downvotes". Highly upvoted answers are more likely to be correct answers while others may be incorrect. Pre-training LLMs with massive text containing these correct and wrong answers can encode general patterns (token probability) of these answers in LLM parameters. When prompted with contrastive prompts, LLMs can leverage these patterns to generate both a correct and a wrong answer. The "correct" answer is more likely to align with ground truth, as the model has learned to eliminate possible wrong answers. 2) Instruction tuning unlocks the abilities of LLMs to give correct and incorrect answers by fine-tuning on various natural language processing tasks including reasoning tasks <ref type="bibr">(Wei et al., 2022a)</ref>. 3) RLHF fine-tunes LLMs using human feedback data, which offers relative judgments on the quality of answers. This feedback is valuable for enhancing the LLMs' capability to distinguish between correct and incorrect answers. 4) In CP, correct and wrong answers are returned by the LLM in a single output. The correct answers are generally distinct from the incorrect ones (as shown in Figure <ref type="figure" target="#fig_4">5</ref>-16), thereby excluding the (mostly indeed) incorrect answers and reducing the probability of the correct answers being wrong. Before outputting the two answers, the LLM engages in "contrastive thinking" to determine which answer is correct and which is incorrect.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>We propose CP, a template-based prompting approach for contrastive reasoning. Quantitative and qualitative results indicate that Zero-Shot-CP shows significant improvements across various reasoning tasks. Our method can seamlessly integrate with any prompting technique by incorporating a trigger sentence before the LLM provides answers.</p><p>CP not only outperforms Zero-shot-CoT and Fewshot-CoT in most arithmetic and commonsense reasoning tasks, but also achieves comparable or even superior results when compared to state-of-the-art methods.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Limitations</head><p>Our work has some limitations and there is room for further exploration and improvement. Firstly, we have not yet validated the effectiveness of CP on smaller models such as Gemma-2B and Qwen1.5-0.5B. Secondly, we can further explore the combination of contrastive prompting with other prompting methods, such as X-of-thought approaches. Lastly, exploring the impact of contrastive prompting on LLM parameters and visualizing it would be an interesting future direction.</p><p>Table <ref type="table">9</ref> presents the comparison of the results using "Let's give a correct and a wrong answer." and "Let's give a correct answer." prompts.</p><p>Table <ref type="table" target="#tab_1">10</ref> provides the categorization and counts of these 120 solved problems and 120 unsolved problems.</p><p>In Figure <ref type="figure">4</ref>, we printed the token output probabilities for different prompts. We provide an example in StrategyQA. The log probability of "Yes": -0.020574939.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Zero</head><p>- <ref type="figure">-----------------------------------------------------------</ref> The log probability of "Yes": -0.027396876.</p><p>Figure <ref type="figure">4</ref>: By setting the logprobs (log probabilities) parameter of the OpenAI API (using GPT-4), we printed the token output probabilities for different prompts. We provide an example in StrategyQA. The ground truth is "Yes". Note that the higher the logprobs value, the greater the probability. Zero-shot-CP makes GPT-4 more confident in the answer compared to Zero-shot and "Let's give a correct answer.". Q: Mary found 2 seashells and Keith found 5 seashells on the beach . When they cleaned them , they discovered that 9 were cracked . How many seashells did they find together ?</p><p>A: Let's give a correct and a wrong answer. Correct answer: To find the total number of seashells they found together, we need to add the number of seashells Mary found (2) to the number of seashells Keith found (5).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">+ 5 = 7</head><p>Therefore, Mary and Keith found a total of 7 seashells together.</p><p>Wrong answer: To find the total number of seashells they found together, we can subtract the number of cracked seashells (9) from the sum of the seashells Mary and Keith found.</p><p>(2 + 5) -9 = -2 This answer doesn't make sense because we can't have a negative number of seashells. Therefore, the correct answer (arabic numerals) is 7.  Q: Sam 's dog had puppies and 8 had spots . He gave 2 to his friends . He now has 6 puppies . How many puppies did he have to start with ? A: Let's give a correct and a wrong answer. Correct answer: To find out how many puppies Sam had to start with, we can work backwards from the information given. We know that Sam currently has 6 puppies after giving 2 to his friends. Before giving away the 2 puppies, he had 8 puppies with spots. Therefore, the total number of puppies he had to start with is 8 + 2 = 10.</p><p>Wrong answer: To find out how many puppies Sam had to start with, we can subtract the number of puppies he currently has from the number of puppies he gave away. Since he currently has 6 puppies and he gave away 2, we can subtract 6 from 2, which gives us -4. Therefore, Sam had -4 puppies to start with. Therefore, the correct answer (arabic numerals) is The correct answer is 10.  (GT: 8) Q: Machine A puts out a yo-yo every 6 minutes. Machine B puts out a yo-yo every 9 minutes. After how many minutes will they have produced 10 yo-yos? Answer Choices: (A) 24 minutes (B) 32 minutes (C) 36 minutes (D) 64 minutes (E) 72 minutes A: Let's give a correct and a wrong answer. Correct answer: (C) 36 minutes Explanation: Machine A produces a yo-yo every 6 minutes, so in 36 minutes, it will produce 36/6 = 6 yo-yos. Machine B produces a yo-yo every 9 minutes, so in 36 minutes, it will produce 36/9 = 4 yo-yos. Therefore, in a total of 36 minutes, both machines will have produced 6 + 4 = 10 yo-yos.</p><p>Wrong answer: (B) 32 minutes Explanation: Machine A produces a yo-yo every 6 minutes, so in 32 minutes, it will produce 32/6 = 5.33 yo-yos (approximately). Machine B produces a yo-yo every 9 minutes, so in 32 minutes, it will produce 32/9 = 3.56 yo-yos (approximately). Therefore, in a total of 32 minutes, both machines will have produced 5.33 + 3.56 = 8.89 yo-yos (approximately), which is less than 10 yo-yos. Therefore, among A through E, the correct answer is (C) 36 minutes.  Q: On a map, the length of the road from Town F to Town G is measured to be 20 inches. On this map, 1/4 inch represents an actual distance of 10 miles. What is the actual distance, in miles, from Town F to Town G along this road? Answer Choices: (A) 800 (B) 720 (C) 960 (D) 1140 (E) 1160 A: Let's give a correct and a wrong answer. Correct Answer: (C) 960 miles Explanation: According to the map, 1/4 inch represents 10 miles. Therefore, 1 inch represents 4 times that, which is 40 miles.</p><p>Since the length of the road from Town F to Town G on the map is 20 inches, the actual distance in miles would be 20 inches multiplied by 40 miles per inch, which equals 800 miles.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Wrong Answer: (A) 800 miles</head><p>Explanation: This answer is incorrect because it does not take into account the scale of the map. The scale of the map indicates that 1/4 inch represents 10 miles, so the actual distance from Town F to Town G is greater than 800 miles. Therefore, among A through E, the correct answer is (C) 960 miles.  (GT: A) Q: A coin is heads up. Emanuel does not flip the coin. Cheyenne does not flip the coin. Perez flips the coin. Yvette does not flip the coin. Is the coin still heads up? Note that "flip" here means "reverse". A: Let's give a correct and a wrong answer. Correct answer: No, the coin is not still heads up. Since Perez flips the coin, it means that the coin is reversed or flipped, resulting in a different side facing up.</p><p>Wrong answer: Yes, the coin is still heads up. Since only Perez flips the coin and the others do not, the initial state of the coin remains unchanged. Therefore, the correct answer (Yes or No) is No, the coin is not still heads up.  Q: A coin is heads up. Mya flips the coin. Fernando flips the coin. Bubba does not flip the coin. Tommy does not flip the coin. Is the coin still heads up? Note that "flip" here means "reverse". A: Let's give a correct and a wrong answer. Correct answer: No, the coin is not still heads up. When Mya flips the coin, it will be reversed, so it will be tails up. The subsequent actions of Fernando, Bubba, and Tommy are irrelevant because the coin has already been flipped and its state has changed.</p><p>Wrong answer: Yes, the coin is still heads up. Since Bubba and Tommy did not flip the coin, its original state remains unchanged. Therefore, the correct answer (Yes or No) is No, the coin is not still heads up.  (GT: Yes) The music had a soothing effect on the man, causing him to close his eyes and relax.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Wrong answer: (A) coma</head><p>The music did not cause the man to enter a coma. Therefore, among A through E, the correct answer is (C) soothing.  Q: As he looked out the window, he knew the landing was happening soon, and it made him nervous, but where would he be soon? Answer Choices: (A) apartment building (B) disembark (C) stairwell (D) deplane (E) airport A: Let's give a correct and a wrong answer. Correct answer: (D) deplane Wrong answer: (C) stairwell Therefore, among A through E, the correct answer is (D) deplane.  (GT: E) Q: Jeff' s work is 3 miles away. He walks there and back each day he works. How many miles does he walk if he has to work 5 times a week? A: Let's give a correct and a wrong answer. Correct answer: Jeff walks 3 miles to work and 3 miles back, so he walks a total of 6 miles each day he works. If he works 5 times a week, he would walk a total of 6 miles/day * 5 days/week = 30 miles in a week.</p><p>Wrong answer: Jeff walks 3 miles to work and 3 miles back, so he walks a total of 3 miles each day he works. If he works 5 times a week, he would walk a total of 3 miles/day * 5 days/week = 15 miles in a week. Therefore, the correct answer (arabic numerals) is 30 miles.  Q: If one person can paint half a house in 5 days, how many hours would it take for 5 people to paint a whole house? A: Let's give a correct and a wrong answer. Correct answer: If one person can paint half a house in 5 days, it means that one person can paint one whole house in 10 days. Since there are 5 people working together, we can divide the time by 5. Therefore, it would take 5 people 2 days to paint a whole house.</p><p>Wrong answer: If one person can paint half a house in 5 days, it means that one person can paint one whole house in 10 days. Since there are 5 people working together, we can divide the time by 5. Therefore, it would take 5 people 2 hours to paint a whole house. Therefore, the correct answer (arabic numerals) is 2 days.  (GT: 48) Q: A pet supply store has 600 bags of dog food and 327 bags of cat food. How many more bags of dog food are there than cat food? A: Let's give a correct and a wrong answer. Correct answer: To find out how many more bags of dog food there are than cat food, we subtract the number of bags of cat food from the number of bags of dog food.</p><p>Number of bags of dog food -Number of bags of cat food = 600 -327 = 273 Therefore, there are 273 more bags of dog food than cat food.</p><p>Wrong answer: To find out how many more bags of dog food there are than cat food, we add the number of bags of dog food and cat food together. Wrong answer: If we assume that all the fleas perished, then the total number of fleas that perished would be 36 + 85 = 121 fleas. Therefore, the correct answer (arabic numerals) is 0 fleas perished.  (GT: 121) Q: Is it unusual to play Happy hardcore music at a funeral? A: Let's give a correct and a wrong answer. Correct answer: Yes, it is highly unusual to play Happy hardcore music at a funeral. Funerals are typically solemn occasions where mourners gather to pay their respects and honor the life of the deceased. The music played at funerals is usually chosen to reflect the somber and reflective atmosphere of the event. Genres such as classical music, hymns, or soft instrumental pieces are more commonly associated with funerals.</p><p>Wrong answer: No, it is not unusual to play Happy hardcore music at a funeral. Funerals are evolving events, and people have different ways of expressing their grief and celebrating the life of the deceased. Some individuals may have had a strong connection to Happy hardcore music, and playing it at the funeral could be a way to honor their memory and bring a sense of joy and energy to the ceremony. Ultimately, the choice of music at a funeral is a personal decision, and if it reflects the wishes and personality of the deceased, then it can be considered appropriate. Therefore, the correct answer (Yes or No) is Yes, it is highly unusual to play Happy hardcore music at a funeral.  Q: Would a pear sink in water? A: Let's give a correct and a wrong answer. Correct answer: Yes, a pear would sink in water. Pears have a density greater than that of water, which means they are denser and will sink when placed in water.</p><p>Wrong answer: No, a pear would not sink in water. Pears are known for their buoyancy and ability to float in water due to their unique composition. Therefore, the correct answer (Yes or No) is Yes, a pear would sink in water.  (GT: No) Q: Mary is baking a cake. The recipe calls for 7 cups of sugar and 10 cups of flour. She already put in 4 cups of sugar. How many more cups of sugar does she need to add? A: Let's give a correct and a wrong answer. Correct answer: Mary needs to add 3 more cups of sugar.</p><p>Wrong answer: Mary needs to add 6 more cups of sugar. Therefore, the correct answer (arabic numerals) is 3.  Q: The grasshopper and the frog had a jumping contest. The grasshopper jumped 13 inches. The grasshopper jumped 2 inches farther than the grasshopper. How far did the frog jump? A: Let's give a correct and a wrong answer. Correct answer: The grasshopper jumped 13 inches, and the frog jumped 2 inches farther than the grasshopper. Therefore, the frog jumped 13 + 2 = 15 inches.</p><p>Wrong answer: The grasshopper jumped 13 inches, and the frog jumped 2 inches farther than the grasshopper. Therefore, the frog jumped 13 + 2 = 15 inches. Therefore, the correct answer (arabic numerals) is 15 inches.  (GT: 11) </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 2 :</head><label>2</label><figDesc>Figure2: The complete process of Zero-shot-CP involves two steps: Firstly, we utilize the initial "reasoning" prompt to extract a comprehensive reasoning process from a LLM. Secondly, we employ the subsequent "answer" prompt to extract the correct answer from the reasoning text.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Accuracy scores by varying the number of wrong answers. We test GPT-4 and GPT-3.5-Turbo on (a) AQUA-RAT, (b) GSM8K, (c) AddSub and (d) MultiArith. The range of the number of wrong answers is from 0 (Zero-shot) to 4.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><figDesc>-Shot-CP Q: Can the Palace of Westminster tell time in the dark? A: Let's give a correct and a wrong answer. Correct Answer: Yes, the Palace of Westminster can tell time in the dark. The clock tower, commonly known as Big Ben, is equipped with illuminated clock faces, allowing it to be visible and tell time even at night. Wrong Answer: No, the Palace of Westminster cannot tell time in the dark because the clock faces are not illuminated and are only visible during daylight. The log probability of "Yes": -0.0022649246. ☑ (The highest) -------------------------------------------------------------Zero-Shot Q: Can the Palace of Westminster tell time in the dark? A: The answer (Yes or No) is Yes.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>the Palace of Westminster tell time in the dark? A: Let's give a correct answer. Yes, the Palace of Westminster can tell time in the dark.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Example outputs by Zero-shot-CP for AddSub.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 6 :</head><label>6</label><figDesc>Figure 6: Example outputs by Zero-shot-CP for AQUA-ART.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 8 :</head><label>8</label><figDesc>Figure 8: Example outputs by Zero-shot-CP for Coin Flip.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure 9 :</head><label>9</label><figDesc>Figure 9: Example outputs by Zero-shot-CP for CommonsenseQA.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><head>Figure 10 :</head><label>10</label><figDesc>Figure 10: Example outputs by Zero-shot-CP for GSM8K.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_9"><figDesc>Number of bags of dog food + Number of bags of cat food = 600 + 327 = 927 Therefore, there are 927 more bags of dog food than cat food. Therefore, the correct answer (arabic numerals) is 273.  Q: Harry Hound had a terrible earache yesterday. When I peered into his ears yesterday, I found 36 frisky fleas having a party in his right ear and 85 baby fleas sleeping peacefully in his left ear. I cleaned out Harry Hound's ears. How many fleas perished? A: Let's give a correct and a wrong answer. Correct answer: If you found 36 fleas in Harry Hound's right ear and 85 fleas in his left ear, and you cleaned out his ears, it can be assumed that all the fleas were removed and none perished.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_10"><head>Figure 14 :</head><label>14</label><figDesc>Figure 14: Example outputs by Zero-shot-CP for SingleEq.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_11"><head>Figure 15 :</head><label>15</label><figDesc>Figure 15: Example outputs by Zero-shot-CP for StrategyQA.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_12"><head>Figure 16 :</head><label>16</label><figDesc>Figure 16: Example outputs by Zero-shot-CP for SVAMP.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>Table10provides the categorization and counts of these 120 Accuracy (in percentage) comparison of Zero-shot-CP with Zero-shot and Zero-shot-CoT on five datasets. We run all methods 5 times using GPT-3.5-Turbo and report average scores. Zero-shot-CP significantly outperforms baselines on StrategyQA, AddSub, SVAMP and CommonsenseQA based on student t-test (p &lt; 0.05).Let's think step by step. First, we need to find out how many bottle caps and wrappers Danny had before he found the new ones at the park. We know that after finding the new ones, he has 50 bottle caps and 52 wrappers. Before finding the new ones, he had 21 bottle caps and 46 wrappers. So, the number of bottle caps he found at the park is 50 (total now) -21 (total before) = 29 bottle caps. The number of wrappers he found at the park is 52 (total now) -46 (total before) = 6 wrappers. Therefore, Danny found 29 -6 = 23 more bottle caps than wrappers at the park.Therefore, the answer (arabic numerals) is 23 Zero-shot-CP A: Let's give a correct and a wrong answer. Correct Answer: Danny found 50 bottle caps and 46 wrappers at the park. So, he found 50 -46 = 4 more bottle caps than wrappers at the park.Danny found 50 bottle caps and 46 wrappers at the park. So, he found 46 -50 = -4 more bottle caps than wrappers at the park. Therefore, the correct answer (arabic numerals) is 4</figDesc><table><row><cell></cell><cell cols="6">MultiArith GSM8K StrategyQA AddSub SVAMP CommonsenseQA</cell></row><row><cell>Zero-shot</cell><cell>60.97</cell><cell>14.39</cell><cell>65.02</cell><cell>82.78</cell><cell>69.74</cell><cell>71.33</cell></row><row><cell>Zero-shot-CoT</cell><cell>94.87</cell><cell>75.56</cell><cell>60.74</cell><cell>86.16</cell><cell>81.78</cell><cell>68.96</cell></row><row><cell>Zero-shot-CP</cell><cell>95.13</cell><cell>73.22</cell><cell>67.39</cell><cell>90.46</cell><cell>83.08</cell><cell>73.81</cell></row><row><cell></cell><cell cols="6">Q: Danny collects bottle caps and wrappers. He found 46 wrappers and 50 bottle caps at the park.</cell></row><row><cell>Question</cell><cell cols="4">Now he has 21 bottle caps and 52 wrappers in his collection.</cell><cell></cell><cell></cell></row><row><cell></cell><cell cols="5">How many more bottle caps than wrappers did danny find at the park?</cell><cell></cell></row><row><cell>Zero-shot</cell><cell cols="6">A: The answer (arabic numerals) is -4. Danny found 50 bottle caps and 46 wrappers at the park, so he found 4 more bottle caps than wrappers.</cell></row><row><cell cols="2">Zero-shot-CoT A: Incorrect Answer: Ground Truth 4</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 3 :</head><label>3</label><figDesc>Comparison prompting templates using accuracies (in percentage) on AQUA-RAT, GSM8K, AddSub and MultiArith in zero-shot setting. GPT-4 is used as the model. Bolded numbers indicate the best results within each block's column, while underlined numbers indicate the best results across the entire column.</figDesc><table><row><cell>GPT-4</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>The datasets are available at https://github. com/kojima-takeshi188/zero_shot_cot/tree/main/ dataset.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>https://docs.llama-api.com/quickstart</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>https://prek-math-te.stanford.edu/operations/ analyzing-thinking-underlying-wrong-answers</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>https://mathmistakes.org/category/ elementary-school/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_4"><p>https://www.gutenberg.org/ebooks/38769</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_5"><p>https://www.proprofs.com/quiz-school/story. php?title=common-sense-quiz_1</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="7" xml:id="foot_6"><p>https://www.wikihow.com/Common-Sense-Quiz</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Details of Experimental Setup</head><p>A.1 Code, Prompts, Logs All code is available at <ref type="url" target="https://github.com/yao8839836/cp">https://github.com/  yao8839836/cp</ref>.</p><p>All prompts are available at <ref type="url" target="https://github.com/yao8839836/cp/blob/master/main.py">https://github.  com/yao8839836/cp/blob/master/main.py</ref>.</p><p>Our experimental logs are available at <ref type="url" target="https://github.com/yao8839836/cp/tree/master/log">https://github.com/yao8839836/cp/  tree/master/log</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.2 Prompts For Answer Extraction</head><p>Table <ref type="table">7</ref> summarizes the answer extraction prompt for each task used for the CP experiments.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.3 Pre-training data examples</head><p>For instance, many web pages and books provide correct and incorrect answers to math reasoning 3 4 5 and common sense reasoning 6 7 questions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Additional Experimental Results</head><p>In this section, we provide a summary of additional example texts generated by Zero-shot-CP. GPT-3.5-Turbo is used as the model if not specified. Table <ref type="table">6</ref> illustrates example outputs of zero-shot prompting methods from CommonsenseQA. Figure <ref type="figure">5</ref>-16 show a positive example and a negative example of Zero-shot-CP on each dataset. "GT" in the figures means "Ground Truth".</p><p>The 240 examples, along with our annotations, can be accessed at the following link: <ref type="url" target="https://anonymous.4open.science/r/cp-712E/results/zero_shot_cp_gpt4_240_examples_labeled.txt">https://anonymous.4open.science/r/  cp-712E/results/zero_shot_cp_gpt4_240_  examples_labeled.txt</ref>.</p><p>Table <ref type="table">5</ref> presents the comparison of Zero-shot-CP with Zero-shot and Zero-shot-CoT on all 12 datasets using GPT-3.5-Turbo and GPT-4. Table <ref type="table">6</ref> presents an example question from Com-monsenseQA and responses from different methods.</p><p>Table <ref type="table">8</ref> presents the results of using various open-source LLMs: LLaMA3-8B, LLaMA3-70B, ChatGLM3-6B, and Qwen1.5-72B-Chat as base models. A: Among A through E, the answer is (E) aviary. However, it should be noted that bald eagles can also be found in rural areas (A), in Canada (C), and depicted in books (B) and paintings (D).</p><p>The question seems to be asking where a bald eagle is likely to be found physically, and an aviary is a place where birds are kept.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Zero-shot-CoT</head><p>A: Let's think step by step. A bald eagle is a bird, so it could be found in an aviary (E), which is a place where birds are kept. It could also be found in a rural area (A), as these birds often live in areas with less human activity. A bald eagle could be depicted in a book (B) or a painting (D), as it is a popular symbol in various cultures, especially in the United States. Lastly, bald eagles are also found in Canada (C), as their habitat ranges across most of North America. Therefore, all of the options could be correct depending on the context of the question. Therefore, among A through E, the answer is (A) rural area, (B) book, (C) Canada, (D) painting, (E) aviary.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Zero-shot-CP</head><p>A: Let's give a correct and a wrong answer. Correct Answer: (D) painting</p><p>Wrong Answer: (A) rural area Therefore, among A through E, the correct answer is (D) painting Ground Truth D  Table <ref type="table">9</ref>: Comparison of the results using "Let's give a correct and a wrong answer." and "Let's give a correct answer." prompts.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Category # Examples</head><p>The given "correct" answer is the GT, and the given "wrong" answer is indeed incorrect. 112 The given "correct" answer is the GT, and the given "wrong" answer is also the GT. 4 The given "correct" answer is the GT, no "wrong" answer is given. 4</p><p>The given "correct" answer is incorrect, and the given "wrong" answer is the GT. 23 The given "correct" answer is incorrect, and the given "wrong" answer is also incorrect. 91 The given "correct" answer is incorrect, no "wrong" answer is given. 6</p><p>Table <ref type="table">10</ref>: Categorization results of Zero-shot-CP output (with GPT-4) on 240 problems. We manually annotated 10 solved problems and 10 unsolved problems for each of the 12 datasets. GT means Ground Truth. See Appendix B for the link of the examples.</p><p>Q: Take the last letters of each words in "Marlen Sonja Anita Dale" and concatenate them. A: Let's give a correct and a wrong answer. Correct answer: The last letters of each word in "Marlen Sonja Anita Dale" are "n a a e." Therefore, when concatenated, they form the word "naae."</p><p>Wrong answer: The last letters of each word in "Marlen Sonja Anita Dale" are "n j a e." Therefore, when concatenated, they form the word "njae." Therefore, the correct answer is "naae."  Q: Take the last letters of each words in "Rich Parker Edward Milagros" and concatenate them.</p><p>A: Let's give a correct and a wrong answer. Correct answer: The last letters of each word in "Rich Parker Edward Milagros" are r d s s". Therefore, when concatenated, they form the word "hrdss".</p><p>Wrong answer: The last letters of each word in "Rich Parker Edward Milagros" are "r r d s s". Therefore, when concatenated, they form the word "rrdss". Therefore, the correct answer is "hrdss".  (GT: hrds) Q: Roger is at the library helping put away books. There are 14 book to put away total but a librarian takes 2 of them and leaves Roger with the rest. If he can fit 3 books on a shelf, how many shelves will he need? A: Let's give a correct and a wrong answer. Correct answer: If there are 14 books in total and the librarian takes 2 of them, then Roger is left with 14 -2 = 12 books to put away. Since he can fit 3 books on a shelf, he will need 12 / 3 = 4 shelves.</p><p>Wrong answer: If there are 14 books in total and the librarian takes 2 of them, then Roger is left with 14 -2 = 12 books to put away. Since he can fit 3 books on a shelf, he will need 12 / 3 = 3 shelves. Therefore, the correct answer (arabic numerals) is 4 shelves.  Q: John earned 8 dollars for each lawn he mowed. If he had 15 lawns to mow, but forgot to mow 7 of them, how much money did he actually earn? A: Let's give a correct and a wrong answer. Correct answer: John earned 8 dollars for each lawn he mowed. Since he mowed 15 lawns, he would have earned 8 * 15 = 120 dollars.</p><p>Wrong answer: John earned 8 dollars for each lawn he mowed. Since he forgot to mow 7 lawns, he actually earned 8 * (15 -7) = 8 * 8 = 64 dollars. Therefore, the correct answer (arabic numerals) is 120 dollars.  (GT: 64) Explanation: At the start of the dance, Bob is dancing with Rodrigo. After the first partner switch, Bob and switch partners, so Bob is now dancing with Karl. Then, Alice and Claire switch partners, so Bob is still dancing with Karl. Finally, Alice and Bob switch partners, so Bob is now dancing with Helga. Therefore, at the end of the dance, Bob is dancing with Helga. Therefore, among A through C, the correct answer is (C) Helga.  Q: Alice, Bob, and Claire are dancers at a square dance. At the start of a song, they each have a partner: Alice is dancing with Sam, Bob is dancing with Karl, and Claire is dancing with Helga.</p><p>Throughout the song, the dancers often trade partners. First, Alice and Claire switch partners. Then, Alice and Bob switch partners. Finally, Claire and Bob switch partners. At the end of the dance, Claire is dancing with Which choice is true ? Answer Choices: (A) Sam. (B) Karl. (C) Helga. A: Let's give a correct and a wrong answer. Correct answer: (B) Karl.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Explanation:</head><p>At the start of the dance, Alice is dancing with Sam, Bob is dancing with Karl, and Claire is dancing with Helga.</p><p>First, Alice and Claire switch partners. After this switch, Alice is now dancing with Helga, and Claire is dancing with Sam. Bob's partner remains the same (Karl).</p><p>Next, Alice and Bob switch partners. After this switch, Alice is now dancing with Karl, and Bob is dancing with Helga. Claire's partner remains the same (Sam).</p><p>Finally, Claire and Bob switch partners. After this switch, Claire is now dancing with Karl, and Bob is dancing with Sam. Alice's partner remains the same (Helga). Therefore, at the end of the dance, Claire is dancing with Karl. So the correct answer is (B) Karl. Therefore, among A through C, the correct answer is (B) Karl.  (GT: C) </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Prompt design and engineering: Introduction and advanced methods</title>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Amatriain</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2401.14423</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jinze</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuai</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunfei</forename><surname>Chu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zeyu</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Dang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenbin</forename><surname>Ge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Binyuan</forename><surname>Hui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luo</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junyang</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Runji</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dayiheng</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengqiang</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keming</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianxin</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Men</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xingzhang</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuancheng</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chuanqi</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sinan</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianhong</forename><surname>Tu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shijie</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shengguang</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benfeng</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jin</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">An</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shusheng</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bowen</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongyi</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianwei</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xingxuan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yichang</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhenru</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chang</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingren</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.16609</idno>
+		<title level="m">Qwen technical report</title>
+		<imprint>
+			<publisher>Xiaohuan Zhou, and Tianhang Zhu</publisher>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Program of thoughts prompting: Disentangling computation from reasoning for numerical reasoning tasks</title>
+		<author>
+			<persName><forename type="first">Wenhu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xueguang</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><forename type="middle">W</forename><surname>Cohen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2211.12588</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ken</forename><surname>Yew</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guizhen</forename><surname>Chia</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anh</forename><surname>Luu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soujanya</forename><surname>Tuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lidong</forename><surname>Poria</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bing</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.09277</idno>
+		<title level="m">Contrastive chain-of-thought prompting</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Glm: General language model pretraining with autoregressive blank infilling</title>
+		<author>
+			<persName><forename type="first">Zhengxiao</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yujie</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiezhong</forename><surname>Qiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhilin</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Tang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="320" to="335" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Pal: Program-aided language models</title>
+		<author>
+			<persName><forename type="first">Luyu</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aman</forename><surname>Madaan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuyan</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Uri</forename><surname>Alon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengfei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiming</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jamie</forename><surname>Callan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Graham</forename><surname>Neubig</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="10764" to="10799" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">A survey on contrastive selfsupervised learning</title>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Jaiswal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ramesh</forename><surname>Ashwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad</forename><forename type="middle">Zaki</forename><surname>Babu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Debapriya</forename><surname>Zadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fillia</forename><surname>Banerjee</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Makedon</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Technologies</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page">2</biblScope>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Large language models are zero-shot reasoners</title>
+		<author>
+			<persName><forename type="first">Geunwoo</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><surname>Baldi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Mcaleer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">Takeshi</forename><surname>Kojima</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Shane</forename><surname>Shixiang</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Machel</forename><surname>Gu</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Yutaka</forename><surname>Reid</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Yusuke</forename><surname>Matsuo</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Iwasawa</surname></persName>
+		</editor>
+		<imprint>
+			<date type="published" when="2022">2023. 2022</date>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="page" from="22199" to="22213" />
+		</imprint>
+	</monogr>
+	<note>Language models can solve computer tasks</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Pretrain, prompt, and predict: A systematic survey of prompting methods in natural language processing</title>
+		<author>
+			<persName><forename type="first">Pengfei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhe</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinlan</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengbao</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hiroaki</forename><surname>Hayashi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Graham</forename><surname>Neubig</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Computing Surveys</title>
+		<imprint>
+			<biblScope unit="volume">55</biblScope>
+			<biblScope unit="issue">9</biblScope>
+			<biblScope unit="page" from="1" to="35" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Self-refine: Iterative refinement with self-feedback</title>
+		<author>
+			<persName><forename type="first">Aman</forename><surname>Madaan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niket</forename><surname>Tandon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prakhar</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Skyler</forename><surname>Hallinan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luyu</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sarah</forename><surname>Wiegreffe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Uri</forename><surname>Alon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nouha</forename><surname>Dziri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shrimai</forename><surname>Prabhumoye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiming</forename><surname>Yang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page">36</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.08774</idno>
+		<title level="m">Gpt-4 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carroll</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katarina</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="27730" to="27744" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Direct preference optimization: Your language model is secretly a reward model</title>
+		<author>
+			<persName><forename type="first">Rafael</forename><surname>Rafailov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Archit</forename><surname>Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Mitchell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefano</forename><surname>Ermon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chelsea</forename><surname>Finn</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page">36</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Getting it wrong: Surprising tips on how to learn</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Henry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bridgid</forename><surname>Roediger</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Finn</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Scientific American</title>
+		<imprint>
+			<biblScope unit="page" from="499" to="504" />
+			<date type="published" when="2009">2009</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<author>
+			<persName><forename type="first">Pranab</forename><surname>Sahoo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ayush</forename><forename type="middle">Kumar</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sriparna</forename><surname>Saha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vinija</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Samrat</forename><surname>Mondal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aman</forename><surname>Chadha</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.07927</idno>
+		<title level="m">A systematic survey of prompt engineering in large language models: Techniques and applications</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Reflexion: Language agents with verbal reinforcement learning</title>
+		<author>
+			<persName><forename type="first">Noah</forename><surname>Shinn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Federico</forename><surname>Cassano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashwin</forename><surname>Gopinath</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karthik</forename><surname>Narasimhan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shunyu</forename><surname>Yao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page">36</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<title level="m">Faisal Azhar, et al. 2023. Llama: Open and efficient foundation language models</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Self-consistency improves chain of thought reasoning in language models</title>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Finetuned language models are zero-shot learners</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vincent</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kelvin</forename><surname>Guu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adams</forename><forename type="middle">Wei</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Lester</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc V</forename><surname>Le</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>International Conference on Learning Representations</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">2022b. Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="24824" to="24837" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">2023a. Tree of thoughts: Deliberate problem solving with large language models</title>
+		<author>
+			<persName><forename type="first">Shunyu</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dian</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Izhak</forename><surname>Shafran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Griffiths</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karthik</forename><surname>Narasimhan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="page">36</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">2023b. Beyond chain-of-thought, effective graph-of-thought reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Yao</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zuchao</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hai</forename><surname>Zhao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.16582</idno>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<author>
+			<persName><forename type="first">Michihiro</forename><surname>Yasunaga</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyun</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yujia</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Panupong</forename><surname>Pasupat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jure</forename><surname>Leskovec</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.01714</idno>
+		<title level="m">Large language models as analogical reasoners</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Niket Tandon, and Uri Alon. 2024</title>
+		<author>
+			<persName><forename type="first">Tianjun</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aman</forename><surname>Madaan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luyu</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Swaroop</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiming</forename><surname>Yang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.05403</idno>
+	</analytic>
+	<monogr>
+		<title level="m">-context principle learning from mistakes</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Automatic chain of thought prompting in large language models</title>
+		<author>
+			<persName><forename type="first">Zhuosheng</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aston</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Smola</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>ICLR 2023</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<author>
+			<persName><forename type="first">Kun</forename><surname>Wayne Xin Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junyi</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaolei</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yupeng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yingqian</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Beichen</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junjie</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zican</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Dong</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.18223</idno>
+		<title level="m">A survey of large language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

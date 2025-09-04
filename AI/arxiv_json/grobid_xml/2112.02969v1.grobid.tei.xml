@@ -1,0 +1,1669 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Jigsaw: Large Language Models meet Program Synthesis</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2021-12-06">6 Dec 2021</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Naman</forename><surname>Jain</surname></persName>
+							<email>t-namanjain@microsoft.com</email>
+						</author>
+						<author>
+							<persName><forename type="first">Skanda</forename><surname>Vaidyanath</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Arun</forename><surname>Iyer</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Nagarajan</forename><surname>Natarajan</surname></persName>
+							<email>nagarajn@microsoft.com</email>
+						</author>
+						<author>
+							<persName><forename type="first">Suresh</forename><surname>Parthasarathy</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Sriram</forename><surname>Rajamani</surname></persName>
+							<email>sriram@microsoft.com</email>
+						</author>
+						<author>
+							<persName><forename type="first">Rahul</forename><surname>Sharma</surname></persName>
+						</author>
+						<author>
+							<affiliation key="aff0">
+								<orgName type="institution">Microsoft Research Bangalore</orgName>
+								<address>
+									<country key="IN">India</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff1">
+								<orgName type="institution">Stanford University Stanford</orgName>
+								<address>
+									<country key="US">USA</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff2">
+								<orgName type="institution">Microsoft Research Bangalore</orgName>
+								<address>
+									<country key="IN">India</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff3">
+								<orgName type="institution">Microsoft Research Bangalore</orgName>
+								<address>
+									<country key="IN">India</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff4">
+								<orgName type="institution">Microsoft Research Bangalore</orgName>
+								<address>
+									<country key="IN">India</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff5">
+								<orgName type="institution">Microsoft Research Bangalore</orgName>
+								<address>
+									<country key="IN">India</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff6">
+								<orgName type="institution">Microsoft Research Bangalore</orgName>
+								<address>
+									<country key="IN">India</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Jigsaw: Large Language Models meet Program Synthesis</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2021-12-06">6 Dec 2021</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">17E41DDA7E697128082ABDA886B998D2</idno>
+					<idno type="arXiv">arXiv:2112.02969v1[cs.SE]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:20+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large pre-trained language models such as , Codex [11], and Google's language model <ref type="bibr" target="#b5">[7]</ref> are now capable of generating code from natural language specifications of programmer intent. We view these developments with a mixture of optimism and caution. On the optimistic side, such large language models have the potential to improve productivity by providing an automated AI pair programmer for every programmer in the world. On the cautionary side, since these large language models do not understand program semantics, they offer no guarantees about quality of the suggested code. In this paper, we present an approach to augment these large language models with post-processing steps based on program analysis and synthesis techniques, that understand the syntax and semantics of programs. Further, we show that such techniques can make use of user feedback and improve with usage. We present our experiences from building and evaluating such a tool Jigsaw, targeted at synthesizing code for using Python Pandas API using multi-modal inputs. Our experience suggests that as these large language models evolve for synthesizing code from intent, Jigsaw has an important role to play in improving the accuracy of the systems.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">INTRODUCTION</head><p>Pre-trained large language models (PTLM) such as GPT-3 <ref type="bibr" target="#b8">[10]</ref> are finding pervasive applications in Natural Language Processing (NLP), as a general purpose platform to solve many NLP tasks. Recent efforts show that PTLMs can generate code from natural language prompts, by associating documentation text with code from a large training set [1, <ref type="bibr" target="#b5">7,</ref><ref type="bibr" target="#b9">11]</ref>. This presents a new avenue for program synthesis. However, PTLMs do not "understand" either the syntax or semantics of the code, and treat code as text <ref type="bibr" target="#b5">[7]</ref>. Consequently, the code produced by such models has no guarantees of correctness or quality. Hence, any system that uses such PTLMs to generate code will need to augment it with program analysis and program synthesis modules to ensure correctness. In this paper, we present the design and empirical evaluation of such a multimodal program synthesis system called Jigsaw, which is targeted specifically at synthesizing code for using large and complex APIs.</p><p>Jigsaw is multi-modal (as depicted in Figure <ref type="figure" target="#fig_0">1</ref>) in the sense that it can ingest input as (1) a natural language string expressing intent and (2) a set of test cases, or input-output examples, and produces a code snippet as output. Future incarnations may be designed to * Work done by author during internship at Microsoft Research, India  <ref type="figure" target="#fig_1">2</ref>. The pre-processing module converts the natural language intent into a customized query to send to the PTLM. The post-processing module performs syntactic and semantic checks, and performs transformations on the code produced by the PTLM, ensuring that the code passes the supplied test cases and other quality checks. The transformations are specifically designed to correct common and recurring errors made by PTLMs, such as referencing errors (where the code references variable names incorrectly), argument errors (where the code invokes the correct API, but with incorrect arguments), and a class of semantic errors (which can be corrected by learning AST-to-AST transformations). Section 2 shows concrete examples of such errors, and Section 3 shows how the transformations correct such errors. Jigsaw learns from usage by incorporating user feedback into both pre-processing and post-processing modules, and learns from user engagements to improve its overall quality. Our experiments show how Jigsaw is able to learn from past usage to improve future performance.</p><p>The current version of Jigsaw is designed and evaluated to synthesize code for the Python Pandas API <ref type="bibr" target="#b25">[27]</ref>. However, the principles behind the design of Jigsaw are general, and the design can be extended to other libraries and programming languages as well. We create a user interface for Jigsaw using a Jupyter notebook [2] extension. The extension can be invoked using a magic command, and invocation of the command creates a sidebar window with a Jigsaw card for each invocation. The Jigsaw card allows users to supply and edit inputs to the system, inspect the results and copy the desired output back into the main notebook window.</p><p>We evaluate Jigsaw in terms of the overall accuracy, as well as accuracy of the components of the pre-processing and post-processing modules, on two datasets we created: PandasEval1, created by the authors of this paper, and PandasEval2, created by 25 users during a hackathon, where participants were given points for solving Python Pandas tasks using Jigsaw. The hackathon was conducted across two sessions (details in Section 4). We used user feedback from the first session to improve the pre-processing and post-processing modules of Jigsaw, and found users were about to solve about 10% more tasks in the second session, due to learning improvements from the first session.</p><p>We instantiate Jigsaw with two state-of-the-art PTLMs: GPT-3 <ref type="bibr" target="#b8">[10]</ref> and Codex <ref type="bibr" target="#b9">[11]</ref>, and present comprehensive evaluations in Section 5. We show the overall improved performance of Jigsaw compared to baselines and state-of-the-art code synthesis frameworks on the two datasets, as well as gains due to learning from user feedback over time.</p><p>In summary, this paper makes the following contributions:</p><p>• We present an architecture to perform code synthesis by augmenting black-box PTLMs with program analysis and synthesis-based techniques and multi-modal specifications.</p><p>We have implemented the architecture in a tool called Jigsaw.</p><p>We have developed a Jupyter notebook extension that allows users to interact with the system seamlessly. • We characterize common classes of errors made by PTLMs, namely, reference errors, argument errors, and semantic errors. Motivated by these errors, we have designed program analysis and synthesis techniques in Jigsaw to fix such errors in code snippets produced by PTLMs. We have also designed techniques to learn from user feedback and improve with usage. • We have created two Pandas datasets with multi-modal specifications (provided in the supplementary material, and to be released for community use). Using two state-of-the-art PTLMs, we show that Jigsaw yields significantly higher accuracy compared to baselines on the two datasets.</p><p>Our hypothesis is that even as PTLMs for code improve, systems such as Jigsaw that perform pre-processing and post-processing modules will be crucial to improve user experience, and enhance the quality of the output produced. This is because PTLMs inherently do not understand the syntax or semantics of code they generate, so we expect gaps to remain between PTLM output and user expectation. Tools based on program analysis and synthesis techniques that understand the code and API syntax and semantics can address these gaps better than generic PTLMs. We discuss how to design pre-processing and post-processing modules in a general manner, so that Jigsaw can work for any language and any API.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">JIGSAW OVERVIEW</head><p>Jigsaw is a multi-modal, interactive code synthesis system where (a) the user specifies intent via a combination of natural language description and test cases (i.e., input-output (I/O) examples); and (b) the user interacts with the system via a friendly and seamless interface integrated with the programming environment. The interactive aspect of Jigsaw is crucial for the developer to refine the possibly ambiguous intent specification as well as for the system to gather useful feedback for improving the components. In this section, we highlight some of the challenges in using general-purpose PTLMs for specific domains with example queries, which directly motivates the design of our Jigsaw code synthesis pipeline.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Jigsaw design principles</head><p>We treat large language models as black-box, i.e., we can only query them. This is a reasonable assumption since the premise that the expertise and means to fine-tune the models is out of reach for most users. This design choice is motivated by three reasons: (a) there is a natural barrier to access these large models, and we can get only the output of the model for a given input via some interface (e.g., REST APIs), (b) these large language models constantly evolve and get better with each generation <ref type="bibr" target="#b8">[10,</ref><ref type="bibr" target="#b30">32]</ref>; treating them as blackboxes enables plug-and-play with minimal effort, and (c) finally, domain-specific improvements to large language models (e.g. for Python programming <ref type="bibr" target="#b13">[15]</ref>, general programming <ref type="bibr" target="#b9">[11]</ref>) are rendered complementary to our efforts rather than competitive.</p><p>We configure Jigsaw with a PTLM (GPT-3 and Codex, in this work) of choice to be used as a black-box. We focus on appropriately setting up or priming these models for a given task at hand, characterizing common failure modes of PTLMs for code synthesis, and building components that can overcome such recurring failures. We rely on both program synthesis-based techniques and multi-modal specification to design these components. Our goal is to enable synthesis of syntactically and semantically correct code snippets for a given domain and using feedback from usage to improve the system over time.</p><p>The pre-processing module of Jigsaw contextualizes the input to the black-box language model using heuristic techniques (akin to recent efforts <ref type="bibr" target="#b21">[23,</ref><ref type="bibr" target="#b28">30,</ref><ref type="bibr" target="#b42">44]</ref>). A key contribution of our system is in its post-processing module:(a) speeding up the combinatorial search space of API functions and their arguments, and (b) learning and updating a set of transformation or re-write rules to be applied to the erroneous snippets output by PTLMs. The post-processing module uses I/O examples to choose the appropriate transformation.</p><p>In the rest of the paper, we instantiate Jigsaw for solving data transformation tasks with Python Pandas API, which is widely used by data scientists to process tabular data <ref type="bibr" target="#b25">[27]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">PTLMs as black-box</head><p>Consider a typical scenario where the user wants to load and examine the data in a csv file. Pandas uses dataframe objects (twodimensional tabular representation) to store and process heterogeneous data (commonly named with df prefixes in the code, like df, df1, df2, dfin). The user invokes Jigsaw with a simple natural language description of the intent in a cell of Jupyter Notebook: %jigsaw -q "Load ./data.csv file"</p><p>The "magic command" %jigsaw invokes the synthesis pipeline with the given query. Jigsaw (configured with GPT-3) returns the following snippets for the above query:</p><formula xml:id="formula_0">§ ¤ df =</formula><p>pd.read_csv('./data.csv') csv = pd.read_csv('./data.csv', header=None) ¦ ¥ Pre-process inputs Natural language Input/output examples Other specifications e.g. Assertions Pre-trained language model PTLM Post-process outputs Correct program (edited by users) Learning from user feedback The user then issues the following query in the session: %jigsaw -q "Remove substring 'Name:' from column 'country' of df"</p><p>Jigsaw produces the following snippets. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>A key knob in PTLMs is setting the right context for a given user query. This context is passed as an input to the PTLM in addition to the user query. To this end, Jigsaw first prepares the input in the pre-processing stage (details in Section 3.2). The preparation involves assembling a set of "relevant" question-answer pairs to inform the PTLM of the nature of the input task -which is converting natural language text to Python code, specifically, Pandas code. With the context selection in the pre-processing stage, Jigsaw produces the desired code snippets shown above. In contrast, the GPT-3 model without context selection produces the following incorrect snippet for the above query:</p><p>§ ¤ df = df.country.str.remove('Name:')</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>Recent studies, both in the context of natural language understanding <ref type="bibr" target="#b28">[30,</ref><ref type="bibr" target="#b42">44]</ref> as well as in the programming <ref type="bibr" target="#b5">[7]</ref> domains, have shown the influence and importance of context selection in the output of PTLMs. Our work provides further evidence that context selection can significantly impact the quality of the code generated for Pandas programming tasks, with two different PTLMs, demonstrated in Section 5.4.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3">Learning to fix recurring failure modes of PTLMs</head><p>The core aspect of Jigsaw system design is incorporating a postprocessing phase that involves: (a) characterizing, (b) transforming the (syntactically and/or semantically) erroneous code snippets, and, more importantly, (c) endowing the system with the capability to improve (in terms of accuracy) from feedback as more users interact with it over time.</p><p>Below, we highlight common classes of errors we observe over two different Pandas programming datasets (created by us, and described in Section 4) using two different PTLMs, namely GPT-3 and Codex. 1. Referencing errors: We observe that, even with suitable context, PTLMs can produce incorrect referencing of variable names in otherwise accurate code snippets. 2. Incorrect arguments: In some cases, PTLMs produce code with the right composition of API functions, but with incorrect arguments. For instance, consider the following invocation: %jigsaw -q "remove all duplicate entries of column 'inputB'" § ¤ dfout = df.drop_duplicates(subset=['inpB']) # PTLM dfout = df.drop_duplicates(subset=['inpB'],keep=False) # Correct ¦ ¥ 3. Semantic errors: A recurring failure mode for the PTLMs we have experimented with is that they produce code snippets that are almost correct, but the semantics are wrong because of a minor error. We can quantify this via suitable edit distance between the ASTs of the produced and the correct (i.e., intended) code snippets. For instance, consider the following invocation: %jigsaw -q "Get fourth value from column 'C' in dfin and assign to dfout" § ¤ dfout = dfin.ix[3, 'C'] # PTLM dfout = dfin.loc[3, 'C'] # Correct</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>Jigsaw employs a post-processing phase that critically relies on the multi-modal specification (I/O examples, in particular) to overcome the aforementioned recurring failures. To this end, we pass the incorrect output code snippet from PTLM (which can be ascertained with the help of I/O examples in the specification) through a series of components driven by PL-based techniques (details in Section 3.3). The two key ideas are outlined below.</p><p>(1) Using the API functions in the incorrect code snippets produced by PTLM, we seed the enumerative search for the right arguments. We perform this search efficiently adapting the AutoPandas framework <ref type="bibr" target="#b7">[9]</ref> which is an enumerative-search based programming by examples framework built for Pandas API.</p><p>(2) The user interface of Jigsaw enables getting feedback which is then used by our system to learn a set of AST-to-AST transformations using the Prose synthesis framework <ref type="bibr" target="#b14">[16,</ref><ref type="bibr" target="#b29">31]</ref>. The challenge here lies in clustering errors that are alike so that a small set of general transformations can be learnt.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">JIGSAW ARCHITECTURE</head><p>The architecture of Jigsaw is depicted in Figure <ref type="figure" target="#fig_1">2</ref>. In this section, we describe each module in detail.</p><p>§ ¤ gpt3 = GPT(engine="davinci", temperature =0.</p><p>5, max_tokens=100) # Examples to train a English to French translator gpt3 . add_example(Example('What is your name?', ' quel est votre nom?')) gpt3 . add_example(Example('What are you doing?' , ' Que faites -vois? ' ) ) gpt3 . add_example(Example('How are you?', ' Comment allex-vous?')) # Input to the model prompt3 = "where are you?" output3 = gpt3 . submit_request(prompt3) # Model output output3. choices . text</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>Output: Où êtes-vous?</p><p>Figure <ref type="figure">3</ref>: English to French translation using GPT-3</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Pre-trained Language Models</head><p>We describe Pre-trained Language Models (PTLMs) using GPT-3 as an example. GPT-3 stands for "Generative Pre-trained Transformer 3", which is the third version of a large transformer model developed by OpenAI.GPT-3 is a neural model with 175 billion parameters, trained on a very large corpus consisting of publicly available datasets such as CommonCrawl 1 , WebRText dataset, two internet-based books corpora, and English Wikipedia. GPT-3 is a general-purpose model that can be customized to perform a variety of NLP tasks. Such customizations do not involve fine-tuning the ML model for the specific task at hand. Instead, the user of GPT-3 can describe the task using a few examples (on the order of 4-5 examples works usually), and GPT-3 is then able to produce answers for the specific task. A session with GPT-3 has the form:</p><formula xml:id="formula_1">(𝑄 1 , 𝐴 1 ), (𝑄 2 , 𝐴 2 ), . . . , (𝑄 𝑘 , 𝐴 𝑘 ), 𝑄,</formula><p>where 𝑘 is a small number (typically 4 or 5), the pairs (𝑄 𝑖 , 𝐴 𝑖 ) are question-answer pairs to describe the task we want GPT-3 to perform, and 𝑄 is the question for which we seek an answer. For example, if (𝑄 𝑖 , 𝐴 𝑖 ) are such that 𝑄 𝑖 are English statements and 𝐴 𝑖 are corresponding French translations, then GPT-3 becomes an English-French language translator. See session in Figure <ref type="figure">3</ref>.</p><p>Other recent PTLMs include Codex <ref type="bibr" target="#b9">[11]</ref>, which is OpenAI's recent language model trained specifically on code, and Google's large language model <ref type="bibr" target="#b5">[7]</ref>; these models translate natural language to program. Jigsaw uses PTLMs to produce Pandas code, given a natural language description of intent, and test cases. Specifically, Jigsaw session with GPT-3 has the form: (𝑁 1 , 𝑃 1 ), (𝑁 2 , 𝑃 2 ), . . . , (𝑁 𝑘 , 𝑃 𝑘 ), 𝑁 where 𝑁 𝑖 is English description of intent, and 𝑃 𝑖 is the code snippet we want the PTLM to produce. We currently do not pass inputoutput examples to the PTLM. Instead, we use these test cases to check and filter the candidate codes produced by the PTLM during post-processing, or transform the code produced by the PTLM such that it passes the test cases.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Pre-processing</head><p>The goal of Jigsaw's pre-processing module is to convert the user intent into a suitable query for the PTLM. As mentioned above, PTLMs take a sequence of question-answer pairs (𝑁 1 , 𝑃 1 ), (𝑁 2 , 𝑃 2 ), . . . , (𝑁 𝑘 , 𝑃 𝑘 ) as a preamble before we supply the current query. We use the term context to denote this preamble. Previous works in natural language processing (NLP) <ref type="bibr" target="#b21">[23,</ref><ref type="bibr" target="#b28">30,</ref><ref type="bibr" target="#b42">44]</ref> have shown that ) that are used to teach the API. When the user asks a question, the question is fed to a context selector that uses a text similarity metric to pick the most relevant prompts from the context bank (see Figure <ref type="figure" target="#fig_3">4</ref>). We study two kinds of similarity metrics for the context selector: a) tf-idf similarity <ref type="bibr" target="#b35">[37]</ref> (TFIDF), and b) transformer similarity <ref type="bibr" target="#b33">[35]</ref> (TRANSFORMER) . The context thus produced is appended with the current query and fed as input to the PTLM.</p><p>In cases where Jigsaw is unable to produce the correct answer, we let users make changes to the incorrect Jigsaw code and use such a feedback to enhance the context bank (details in Section 3.4). PTLMs also take an input parameter called temperature. Lower values of temperature result in fewer accurate answers. Higher values result in a less accurate but more diverse set of answers. We report on how we pick temperature values in Section 5.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Post-processing</head><p>The code snippets produced by the PTLM vary in accuracy and quality, depending on the natural language sentences used to ask to encode the question, the context bank supplied, the context selection as well as the temperature parameter. The goal of Jigsaw's post-processing step is to filter and transform the output produced by the PTLM to produce a correct answer. Our measure of correctness is that the code produced should pass the I/O examples specified by the user. In many cases, the code does not parse or fails with an exception. We consider such cases as test failures. If a non-empty set of candidate solutions produced by the PTLM satisfies the test cases, then we merely show those code snippets to the user. Our experience is that for about 30%-60% of the cases (depending on the PTLM and the dataset), the PTLM produces correct outputs. In the remaining cases, Jigsaw uses the candidate solutions produced by PTLM as starting points and performs transformations on candidate code snippets using simple program analysis and synthesis techniques to produce correct solutions. We describe the correctness checks and transformations below: Correctness checks: In cases where we have I/O examples, we run the candidate code snippet starting with each of the specified inputs, and check if the output produced agrees with the corresponding specified output. This check can be expanded to include static analyses to check for security vulnerabilities and other errors, as motivated by recent work <ref type="bibr" target="#b27">[29]</ref>. Variable Name transformations: In some cases, PTLMs produce accurate code snippets, but with incorrect variable names. This is often due to the model's bias towards common variable names like df for Pandas dataframes and also because users assume variable referencing to be implicit. As an example, we find that GPT-3 produces the code snippet df1 . merge ( df2 ) when the correct answer is df2 . merge ( df1 ). Since users specify inputs and output variables in the natural language description or in test cases, this post-processing step uses such information from multi-modal inputs, as well as names of variables in scope, by systematically searching over potential variables, and trying possible permutations and combinations of variable names so as to pass the test cases. Argument transformations: In some cases, the PTLMs produce code snippets with correct method names and method sequences (in case multiple methods need to be invoked in a nested manner or one after another), but with incorrect arguments. <ref type="bibr">As</ref> an example, in response to the query "replace 'United States' in 'location' by 'US' and '3434' in 'zip' by '4343'", Codex produces: § ¤ dfout = df.replace({'United States':'US', 3434:4343}) ¦ ¥ This snippet invokes the correct method replace, but misses the detail in the question that 'United States' and 3434 must be replaced with 'US' and 4343 only when these values are present in the columns 'location' and 'zip' respectively. The correct code synthesized by Jigsaw for this query is as shown below: § ¤ dfout = dfin.replace({'location':{'United States':'US'}, 'zip':{3434:4343}})</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>Motivated by such cases, this post-processing step systematically searches through arguments from an inferred argument space for a given sequence of method/function names. In order to implement the systematic search over the space of arguments, we adapt the approach used by Autopandas tool <ref type="bibr" target="#b7">[9]</ref>, with the following modifications. Autopandas uses a Graph Neural Network, that takes I/O examples as input, to choose method names. However, we need a lot of domain-specific data to train such neural networks. In our case, we simply extract the method names from the output of PTLM given the natural language query (which readily scales to programming domains beyond Pandas). The argument space to perform the search is inferred using the natural language text input, the arguments present in the PTLM output, the column names from the dataframe schema as well as variables in scope. We extend the generators in Autopandas to consider complex data types such as lists and dictionaries, and we extend the set of APIs considered to include APIs that return Pandas Series types ( one-dimensional labeled arrays capable of holding data of any type) in addition to the ones that return Pandas dataframe types. With these modifications, we find that Jigsaw is able to transform several incorrect code snippets produced by the PTLM to correct code snippets (as shown in Section 5).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>AST-to-AST transformations:</head><p>In some cases, we find that the PTLM produces code that is almost correct but has a minor error.</p><p>We also find that such errors are repeatedly made by the PLTM, and are fixable with suitable AST-to-AST transformations, learned from user interactions with Jigsaw. As a specific example, we find GPT-3 often misses the bitwise not operator, and produces the code:</p><formula xml:id="formula_2">§ ¤ train = data[data.index.isin(test.index)]} ¦ ¥</formula><p>instead of the following correct code with the bitwise not operator:</p><formula xml:id="formula_3">§ ¤ train = data[~data.index.isin(test.index)]}</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>As another example, we find that GPT-3 misses paranthesizations, which results in the generated code raising an exception. Specifically, the generated code is:</p><formula xml:id="formula_4">§ ¤ dfout = dfin[dfin['bar']&lt;38|dfin['bar']&gt;60]</formula><p>¦ ¥ instead of the following code synthesized by Jigsaw which is parenthesized correctly:</p><formula xml:id="formula_5">§ ¤ dfout = dfin[(dfin['bar']&lt;38)|(dfin['bar']&gt;60)]</formula><p>¦ ¥ Such errors cannot be fixed via variable name transformation or argument transformations. Jigsaw corrects such errors by learning re-writing rules as AST-to-AST transformations. These transformations are applications of production rules from grammar used in BluePencil <ref type="bibr" target="#b24">[26]</ref> which is used for suggesting code re-factorings. However, it is not possible to learn these rules at the appropriate level of generality from a single example. This generality is necessary so that the missing negation or parenthesizing can be corrected by the learnt transformation, even if the same pattern is repeated with a different set of variables or constants. To achieve this, we collect data from user interactions, where the user edits the answer produced by Jigsaw to produce the correct code. We cluster the data points (i.e., code snippets) so that similar data points are grouped together and we learn a single AST-to-AST transformation that is able to handle all the data points in a cluster. Unlike the case of refactoring where users will implicitly hint at clustering of similar edits (by attempting them one after the other), we resort to a greedy heuristics-based clustering algorithm. This clustering is performed in an online fashion as we get more data points for learning ASTto-AST transformations. For each data point, we decide if the data point is grouped inside an existing cluster or instantiate a new cluster. In the former case, we check if the AST-to-AST transformations from the existing cluster can be re-learnt to be more general, and if so, re-learn the transformations. In addition, we perturb the data points in each cluster to change variable names and constants, in order to prevent learning transformations that over-fit. Together with the above-mentioned clustering and perturbation heuristics, we find that we are able to learn transformations at the appropriate level of generality (Section 5.2.1). Code has well-defined structure, usually represented as abstract syntax trees. We take advantage of this structure while learning these AST-to-AST tree transformations. We use the PROSE program synthesis system <ref type="bibr" target="#b14">[16,</ref><ref type="bibr" target="#b29">31]</ref> to learn the transformations from a cluster of incorrect-correct code snippets. While Jigsaw currently works only on Python code, the post-processing step works at the level of ASTs, and can be made to work across programming languages as well. For instance, in <ref type="bibr" target="#b24">[26]</ref> the same tools are deployed to learn non-trivial code refactoring in C#, SQL, Markdown, and spreadsheets.</p><p>We refer to Argument transformations and AST-to-AST transformations together as Semantic Repair in experiments (Section 5).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">Learning from user feedback</head><p>The user interface of Jigsaw (integrated into the Jupyter notebook) is designed to let users submit correct code in cases where Jigsaw is incorrect. Jigsaw can be improved by assimilating user feedback. Specifically, we design techniques for updating context-bank in the pre-processing module and AST-to-AST transformations in the post-processing steps, as more users interact with Jigsaw. Updating context bank: The procedure for updating context bank with user queries is given in Algorithm 1. We first check whether Jigsaw already found a correct solution for the given (new) query 𝑁 , thus giving us some confidence about its correctness. Otherwise, we check if any of the solutions generated by Jigsaw is "close" to some correct code (determined by the standard edit distance on strings d EDIT and a chosen threshold 𝜖 CODE ). If either of the two conditions is satisfied, we add the new query to our context bank while additionally ensuring that a similar query already does not exist (via TFIDF based distance d TFIDF and a threshold 𝜖 BANK ). With Updating transformations: For query paired with correct code snippet(s), we select all incorrect codes suggested by PTLM within some small edit distance of a correct code. The AST-to-AST transformations learning sub-module performs clustering (with perturbations) on the selected code snippets as discussed in the above subsection, and updates the set of transformations.</p><p>While the above pre-processing and post-processing steps were designed in the context of the Python Pandas API, we believe that ideas such as context selection, correctness checking, and transformations are general and that it is possible to design pre-processing and post-processing steps in a generic manner that can work across languages and APIs. For each API, specific transformation rules can be learnt from usage data generated by users of that API.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">DATASETS</head><p>We perform our experiments on two different datasets<ref type="foot" target="#foot_0">foot_0</ref> .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">PandasEval dataset PandasEval1</head><p>This dataset consists of 68 Python Pandas tasks. Each task can be solved using a single line of code by composing at most 2-3 Pandas functions; sometimes followed by assigning variables. This dataset was created by authors of this paper by going through queries in online forums like <ref type="bibr">StackOverflow</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Hackathon dataset PandasEval2</head><p>This dataset consists of 21 Pandas tasks; each task can be solved by composing at most 2-3 Pandas functions, possibly followed by assigning variables, as in the PandasEval1 dataset. We posed these tasks as illustrations, in a hackathon we conducted with 25 users over 2 different sessions. Table <ref type="table" target="#tab_4">1</ref> presents self-reported proficiency of the users in Python and Pandas. An example illustration that shows the intent of a task is given in Figure <ref type="figure" target="#fig_5">5</ref>. Users were asked to read such pictorial illustrations and come up with their own natural language (English) query constructions for each task. We then collected the queries written by the users, clustered, and annotated them to produce the PandasEval2 dataset comprising of a total 725 unique queries constructions. The task corresponding to the illustration in Figure <ref type="figure" target="#fig_5">5</ref>, from the dataset PandasEval2, is shown below. Here dfin and dfout refer to the dataframes in Figure <ref type="figure" target="#fig_5">5</ref>. We note that while users provided precise and clear natural language queries in many cases, they also came up with imprecise and incorrect formulations in some cases. For instance, in the spec shown above, the query provided by user1 is correct, whereas the one provided by user2 is incorrect because the word "France" is present in the "IATA" column as well; Figure <ref type="figure" target="#fig_5">5</ref> conveys that only the "country" column needs to change, and not the "IATA" column.</p><p>Since such queries were created by users interacting with the system, and users tend to make mistakes, it is useful to have such variations in the dataset. While curating the dataset, we removed natural language queries that were clearly incorrect, and retained queries that were imprecise and partially correct. As mentioned earlier, we conducted the hackathon over two sessions. We use PandasEval2_S1 to denote the dataset generated from user queries from the first session, and PandasEval2_S2 to denote the dataset generated from user queries from the second session. For each of the 21 tasks, we created semantic variations (e.g. changing constants, API arguments) of the same task. Consequently, users in the second session (PandasEval2_S2) saw different variants of the tasks when compared to users in the first session (PandasEval2_S1). Specifically, 3 tasks were exactly the same, 9 had differences in constants and 9 had changes in arguments. We introduced these variants in order to study if Jigsaw can learn from usage in the first session to improve user experience in the second session (see Section 5.2). We use PandasEval2 to denote the union of PandasEval2_S1 and PandasEval2_S2.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">EXPERIMENTS</head><p>We evaluate Jigsaw on the two datasets introduced in Section 4, with emphasis on the following questions: a) How accurate is the Jigsaw system compared to the black-box PTLMs and other code synthesis methods? b) What is the utility and applicability of the individual Jigsaw components (in the pre-processing and post-processing modules)? c) Can these components benefit from feedback over time as more users interact with the system?</p><p>For the first question, we evaluate Jigsaw in an offline setting, i.e., without learning from any feedback (in Sections 5.1); and present comparisons against the state-of-the-art AutoPandas framework, which generates Pandas snippets using only I/O example (in Section 5.3). For the second question, we perform a temporal study on the PandasEval2 dataset (in Section 5.2), where we leverage user feedback from the first hackathon session to update the system and measure the performance improvement in the second session. We also perform ablation studies (in Section 5.4) pertaining to our context selection sub-module. We end with a preliminary evaluation of Jigsaw on tasks pertaining to the TensforFlow API (in Section 5.5).</p><p>We consider accuracy as our primary evaluation metric, i.e., fraction of specifications in the dataset for which a correct program was synthesized. We define a program as correct if it satisfies the given I/O examples, and additionally passes a manual inspection of whether the synthesized code meets the intent of the natural language description. The manual inspection helps us reject programs that satisfy the I/O examples by overfitting on them and violate the general intent of the natural language descriptions. Note that there is inherent randomness in the output of the PTLMs, so we run every evaluation three times and report the mean accuracy (%) and standard deviation (over the runs). In some cases, we also present task completion metric which is the percentage of tasks correctly solved by a user (regardless of the number of queries used to solve a task) interacting with the system. Furthermore, in every case, we present the best accuracy obtained by varying the temperature parameter of PTLM ∈ {0, 0.2, 0.4, 0.6}.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">Offline evaluation</head><p>In Table <ref type="table" target="#tab_9">2</ref>, we present the performance of Jigsaw on PandasEval1 and PandasEval2 datasets, with GPT-3 and Codex as black-box PTLMs. The second column of the table indicates the context selection strategy for the PTLM. For this study, we consider NO-CONTEXT (no tailored context provided for the user query; we use a default context: "import pandas as pd"), and TRANSFORMER (Transformer similarity based context selection, discussed in Section 3) with number of context prompts fixed as 4. Each cell in the table gives the accuracy metric with mean and standard deviation as defined above. For Jigsaw, the column titled Variable Name indicates the performance of the system using only this part of the post-processing module; and the column titled Semantic Repair indicates the performance of the system in its entirety, i.e., running Variable Name transformations followed by Semantic Repair (Argument transformations and AST-to-AST transformations).</p><p>Comparing PTLM and Semantic Repair columns, it is evident that Jigsaw improves upon the black-box PTLMs, in terms of accuracy, by 15%-40% irrespective of the context selection strategy, on both the datasets as well as on both the PTLMs. These results underscore the utility of program analysis-based augmentation of large language models.</p><p>Next, from Table <ref type="table" target="#tab_9">2</ref>, we find that providing useful context for the language model along with the query significantly improves upon not providing any context (comparing rows 1 vs 2, and rows 3 vs 4), across the datasets and PTLMs. It is clear that PTLM with TRANSFORMER context is better than NO-CONTEXT by a margin ∼ 5% (without post-processing) and up to 15% with post-processing for Codex on the two datasets. For GPT-3, TRANSFORMER context is significantly better than NO-CONTEXT on the PandasEval2 dataset and on PandasEval1, the numbers are statistically insignificant. PTLMs require some initial context in the form of examples to characterize the task to be solved, and these results underscore the importance of having a pre-processing module in Jigsaw.</p><p>Finally, from Table <ref type="table" target="#tab_9">2</ref>, we also observe the effectiveness of the individual post-processing modules of Jigsaw, as discussed below. Note that, for these results, we seed our AST-to-AST transformations using a small dataset collected from StackOverflow questions. Later, in Section 5.2, we show that these numbers can be significantly improved by learning transformations from usage over time. Variable Name transformations: PTLMs make variable referencing errors (as noted in Section 2) because of its implicit bias towards common dataframe names such as df, df1, df2, dfout and also because users tend to not specify variables explicitly in their queries. We find that this simple post-processing module gives an improvement of 10%-30% for Codex and 10%-15% for GPT-3. Semantic Repair: We see that the semantic repair post-processing module improves absolute performance of Codex by ∼ 5% and of GPT-3 by 6%-11%. This underscores the significance of using program analysis techniques to augment language models that do not have inherent understanding of code semantics. Recall (from Section 3) that Semantic Repair consists of Argument transformations and AST-to-AST transformations sub-modules. We find that, using just the Argument transformations (without AST-to-AST transformations), improves absolute performance of the system by 5%-9% and 3%-5% for GPT-3 and Codex respectively (not shown in</p><p>Table 2). PandasEval1 PandasEval2 PTLM Variable Name Semantic Repair PTLM Variable Name Semantic Repair GPT-3 NO-CONTEXT 30.9 ± 1.2 38.2 ± 2.4 44.6 ± 3.9 8.9 ± 0.6 24.8 ± 0.9 33.6 ± 0.5 TRANSFORMER 33.8 ± 2.4 41.7 ± 2.5 47.1 ± 2.1 6.6 ± 0.2 24.3 ± 0.8 35.1 ± 0.7 Codex NO-CONTEXT 45.6 ± 1.2 54.9 ± 0.7 59.8 ± 3.5 26.8 ± 1.2 51.0 ± 0.6 56.8 ± 0.3 TRANSFORMER 52.0 ± 0.7 63.7 ± 0.7 66.7 ± 0.7 31.2 ± 0.2 67.5 ± 0.5 72.2 ± 0.5 Table <ref type="table" target="#tab_9">2</ref>: Performance (mean accuracy ± std. deviation) after different stages of the Jigsaw pipeline on PandasEval1 and PandasEval2 datasets. Jigsaw post-processing steps significantly improves upon PTLMs irrespective of context selection strategy. Pre-processing clearly benefits, comparing rows 1 vs 2, and 3 vs 4.</p><p>Similarly, using AST-to-AST transformations alone (without Argument transformations), we obtain improvement of up to 3.5% for GPT-3 and 1.3% for Codex (not shown in Table <ref type="table" target="#tab_9">2</ref>).</p><p>We find that our post-processing steps are reasonably fast; time taken by Jigsaw is primarily bottle-necked by the inference times of PTLM APIs. Specifically, on average getting output from Codex takes ∼ 7 seconds while our post-processing module takes &lt; 3 seconds. Similarly, on average, GPT-3 takes 30-40 seconds for different context sizes while post-processing finishes in &lt; 10 seconds.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Temporal evaluation</head><p>In this section, we evaluate Jigsaw on its ability to learn and improve with user feedback. We perform this evaluation on the PandasEval2 dataset. Recall that the hackathon was organized over two separate sessions; so, we use the submissions and feedback for tasks in the first session, corresponding to the PandasEval2_S1 dataset, to (a) update our context bank, (b) learn AST-to-AST transformations, and (c) evaluate Jigsaw on the PandasEval2_S2 dataset consisting of variants of the tasks in PandasEval2_S1 (as described in Section 4.2). Updating pre-processing module: We follow Algorithm 1 (with 𝜖 CODE = 25, 𝜖 BANK = 0.15) and filter out badly written queries from the first session users. Note that, for the 3 tasks that are identical in the two sessions, we do not make any updates to the context bank. We denote our seeded context bank that was used in the first session (containing 243 question-answer pairs) with CS1 and the updated context bank updated resulting from Algorithm 1 with CS2 containing 371 (243 seeded + 128 new) question-answer pairs. Updating post-processing module: We follow the procedure described in Section 3.4 to learn AST-to-AST transformations from session one data along with seeded data. We use TS1 to denote transformations seeded during session one and TS2 to denote the new/updated transformations learned from session one data.</p><p>We compare the performance of Jigsaw on PandasEval2_S1 (with CS1 and TS1) against PandasEval2_S2 (with baseline CS1 and TS1, as well as with the updated context bank CS2 and transformations TS2) in Table <ref type="table">3</ref>. Each cell in the table is the mean accuracy and standard deviation on the corresponding dataset. Two observations are in order.</p><p>(1) Learning helps improve Jigsaw. It is evident that the performance of Jigsaw on the PandasEval2_S2 dataset with the default CS1-TS1 setting (column 3) is significantly lower than that of the updated CS2-TS2 setting (column 4) for both the PTLMs. Accuracy of the system with GPT-3 improves by over 30% due to the updated modules; even with Codex, which already performed quite well on all datasets, we still improve by ∼ 15% with updates.</p><p>(2) Second session was in general more challenging. We also observe that the performance on PandasEval2_S2 with the default PandasEval2_S1 PandasEval2_S2 CS1-TS1 CS1-TS1 CS2-TS2</p><p>GPT-3 45.9 ± 0.4 35.1 ± 0.8 67.2 ± 0.3 Codex 75.1 ± 0.5 69.0 ± 0.7 84.4 ± 0.8 Table <ref type="table">3</ref>: Performance (mean accuracy ± std. deviation) of Jigsaw without (CS1-TS1) and with (CS2-TS2) learning context bank and transformations from user feedback on the PandasEval2 dataset. Learning helps improve accuracy significantly, comparing columns 3 and 4.</p><p>CS1-TS1 setting (column 3) is significantly lower than that on PandasEval2_S1 with the same setting (column 2). This is because in general the second session was more challenging; partly due to the higher percentage of queries on difficult tasks, and the semantic differences in tasks across the two sessions. But when we use the updated the context and transformations banks, we find a drastic improvement in the performance on PandasEval2_S2, as highlighted in (1) above. This illustrates that Jigsaw has the ability to improve from user feedback, regardless of the PTLM used.</p><p>Finally, we also look at the task completion metric (described in the beginning of Section 5), to assess how the performance gains of learning from feedback translated to user experience during the hackathon. In session one, users we able to solve only 71% of the tasks on average; however, in session two, users were able to solve 82% of the tasks on average, thus making the experience of the Jigsaw system more productive with the updates.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>5.2.1</head><p>Analyzing learned AST-to-AST transformations. We present some of the learned AST-to-AST transformations applied to code snippets produced by GPT-3 in Table <ref type="table">4</ref>. The transformations were learned using the clustering and perturbing technique outlined in Section 3.3. We see that the code fixes are interpretable and they solve common semantic problems in the outputs of PTLMs. Please refer to supplementary material for details of the precise AST-to-AST transformations learnt corresponding to first two rows of Table <ref type="table">4</ref>.</p><p>For instance, consider the rule implied in the first row of Table <ref type="table">4</ref>, which is of inserting ~(bitwise not operator) inside subscript. This transformation, learned using the cluster of diverse code snippets in Listing 2, is fairly general (this is one of the clusters obtained by running our clustering technique on seeded and session one data). On the other hand, consider the last row of Table <ref type="table">4</ref>, which was learned using the cluster of code snippets in Listing 3. Since the clustered snippets follow a similar structure, the learned transformation works only when a new snippet has exactly the same logical conditional operators in the specific order. Thus, the quality of the learned transformations depends on the quality of the clustering § ¤</p><p># Task-1 dfout = df.loc[df.isnull().any(axis=1), :] #incorrect dfout = df.loc[~df.isnull().any(axis=1)] #correct # Task-2 df_p = df_p.loc[df_per["Name"].str.contains("Ch")] #incorrect df_p = df_p.loc[~df_per["Name"].str.contains("Ch")] #correct</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>Listing 2: Cluster of code snippets from two different tasks that yields the Bitwise-Not transformation in Table <ref type="table">4</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3">Comparison to AutoPandas</head><p>AutoPandas (AP) <ref type="bibr" target="#b7">[9]</ref>  In contrast, we make use of multi-modal specification (both natural language query and I/O examples). Programming by examples is known to have ambiguous under-specifications <ref type="bibr" target="#b17">[19,</ref><ref type="bibr" target="#b29">31]</ref>. From our experience this issue is exacerbated for large APIs that provide multiple ways for achieving similar functionalities. For instance, consider the specification in Figure <ref type="figure" target="#fig_0">1</ref>. If we only consider the I/O example for the given task, we can find many trivial solutions that just drop or select certain rows of dataframe.</p><p>We evaluate AP on our PandasEval1 and PandasEval2 datasets. As discussed in Section 3, AP does not support series operations, column assignments and dictionary or list generators, many of which are necessary in Pandas workflows. So, out of 68 tasks in the PandasEval1 dataset and 21 tasks in the PandasEval2 dataset, only 7 and 20 are covered by the AutoPandas framework respectively. Hence, we compare Jigsaw (instantiated with the Codex PTLM) against AP only on these 27 tasks and use a timeout of 3 minutes. In the first row of Table <ref type="table" target="#tab_7">5</ref>, we see that Jigsaw clearly outperforms AutoPandas even in the restricted subset solvable by AP. This is because 16 of the 27 tasks are under-specified if only I/O examples are used and AP returns over-fitting solution on many of these tasks; this highlights the necessity of multi-modality.</p><p>We also run Jigsaw on the AP dataset <ref type="bibr" target="#b7">[9]</ref>, where all tasks are supported by AutoPandas and I/O examples are sufficient. This dataset has been sourced from StackOverflow posts. Since Jigsaw uses text as the primary input, we add natural language descriptions in these posts for querying Codex. Table 6: Ablation study: Performance of Jigsaw with two context selection strategies. row of Table 5; while Codex alone is inferior to AP, Jigsaw (with Codex) performs better than AP.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.4">Ablation study</head><p>In both the offline and temporal evaluations presented in the previous subsections, we fixed the number of context prompts to 4 and TRANSFORMER as the context selector in the pre-processing module. In this ablation study, we ask if the performance of Jigsaw is sensitive to these choices, and provide justification for the same. All experiments in this section are carried out with the same setting as that of Section 5.1.</p><p>Table <ref type="table">6</ref> compares the performance of Jigsaw with two different context selection strategies, namely, TFIDF and TRANSFORMER. We find that the transformer context selector is slightly better, but more importantly, that the performance of Jigsaw is not sensitive to the selection strategy. Table <ref type="table" target="#tab_10">7</ref> compares the performance of Jigsaw with different number of context prompt examples, i.e., 1, 4, and 8. Our experiments show that while there isn't a significant difference between the performances of 4 prompts vs. 8 prompts, both perform better than using just 1 prompt. Again, Jigsaw is relatively robust to these choices.</p><p>Finally, note that all variations of these choices, for the number of prompts as well as the selection strategy, outperform the NO-CONTEXT setting (see Table 8: Preliminary results of Jigsaw with TensforFlow API.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.5">Beyond Pandas</head><p>To test the generality of Jigsaw, we did a preliminary evaluation with 25 TensorFlow [6] tasks sourced from TF-coder <ref type="bibr" target="#b36">[38]</ref> and online forums like StackOverflow. We setup the pre-processing module of Jigsaw similar to the offline evaluation, by creating a context bank of 25 prompts from documentation pages. We reuse the Variable Name module and do a what-if analysis for argument and tree transformations manually. Table <ref type="table">8</ref> shows the performance of Jigsaw on the TensorFlow dataset. As seen from the table, Codex alone is able to solve only 8 of the 25 tasks, variable transformation improves the performance to 15 tasks. We manually compare the code outputs to the expected output, to check if argument and tree transformations can be learnt. Based on this analysis, we find that Semantic Repair can potentially improve the performance to 19 tasks. We show some examples below. For the query "Given a tensor in1, replace all instances of 1 with 0", PTLM outputs the following:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>§ ¤</head><p>tf.where(x == 1, 0, x)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>The correct code for this query, synthesized by Jigsaw using variable transformation, is shown below:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>§ ¤</head><p>tf.where(in1 == 1, 0, in1)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>For the query "Given a tensor in1 and a tensor of indices ind, get the sum of elements present at indices in ind from tensor in1. ", the PTLM outputs the following incorrect code:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>§ ¤</head><p>tf.gather(in1, ind)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>The correct code, shown below, can be synthesized by Jigsaw with a learnt AST-to-AST transformation, if sufficient data points are collected from usage:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>§ ¤</head><p>tf.reduce_sum(tf.gather(in1, ind))</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>¦ ¥</head><p>In summary, this shows that the proposed pre-processing and postprocessing modules are useful, and can be generalized to other libraries and programming languages as well.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">THREATS TO VALIDITY</head><p>Our data sets have been created by manually inspecting internet forums like StackOverflow. We tried to cover the common programming patterns in Pandas. However, they are not representative of all Pandas programs in the wild. We designed the PandasEval2_S1 and PandasEval2_S2 datasets by collecting data from two sessions of a hackathon, as a proxy for the real-world setting, where large software teams are working on the same project with similar tasks, allowing Jigsaw to learn and improve over time. We varied the tasks between the two sessions, so as to simulate variants of tasks. However, the variations we introduced may not representative of variations of tasks in the real world. Our study had only 25 participants; evaluating whether the productivity of developers is enhanced in a statistically significant manner in a large scale deployment of Jigsaw is beyond the scope of this paper.</p><p>When comparing Jigsaw to AutoPandas, Jigsaw takes as input both the natural language description in the StackOverflow posts and the I/O examples in the posts, while AutoPandas only takes the I/O examples as inputs. Hence, Jigsaw has more information about the tasks than AutoPandas. Jigsaw takes less than a minute per task and we use a timeout of three minutes for AutoPandas. Although higher timeouts might improve the performance of AutoPandas (10-15 minutes <ref type="bibr" target="#b7">[9]</ref>), they are not compatible with the interactive user experience that we are aiming for. Whether AutoPandas solved a task correctly or not is determined by manual inspection and is susceptible to human errors.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">RELATED WORK</head><p>The literature on using machine learning for program synthesis is vast <ref type="bibr" target="#b6">[8,</ref><ref type="bibr" target="#b15">17,</ref><ref type="bibr" target="#b16">18,</ref><ref type="bibr" target="#b19">21,</ref><ref type="bibr" target="#b20">22,</ref><ref type="bibr" target="#b23">25,</ref><ref type="bibr" target="#b26">28,</ref><ref type="bibr" target="#b31">33,</ref><ref type="bibr" target="#b37">39]</ref> and we restrict to works which are closest to Jigsaw (synthesizing code for large APIs using large models and multi-modal specifications). These works can be classified into the following categories: 1) designed for large APIs but do not use large models, 2) based purely on large models with no multimodal specification, and 3) multimodal synthesis for small APIs. Details follow:</p><p>(1) The TDE <ref type="bibr" target="#b18">[20]</ref> system for Java relies on rich type information (which is absent in Pandas) and fails to generate argument combinations that are absent from its corpus. AutoPandas <ref type="bibr" target="#b7">[9]</ref> generates Pandas code exclusively from input-output (I/O) examples using a combination of GNNs, which predict function sequences, and enumerative search. TF-coder <ref type="bibr" target="#b36">[38]</ref> uses both natural language descriptions and I/O examples to generate TensorFlow code. Both of</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Multi-modal problem specification in Jigsaw</figDesc><graphic coords="1,340.86,227.10,192.20,151.45" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Architecture of Jigsaw</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><figDesc>country'] = df['country'].str.replace('Name:', '')</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Illustration of Pre-processing step of Jigsaw</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Algorithm 1</head><label>1</label><figDesc>Updating context bankInputs: Context Bank : C = {(𝑁 1 , 𝑃 1 ), (𝑁 2 , 𝑃 2 ), . . . , (𝑁 |C | , 𝑃 |C | )}, New query and feedback (code snippet): 𝑁 , 𝑃 Output: Updated Context bank C Let output = Jigsaw(𝑁 , C) If min 𝑖 d EDIT (output 𝑖 , 𝑃) &gt; 𝜖 CODE return C If max 𝑖 d TFIDF (𝑁 , 𝑁 𝑖 ) &lt; 𝜖 BANK return C return C ∪ {(𝑁 , 𝑃)} more usage, we grow the context bank and try to cover different styles of user queries, which in turn helps relevant context selection.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Example task, part of the dataset PandasEval2, as presented to the user during the Hackathon session.We note that while users provided precise and clear natural language queries in many cases, they also came up with imprecise and incorrect formulations in some cases. For instance, in the spec shown above, the query provided by user1 is correct, whereas the one provided by user2 is incorrect because the word "France" is present in the "IATA" column as well; Figure5conveys that only the "country" column needs to change, and not the "IATA" column.Since such queries were created by users interacting with the system, and users tend to make mistakes, it is useful to have such variations in the dataset. While curating the dataset, we removed natural language queries that were clearly incorrect, and retained queries that were imprecise and partially correct.</figDesc><graphic coords="6,329.97,347.47,216.22,71.23" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>7 " 9 }] 10 }</head><label>7910</label><figDesc>'France' with 'FR' in 'country' column and 'Paris' with 'PAR' in 'city' column", "user1"],4["In dataframe dfin, replace cells having ' France' to 'FR' and cells having 'Paris' to ' PR'", "user2"] inputs": "dfin", "output": "dfout" Listing 1: Example json for a task in PandasEval2</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><figDesc>is a Pandas program synthesis engine capable of generating programs with two or three Pandas functions. It uses generators for enumerating over the Pandas API and guides the search with the help of Graph Neural Networks (GNNs) which operate on the input-output (I/O) dataframe(s) and returns the most likely function sequences and arguments.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 1 :</head><label>1</label><figDesc>. An example task from this Proficiency of participants from PandasEval2 dataset dataset is "For every row in df1, update 'common' column to True if value in column 'A' of df1 also lies in column 'B' of df2".</figDesc><table><row><cell></cell><cell cols="3">Beginner Intermediate Advanced</cell></row><row><cell>Python</cell><cell>1</cell><cell>21</cell><cell>3</cell></row><row><cell>Pandas</cell><cell>17</cell><cell>8</cell><cell>0</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_7"><head>Table 5 :</head><label>5</label><figDesc>The results are in the second Number of tasks solved by Jigsaw and AP on a subset of our dataset supported by AP and their dataset.</figDesc><table><row><cell></cell><cell cols="4">AutoPandas [9] PTLM Jigsaw</cell></row><row><cell cols="2">Subset of Jigsaw datasets</cell><cell>16/27</cell><cell>20/27</cell><cell>23/27</cell></row><row><cell cols="2">AutoPandas dataset</cell><cell>17/26</cell><cell>15/26</cell><cell>19/26</cell></row><row><cell></cell><cell>Context</cell><cell cols="3">PandasEval1 PandasEval2</cell></row><row><cell>GPT-3</cell><cell>TFIDF TRANSFORMER</cell><cell>46.5 ± 4.8 47.1 ± 2.1</cell><cell cols="2">32.4 ± 0.5 35.1 ± 0.7</cell></row><row><cell>Codex</cell><cell>TFIDF TRANSFORMER</cell><cell>69.1 ± 2.4 66.7 ± 0.7</cell><cell cols="2">70.1 ± 0.1 72.2 ± 0.5</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_9"><head>Table 2 )</head><label>2</label><figDesc>; this further underscores the utility of the pre-processing module.Listing 3: Cluster of code snippets from two different tasks that yields the precedence transformation in Table4.</figDesc><table><row><cell>§</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_10"><head>Table 7 :</head><label>7</label><figDesc>Ablation study: Performance of Jigsaw with different number of context prompts.</figDesc><table><row><cell cols="3">PTLM Variable Name Semantic Repair</cell></row><row><cell>8/25</cell><cell>15/25</cell><cell>19/25</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_0"><p>The datasets can be found at https://github.com/microsoft/JigsawDataset</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>Interestingly, this missing parenthesis mistake is quite common and frequented even by humans! See blog post [3] and StackOverflow question [4].</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_2"><p>https://www.wired.com/story/github-commercial-ai-tool-built-open-source-code/</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><p>Acknowledgement. We thank <rs type="person">Dhvanil Sanghvi</rs> for helping us perform a preliminary evaluation of Jigsaw with Tensorflow (reported in Section 5.5), and <rs type="person">Arjun Radhakrishna</rs> for helping us with PROSE and Refazer related queries.</p></div>
+			</div>			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Reassign back to the column</p><p>Giving precedence to bitwise-or Table <ref type="table">4</ref>: Applications (Code After) of learned transformations on code snippets produced by PTLM (Code Before). and of the code snippets themselves, and we expect that more usage data positively influences the overall quality. them use small specific models (as opposed to large generic models like GPT-3) and lack mechanisms to incorporate user feedback.</p><p>(2) GPT-3 <ref type="bibr" target="#b8">[10]</ref> while trained on web has shown inspiring capability on synthesizing code. Models have also been explicitly trained on code with documentation <ref type="bibr" target="#b5">[7,</ref><ref type="bibr" target="#b9">11,</ref><ref type="bibr" target="#b13">15]</ref>. In particular, Codex <ref type="bibr" target="#b9">[11]</ref>, that is part of GitHub Copilot, generates Python code from natural language descriptions. Spider <ref type="bibr" target="#b4">[5,</ref><ref type="bibr" target="#b41">43]</ref> is a text-to-SQL competition where many tools compete <ref type="bibr" target="#b34">[36,</ref><ref type="bibr" target="#b38">40]</ref>.</p><p>(3) Manshadi et al. <ref type="bibr" target="#b22">[24]</ref> and Raza et al. <ref type="bibr" target="#b32">[34]</ref> synthesize string transformations. WebQA <ref type="bibr" target="#b10">[12]</ref> synthesizes programs to extract information from webpages. Regel <ref type="bibr" target="#b11">[13]</ref> and Ye et al. <ref type="bibr" target="#b40">[42]</ref> synthesizes regular expressions. Mars <ref type="bibr" target="#b12">[14]</ref> synthesizes data wrangling operations. These techniques have not been demonstrated at the scale of Pandas that has hundreds of operations.</p><p>Jigsaw fixes the output of PTLM and is hence related to work on program repair like Refazer that learns code transformations from edits used to fix programs <ref type="bibr" target="#b14">[16]</ref>. Jigsaw's interface is inspired from B2's <ref type="bibr" target="#b39">[41]</ref> interface that augments visualizations to notebooks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">CONCLUSION AND FUTURE WORK</head><p>Jigsaw is the first tool for synthesizing code for large APIs like Pandas that leverages the advancements in PTLMs. The key contribution of Jigsaw lies in the post-processing steps that drastically improve the quality of the code generated by PTLMs like GPT-3. In particular, the multimodal synthesis of Jigsaw outperforms both the baselines that exclusively use PTLMs and those that exclusively use I/O examples for program synthesis. However, several challenges remain before we can have a true "pair programmer" experience with PTLMs and we discuss a couple of them.</p><p>First, in this paper, the quality of the synthesized code is largely determined by the I/O examples. However, in practice, code quality is more nuanced than correctness on unit tests. Ideally, the synthesized code should have high performance, should not have security vulnerabilities <ref type="bibr" target="#b27">[29]</ref>, and respect licensing attribution 4 .</p><p>Second, Jigsaw focuses on multi-modal specifications with natural language intent and I/O examples. However, even multi-modal specifications can be weak or ambiguous, and would need to be refined using richer specifications like preconditions, postconditions, invariants, bounds on resource usage like time and memory, etc., to obtain the intended code.</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<ptr target="https://copilot.github.com/" />
+		<title level="m">GitHub Copilot • Your AI pair programmer</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Jupyter</surname></persName>
+		</author>
+		<ptr target="https://jupyter.org/" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Parenthesis</forename><surname>Blog</surname></persName>
+		</author>
+		<ptr target="https://www.roelpeters.be/cannot-compare-a-dtyped-object-array-with-a-scalar-of-type-bool/" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Parenthesis</forename><surname>Stackoverflow</surname></persName>
+		</author>
+		<ptr target="https://stackoverflow.com/questions/38252423/python-error-typeerror-cannot-compare-a-dtyped-float64-array-with-a-scalar-o" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m">Spider 1.0: Yale Semantic Parsing and Text-to-SQL Challenge</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Program Synthesis with Large Language Models</title>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Austin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Augustus</forename><surname>Odena</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maxwell</forename><surname>Nye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henryk</forename><surname>Michalewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellen</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carrie</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Terry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Sutton</surname></persName>
+		</author>
+		<idno>ArXiv abs/2108.07732</idno>
+		<imprint>
+			<date type="published" when="2021">2021. 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">DeepCoder: Learning to Write Programs</title>
+		<author>
+			<persName><forename type="first">Matej</forename><surname>Balog</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><forename type="middle">L</forename><surname>Gaunt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marc</forename><surname>Brockschmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Nowozin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Tarlow</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">5th International Conference on Learning Representations</title>
+		<title level="s">Conference Track Proceedings. OpenReview.net</title>
+		<meeting><address><addrLine>Toulon, France</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2017-04-24">2017. 2017. April 24-26, 2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">AutoPandas: neural-backed generators for program synthesis</title>
+		<author>
+			<persName><forename type="first">Rohan</forename><surname>Bavishi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caroline</forename><surname>Lemieux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roy</forename><surname>Fox</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Proc. ACM Program. Lang</title>
+		<imprint>
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="page">27</biblScope>
+			<date type="published" when="2019">2019. 2019</date>
+		</imprint>
+	</monogr>
+	<note>Koushik Sen, and Ion Stoica OOPSLA</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Language Models are Few-Shot Learners</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">M</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateusz</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Amodei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">Marc</forename><forename type="middle">'</forename><surname>Larochelle</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Aurelio</forename><surname>Ranzato</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Raia</forename><surname>Hadsell</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Maria-Florina</forename><surname>Balcan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Hsuan-Tien</forename><surname>Lin</surname></persName>
+		</editor>
+		<meeting><address><addrLine>NeurIPS</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2020-12-06">2020. 2020. 2020. December 6-12, 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jerry</forename><surname>Tworek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heewoo</forename><surname>Jun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiming</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henrique</forename><surname>Ponde De Oliveira Pinto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harrison</forename><surname>Edwards</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuri</forename><surname>Burda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>Joseph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Greg</forename><surname>Brockman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raul</forename><surname>Puri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Petrov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heidy</forename><surname>Khlaaf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brooke</forename><surname>Chan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikhail</forename><surname>Pavlov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alethea</forename><surname>Power</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Bavarian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philippe</forename><surname>Tillet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felipe</forename><forename type="middle">Petroski</forename><surname>Such</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dave</forename><surname>Cummings</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Plappert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fotios</forename><surname>Chantzis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elizabeth</forename><surname>Barnes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Hebgen Guss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Nichol</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Paino</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolas</forename><surname>Tezak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Igor</forename><surname>Babuschkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suchir</forename><surname>Balaji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shantanu</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Saunders</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">N</forename><surname>Carr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Leike</surname></persName>
+		</author>
+		<idno>CoRR abs/2107.03374</idno>
+		<title level="m">Evaluating Large Language Models Trained on Code</title>
+		<editor>
+			<persName><forename type="first">Joshua</forename><surname>Achiam</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Vedant</forename><surname>Misra</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Evan</forename><surname>Morikawa</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Matthew</forename><surname>Knight</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Miles</forename><surname>Brundage</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Mira</forename><surname>Murati</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Katie</forename><surname>Mayer</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Peter</forename><surname>Welinder</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Bob</forename><surname>Mc-Grew</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Sam</forename><surname>Mccandlish</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Wojciech</forename><surname>Zaremba</surname></persName>
+		</editor>
+		<imprint>
+			<date type="published" when="2021">2021. 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Web question answering with neurosymbolic program synthesis</title>
+		<author>
+			<persName><forename type="first">Qiaochu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaron</forename><surname>Lamoreaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Greg</forename><surname>Durrett</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Osbert</forename><surname>Bastani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Isil</forename><surname>Dillig</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">PLDI &apos;21: 42nd ACM SIGPLAN International Conference on Programming Language Design and Implementation</title>
+		<editor>
+			<persName><forename type="first">Stephen</forename><forename type="middle">N</forename><surname>Freund</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Eran</forename><surname>Yahav</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2021-06-20">2021. June 20-25, 20211</date>
+			<biblScope unit="page" from="328" to="343" />
+		</imprint>
+	</monogr>
+	<note>Canada</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Multimodal synthesis of regular expressions</title>
+		<author>
+			<persName><forename type="first">Qiaochu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xi</forename><surname>Ye</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 41st ACM SIGPLAN International Conference on Programming Language Design and Implementation</title>
+		<editor>
+			<persName><forename type="first">F</forename><surname>Donaldson</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Emina</forename><surname>Torlak</surname></persName>
+		</editor>
+		<meeting>the 41st ACM SIGPLAN International Conference on Programming Language Design and Implementation<address><addrLine>London, UK</addrLine></address></meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2020-06-15">2020. June 15-20, 2020</date>
+			<biblScope unit="volume">2020</biblScope>
+			<biblScope unit="page" from="487" to="502" />
+		</imprint>
+	</monogr>
+	<note>Greg Durrett, and Isil Dillig</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Maximal multi-layer specification synthesis</title>
+		<author>
+			<persName><forename type="first">Yanju</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruben</forename><surname>Martins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Feng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the ACM Joint Meeting on European Software Engineering Conference and Symposium on the Foundations of Software Engineering, ESEC/SIGSOFT FSE 2019</title>
+		<editor>
+			<persName><forename type="first">Marlon</forename><surname>Dumas</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Dietmar</forename><surname>Pfahl</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Sven</forename><surname>Apel</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Alessandra</forename><surname>Russo</surname></persName>
+		</editor>
+		<meeting>the ACM Joint Meeting on European Software Engineering Conference and Symposium on the Foundations of Software Engineering, ESEC/SIGSOFT FSE 2019<address><addrLine>Tallinn, Estonia</addrLine></address></meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2019-08-26">2019. August 26-30, 2019</date>
+			<biblScope unit="page" from="602" to="612" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">PyMT5: multi-mode translation of natural language and Python code with transformers</title>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Clement</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dawn</forename><surname>Drain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Timcheck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexey</forename><surname>Svyatkovskiy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Neel</forename><surname>Sundaresan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Online</publisher>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Learning Syntactic Program Transformations from Examples</title>
+		<author>
+			<persName><forename type="first">Reudismam</forename><surname>Rolim De Sousa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gustavo</forename><surname>Soares</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Loris</forename><forename type="middle">D</forename><surname>'antoni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleksandr</forename><surname>Polozov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sumit</forename><surname>Gulwani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rohit</forename><surname>Gheyi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryo</forename><surname>Suzuki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bjoern</forename><surname>Hartmann</surname></persName>
+		</author>
+		<idno>CoRR abs/1608.09000</idno>
+		<imprint>
+			<date type="published" when="2016">2016. 2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">RobustFill: Neural Program Learning under Noisy I/O</title>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Uesato</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Surya</forename><surname>Bhupatiraju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishabh</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abdel-Rahman</forename><surname>Mohamed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pushmeet</forename><surname>Kohli</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 34th International Conference on Machine Learning, ICML 2017</title>
+		<title level="s">Proceedings of Machine Learning Research</title>
+		<editor>
+			<persName><forename type="first">Doina</forename><surname>Precup</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Yee</forename><forename type="middle">Whye</forename><surname>Teh</surname></persName>
+		</editor>
+		<meeting>the 34th International Conference on Machine Learning, ICML 2017<address><addrLine>Sydney, NSW, Australia</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2017-08">2017. August 2017</date>
+			<biblScope unit="volume">70</biblScope>
+			<biblScope unit="page" from="990" to="998" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Program synthesis using conflict-driven learning</title>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruben</forename><surname>Martins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Osbert</forename><surname>Bastani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Isil</forename><surname>Dillig</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 39th ACM SIGPLAN Conference on Programming Language Design and Implementation</title>
+		<editor>
+			<persName><forename type="first">Jeffrey</forename><forename type="middle">S</forename><surname>Foster</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Dan</forename><surname>Grossman</surname></persName>
+		</editor>
+		<meeting>the 39th ACM SIGPLAN Conference on Programming Language Design and Implementation<address><addrLine>Philadelphia, PA, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2018-06-18">2018. 2018. June 18-22, 2018</date>
+			<biblScope unit="page" from="420" to="435" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Programming by examples</title>
+		<author>
+			<persName><forename type="first">Sumit</forename><surname>Gulwani</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Dependable Software Systems Engineering</title>
+		<imprint>
+			<biblScope unit="volume">45</biblScope>
+			<biblScope unit="page" from="3" to="15" />
+			<date type="published" when="2016">2016. 2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Transform-Data-by-Example (TDE): An Extensible Search Engine for Data Transformations</title>
+		<author>
+			<persName><forename type="first">Yeye</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Chu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kris</forename><surname>Ganjam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yudian</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Vivek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Surajit</forename><surname>Narasayya</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Chaudhuri</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proc. VLDB Endow</title>
+		<meeting>VLDB Endow</meeting>
+		<imprint>
+			<date type="published" when="2018">2018. 2018</date>
+			<biblScope unit="volume">11</biblScope>
+			<biblScope unit="page" from="1165" to="1177" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Neural-Guided Deductive Search for Real-Time Program Synthesis from Examples</title>
+		<author>
+			<persName><forename type="first">Ashwin</forename><surname>Kalyan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhishek</forename><surname>Mohta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleksandr</forename><surname>Polozov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prateek</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sumit</forename><surname>Gulwani</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">6th International Conference on Learning Representations</title>
+		<title level="s">Conference Track Proceedings. OpenReview.net</title>
+		<meeting><address><addrLine>Vancouver, BC, Canada</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2018-04-30">2018. 2018. April 30 -May 3, 2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Accelerating search-based program synthesis using learned probabilistic models</title>
+		<author>
+			<persName><forename type="first">Woosuk</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kihong</forename><surname>Heo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rajeev</forename><surname>Alur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mayur</forename><surname>Naik</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 39th ACM SIGPLAN Conference on Programming Language Design and Implementation</title>
+		<editor>
+			<persName><forename type="first">Jeffrey</forename><forename type="middle">S</forename><surname>Foster</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Dan</forename><surname>Grossman</surname></persName>
+		</editor>
+		<meeting>the 39th ACM SIGPLAN Conference on Programming Language Design and Implementation<address><addrLine>Philadelphia, PA, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2018-06-18">2018. 2018. June 18-22, 2018</date>
+			<biblScope unit="page" from="436" to="449" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Pre-train, prompt, and predict: A systematic survey of prompting methods in natural language processing</title>
+		<author>
+			<persName><forename type="first">Pengfei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhe</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinlan</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengbao</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hiroaki</forename><surname>Hayashi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Graham</forename><surname>Neubig</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2107.13586</idno>
+		<imprint>
+			<date type="published" when="2021">2021. 2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Integrating Programming by Example and Natural Language Programming</title>
+		<author>
+			<persName><forename type="first">Mehdi</forename><surname>Hafezi Manshadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Gildea</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><forename type="middle">F</forename><surname>Allen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Twenty-Seventh AAAI Conference on Artificial Intelligence</title>
+		<editor>
+			<persName><forename type="first">L</forename><surname>Michael</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Littman</surname></persName>
+		</editor>
+		<meeting>the Twenty-Seventh AAAI Conference on Artificial Intelligence<address><addrLine>Bellevue, Washington, USA, Marie</addrLine></address></meeting>
+		<imprint>
+			<publisher>AAAI Press</publisher>
+			<date type="published" when="2013-07-14">2013. July 14-18, 2013</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">A Machine Learning Framework for Programming by Example</title>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Krishna Menon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omer</forename><surname>Tamuz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sumit</forename><surname>Gulwani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Butler</forename><forename type="middle">W</forename><surname>Lampson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Kalai</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th International Conference on Machine Learning, ICML 2013</title>
+		<title level="s">JMLR Workshop and Conference Proceedings</title>
+		<meeting>the 30th International Conference on Machine Learning, ICML 2013<address><addrLine>Atlanta, GA, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2013-06">2013. June 2013</date>
+			<biblScope unit="volume">28</biblScope>
+			<biblScope unit="page" from="187" to="195" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">On the fly synthesis of edit suggestions</title>
+		<author>
+			<persName><forename type="first">Anders</forename><surname>Miltner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sumit</forename><surname>Gulwani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vu</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alan</forename><surname>Leung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arjun</forename><surname>Radhakrishna</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gustavo</forename><surname>Soares</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Tiwari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhishek</forename><surname>Udupa</surname></persName>
+		</author>
+		<ptr target="https://www.microsoft.com/en-us/research/publication/on-the-fly-synthesis-of-edit-suggestions/" />
+	</analytic>
+	<monogr>
+		<title level="m">Object-Oriented Programming, Systems, Languages &amp; Applications (OOPSLA)</title>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">The pandas development team</title>
+		<idno type="DOI">10.5281/zenodo.3509134</idno>
+		<ptr target="https://doi.org/10.5281/zenodo.3509134" />
+	</analytic>
+	<monogr>
+		<title level="m">pandas-dev/pandas: Pandas</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Neuro-Symbolic Program Synthesis</title>
+		<author>
+			<persName><forename type="first">Emilio</forename><surname>Parisotto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abdel-Rahman</forename><surname>Mohamed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishabh</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lihong</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dengyong</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pushmeet</forename><surname>Kohli</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">5th International Conference on Learning Representations</title>
+		<title level="s">Conference Track Proceedings. OpenReview.net</title>
+		<meeting><address><addrLine>Toulon, France</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2017-04-24">2017. 2017. April 24-26, 2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<title level="m" type="main">An Empirical Cybersecurity Evaluation of GitHub Copilot&apos;s Code Contributions</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Pearce</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baleegh</forename><surname>Ahmad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brendan</forename><surname>Dolan-Gavitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Karri</surname></persName>
+		</author>
+		<idno>ArXiv abs/2108.09293</idno>
+		<imprint>
+			<date type="published" when="2021">2021. 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<title level="m" type="main">True Few-Shot Learning with Language Models</title>
+		<author>
+			<persName><forename type="first">Ethan</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Douwe</forename><surname>Kiela</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyunghyun</forename><surname>Cho</surname></persName>
+		</author>
+		<idno>ArXiv abs/2105.11447</idno>
+		<imprint>
+			<date type="published" when="2021">2021. 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Flashmeta: A framework for inductive program synthesis</title>
+		<author>
+			<persName><forename type="first">Oleksandr</forename><surname>Polozov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sumit</forename><surname>Gulwani</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2015 ACM SIGPLAN International Conference on Object-Oriented Programming, Systems, Languages, and Applications</title>
+		<meeting>the 2015 ACM SIGPLAN International Conference on Object-Oriented Programming, Systems, Languages, and Applications</meeting>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="page" from="107" to="126" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">Language Models are Unsupervised Multitask Learners</title>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019">2019. 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Code completion with statistical language models</title>
+		<author>
+			<persName><forename type="first">Veselin</forename><surname>Raychev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><forename type="middle">T</forename><surname>Vechev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eran</forename><surname>Yahav</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">ACM SIGPLAN Conference on Programming Language Design and Implementation, PLDI &apos;14</title>
+		<editor>
+			<persName><forename type="first">F</forename><forename type="middle">P</forename><surname>Michael</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Keshav</forename><surname>O'boyle</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Pingali</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Edinburgh, United Kingdom</addrLine></address></meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2014-06-09">2014. June 09 -11, 2014</date>
+			<biblScope unit="page" from="419" to="428" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Compositional Program Synthesis from Natural Language and Examples</title>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Raza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sumit</forename><surname>Gulwani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Natasa</forename><surname>Milic-Frayling</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Twenty-Fourth International Joint Conference on Artificial Intelligence, IJ-CAI 2015</title>
+		<editor>
+			<persName><forename type="first">Qiang</forename><surname>Yang</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Michael</forename><forename type="middle">J</forename><surname>Wooldridge</surname></persName>
+		</editor>
+		<meeting>the Twenty-Fourth International Joint Conference on Artificial Intelligence, IJ-CAI 2015<address><addrLine>Buenos Aires, Argentina</addrLine></address></meeting>
+		<imprint>
+			<publisher>AAAI Press</publisher>
+			<date type="published" when="2015-07-25">2015. July 25-31, 2015</date>
+			<biblScope unit="page" from="792" to="800" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks</title>
+		<author>
+			<persName><forename type="first">Nils</forename><surname>Reimers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iryna</forename><surname>Gurevych</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/1908.10084" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">SmBoP: Semi-autoregressive Bottom-up Semantic Parsing</title>
+		<author>
+			<persName><forename type="first">Ohad</forename><surname>Rubin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Berant</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL-HLT 2021</title>
+		<editor>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Anna</forename><surname>Rumshisky</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Dilek</forename><surname>Hakkani-Tür</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Iz</forename><surname>Beltagy</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Steven</forename><surname>Bethard</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ryan</forename><surname>Cotterell</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Tanmoy</forename><surname>Chakraborty</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Yichao</forename><surname>Zhou</surname></persName>
+		</editor>
+		<meeting>the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL-HLT 2021<address><addrLine>Online</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021-06-06">2021. June 6-11, 2021</date>
+			<biblScope unit="page" from="311" to="324" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title level="m" type="main">Introduction to modern information retrieval</title>
+		<author>
+			<persName><forename type="first">Gerard</forename><surname>Salton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><forename type="middle">J</forename><surname>Mcgill</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1986">1986. 1986</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<title level="m" type="main">TF-Coder: Program Synthesis for Tensor Manipulations</title>
+		<author>
+			<persName><forename type="first">Kensen</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Bieber</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishabh</forename><surname>Singh</surname></persName>
+		</author>
+		<idno>CoRR abs/2003.09040</idno>
+		<imprint>
+			<date type="published" when="2020">2020. 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Predicting a Correct Program in Programming by Example</title>
+		<author>
+			<persName><forename type="first">Rishabh</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sumit</forename><surname>Gulwani</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Computer Aided Verification -27th International Conference, CAV 2015</title>
+		<title level="s">Lecture Notes in Computer Science</title>
+		<editor>
+			<persName><forename type="first">Daniel</forename><surname>Kroening</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Corina</forename><forename type="middle">S</forename><surname>Pasareanu</surname></persName>
+		</editor>
+		<meeting><address><addrLine>San Francisco, CA, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2015-07-18">2015. July 18-24, 2015</date>
+			<biblScope unit="volume">9206</biblScope>
+			<biblScope unit="page" from="398" to="414" />
+		</imprint>
+	</monogr>
+	<note>Proceedings, Part I</note>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">RAT-SQL: Relation-Aware Schema Encoding and Linking for Text-to-SQL Parsers</title>
+		<author>
+			<persName><forename type="first">Bailin</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Shin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleksandr</forename><surname>Polozov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Richardson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, ACL 2020</title>
+		<editor>
+			<persName><forename type="first">Dan</forename><surname>Jurafsky</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Joyce</forename><surname>Chai</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Natalie</forename><surname>Schluter</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Joel</forename><forename type="middle">R</forename><surname>Tetreault</surname></persName>
+		</editor>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics, ACL 2020<address><addrLine>Online</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020-07-05">2020. July 5-10, 2020</date>
+			<biblScope unit="page" from="7567" to="7578" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">B2: Bridging Code and Interactive Visualization in Computational Notebooks</title>
+		<author>
+			<persName><forename type="first">Yifan</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">M</forename><surname>Hellerstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Satyanarayan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">UIST &apos;20: The 33rd Annual ACM Symposium on User Interface Software and Technology, Virtual Event</title>
+		<editor>
+			<persName><forename type="first">T</forename><surname>Shamsi</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Karon</forename><forename type="middle">E</forename><surname>Iqbal</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Fanny</forename><surname>Maclean</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Stefanie</forename><surname>Chevalier</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Mueller</surname></persName>
+		</editor>
+		<meeting><address><addrLine>USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2020-10-20">2020. October 20-23, 2020</date>
+			<biblScope unit="page" from="152" to="165" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<monogr>
+		<title level="m" type="main">Sketch-Driven Regular Expression Generation from Natural Language and Examples</title>
+		<author>
+			<persName><forename type="first">Xi</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiaochu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Isil</forename><surname>Dillig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Greg</forename><surname>Durrett</surname></persName>
+		</author>
+		<idno>CoRR abs/1908.05848</idno>
+		<imprint>
+			<date type="published" when="2019">2019. 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Spider: A Large-Scale Human-Labeled Dataset for Complex and Cross-Domain Semantic Parsing and Text-to-SQL Task</title>
+		<author>
+			<persName><forename type="first">Tao</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michihiro</forename><surname>Yasunaga</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dongxu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zifan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Irene</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingning</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shanelle</forename><surname>Roman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zilin</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dragomir</forename><forename type="middle">R</forename><surname>Radev</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<editor>
+			<persName><forename type="first">Ellen</forename><surname>Riloff</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">David</forename><surname>Chiang</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Julia</forename><surname>Hockenmaier</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jun'ichi</forename><surname>Tsujii</surname></persName>
+		</editor>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Brussels, Belgium</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018-10-31">2018. October 31 -November 4, 2018</date>
+			<biblScope unit="page" from="3911" to="3921" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Calibrate Before Use: Improving Few-shot Performance of Language Models</title>
+		<author>
+			<persName><forename type="first">Tony</forename><forename type="middle">Z</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Wallace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shi</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Klein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sameer</forename><surname>Singh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

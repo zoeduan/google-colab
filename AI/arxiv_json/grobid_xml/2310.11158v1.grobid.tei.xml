@@ -1,0 +1,1468 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Probing the &quot;Creativity&quot; of Large Language Models: Can Models Produce Divergent Semantic Association?</title>
+				<funder ref="#_s4RhB7p">
+					<orgName type="full">Fundamental Research Funds for the Central Universities</orgName>
+				</funder>
+				<funder ref="#_pzgBQVP #_xAqjd3j">
+					<orgName type="full">unknown</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-10-17">17 Oct 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Honghua</forename><surname>Chen</surname></persName>
+							<email>honghuachen@zju.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="department">College of Biomedical Engineering and Instrument Sciences</orgName>
+								<orgName type="laboratory">Key Laboratory for Biomedical Engineering of Ministry of Education</orgName>
+								<orgName type="institution">Zhejiang University / Hangzhou</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Nai</forename><surname>Ding</surname></persName>
+							<email>ding_nai@zju.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="department">College of Biomedical Engineering and Instrument Sciences</orgName>
+								<orgName type="laboratory">Key Laboratory for Biomedical Engineering of Ministry of Education</orgName>
+								<orgName type="institution">Zhejiang University / Hangzhou</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Probing the &quot;Creativity&quot; of Large Language Models: Can Models Produce Divergent Semantic Association?</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-10-17">17 Oct 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">94F7094A4AC3CE9F31CABD1746DECC5A</idno>
+					<idno type="arXiv">arXiv:2310.11158v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:31+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large language models possess remarkable capacity for processing language, but it remains unclear whether these models can further generate creative content. The present study aims to investigate the creative thinking of large language models through a cognitive perspective. We utilize the divergent association task (DAT), an objective measurement of creativity that asks models to generate unrelated words and calculates the semantic distance between them. We compare the results across different models and decoding strategies. Our findings indicate that: (1) When using the greedy search strategy, GPT-4 outperforms 96% of humans, while GPT-3.5-turbo exceeds the average human level. (2) Stochastic sampling and temperature scaling are effective to obtain higher DAT scores for models except GPT-4, but face a trade-off between creativity and stability. These results imply that advanced large language models have divergent semantic associations, which is a fundamental process underlying creativity. 1</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Large language models (LLMs) have exhibited unparalleled mastery of natural language <ref type="bibr" target="#b8">(Bubeck et al., 2023)</ref>. The primary capacity of producing the most probable next word is broadly generalizable to many language tasks, suggesting underlying cognitive abilities beyond specialized linguistic rules and patterns. There is observation that LLMs may possess reasoning abilities which is a core aspect of intelligence, including decision-making <ref type="bibr" target="#b6">(Binz and Schulz, 2023)</ref> and theory of mind <ref type="bibr" target="#b27">(Moghaddam and Honey, 2023)</ref>. Meanwhile, there is also increasing interest in exploring LLMs' creativity, which is closely related to intelligence <ref type="bibr" target="#b14">(Frith et al., 2021)</ref>. Creative use of language, such as metaphor and Figure <ref type="figure">1</ref>: Creativity from the perspective of language distribution. Creative thoughts need to be novel and valuable, which need cognitive control to inhibit common tokens and remote association to find valuable tokens.</p><p>humor, is important during communication. <ref type="bibr">Ope-nAI (2023)</ref> has reported GPT-4's ability to understand jokes, while subsequent works show limited capacity for LLMs to generate or explain humor <ref type="bibr" target="#b20">(Jentzsch and Kersting, 2023;</ref><ref type="bibr" target="#b18">Hessel et al., 2023)</ref>. As creativity is essential to the development of art, science, and everyday life for human <ref type="bibr" target="#b15">(Gabora and Kaufman, 2010)</ref>, it is non-trivial if models could produce creative content. Regarding to the curse of recursion for LLMs that training on generated data makes models collapse, one promising solution might be the novel language distribution through creative generation <ref type="bibr" target="#b37">(Shumailov et al., 2023)</ref>. But since LLMs represent word meaning and predict the next word in context, it seems paradoxical that such models could create ideas not seen in training.</p><p>Here, we empirically investigate the creativity of LLMs by examining models' ability to generate divergent concepts.</p><p>A general definition of creativity is the ability to create something both novel and valuable <ref type="bibr" target="#b35">(Runco and Jaeger, 2012)</ref>. According to the dual-process theory of creativity <ref type="bibr" target="#b4">(Beaty et al., 2014)</ref>, creative thinking relies on remote association while inhibiting common ideas (Figure <ref type="figure">1</ref>). Because of the intrinsic complexity, creativity is universally accepted to be unique to human beings, while models are regarded as great predictors to master the existing distribution but not qualified creators to generate new distribution. However, there have been evidences of models possessing creativity in different domains. For artistic creation, deep generative models reveals exquisite painting skills <ref type="bibr" target="#b34">(Ramesh et al., 2022)</ref>. For algorithms, models are able to generate original and superhuman strategies in board game <ref type="bibr" target="#b38">(Silver et al., 2016)</ref>.</p><p>As for language models, creativity is an emerging concern. Since GPT-2 <ref type="bibr" target="#b33">(Radford et al., 2019)</ref>, language models are able to naturally produce answers given a prompt, even for open-ended and creative generation tasks <ref type="bibr" target="#b21">(Kaddour et al., 2023)</ref>. However, when generating texts from these probabilistic models, decoding strategy has a prominent effect on the quality of result. Decoding strategies that search for the highest-probability words tend to produce texts that is dull and repetitive <ref type="bibr" target="#b41">(Zhang et al., 2021)</ref>, while stochastic strategies, which randomly sample from models, generate texts with better human preference <ref type="bibr" target="#b11">(DeLucia et al., 2021;</ref><ref type="bibr" target="#b19">Holtzman et al., 2020)</ref>. These texts have human-like information distribution, which are viewed as informative and interesting <ref type="bibr" target="#b24">(Meister et al., 2022)</ref>. Despite this, stochastic strategies are distinct from human. The decoding process is probabilistic and independent, while humans produce language under elaborated cognitive control, especially for creative generation. Creative and nonsense contents are both infrequent during next word prediction that cannot be simply distinguished via sampling strategies (Figure <ref type="figure">1</ref>). Thus, it is unclear whether LLMs genuinely have creativity during modeling, and whether decoding strategies help.</p><p>To answer both of these questions, we evaluate the creativity of LLMs. Specifically, we use an objective semantic measurement, the divergent association task (DAT), which asks models to generate unrelated nouns and compute the pairwise semantic distance between them <ref type="bibr" target="#b28">(Olson et al., 2021)</ref>. In summary, we make the following contributions:</p><p>• Investigate the creativity of LLMs and compare the results with human.</p><p>• Explore the effect of decoding strategies on the creative generation of LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Measuring Creativity</head><p>A direct measure of creativity is relying on experts to judge the creative quality of products. Several studies assessed LLMs' creativity on artistic and scientific creation <ref type="bibr" target="#b10">(Crothers et al., 2023;</ref><ref type="bibr" target="#b31">Park et al., 2023)</ref>. However, two elements of creativity, novelty and value, are both relative and ambiguous during evaluation. Human ratings are affected by subjective surprise and domain knowledge, and thus differ from each other.</p><p>There are other methods based on domaingeneral cognitive process of creativity.<ref type="foot" target="#foot_0">foot_0</ref> Divergent thinking, i.e., generating a large variety of solutions from an open-ended point, is an indicator for creative thinking <ref type="bibr" target="#b4">(Beaty et al., 2014)</ref>. One of the most widely used tasks on divergent thinking is the alternate use task (AUT), which asks participants to generate unusual uses of objects (e.g., a brick) <ref type="bibr" target="#b16">(Guilford, 1964)</ref>. Previous studies used AUT to measure the creativity of LLMs <ref type="bibr" target="#b39">(Summers-Stay et al., 2023;</ref><ref type="bibr" target="#b17">Haase and Hanel, 2023)</ref>, but the evaluation is sample-dependent that the scores are various across the selected objects. AUT also relies on humans to rate the creativity of generated uses. Moreover, AUT has the the risk of data leakage that the answers are confounded by the uses recorded in the training data.</p><p>Creativity has long been linked to the flexibility of semantic retrieval <ref type="bibr" target="#b42">(Zhang et al., 2023</ref>). An alternative to probe creativity is through the structure of semantic memory, which can be automatically and reproducibly assessed <ref type="bibr">(Beaty et al., 2021;</ref><ref type="bibr" target="#b2">Beaty and Johnson, 2021)</ref>. The DAT, among these methods, is valid and reliable that closely correlates with other metrics of creativity <ref type="bibr" target="#b28">(Olson et al., 2021)</ref>. Different from measuring semantic similarity as usual, the DAT prompts participants to reject related associations and produce unrelated nouns (Figure <ref type="figure" target="#fig_0">2</ref>). Formally, given n words and their word embed-dings {v 1 , . . . , v n }, the DAT can be calculated as the average cosine distance as follows:</p><formula xml:id="formula_0">DAT = 100 n(n -1) n i,j i̸ =j (1 -cos (v i , v j )) (1)</formula><p>In this study, we apply the DAT to assess the creativity of LLMs, but before that it is necessary to evidence the applicability of this method. Basically, the validity of DAT for humans comes with the bias that humans retrieve semantics exploiting their semantic networks. The semantic networks of humans reveal the semantic representations about the world, which are also reflected in the language distribution of human corpus. Thus, LLMs pre-trained on the corpus should exhibit the similar bias. The semantic networks are also needed for LLMs to accomplish general language tasks. Empirically, previous studies showed that language models have similar patterns of semantic activations with humans (Lake and Murphy, 2020; Digutsch and Kosinski, 2023). Additionally, considering these studies assessing the semantic activations differently from the present study, we provide another analysis to validate the DAT for LLMs. It is noteworthy that possessing similar semantic networks is not equivalent to being equally creative. Although the semantic networks of humans are roughly consistent, the ability to produce remote associations is challenging and largely varies among humans.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Experiment Setup</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Models</head><p>We studied five recent LLMs with different sizes, including GPT-4 (OpenAI, 2023) and GPT-3.5-Turbo (OpenAI, 2022) from OpenAI, Oasst-Llama-30B <ref type="bibr" target="#b22">(Köpf et al., 2023)</ref> and Vicuna-13B <ref type="bibr" target="#b9">(Chiang et al., 2023)</ref> fine-tuned from Llama <ref type="bibr" target="#b40">(Touvron et al., 2023)</ref>, and ChatGLM-6B based on GLM <ref type="bibr" target="#b12">(Du et al., 2022)</ref>. <ref type="foot" target="#foot_1">3</ref> GPT-4 and GPT-3.5-Turbo have advanced performance through pre-train and RLHF <ref type="bibr" target="#b30">(Ouyang et al., 2022)</ref>, while other models are trained by finetuning foundation models on collected instructions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Decoding strategy</head><p>For deterministic algorithms, we use greedy search that choose the most probable token at each decod-ing step. For stochastic algorithms, we use top-p sampling <ref type="bibr" target="#b19">(Holtzman et al., 2020)</ref> that limit the sampling space to the top-p most likely tokens at each decoding step, truncating the undesirable tail of distribution. We set p = 0.9 with temperature t = 0.7 for top-p sampling. Then we adjust different settings of t to study the effect of temperature. For each model, we collect enough samples to ensure the results convergent (Appendix A).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">DAT</head><p>In DAT, we ask models to generate 10 unrelated nouns. we constrain the models to generate only nouns to isolate the semantical distances from syntactic effects. We use the zero-shot prompt in Figure <ref type="figure" target="#fig_0">2</ref> that is consistent with the study for humans <ref type="bibr" target="#b28">(Olson et al., 2021)</ref>. We filter out the answers with invalid words, e.g., verbs. Then we select the first seven valid words that models provide, and compute the DAT score via Eq. ( <ref type="formula">1</ref>). <ref type="foot" target="#foot_2">4</ref>We use GLoVe <ref type="bibr" target="#b32">(Pennington et al., 2014)</ref> to calculate semantic distance (Figure <ref type="figure" target="#fig_1">3a</ref>). In previous studies which also used semantic space to evaluate creativity, GLoVe was proved to be effective <ref type="bibr" target="#b3">(Beaty and Johnson, 2020)</ref>. We have also experimented Word2Vec <ref type="bibr" target="#b25">(Mikolov et al., 2013)</ref> and Fasttext <ref type="bibr" target="#b7">(Bojanowski et al., 2016)</ref>, and found results similar (with the correlation coefficient of 0.82 and 0.91 respectively).</p><p>The word vectors also encode word frequency that rare words have unstable semantic distance for the lack of training <ref type="bibr" target="#b36">(Schnabel et al., 2015)</ref>. Thus, we also compute the average surprisal (negative log word frequency) to study this potential effect.</p><p>To compare the result of models with humans, we use the data collected on 8572 participants. <ref type="foot" target="#foot_3">5</ref> We also randomly sample nouns from Wordnet <ref type="bibr" target="#b26">(Miller, 1995)</ref> as a situation without the bias of semantic network.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">Validating DAT</head><p>As mentioned in Section 2, we set two additional prompts for comparison: (1) Base: write 10 nouns, and (2) Random: write 10 nouns randomly. We hypothesize that LLMs generate semantically associated words if not instructed, but can also have divergent associations under the DAT prompt. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Result</head><p>The DAT results are shown in Figure <ref type="figure" target="#fig_1">3</ref>. Using greedy search, GPT-4 achieves the highest DAT of 89.1, surpassing 96.1% of humans, and GPT-3.5-Turbo attains a DAT of 80.8 that is above the average human-level (Figure <ref type="figure" target="#fig_1">3c</ref>). Other models perform less well with lower DAT, which are roughly proportional to the size of models. When using top-p sampling, models other than GPT-4 are capable of getting the DAT much higher than greedy search, but they also become unstable that probably generate answers with low DAT scores (Figure <ref type="figure" target="#fig_1">3b</ref>).</p><p>We also report the relation between the DAT and surprisal in Figure <ref type="figure" target="#fig_2">4</ref>. <ref type="foot" target="#foot_4">6</ref> Theoretically, surprisal is corresponding to the novelty that is an element of creativity, and the original DAT metric including word frequency effect is valid for human as well <ref type="bibr" target="#b28">(Olson et al., 2021)</ref>. But as mentioned in Section 3.3, word frequency might be a confounding variable when calculating semantic distance. Indeed, we find two variables highly relevant for human and random baselines (also see Appendix B). For models, the results of top-p sampling have homogeneous slopes with two baselines, but their intercepts and surprisal distributions are different. GPT-4 and GPT-3.5-Turbo exceed the average human DAT under the same surprisal, while other models fall short. Despite Vicuna-13B and Chatglm-6B have similar distributions of surprisal, the former generates words more divergently. Oasst-Llama-30B defeats Vicuna-13B on the DAT, but this might be explained by the capacity or tendency to generate rarer words. To clarify this effect, we control the surprisal for DAT in Appendix D. The results are similar that GPT-4 and GPT-3.5-Turbo outperform average human performance, but the superiority of GPT-4 is attenuated. We further investigate the effect of temperature (Figure <ref type="figure" target="#fig_3">5</ref>). Temperature is a widely deployed parameter for creative or original generation in practice that high temperature skews the distribution shape towards low-probability tokens <ref type="bibr" target="#b1">(Ackley et al., 1985;</ref><ref type="bibr" target="#b13">Fan et al., 2018)</ref>. We vary the temperature from 0.1 to 1 and found its positive effect for models except GPT-4. However, the effect is limited, and high temperature will also bring instability and produce invalid answers. As for GPT-4, high-probability tokens are well aligned with highquality answers.</p><p>In the relationship between the DAT and surprisal, we find a naive algorithm that samples nouns from Wordnet can outperform the majority of humans and models (Figure <ref type="figure" target="#fig_2">4</ref>). It is because the algorithm has no constrains of the language distribution, which also means it can barely accomplish general language tasks. Although LLMs have exhibited striking mastery of natural language, we wonder whether they process the semantics differently with humans and the DAT test is accordingly invalid as well. Thus, we compare the DAT with Base and Random conditions (figure <ref type="figure">6</ref>). We show that if not instructed, LLMs tend to produce more related words. When instructed with the prompts of Random and the DAT, LLMs can modulate the language distributions to be more divergent.</p><p>These results indicate that LLMs have the potential to generate divergent content with instruction, but with the flaw of not inhibiting common words. Stochastic decoding strategy is helpful for promoting remote association, but since the creative and nonsense content are both infrequent, it cannot accurately produce high-quality content. However, advanced LLMs show the implicit control of modulating the probability distribution and stably generating divergent answers. Stochastic decoding strategy may even degrade performances for introduced randomness.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>In this work, we provide a creativity evaluation using a divergent semantic task. This task reveals distinguishable results across various LLMs and decoding strategies. We find GPT-4 demonstrates advanced human-level creativity stably, while GPT-3.5-turbo exceeds the average human level. For decoding methods, stochastic decoding strategy is effective but not enough for creative generation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitation</head><p>Creativity is a deeply debated concept. We selectively evaluate the "little-C" (creativity in everyday life) that is a general capacity, instead of the "big-C" (marvelous creative product) which is rare even for human. Measuring creativity is also controversial that requires evaluations from multiple perspectives, principles, and analysis. Thus, the results of this study cannot be directly generalized to all language generation tasks. We also limited the range of this study within self-contained creativity, whereas another crucial aspect of AI's creativity is human-AI co-creation. We leave these for future work.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Selecting sample size for each model</head><p>Figure <ref type="figure" target="#fig_5">7</ref> shows the sample size to generate stable results using top-p sampling for each model. With confidence coefficient α = 0.05, standard deviation σ and error ϵ = 1, we choose N &gt; (λ α × σ/ϵ) 2 = 1.96 2 × σ2 . We find larger models (GPT-4 and GPT-3.5-Turbo) generate answers more stably. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Results of the DAT and surprisal on human and random and baselines</head><p>Figure <ref type="figure" target="#fig_6">8</ref> shows the results of the DAT and surprisal on human and random baselines. We find positive relationship between surprisal and the DAT. Random baseline is a strong baseline that has maximal remote association (uniform distribution) despite without inhibition. Even so, we find some people surpass random baseline and approach ceiling DAT at specific section of surprisal. C Result of the DAT and surprisal for more models using greedy search</p><p>Figure <ref type="figure" target="#fig_7">9</ref> shows the results of the DAT and surprisal for more LLMs using greedy search. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D Controlling surprisal as a confounding variable</head><p>Considering the potential influence of word frequency on measuring semantic distance, we control surprisal (Figure <ref type="figure" target="#fig_8">10</ref> ). The results are similar as before that GPT-4 and GPT-3.5-Turbo outperform average human performance, while other models are below average human level. However, GPT-4 as well as Oasst-Llama-30B lose their superiorities because their high DAT scores partially depend on generating rarer words. </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: The DAT paradigm and example responses.</figDesc><graphic coords="2,318.43,70.87,193.69,142.77" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: The DAT for humans and models. (a) The distance matrix of words generated by GPT-4 and GPT-3.5-turbo. The average distance is defined as the DAT. (b) The DAT of models and human. (c) The percentile of models' DAT against human results.</figDesc><graphic coords="4,83.20,70.86,428.89,211.02" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Relationship between the DAT and surprisal. Rimmed points show the results of greedy search. The contour indicates the 95% confidence interval of humans.</figDesc><graphic coords="4,307.52,347.63,215.52,215.28" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Effect of temperature tuning. The bands indicate the standard deviations.</figDesc><graphic coords="5,71.35,70.87,217.30,133.81" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>7 Figure 6 :</head><label>76</label><figDesc>Figure 6: The DAT scores of 3 conditions.</figDesc><graphic coords="5,310.02,70.87,210.51,138.15" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 7 :</head><label>7</label><figDesc>Figure 7: Results of the DAT across different sample sizes. The bands indicate the standard deviations.</figDesc><graphic coords="8,72.00,203.21,216.00,144.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 8 :</head><label>8</label><figDesc>Figure 8: Results of the DAT and surprisal on human and random baseline. Contours indicate the 95% confidence intervals.</figDesc><graphic coords="8,72.00,568.16,216.00,144.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure 9 :</head><label>9</label><figDesc>Figure 9: Results of the DAT and surprisal for more LLMs. The contour indicate the 95% confidence interval.</figDesc><graphic coords="8,307.28,144.55,216.00,144.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><head>Figure 10 :</head><label>10</label><figDesc>Figure 10: Results of the DAT when controlling surprisal as a confounding variable.</figDesc><graphic coords="8,308.01,525.31,214.53,129.86" type="bitmap" /></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_0"><p>Other components of creativity, such as emotion and motivation, are not considered in this study.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>Specifically, we use the following versions: gpt-4-0314, gpt-3.5-turbo-0301, oasst-sft-7-llama-30b, Vicuna-13b-delta-v1.1 and chatglm-6b-v1.0.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_2"><p>The number of seven is consistent with<ref type="bibr" target="#b28">Olson et al. 2021</ref> because most answers have at least seven valid words, and results are stable using over seven words.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_3"><p>The data and code of DAT for human is available at https://osf.io/vjazn/.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_4"><p>The DAT and surprisal for more LLMs are shown in Appendix C</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="7" xml:id="foot_5"><p>Previous psychological researches reported similar result that mild imperfection of attention is related to higher creativity<ref type="bibr" target="#b0">(Abraham, 2014)</ref>.</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgement</head><p>We thank <rs type="person">Mark Sun</rs> and the anonymous reviews for their thoughtful helps and suggestions. This work was supported by <rs type="grantNumber">STI2030-Major</rs> Projects <rs type="grantNumber">2021ZD0204105</rs> and <rs type="funder">Fundamental Research Funds for the Central Universities</rs> <rs type="grantNumber">226-2023-00091</rs>.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_pzgBQVP">
+					<idno type="grant-number">STI2030-Major</idno>
+				</org>
+				<org type="funding" xml:id="_s4RhB7p">
+					<idno type="grant-number">2021ZD0204105</idno>
+				</org>
+				<org type="funding" xml:id="_xAqjd3j">
+					<idno type="grant-number">226-2023-00091</idno>
+				</org>
+			</listOrg>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Creative thinking as orchestrated by semantic processing vs. cognitive control brain networks</title>
+		<author>
+			<persName><forename type="first">Anna</forename><surname>Abraham</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Frontiers in human neuroscience</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="page">95</biblScope>
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">A learning algorithm for boltzmann machines</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>David</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Geoffrey</forename><forename type="middle">E</forename><surname>Ackley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Terrence</forename><forename type="middle">J</forename><surname>Hinton</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Sejnowski</surname></persName>
+		</author>
+		<idno type="DOI">10.1016/S0364-0213(85)80012-4</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Cognitive Science</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="147" to="169" />
+			<date type="published" when="1985">1985</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Automating creativity assessment with SemDis: An open platform for computing semantic distance</title>
+		<author>
+			<persName><forename type="first">Roger</forename><forename type="middle">E</forename><surname>Beaty</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><forename type="middle">R</forename><surname>Johnson</surname></persName>
+		</author>
+		<idno type="DOI">10.3758/s13428-020-01453-w</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Behavior Research Methods</title>
+		<imprint>
+			<biblScope unit="volume">53</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="757" to="780" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Automating creativity assessment with semdis: An open platform for computing semantic distance</title>
+		<author>
+			<persName><forename type="first">Roger</forename><forename type="middle">E</forename><surname>Beaty</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Richard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johnson</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Behavior Research Methods</title>
+		<imprint>
+			<biblScope unit="volume">53</biblScope>
+			<biblScope unit="page" from="757" to="780" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">The roles of associative and executive processes in creative cognition</title>
+		<author>
+			<persName><forename type="first">Roger</forename><forename type="middle">E</forename><surname>Beaty</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><forename type="middle">J</forename><surname>Silvia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emily</forename><forename type="middle">C</forename><surname>Nusbaum</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emanuel</forename><surname>Jauk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mathias</forename><surname>Benedek</surname></persName>
+		</author>
+		<idno type="DOI">10.3758/s13421-014-0428-8</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Memory &amp; Cognition</title>
+		<imprint>
+			<biblScope unit="volume">42</biblScope>
+			<biblScope unit="issue">7</biblScope>
+			<biblScope unit="page" from="1186" to="1197" />
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">Roger</forename><forename type="middle">E</forename><surname>Beaty</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">C</forename><surname>Zeitlen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brendan</forename><forename type="middle">S</forename><surname>Baker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoed</forename><forename type="middle">N</forename><surname>Kenett</surname></persName>
+		</author>
+		<idno type="DOI">10.1016/j.tsc.2021.100859</idno>
+		<title level="m">Forward flow and creative thought: Assessing associative cognition and its role in divergent thinking. Thinking Skills and Creativity</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">41</biblScope>
+			<biblScope unit="page">100859</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Using cognitive psychology to understand GPT-3</title>
+		<author>
+			<persName><forename type="first">Marcel</forename><surname>Binz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Schulz</surname></persName>
+		</author>
+		<idno type="DOI">10.1073/pnas.2218523120</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Proceedings of the National Academy of Sciences</title>
+		<imprint>
+			<biblScope unit="volume">120</biblScope>
+			<biblScope unit="issue">6</biblScope>
+			<biblScope unit="page">2218523120</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Enriching word vectors with subword information</title>
+		<author>
+			<persName><forename type="first">Piotr</forename><surname>Bojanowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edouard</forename><surname>Grave</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Armand</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tomas</forename><surname>Mikolov</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="page" from="135" to="146" />
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">Sébastien</forename><surname>Bubeck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Varun</forename><surname>Chandrasekaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ronen</forename><surname>Eldan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johannes</forename><surname>Gehrke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Horvitz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ece</forename><surname>Kamar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yin</forename><surname>Tat Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuanzhi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Lundberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harsha</forename><surname>Nori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hamid</forename><surname>Palangi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Tulio Ribeiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2303.12712</idno>
+		<idno type="arXiv">arXiv:2303.12712</idno>
+		<title level="m">Sparks of Artificial General Intelligence: Early experiments with GPT-4</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>arXiv e-prints</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><forename type="first">Wei-Lin</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuohan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zi</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhanghao</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghao</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ion</forename><surname>Stoica</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><forename type="middle">P</forename><surname>Xing</surname></persName>
+		</author>
+		<title level="m">Vicuna: An Open-Source Chatbot Impressing GPT-4 with 90%* Chat-GPT Quality</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><forename type="first">Evan</forename><surname>Crothers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Herna</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nathalie</forename><surname>Viktor</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Japkowicz</surname></persName>
+		</author>
+		<title level="m">BLOOM: Creativity and Affinity in Artificial Lyrics and Art</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>The AAAI-23 Workshop on Creative AI Across Modalities</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Overlap in meaning is a stronger predictor of semantic activation in GPT-3 than in humans</title>
+		<author>
+			<persName><forename type="first">Alexandra</forename><surname>Delucia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaron</forename><surname>Mueller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lisa</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">João</forename><surname>Sedoc</surname></persName>
+		</author>
+		<idno type="DOI">10.1038/s41598-023-32248-6</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 1st Workshop on Natural Language Generation, Evaluation, and Metrics (GEM 2021)</title>
+		<meeting>the 1st Workshop on Natural Language Generation, Evaluation, and Metrics (GEM 2021)</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021-01">2021. Jan Digutsch and Michal Kosinski. 2023</date>
+			<biblScope unit="volume">13</biblScope>
+			<biblScope unit="page">5035</biblScope>
+		</imprint>
+	</monogr>
+	<note>Decoding Methods for Neural Narrative Generation</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">GLM: General Language Model Pretraining with Autoregressive Blank Infilling</title>
+		<author>
+			<persName><forename type="first">Zhengxiao</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yujie</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiezhong</forename><surname>Qiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhilin</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Tang</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.acl-long.26</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Dublin, Ireland</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="320" to="335" />
+		</imprint>
+	</monogr>
+	<note>Long Papers) Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Hierarchical Neural Story Generation</title>
+		<author>
+			<persName><forename type="first">Angela</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yann</forename><surname>Dauphin</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/P18-1082</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 56th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Melbourne, Australia</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="889" to="898" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Intelligence and creativity share a common cognitive and neural basis</title>
+		<author>
+			<persName><forename type="first">Emily</forename><surname>Frith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">B</forename><surname>Elbich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><forename type="middle">P</forename><surname>Christensen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Monica</forename><forename type="middle">D</forename><surname>Rosenberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qunlin</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><forename type="middle">J</forename><surname>Kane</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><forename type="middle">J</forename><surname>Silvia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Seli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roger</forename><forename type="middle">E</forename><surname>Beaty</surname></persName>
+		</author>
+		<idno type="DOI">10.1037/xge0000958</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Experimental Psychology: General</title>
+		<imprint>
+			<biblScope unit="volume">150</biblScope>
+			<biblScope unit="page" from="609" to="632" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Evolutionary approaches to creativity</title>
+		<author>
+			<persName><forename type="first">Liane</forename><surname>Gabora</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Barry Kaufman</surname></persName>
+		</author>
+		<idno type="DOI">10.1017/CBO9780511763205.018</idno>
+	</analytic>
+	<monogr>
+		<title level="m">The Cambridge Handbook of Creativity</title>
+		<meeting><address><addrLine>New York, NY, US</addrLine></address></meeting>
+		<imprint>
+			<publisher>Cambridge University Press</publisher>
+			<date type="published" when="2010">2010</date>
+			<biblScope unit="page" from="279" to="300" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Some new looks at the nature of creative processes. Contributions to mathematical psychology</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">Pv</forename><surname>Guilford</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1964">1964</date>
+			<publisher>Holt, Rinehart &amp; Winston</publisher>
+			<pubPlace>New York</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Artificial muses: Generative artificial intelligence chatbots have risen to human-level creativity</title>
+		<author>
+			<persName><forename type="first">Jennifer</forename><surname>Haase</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">P</forename><surname>Paul</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hanel</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Do Androids Laugh at Electric Sheep? Humor &quot;Understanding&quot; Benchmarks from The New Yorker Caption Contest</title>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Hessel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ana</forename><surname>Marasovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jena</forename><forename type="middle">D</forename><surname>Hwang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lillian</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Da</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rowan</forename><surname>Zellers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Mankoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.acl-long.41</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics<address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="688" to="714" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">The curious case of neural text degeneration</title>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Buys</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maxwell</forename><surname>Forbes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Chatgpt is fun, but it is not funny! humor is still challenging large language models</title>
+		<author>
+			<persName><forename type="first">Sophie</forename><surname>Jentzsch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristian</forename><surname>Kersting</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jean</forename><surname>Kaddour</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joshua</forename><surname>Harris</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maximilian</forename><surname>Mozes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Herbie</forename><surname>Bradley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roberta</forename><surname>Raileanu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Mchardy</surname></persName>
+		</author>
+		<idno>ArXiv:2307.10169</idno>
+		<title level="m">Challenges and Applications of Large Language Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<author>
+			<persName><forename type="first">Andreas</forename><surname>Köpf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yannic</forename><surname>Kilcher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sotiris</forename><surname>Dimitri Von Rütte</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhi-Rui</forename><surname>Anagnostidis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keith</forename><surname>Tam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abdullah</forename><surname>Stevens</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Barhoum</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Minh</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oliver</forename><surname>Duc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richárd</forename><surname>Stanley</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Nagyfi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">S</forename><surname>Shahul</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sameer</forename><surname>Suri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Glushkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arnav</forename><surname>Dantuluri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Maguire</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christoph</forename><surname>Schuhmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huu</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Mattick</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2304.07327</idno>
+		<idno>ArXiv:2304.07327</idno>
+		<title level="m">OpenAssistant Conversations -Democratizing Large Language Model Alignment</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Word meaning in minds and machines</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Brenden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gregory</forename><forename type="middle">L</forename><surname>Lake</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Murphy</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note>Psychological review</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">On the probability-quality paradox in language generation</title>
+		<author>
+			<persName><forename type="first">Clara</forename><surname>Meister</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gian</forename><surname>Wiher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tiago</forename><surname>Pimentel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Cotterell</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.acl-short.5</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Dublin, Ireland</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="36" to="45" />
+		</imprint>
+	</monogr>
+	<note>Short Papers) Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Distributed representations of words and phrases and their compositionality</title>
+		<author>
+			<persName><forename type="first">Tomas</forename><surname>Mikolov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gregory</forename><forename type="middle">S</forename><surname>Corrado</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Dean</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">WordNet: a lexical database for English</title>
+		<author>
+			<persName><forename type="first">George</forename><forename type="middle">A</forename><surname>Miller</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/219717.219748</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Communications of the ACM</title>
+		<imprint>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="issue">11</biblScope>
+			<biblScope unit="page" from="39" to="41" />
+			<date type="published" when="1995">1995</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<title level="m" type="main">Boosting Theory-of-Mind Performance in Large Language Models via Prompting</title>
+		<author>
+			<persName><forename type="first">Rahimi</forename><surname>Shima</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><forename type="middle">J</forename><surname>Moghaddam</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Honey</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2304.11490</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Naming unrelated words predicts creativity</title>
+		<author>
+			<persName><forename type="first">Jay</forename><forename type="middle">A</forename><surname>Olson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johnny</forename><surname>Nahas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denis</forename><surname>Chmoulevitch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><forename type="middle">J</forename><surname>Cropper</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Margaret</forename><forename type="middle">E</forename><surname>Webb</surname></persName>
+		</author>
+		<idno type="DOI">10.1073/pnas.2022340118</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Proceedings of the National Academy of Sciences</title>
+		<imprint>
+			<biblScope unit="volume">118</biblScope>
+			<biblScope unit="issue">25</biblScope>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">Introducing ChatGPT</title>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2303.08774</idno>
+		<idno>ArXiv:2303.08774</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">OpenAI. 2023. GPT-4 Technical Report</note>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carroll</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katarina</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Schulman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fraser</forename><surname>Kelton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Miller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maddie</forename><surname>Simens</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Welinder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><forename type="middle">F</forename><surname>Christiano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Lowe</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="27730" to="27744" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title level="m" type="main">Can chatgpt be used to generate scientific hypotheses?</title>
+		<author>
+			<persName><forename type="first">Yang Jeong</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhichu</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chia-Wei</forename><surname>Hsu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Changhao</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haowei</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sipei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ju</forename><surname>Li</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Glove: Global Vectors for Word Representation</title>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Pennington</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Socher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Manning</surname></persName>
+		</author>
+		<idno type="DOI">10.3115/v1/D14-1162</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2014 Conference on Empirical Methods in Natural Language Processing (EMNLP)</title>
+		<meeting>the 2014 Conference on Empirical Methods in Natural Language Processing (EMNLP)<address><addrLine>Doha, Qatar</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="page" from="1532" to="1543" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Language models are unsupervised multitask learners</title>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">OpenAI blog</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page">9</biblScope>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title level="m" type="main">Hierarchical textconditional image generation with clip latents</title>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Nichol</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Casey</forename><surname>Chu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">The Standard Definition of Creativity</title>
+		<author>
+			<persName><forename type="first">Mark</forename><forename type="middle">A</forename><surname>Runco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Garrett</forename><forename type="middle">J</forename><surname>Jaeger</surname></persName>
+		</author>
+		<idno type="DOI">10.1080/10400419.2012.650092</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Creativity Research Journal</title>
+		<imprint>
+			<biblScope unit="volume">24</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="92" to="96" />
+			<date type="published" when="2012">2012</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Evaluation methods for unsupervised word embeddings</title>
+		<author>
+			<persName><forename type="first">Tobias</forename><surname>Schnabel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Igor</forename><surname>Labutov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Mimno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thorsten</forename><surname>Joachims</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D15-1036</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2015 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2015 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Lisbon, Portugal</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="page" from="298" to="307" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<title level="m" type="main">The curse of recursion: Training on generated data makes models forget</title>
+		<author>
+			<persName><forename type="first">Ilia</forename><surname>Shumailov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zakhar</forename><surname>Shumaylov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiren</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yarin</forename><surname>Gal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicolas</forename><surname>Papernot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ross</forename><surname>Anderson</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Mastering the game of go with deep neural networks and tree search</title>
+		<author>
+			<persName><forename type="first">David</forename><surname>Silver</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aja</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><forename type="middle">J</forename><surname>Maddison</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Guez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laurent</forename><surname>Sifre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">George</forename><surname>Van Den Driessche</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julian</forename><surname>Schrittwieser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ioannis</forename><surname>Antonoglou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Veda</forename><surname>Panneershelvam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marc</forename><surname>Lanctot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sander</forename><surname>Dieleman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dominik</forename><surname>Grewe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Nham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nal</forename><surname>Kalchbrenner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothy</forename><surname>Lillicrap</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Madeleine</forename><surname>Leach</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Koray</forename><surname>Kavukcuoglu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thore</forename><surname>Graepel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Demis</forename><surname>Hassabis</surname></persName>
+		</author>
+		<idno type="DOI">10.1038/nature16961</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Nature</title>
+		<imprint>
+			<biblScope unit="volume">529</biblScope>
+			<biblScope unit="issue">7587</biblScope>
+			<biblScope unit="page" from="484" to="489" />
+			<date type="published" when="2016">2016</date>
+			<publisher>Nature Publishing Group</publisher>
+		</imprint>
+	</monogr>
+	<note>Number: 7587 Publisher</note>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">Brainstorm, then Select: A Generative Language Model Improves Its Creativity Score</title>
+		<author>
+			<persName><forename type="first">Douglas</forename><surname>Summers-Stay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clare</forename><forename type="middle">R</forename><surname>Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephanie</forename><forename type="middle">M</forename><surname>Lukin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The AAAI-23 Workshop on Creative AI Across Modalities</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<monogr>
+		<title level="m" type="main">LLaMA: Open and Efficient Foundation Language Models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Faisal</forename><surname>Azhar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aurelien</forename><surname>Rodriguez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Armand</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edouard</forename><surname>Grave</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lample</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2302.13971</idno>
+		<idno>ArXiv:2302.13971</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Trading Off Diversity and Quality in Natural Language Generation</title>
+		<author>
+			<persName><forename type="first">Hugh</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Duckworth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daphne</forename><surname>Ippolito</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Workshop on Human Evaluation of NLP Systems (HumEval)</title>
+		<meeting>the Workshop on Human Evaluation of NLP Systems (HumEval)</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="25" to="33" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Retrieval flexibility links to creativity: evidence from computational linguistic measure</title>
+		<author>
+			<persName><forename type="first">Jingyi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kaixiang</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiangzhou</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cheng</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xueyang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiang</forename><surname>Qiu</surname></persName>
+		</author>
+		<idno type="DOI">10.1093/cercor/bhac392</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Cerebral Cortex</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page" from="4964" to="4976" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

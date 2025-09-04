@@ -1,0 +1,558 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">RETRIEVAL-GENERATION SYNERGY AUGMENTED LARGE LANGUAGE MODELS</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-10-08">8 Oct 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Zhangyin</forename><surname>Feng</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Harbin Institute of Technology</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xiaocheng</forename><surname>Feng</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Harbin Institute of Technology</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Dezhi</forename><surname>Zhao</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Harbin Institute of Technology</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Maojin</forename><surname>Yang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Harbin Institute of Technology</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Bing</forename><surname>Qin</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Harbin Institute of Technology</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">RETRIEVAL-GENERATION SYNERGY AUGMENTED LARGE LANGUAGE MODELS</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-10-08">8 Oct 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">FCBB35E90F98456F71E9371D4D3B12BE</idno>
+					<idno type="arXiv">arXiv:2310.05149v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:31+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>large language models</term>
+					<term>retrieval augmented</term>
+					<term>question answering</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large language models augmented with task-relevant documents have demonstrated impressive performance on knowledgeintensive tasks. However, regarding how to obtain effective documents, the existing methods are mainly divided into two categories. One is to retrieve from an external knowledge base, and the other is to utilize large language models to generate documents. We propose an iterative retrieval-generation collaborative framework. It is not only able to leverage both parametric and non-parametric knowledge, but also helps to find the correct reasoning path through retrieval-generation interactions, which is very important for tasks that require multi-step reasoning. We conduct experiments on four question answering datasets, including single-hop QA and multihop QA tasks. Empirical results show that our method significantly improves the reasoning ability of large language models and outperforms previous baselines.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">INTRODUCTION</head><p>Large Language models (LLMs) have demonstrated impressive performance on diverse language tasks through incontext learning <ref type="bibr" target="#b1">[1,</ref><ref type="bibr" target="#b2">2,</ref><ref type="bibr" target="#b3">3,</ref><ref type="bibr" target="#b4">4,</ref><ref type="bibr" target="#b5">5,</ref><ref type="bibr">6]</ref>. However, they still struggle with knowledge-intensive tasks that require access to a large amount of knowledge, such as open-domain question answering <ref type="bibr" target="#b7">[7]</ref> and commonsense reasoning <ref type="bibr" target="#b8">[8]</ref>, since the implicit knowledge preserved in the parameters may be partial and insufficient. As shown in the top of Figure <ref type="figure" target="#fig_0">1</ref>, one promising direction is to incorporate non-parametric knowledge to help alleviate this problem with large language models.</p><p>Recent research shows that retrieving relevant documents from an external datastore <ref type="bibr" target="#b9">[9,</ref><ref type="bibr" target="#b10">10,</ref><ref type="bibr" target="#b11">11]</ref> or directly generating contextual documents from LLMs <ref type="bibr" target="#b12">[12,</ref><ref type="bibr" target="#b13">13]</ref> both can improve LLMs' performance on knowledge-intensive tasks. The former, called retrieve-then-read, requires a retriever to retrieve relevant documents. The latter, known as generate-then-read, leverages large language models to generate relevant documents before answering questions. However, as shown in Figure <ref type="figure" target="#fig_0">1</ref>, the above two methods are isolated and lack coordination with each other. To fill this gap, in this paper, we explore an effective retrieval-generation collaboration frame-</p><p>Who is the lead singer of Depeche Mode? Depeche Mode currently consists of Dave Gahan (lead vocals, cosongwriting) and Martin Gore (keyboards, guitar, co-lead vocals, primary songwriting)… LLMs Question Document Dave Gahan Answer Question LLMs Retriever LLMs Retriever Document Question Document Question Document (1) Retrieval (2) Generation (3) Retrieval-Generation Synergy work to further improve the ability of large language models to solve knowledge-intensive tasks.</p><p>In this work, we present ITRG, an ITerative Retrieval-Generation synergy framework to generate relevant documents that simultaneously exploits parametric and nonparametric knowledge. In each iteration, ITRG consists of two important steps: generation augmented retrieval (GAR) and retrieval augmented generation (RAG). In the GAR step, we propose a simple and effective method to expand queries by concatenating pseudo-documents generated from large language models and original questions. And expanded queries improve the accuracy of retrieving relevant documents. In the RAG step, we use large language models to comprehensively understand retrieved documents to generate new documents for answering questions. We repeat these steps until we reach the maximum allowed number of iterations. Through multiple retrieval generation collaborations, our method aids in discovering the appropriate reasoning path and providing correct answers to questions.</p><p>We evaluate the efficacy of our method on 4 question answering datasets, including Natural Questions, TriviaQA, 2WikiMultiHopQA, and HotpotQA. Experimental results show that our method performs better than previous baselines on all datasets. In summary, our main contributions can be summarized as follows: <ref type="bibr" target="#b1">(1)</ref> We propose ITRG, an iterative retrieval-generation synergy framework using both parametric and non-parametric knowledge. <ref type="bibr" target="#b2">(2)</ref> We propose a simple and effective generation-augmented retrieval strategy and two retrieval-augmented generation strategies. (3) Empirical results show that ITRG outperforms previous retrievalaugmented methods.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">ITERATIVE RETRIEVAL-GENERATION SYNERGY</head><p>In this section, we first introduce the overall framework, and then introduce the retrieval-generation collaboration framework in detail, including generation augmented retrieval and retrieval augmented generation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.">Overview</head><p>We show the framework of ITRG in Figure <ref type="figure">2</ref>. Given a user question q and a document corpus D = {d i } |D| i=1 (i.e, d i is a Wikipedia paragraph.), ITRG repeats generation augmented retrieval (GAR) and retrieval augmented generation (RAG) for T iterations. In the GAR process of iteration t, we concatenate the output y t-1 of the last iteration and question q to form a new query, and then use a dense retriever to retrieve top-k paragraphs. In the first iteration, we only use the question as the query. In the RAG process of iteration t, based on the question q and the retrieved top-k paragraphs, we exploit large language models to generate new paragraphs to answer questions. Specifically, we propose two methods to generate new paragraphs, which will be introduced in detail in §2.3.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.">Generation Augmented Retrieval</head><p>Knowledge-intensive tasks (e.g., open-domain question answering) often require access to A common approach is to directly employ the question as the query, and then equip a sparse or dense retriever to retrieve relevant documents. In practice, we find that in some cases using the question directly as the query fails to retrieve relevant documents because there may exist semantic gaps between them. To alleviate this problem, we propose a simple query expansion method. At the first iteration (t = 1), we use the original question q as the query. At iteration t (t &gt; 1), we concatenate the original question q and the document generated y t-1 in the last iteration as the new query q t = [q; y t-1 ]. Then, we utilize a pre-trained dense retriever to retrieve top-k documents, which are denoted as R t = {d}.</p><p>Given an input question q, the retriever aims to retrieve a small set of documents from a corpus D = {d i } |D| i=1 that are relevant to q. Following prior work <ref type="bibr" target="#b14">[14]</ref>, we use a dense retriever based on the dual encoder architecture, where an encoder is used to encode both the input context q and the document d. Specifically, the encoder maps each document d ∈ D to an embedding E(d) by taking the mean pooling of the last hidden representation over the tokens in d. At query time, the same encoder is applied to the input context q to obtain a query embedding E(q). The similarity between the query embedding and the document embedding is computed by their cosine similarity: s(d, q) = cos(E(d), E(q)). The top-k documents that have the highest similarity scores are retrieved. Emilie Hegh Arntzen was born on January 1, 1994 in Skien, Norway. Her mother is unknown.</p><p>Camilla Marie Gjersem was born together with a twin sister, Anne Line, on 6 January 1994 in Hønefoss, Norway. Their mother, Perlina Bangug, is a Filipina from Ilagan, Isabela, and their father, Petter Gjersem, a Norwegian from Raufoss. Camilla Gjersem is a law student at the University of Oslo. Fig. <ref type="figure">2</ref>: Iterative retrieval-generation synergy framework contains two steps in each iteration: (1) generation augmented retrieval (GAR): utilize the output of the previous iteration to expand the query to help retrieve more relevant documents;</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Hanne</head><p>(2) retrieval augmented generation (RAG): utilize retrieved documents to generate new documents to answer questions. We only show three iterations in this figure for brevity. Solid arrows indicate RAG within an iteration, and dashed arrows indicate GAR between iterations. Purple represents correct and useful information, and red represents wrong or invalid information.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.">Retrieval Augmented Generation</head><p>Following previous work <ref type="bibr" target="#b13">[13]</ref>, for a given question q, we could directly prompt large language models to generate related documents without retrieving them from an external corpus. However, we find that if only the parametric knowledge learned by the large model in the pre-training stage is used, the generated documents may be incomplete. Retrieval augmented generation (RAG) aims to comprehensively understand the retrieved non-parametric knowledge and the parametric knowledge inside large language models to generate more accurate factual knowledge. Specifically, we propose two strategies, which will be described in detail below.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.1.">Refine</head><p>An intuitive idea is to refine the previously generated document y t-1 based on the original question q and the retrieved top-k documents at the current iteration step R t to obtain a new document y t . We call this method refine. Considering that the document retrieved in the last iteration R t-1 has been used to generate the last document y t-1 , we refine the previous output y t-1 with updated documents R update .</p><formula xml:id="formula_0">R update = R t -R t-1 ,<label>(1)</label></formula><formula xml:id="formula_1">y t = M (prompt (y t-1 , q, R update )) ,<label>(2)</label></formula><p>where R update means that these documents are only retrieved in the current iteration, not in the last iteration, M denotes a well pre-trained large language model. If R update is an empty set, we do not regenerate a new document and set y t = y t-1 .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.2.">Refresh</head><p>In order to avoid the negative effect of errors or hallucinations in the previously generated document y t-1 , we do not use y t-1 , which is used in refine. We refresh the memory and let the large language models directly generate the document y t based on the retrieved document R t and the original question q. This method is named refresh.</p><formula xml:id="formula_2">y t = M (prompt (q, R t ))<label>(3)</label></formula><p>Both refine and refresh are prompts. We give the prompt corresponding to refresh.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Prompt for refresh with all documents</head><p>In the following task, you should write a document that contains the answer to the question.</p><p>Passage: {R t } Question: {q} Document: {y t }</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">EXPERIMENTAL SETUP</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.">Datasets</head><p>We evaluate the effectiveness of ITRG on four open domain question answering datasets, including Natural Questions (NQ) <ref type="bibr" target="#b15">[15]</ref>, TriviaQA <ref type="bibr" target="#b16">[16]</ref>, 2WikiMultiHopQA <ref type="bibr" target="#b17">[17]</ref> and Hot-potQA <ref type="bibr" target="#b19">[18]</ref>. Following previous works <ref type="bibr" target="#b20">[19,</ref><ref type="bibr" target="#b21">20]</ref>, we randomly sub-sample 500 examples from each dataset due to the cost of running experiments. We evaluate our method in 0-shot, 1-shot and 5-shot settings. The few-shot demonstrations are randomly sampled from the data that is not involved in the evaluation process.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.">Baselines</head><p>GPT-3.5 <ref type="bibr" target="#b22">[21]</ref> We use text-davinci-002 and text-davinci-003 as our baselines. Text-davinci-002 is an InstructGPT model while Text-davinci-003 is trained with reinforcement learning with reward models trained from comparisons by humans. Vanilla LM The vanilla LM baselines prompt an LLM to directly generate an answer following the few-shot in-context learning paradigm <ref type="bibr" target="#b1">[1]</ref>. CoT We follow <ref type="bibr" target="#b23">[22]</ref> to generate both the chain-of-thought (CoT) reasoning process and the final answer. We only evaluate this method on multi-hop reasoning datasets in 5-shot setting <ref type="foot" target="#foot_0">1</ref> . Retrieve-then-Read The retrieve-then-read baseline consists of a well-pre-trained dense retriever and a large language model. The retriever retrieves relevant documents for the question, and then the LLM conditions on both the question and retrieved documents to generate the answer. Generate-then-Read Generate-then-read baseline first uses few-shot prompts to generate a questionrelated document, and then concatenates it with the question to regenerate the answer.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3.">Details</head><p>LLaMA <ref type="bibr">[6]</ref> is an open source well trained large language model. Considering the performance and computational cost of the model, we use LLaMA 33B as the backend LLM. We use greedy decoding for both document generation and answer generation, and set up to generate 200 tokens and 15 tokens respectively. We retrieve the top-5 paragraphs for each query and set the maximum number of iterations T to 5. We directly use the pre-trained dense retriever <ref type="bibr" target="#b24">[23]</ref> and used the December 2018 Wikipedia dump as the retrieval corpus for all datasets. Generated answers are evaluated with the standard exact match metric (EM score): a generated answer is considered correct if it matches any answer of the list of answers after normalization. For this normalization step, we lowercase generated answers and remove articles, punctuation and duplicate whitespaces.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">RESULTS</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.">Main Results</head><p>Table <ref type="table" target="#tab_1">1</ref> reports the results on the single-hop question answering datasets. In the 1-shot and 5-shot settings, the performance of LLaMA-33B based Vanilla LM is very close to that of text-davinci-003. This shows LLaMA-33B is a strong language model, and it is reasonable to choose LLaMA-33B as our backend LLM. Retrieve-then-read and generate-thenread all exceed vanilla LM, verifying that adding relevant external knowledge can improve the reasoning ability of large language models. In addition, we observe that our iterative retrieval-generation collaborative method ITRG achieves state-of-the-art performance on both datasets. Specifically, ITRG (refresh) performs better on the NQ dataset, and ITRG (refine) performs better on the TriviaQA dataset.</p><p>Table <ref type="table" target="#tab_2">2</ref> presents the results on the multi-hop question answering datasets. We observe that LLaMA-33B is still comparable to text-davinci-003 on the multi-hop question answering datasets. In addition, CoT can answer questions more accurately than vanilla LM by generating reasoning process. Compared with different baseline models, ITRG significantly improves the exact match scores. Specifically, on the 2Wiki-MultiHopQA dataset, the exact match score of ITRG (refresh) in the zero-shot setting is 32.2, which exceeds the performance of vanilla LM in the 5-shot setting with a score of 31.8. In the 5-shot setting, ITRG (refresh) achieves 38.6 EM score   </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2.">Performance at Different Iterations</head><p>In this section, we analyze the performance of our model and the quality of the generated documents during the iteration process. Specifically, we present the results of ITRG (refresh) at different iterations in 5-shot setting in Table <ref type="table" target="#tab_3">3</ref>. We measure the answer recall of generated documents at different iteration steps and present results in Table <ref type="table" target="#tab_4">4</ref>. Table <ref type="table" target="#tab_3">3</ref> shows that the performance of the model gradually improves with iteration. And Table <ref type="table" target="#tab_4">4</ref> shows that the quality of the generated documents also gradually improves with iteration. These results verify that our iterative retrieval-generation collaborative framework is effective and can further enhance the reasoning capabilities of large language models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">CONCLUSION</head><p>In this paper, we present ITRG, which is an iterative retrievalgeneration synergy framework, containing two important steps: generation-augmented retrieval and retrieval-augmented generation. They form a closed loop, and can improve each other via multiple iterations. We propose a simple and effective generation-augmented retrieval strategy and two retrieval-augmented generation strategies. Empirical results show our approach significantly exceeds several strong baselines, including GPT 3.5, on four open domain question answering datasets, which indicates that our method can significantly improve the reasoning ability of large language models.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Fig. 1 :</head><label>1</label><figDesc>Fig.1:The top is the standard method utilizing LLMs for question answering with relevant documents. The bottom shows three methods to generate relevant documents.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Question:</head><figDesc>What is the date of birth of Emilie Hegh Arntzen's mother? name: Emilie Hegh Arntzen ; caption: Hegh Arntzen in 2018 ; birth_date: January 1, 1994 ; birth_place: Skien, Norway ; nationality: Norwegian ;</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><figDesc>Hegh (born 19 January 1960) is a Norwegian handball player. She played 220 matches for the Norwegian national handball team between 1978 and 1992. She is the mother of Emilie Hegh Arntzen. infobox name: Hanne Hegh ; caption: Hanne Hegh 2008 ; nationality: Norwegian ; birth_date: April 27, 1960 ; birth_place: Oslo, Norway ; Hanne Hegh was born on April 27, 1960 in Oslo, Norway. She is the mother of Emilie Hegh Arntzen, who was born on January 1, 1994 in Skien, Norway.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>Exact match performance on single-hop question answering. All ITRG results are from the last iteration (T = 5).</figDesc><table><row><cell></cell><cell>Method</cell><cell cols="3">Natural Questions</cell><cell></cell><cell>TriviaQA</cell><cell></cell></row><row><cell></cell><cell></cell><cell cols="6">0-shot 1-shot 5-shot 0-shot 1-shot 5-shot</cell></row><row><cell>GPT 3.5</cell><cell>Text-davinci-002 Text-davinci-003</cell><cell>12.0 29.4</cell><cell>24.6 33.0</cell><cell>33.0 33.8</cell><cell>46.0 75.8</cell><cell>74.2 78.6</cell><cell>76.0 77.8</cell></row><row><cell></cell><cell>Vanilla LM</cell><cell>27.0</cell><cell>29.4</cell><cell>32.4</cell><cell>74.8</cell><cell>70.8</cell><cell>75.8</cell></row><row><cell></cell><cell>Retrieve-then-Read</cell><cell>27.8</cell><cell>30.6</cell><cell>29.8</cell><cell>74.6</cell><cell>76.0</cell><cell>76.0</cell></row><row><cell>LLaMA 33B</cell><cell>Generate-then-Read ITRG (refine)</cell><cell>28.0 34.4</cell><cell>31.4 34.6</cell><cell>31.0 34.8</cell><cell>73.6 79.0</cell><cell>77.2 79.4</cell><cell>77.6 80.6</cell></row><row><cell></cell><cell>ITRG (refresh)</cell><cell>37.6</cell><cell>38.4</cell><cell>38.0</cell><cell>77.0</cell><cell>78.6</cell><cell>79.4</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 2 :</head><label>2</label><figDesc>Exact match performance on multi-hop question answering. All ITRG results are from the last iteration (T = 5).</figDesc><table><row><cell></cell><cell>Method</cell><cell cols="3">2WikiMultiHopQA</cell><cell></cell><cell>HotpotQA</cell><cell></cell></row><row><cell></cell><cell></cell><cell cols="6">0-shot 1-shot 5-shot 0-shot 1-shot 5-shot</cell></row><row><cell>GPT 3.5</cell><cell>Text-davinci-002 Text-davinci-003</cell><cell>16.4 27.2</cell><cell>27.6 27.0</cell><cell>30.8 29.8</cell><cell>12.2 25.0</cell><cell>20.2 25.8</cell><cell>22.2 26.6</cell></row><row><cell></cell><cell>Vanilla LM</cell><cell>24.4</cell><cell>27.6</cell><cell>31.8</cell><cell>22.6</cell><cell>25.0</cell><cell>27.0</cell></row><row><cell></cell><cell>COT</cell><cell>-</cell><cell>-</cell><cell>32.2</cell><cell>-</cell><cell>-</cell><cell>28.6</cell></row><row><cell></cell><cell>Retrieve-then-Read</cell><cell>27.4</cell><cell>29.2</cell><cell>32.0</cell><cell>28.4</cell><cell>29.8</cell><cell>30.4</cell></row><row><cell>LLaMA 33B</cell><cell>Generate-then-Read ITRG (refine)</cell><cell>30.0 33.0</cell><cell>30.4 33.6</cell><cell>31.6 37.0</cell><cell>25.0 28.8</cell><cell>27.0 29.6</cell><cell>27.0 30.6</cell></row><row><cell></cell><cell>ITRG (refresh)</cell><cell>32.2</cell><cell>36.2</cell><cell>38.6</cell><cell>31.0</cell><cell>32.6</cell><cell>33.4</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 3 :</head><label>3</label><figDesc>Exact match performance of ITRG (refresh) at different iterations in 5-shot setting.</figDesc><table><row><cell>Iteration</cell><cell>1</cell><cell>2</cell><cell>3</cell><cell>4</cell><cell>5</cell></row><row><cell>Natural Questions</cell><cell cols="5">34.0 35.2 37.0 37.2 38.0</cell></row><row><cell>TriviaQA</cell><cell cols="5">79.8 79.2 79.8 79.8 79.4</cell></row><row><cell cols="6">2WikiMultiHopQA 34.8 37.4 37.2 38.6 38.6</cell></row><row><cell>HotpotQA</cell><cell cols="5">32.6 32.8 34.0 33.4 33.4</cell></row><row><cell cols="6">and improves by 6.8 points in absolute gains. Compared to</cell></row><row><cell cols="6">vanilla LM, ITRG (refresh) can improve the EM score by 9.4,</cell></row><row><cell cols="6">7.6, and 6.4 points respectively in 0-shot, 1-shot, and 5-shot</cell></row><row><cell cols="2">settings on the Hotpotqa dataset.</cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 4 :</head><label>4</label><figDesc>Answer recall of generated documents at different iterations with ITRG (refresh).</figDesc><table><row><cell>Iteration</cell><cell>1</cell><cell>2</cell><cell>3</cell><cell>4</cell><cell>5</cell></row><row><cell>Natural Questions</cell><cell cols="5">44.0 46.4 48.4 48.8 48.0</cell></row><row><cell>TriviaQA</cell><cell cols="5">18.8 19.0 20.2 19.2 19.2</cell></row><row><cell cols="6">2WikiMultiHopQA 34.2 36.6 35.0 40.0 37.0</cell></row><row><cell>HotpotQA</cell><cell cols="5">34.2 34.8 35.6 33.8 33.6</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>We also conduct evaluation in 1-shot setting, but the final answer could not be generated according to the corresponding instructions</p></note>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>References</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Advances in neural information processing systems</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brown</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+	<note>Language models are few-shot learners</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Training compute-optimal large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hoffmann</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Glm-130b: An open bilingual pre-trained model</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zeng</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.02414</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Palm: Scaling language modeling with pathways</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2204.02311</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Gpt-4 technical report</title>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Llama: Open and efficient foundation language models</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Touvron</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Latent retrieval for weakly supervised open domain question answering</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-W</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Toutanova</surname></persName>
+		</author>
+		<ptr target="https://aclanthology.org/P19-1612" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 57th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Florence, Italy</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019-07">Jul. 2019</date>
+			<biblScope unit="page" from="6086" to="6096" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">SWAG: A large-scale adversarial dataset for grounded commonsense inference</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Zellers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bisk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Schwartz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Choi</surname></persName>
+		</author>
+		<ptr target="https://www.aclweb.org/anthology/D18-1009" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Brussels, Belgium</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2018-11">Oct.-Nov. 2018</date>
+			<biblScope unit="page" from="93" to="104" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">In-context retrieval-augmented language models</title>
+		<author>
+			<persName><forename type="first">O</forename><surname>Ram</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.00083</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Demonstrate-search-predict: Composing retrieval and language models for knowledge-intensive nlp</title>
+		<author>
+			<persName><forename type="first">O</forename><surname>Khattab</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Replug: Retrieval-augmented black-box language models</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Shi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.12652</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Generate rather than retrieve: Large language models are strong context generators</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Yu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Recitationaugmented language models</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Leveraging passage retrieval with generative models for open domain question answering</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Grave</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2007.01282</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Natural questions: A benchmark for question answering research</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Kwiatkowski</surname></persName>
+		</author>
+		<ptr target="https://aclanthology.org/Q19-1026" />
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="page" from="452" to="466" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">TriviaQA: A large scale distantly supervised challenge dataset for reading comprehension</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Joshi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Weld</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<ptr target="https://aclanthology.org/P17-1147" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 55th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 55th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Vancouver, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2017-07">Jul. 2017</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1601" to="1611" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Constructing a multi-hop QA dataset for comprehensive evaluation of reasoning steps</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Ho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A.-K</forename><surname>Duong Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Sugawara</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Aizawa</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 28th International Conference on Computational Linguistics</title>
+		<meeting>the 28th International Conference on Computational Linguistics</meeting>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<author>
+			<persName><forename type="first">Spain</forename><surname>Barcelona</surname></persName>
+		</author>
+		<ptr target="https://aclanthology.org/2020.coling-main.580" />
+		<title level="m">International Committee on Computational Linguistics</title>
+		<imprint>
+			<date type="published" when="2020-12">Dec. 2020</date>
+			<biblScope unit="page" from="6609" to="6625" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">HotpotQA: A dataset for diverse, explainable multi-hop question answering</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<ptr target="https://aclanthology.org/D18-1259" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Brussels, Belgium</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018-11">Oct.-Nov. 2018</date>
+			<biblScope unit="page" from="2369" to="2380" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Interleaving retrieval with chain-of-thought reasoning for knowledge-intensive multi-step questions</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Trivedi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Balasubramanian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sabharwal</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.10509</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Active retrieval augmented generation</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Jiang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.06983</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ouyang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="27" to="730" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Chain of thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2201.11903</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Few-shot learning with retrieval augmented language models</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Izacard</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2208.03299</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

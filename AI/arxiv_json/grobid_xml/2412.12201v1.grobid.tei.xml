@@ -1,0 +1,2367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Embracing Large Language Models in Traffic Flow Forecasting</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-12-15">15 Dec 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Yusheng</forename><surname>Zhao</surname></persName>
+							<email>yusheng.zhao@stu.pku.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Peking University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xiao</forename><surname>Luo</surname></persName>
+							<email>xiaoluo@cs.ucla.edu</email>
+							<affiliation key="aff1">
+								<orgName type="department">Los Angeles ♢ Carnegie</orgName>
+								<orgName type="institution" key="instit1">University of California</orgName>
+								<orgName type="institution" key="instit2">Mellon University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Zhiping</forename><surname>Xiao</surname></persName>
+							<affiliation key="aff2">
+								<orgName type="institution">University of Washington</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Wei</forename><surname>Ju</surname></persName>
+							<email>juwei@pku.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Peking University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Ming</forename><surname>Zhang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Peking University</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Embracing Large Language Models in Traffic Flow Forecasting</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-12-15">15 Dec 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">7CD9DA3732B9994421B1BED4D1EE9EB1</idno>
+					<idno type="arXiv">arXiv:2412.12201v1[cs.LG]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:42+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Traffic flow forecasting aims to predict future traffic flows based on the historical traffic conditions and the road network. It is an important problem in intelligent transportation systems, with a plethora of methods been proposed. Existing efforts mainly focus on capturing and utilizing spatio-temporal dependencies to predict future traffic flows. Though promising, they fall short in adapting to test-time environmental changes of traffic conditions. To tackle this challenge, we propose to introduce large language models (LLMs) to help traffic flow forecasting and design a novel method named Large Language Model Enhanced Traffic Flow Predictor (LEAF). LEAF adopts two branches, capturing different spatio-temporal relations using graph and hypergraph structures respectively. The two branches are first pre-trained individually, and during test-time, they yield different predictions. Based on these predictions, a large language model is used to select the most likely result. Then, a ranking loss is applied as the learning objective to enhance the prediction ability of the two branches. Extensive experiments on several datasets demonstrate the effectiveness of the proposed LEAF.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Traffic flow forecasting is an integral part of intelligent transportation systems <ref type="bibr" target="#b14">(Dimitrakopoulos and Demestichas, 2010;</ref><ref type="bibr" target="#b74">Zhang et al., 2011)</ref> and smart cities <ref type="bibr">(Shahid et al., 2021;</ref><ref type="bibr" target="#b13">Dai et al., 2022)</ref>. The goal of traffic flow forecasting is to predict future traffic flows using the historical data and the spatial information (i.e. the road network), which has a wide range of applications including traffic signal control <ref type="bibr" target="#b29">(Jiang et al., 2021)</ref>, route planning <ref type="bibr" target="#b45">(Liebig et al., 2017)</ref>, and congestion management <ref type="bibr" target="#b15">(Fouladgar et al., 2017)</ref>.</p><p>Due to its value in real-world applications, great efforts have been made to resolve the problem of traffic flow forecasting <ref type="bibr">(Smith and Demetsky,</ref><ref type="bibr">Historical Data: 362,</ref><ref type="bibr">348,</ref><ref type="bibr">330,</ref><ref type="bibr">... ,</ref><ref type="bibr">302,</ref><ref type="bibr">269</ref> LLMs Prediction: 261, 244, ...</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Prediction: Option 2 (a) Generati ve Abi l i ty of LLMs (b) Di scri mi nati ve Abi l i ty of LLMs</head><p>Predictor Option 1: 281, 266, 275, ...   Option 2: 278, 294, 289, ...   Option N: 297, 305, 323, ...   (Road Network)   ... 1997; <ref type="bibr" target="#b57">Sun et al., 2006;</ref><ref type="bibr" target="#b20">Guo et al., 2019;</ref><ref type="bibr" target="#b39">Li and Zhu, 2021)</ref>. Early works mainly model the traffic systems using physical rules or shallow models <ref type="bibr" target="#b18">(Ghosh et al., 2009;</ref><ref type="bibr" target="#b58">Tchrakian et al., 2011;</ref><ref type="bibr" target="#b26">Hong et al., 2011;</ref><ref type="bibr" target="#b41">Li et al., 2012)</ref>. With the advent of deep learning, the main-stream of traffic flow forecasting methods utilizes graph neural networks <ref type="bibr" target="#b33">(Kipf and Welling, 2016;</ref><ref type="bibr" target="#b23">Hamilton et al., 2017;</ref><ref type="bibr" target="#b67">Xu et al., 2018;</ref><ref type="bibr" target="#b61">Veličković et al., 2018)</ref>, recurrent neural networks <ref type="bibr" target="#b25">(Hochreiter, 1997;</ref><ref type="bibr" target="#b12">Chung et al., 2014)</ref>, and transformers <ref type="bibr" target="#b60">(Vaswani, 2017;</ref><ref type="bibr" target="#b30">Jiang et al., 2023)</ref> to capture the rich spatio-temporal relations <ref type="bibr" target="#b71">(Yu et al., 2018;</ref><ref type="bibr" target="#b42">Li et al., 2018;</ref><ref type="bibr" target="#b20">Guo et al., 2019;</ref><ref type="bibr" target="#b39">Li and Zhu, 2021;</ref><ref type="bibr" target="#b75">Zhang et al., 2021;</ref><ref type="bibr">Chen et al., 2022a;</ref><ref type="bibr" target="#b48">Liu et al., 2023;</ref><ref type="bibr" target="#b51">Ma et al., 2024)</ref>.</p><p>Despite their success, existing traffic flow forecasting methods have two limitations, which hinder their applications in the real world. (1) Unable to adapt to environmental changes of traffic conditions during test time. Most existing methods make the assumption that test data follow the same (or a very similar) distribution as the training data, which may fail to hold true in real-world scenarios <ref type="bibr" target="#b32">(Kim et al., 2024;</ref><ref type="bibr">Chen et al., 2024c)</ref>, especially for time series data <ref type="bibr" target="#b49">(Lu et al., 2022;</ref><ref type="bibr">Gagnon-Audet et al., 2022;</ref><ref type="bibr" target="#b28">Jian et al., 2024)</ref>. In the real world, traffic condition changes over time due to a variety of factors like special events, the change of weather, or the shift of eras. While it is difficult for existing methods to adequately adapt to all these changes, the assistance of large language models (LLMs) can make a difference, as LLMs have the ability to understand these changes <ref type="bibr" target="#b6">(Chang et al., 2024;</ref><ref type="bibr" target="#b53">Minaee et al., 2024;</ref><ref type="bibr" target="#b3">Beniwal et al., 2024)</ref>. A naive solution is to utilize the generative ability of LLMs to make direct predictions <ref type="bibr">(Li et al., 2024b;</ref><ref type="bibr" target="#b54">Ren et al., 2024;</ref><ref type="bibr" target="#b44">Liang et al., 2024)</ref>, as shown in Figure <ref type="figure" target="#fig_0">1</ref>. However, directly generating future traffic flows could be too challenging for language models, as accurate forecasting relies on both historical data and complex spatio-temporal relations. (2) Weak in capturing the rich structure of spatio-temporal relations in traffic data. The traffic network is complicated and the temporal dimension adds another layer of complexity. A large number of prior works focus on capturing the complex spatio-temporal relations, using graph structures <ref type="bibr" target="#b56">(Song et al., 2020;</ref><ref type="bibr">Zheng et al., 2023a)</ref> or hypergraph structures <ref type="bibr" target="#b49">(Wang et al., 2022;</ref><ref type="bibr" target="#b65">Wang and Zhu, 2022;</ref><ref type="bibr" target="#b76">Zhao et al., 2023)</ref>. Graphs capture pair-wise relations, while hypergraphs model nonpair-wise relations. Adopting only one of them is not enough, as the spatio-temporal relations in traffic data is rich by nature. For example, traffic congestion at one vertex affects adjacent vertices (pair-wise relations), whereas road closures affect a large set of vertices (non-pair-wise relations). Modeling the rich structure of spatio-temporal relations is a challenging aspect of predicting future traffic flows.</p><p>Towards this end, we propose a novel method termed Large Language Model Enhanced Traffic Flow Predictor (LEAF) for adaptive and structureperspective traffic flow forecasting. LEAF consists of a predictor and a selector, where the predictor generates options of predictions and the selector chooses the most likely result. To enhance adaptability, we build an LLM-based selector that selects from a range of possible future traffic flows using the discriminative ability of a large language model, as shown in Figure <ref type="figure" target="#fig_0">1</ref>. The selection results are used to guide the predictor with a ranking loss. The large language model is good at understanding the changing traffic conditions and is open to further information provided by humans, making it an adaptable predictor. To better capture the rich structures of spatio-temporal relations, we build a dual-branch predictor composed of a graph branch which cap-tures pair-wise relations of spatio-temporal traffic data, and a hypergraph branch, which captures non-pair-wise relations. During test time, the dualbranch traffic flow predictor generates different forecasting results, and subsequently, a set of transformations is applied to obtain a wealth of choices of future traffic flows.</p><p>Our contribution is summarized as follows: • We propose an LLM-enhanced traffic flow forecasting framework that introduces large language models in test time to enhance the adaptability of traffic flow forecasting models.</p><p>• We propose a dual-branch predictor that captures both pair-wise and non-pair-wise relations of spatio-temporal traffic data, and an LLMbased selector that chooses from possible prediction results generated by the predictor. The selection results further guide the adaptation of the predictor with a ranking loss.</p><p>• Extensive experiments on several benchmark datasets verify the effectiveness of the proposed method.</p><p>2 Related Works</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Traffic Flow Forecasting</head><p>Traffic flow forecasting is a topic that has been studied for several decades <ref type="bibr" target="#b55">(Smith and Demetsky, 1997;</ref><ref type="bibr" target="#b57">Sun et al., 2006;</ref><ref type="bibr" target="#b69">Yang et al., 2016;</ref><ref type="bibr" target="#b56">Song et al., 2020;</ref><ref type="bibr">Li et al., 2024b)</ref>. Early efforts mainly focus traditional models <ref type="bibr" target="#b55">(Smith and Demetsky, 1997;</ref><ref type="bibr" target="#b1">Asadi et al., 2012)</ref>. With the success of deep learning, deep neural networks have become the mainstream in this field. One line of research adopt recurrent neural networks (RNNs) <ref type="bibr" target="#b25">(Hochreiter, 1997)</ref> and graph neural networks (GNNs) <ref type="bibr" target="#b33">(Kipf and Welling, 2016)</ref>, where the GNNs and RNNs capture the spatial and temporal relations respectively <ref type="bibr" target="#b42">(Li et al., 2018;</ref><ref type="bibr" target="#b64">Wang et al., 2020;</ref><ref type="bibr">Chen et al., 2022b)</ref>.</p><p>To jointly model spatial and temporal relations, another line of research utilize GNNs in both dimensions <ref type="bibr" target="#b56">(Song et al., 2020;</ref><ref type="bibr" target="#b39">Li and Zhu, 2021;</ref><ref type="bibr" target="#b38">Lan et al., 2022;</ref><ref type="bibr">Chen et al., 2024a)</ref>. As simple graphs only capture pair-wise relations, some works make a step further, introducing hypergraph neural networks (HGNNs) to capture non-pair-wise spatiotemporal relations <ref type="bibr" target="#b50">(Luo et al., 2022;</ref><ref type="bibr" target="#b65">Wang and Zhu, 2022;</ref><ref type="bibr" target="#b76">Zhao et al., 2023;</ref><ref type="bibr" target="#b62">Wang et al., 2024)</ref>. In this work, we take the benefits from both sides, with a dual-branch predictor, capturing rich structures of spatio-temporal relations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Graph Neural Network</head><p>Hypergraph Neural Network Pai r-wi se Rel ati ons Non-pai r-wi se Rel ati ons <ref type="bibr">Dual-branch Traffic Flow Predictor</ref> Given the historical traffic flow data of &lt;historical data&gt;, located in &lt;spatial information&gt;, during the time period of &lt;temporal information&gt;. Here are some predictions of our traffic flow predictor with some transformations applied:</p><p>1 <ref type="bibr">. 121, 103, 105, 112, 101, 94, ... 2. 125, 117, 103, 112, 133, 128, ... 3. 129, 143, 155, 176, 180, 188, ... 4. 109, 102, 99, 94, 91, 82, 85, ... 5. 105, 111, 121, 118, 113, 129, ... 6. 101, 92, 90, 84, 73, 77, 60, .</ref>.. Please think carefully and then select the most likely prediction.</p><p>LLMs Option 1: 121, 103, 105, ... Option 3: 129, 143, 155, ... Option 2: 125, 117, 103, ... Option 4: 109, 102, 99, ... Option 6: 101, 92, 90, ... Option 5: 105, 111, 121, ... Large Language Model based Selector Choice Set Construction Prompt Construction Supervision Road Network Historical Data . . . . . . T h e G r a p h B r a n c h T h e H y p e r g r a p h B r a n c h Ranking Loss positive negative prediction </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Large Language Models</head><p>In recent years, large language models has drawn increased attention, both within the community of natural language processing <ref type="bibr">(Chen et al., 2024b;</ref><ref type="bibr" target="#b70">Yin et al., 2024)</ref> and beyond. Efforts have been made to utilize the power of LLMs in other fields, including healthcare <ref type="bibr" target="#b46">(Liévin et al., 2024;</ref><ref type="bibr">Van Veen et al., 2024;</ref><ref type="bibr" target="#b36">Labrak et al., 2024)</ref>, education <ref type="bibr" target="#b52">(Milano et al., 2023)</ref>, legal technology <ref type="bibr" target="#b37">(Lai et al., 2024)</ref>, economics <ref type="bibr">(Li et al., 2024a)</ref>, recommendation <ref type="bibr">(Chen et al., 2024b;</ref><ref type="bibr" target="#b2">Bao et al., 2024)</ref>, and transportation <ref type="bibr" target="#b47">(Liu et al., 2024;</ref><ref type="bibr">Guo et al., 2024b;</ref><ref type="bibr" target="#b54">Ren et al., 2024)</ref>.</p><p>Among these applications, traffic flow forecasting is an important one, being the foundation of smart cities <ref type="bibr" target="#b4">(Boukerche et al., 2020)</ref>. The success of LLMs in language has inspired a plethora of works in this task. Some works adopt the architecture of LLMs for building transformer-based traffic flow predictors <ref type="bibr" target="#b5">(Cai et al., 2020;</ref><ref type="bibr" target="#b68">Xu et al., 2020;</ref><ref type="bibr">Chen et al., 2022a;</ref><ref type="bibr" target="#b48">Liu et al., 2023;</ref><ref type="bibr" target="#b30">Jiang et al., 2023;</ref><ref type="bibr" target="#b79">Zou et al., 2024)</ref>. However, they typically require a large amount of data for training.</p><p>Another line of research attempts to equip LLMs with the ability to predict future traffic flows based on the history and specific situations <ref type="bibr">(Zheng et al., 2023b;</ref><ref type="bibr">Guo et al., 2024a;</ref><ref type="bibr">Li et al., 2024b;</ref><ref type="bibr" target="#b73">Yuan et al., 2024;</ref><ref type="bibr" target="#b24">Han et al., 2024)</ref>. Although LLMs have shown promising results in understanding time series <ref type="bibr" target="#b72">(Yu et al., 2023;</ref><ref type="bibr" target="#b34">Koval et al., 2024;</ref><ref type="bibr" target="#b19">Gruver et al., 2024)</ref> or temporal events <ref type="bibr" target="#b66">(Xia et al., 2024;</ref><ref type="bibr" target="#b27">Hu et al., 2024)</ref>, the traffic data involves complex spatio-temporal relations challenging LLMs' generative ability. In this work, we show that one can instead utilize their discriminative ability to enhance existing traffic flow forecasting models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Methodology</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Problem Setup and Overview</head><p>Problem Setup. We follow the standard setup for traffic flow forecasting <ref type="bibr" target="#b56">(Song et al., 2020)</ref>, where there is a road network denoted as G = ⟨V, E, A⟩. V is the set of N vertices (i.e. the sensors in the city), E is the set of edges, and A ∈ R N ×N is the adjacency matrix. In this road network, historical traffic flows can be represented as</p><formula xml:id="formula_0">X = (X 1 , X 2 , • • • , X T ) ∈ R T ×N ×F ,</formula><p>where T is the length of historical observation and F is the dimension of input features. The goal is to predict the future of traffic flows with the length of T ′ , denoted as</p><formula xml:id="formula_1">X ′ = (X ′ 1 , X ′ 2 , • • • , X ′ T ′ ) ∈ R T ′ ×N ×F .</formula><p>Framework Overview. To solve the aforementioned problem with the help of large language models, we propose a novel framework termed Large Language Model Enhanced Traffic Flow Predictor (LEAF). The overview of the framework is illustrated in Figure <ref type="figure" target="#fig_1">2</ref>. Specifically, to achieve LLM-enhanced prediction (Section 3.4), we design a dual-branch traffic flow predictor (Section 3.2) and an LLM-based selector (Section 3.3). The predictor consists of a graph neural network branch capturing pair-wise spatio-temporal relations, and a hypergraph neural network branch capturing nonpair-wise relations. During training, the predictor is first pretrained using the training data. During test time, we apply transformations to the forecasting results of the predictor to obtain a variety of choices, among which the selector chooses the best one with a frozen LLM. The selection results are then used to fine-tune the dual-branch predictor with a ranking loss during test time so as to improve the adaptability of the model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Dual-branch Traffic Flow Predictor</head><p>Previous works on traffic flow forecasting adopt the graph perspective <ref type="bibr" target="#b56">(Song et al., 2020;</ref><ref type="bibr">Zheng et al., 2023a)</ref> or the hypergraph perspective <ref type="bibr" target="#b49">(Wang et al., 2022;</ref><ref type="bibr" target="#b76">Zhao et al., 2023)</ref>. The graph perspective propagates messages between pairs of nodes, which makes them adept in modeling pair-wise spatio-temporal relations (e.g. an accident affects adjacent locations). On the other hand, the hypergraph perspective propagates messages among groups of nodes, making them proficient in modeling non-pair-wise spatio-temporal relations (e.g. people move from the residential area to the business area). For LEAF, we aim to take the benefits from both sides by constructing a dual-branch predictor and letting the LLM to select.</p><p>Spatio-temporal Graph Construction. To utilize graph neural networks and hypergraph neural networks, we first construct a spatio-temporal graph corresponding to the input tensor X ∈ R T ×N ×F . Particularly, the length of historical data T yields a set of T N spatio-temporal nodes, denoted as:</p><formula xml:id="formula_2">V ST = v t i | i = 1, . . . , N, t = 1, . . . , T ,<label>(1)</label></formula><p>and we add temporal edges in addition to spatial edges E to obtain the edge set E ST :</p><formula xml:id="formula_3">E ST = ⟨v t 1 i , v t 2 j ⟩ | (|t 1 -t 2 | = 1 ∧ i = j) ∨ (t 1 = t 2 ∧ ⟨i, j⟩ ∈ E) . (2)</formula><p>The spatio-temporal graph can then be represented as G ST = ⟨V ST , E ST , A ST ⟩, where A ST ∈ R T N ×T N . The spatio-temporal features X (0) ∈ R T N ×d is derived from X ∈ R T ×N ×F with a linear mapping and a reshape operation, where d is the dimension of the hidden space.</p><p>The Graph Branch. Based on the constructed spatio-temporal graph, we first adopt a graph neural network to model pair-wise spatio-temporal relations. Concretely, given the spatio-temporal feature inputs X (0) ∈ R T N ×d , we adopt convolution layers to process the features, which is</p><formula xml:id="formula_4">X (l) = σ A ST X (l-1) W (l) G ,<label>(3)</label></formula><p>where σ(•) is the activation layer and</p><formula xml:id="formula_5">W (l) G ∈ R d×d is the weight matrix. A ST = D -1/2 A ST D -1/2</formula><p>is the normalized version of the adjacency matrix, where D is the degree matrix (Kipf and Welling, 2016; <ref type="bibr" target="#b56">Song et al., 2020)</ref>. By adopting graph convolutions in Eq. 3, the information from one spatiotemporal vertex can be propagated to its neighbors as defined in E ST in Eq. 2, and thus this branch models pair-wise spatio-temporal relations. The Hypergraph Branch. Although the graph branch is adept in capturing pair-wise relations, the complex traffic patterns contain non-pair-wise relations. For example, in the morning rush hours, people move from the residential area (which is a set of vertices in a hyperedge) to the business area (which is another hyperedge). The vertices in one hyperedge share common patterns and the hyperedges affect each other. To model non-pair-wise relations, hypergraphs are adopted. For a hypergraph, its incidence matrix I H ∈ R N T ×m describes the assignment of N T vertices to m hyperedges. As the incidence matrix is not given as input, we resort to a learnable one with low-rank decomposition <ref type="bibr" target="#b76">(Zhao et al., 2023)</ref>:</p><formula xml:id="formula_6">I H = softmax(X (l-1) H W H ),<label>(4)</label></formula><p>where X</p><p>(l-1) H ∈ R N T ×d is the hidden features, and W H ∈ R d×m is the weight matrix. softmax(•) is applied for normalization. Subsequently, the output features can be computed as:</p><formula xml:id="formula_7">X (l) H = I H I T H X (l-1) H + σ W E I T H X (l-1) H , (5)</formula><p>where W E ∈ R m×m models the interactions of the hyperedges. In this way, the hypergraph branch considers both (a) the interactions within a set of vertices (within a hyperedge) through the first term of Eq. 5, and (b) the interactions among groups of vertices (among the hyperedges) through the second term of Eq. 5. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Large Language Model Based Selector</head><p>In the Section 3.2, we obtain different prediction results from different branches, denoted as Y G and Y H . Most previous works <ref type="bibr">(Li et al., 2024b;</ref><ref type="bibr" target="#b54">Ren et al., 2024;</ref><ref type="bibr" target="#b44">Liang et al., 2024)</ref> directly generate these predictions, which is challenging since the complex spatio-temporal relations are hard to express in texts. By comparison, the LLM-based selector aims to choose the best prediction, using the internal knowledge of a frozen LLM and the constructed prompts. As the traffic networks are usually large, we break the result Y ∈ {Y G , Y H } ⊂ R T ′ ×N for individual vertices, i.e. Y = [y 1 , y 2 , . . . , y N ], where y i ∈ R T ′ .</p><p>Choice Set Construction. In practice, we want to give the LLM-based selector more choices so that it has the potential to make better predictions. Therefore, we introduce several transformations: smoothing, upward trend, downward trend, overestimate, and underestimate. The set of transformations is denoted as T . For vertex i ∈ V, the choice set is determined as follows:</p><formula xml:id="formula_8">C i = τ (y i )|τ ∈ T , y i ∈ {y G i , y H i } ∪{y G i , y H i }.</formula><p>(6) By adopting transformations, the choice set is expanded and the selector has the potential to deal with more complex situations. For instance, if it believes that both of the branches underestimate the traffic flow on a Monday morning, the selector can choose an option with an upward trend.</p><p>Prompt Construction. When constructing the prompt, we consider the following aspects. ( <ref type="formula" target="#formula_2">1</ref>) General information about the data, including the meaning of the numbers, the way traffic data are selected, etc. (2) The spatial information of the vertex, including the sensor id, and the geometric location information. (3) The temporal information, including the time historical data are collected, the time we want to forecast, and whether there are special events. (4) The historical data. (5) The task instructions. (6) The choice set constructed in Eq. 6, including the names of specific branches and the description of augmentations. An illustration of this is shown in Figure <ref type="figure" target="#fig_2">3</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">Large Language Model Enhanced Prediction</head><p>The LEAF framework consists of a predictor and a selector. The predictor (the graph branch and the hypergraph branch) is pre-trained on the training set. During test time, the predictor first predicts, and the selector then selects. The selection results are used to supervise the predictor, and thus the two modules benefit from each other, achieving large language model enhanced prediction. Concretely, given the input data X ∈ R T ×N ×F , the predictor generates two forecasts, i.e. Y G and Y H . Subsequently, the selector constructs choice sets and use the LLM to find the best option for each individual vertex. The selection results is denoted as ŷi , i ∈ V, which are then used to supervise the predictor. Conceivably, ŷi may not be the optimal choice in the choice set, and therefore, we adopt a ranking loss described as follows:</p><formula xml:id="formula_9">L G = [∆(y G i , ŷi ) - inf y ′ i ∈C i \{ ŷi } ∆(y G i , y ′ i ) + ϵ] + ,<label>(7)</label></formula><p>where [•] + is the hinge function, ∆(•, •) is a distance measure, and ϵ is the margin. Similarly, we can define the loss function L H using y H i . The final objective is written as:</p><formula xml:id="formula_10">L = L G + L H . (<label>8</label></formula><formula xml:id="formula_11">)</formula><p>In Eq. 7 and Eq. 8, we encourage the forecasts of the predictor (i.e. y G i and y H i ) to be closer to the selected prediction (i.e. ŷi ) than the closest one in suboptimal predictions (i.e. C i \ { ŷi }). Since the ground truth may not be covered by the choice set, this objective is better than directly minimizing the distance between the predictions and the selected forecast, as it allows the model to learn from a better choice compared to suboptimal choices.</p><p>By supervising the predictor, the two modules (i.e. the predictor and the selector) benefit from Algorithm 1 The Algorithm of LEAF Requires: The road network G = ⟨V, E, A⟩, historical data X, the number of iterations K, the graph branch B G , and the hypergraph branch B H . Ensures: The forecasting result Ŷ . Construct the choice set using Eq. 6.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>6:</head><p>Use LLM to select the best option for each vertex as ŷi where i ∈ V.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>7:</head><p>Use ŷi to supervise the predictor (B G and B H ) with Eq. 7 and Eq. 8. 8: end for 9: Stack ŷi , i ∈ V to obtain Ŷ each other. A better predictor yields better choices, which benefits the selector; better selection results provide better supervision signals for the predictor.</p><p>Through the iteration of prediction and selection, we can achieve large language model enhanced prediction. The LEAF framework during inference is summarized in Algorithm 1.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Experiments</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Experimental Setup</head><p>Datasets. We adopt three widely used datasets in traffic flow forecasting, including PEMS03, PEMS04, and PEMS08. The datasets are publicly available and collected by California Transportation Agencies (CalTrans) Performance Measurement Systems (PEMS). 1 . The traffic data come from sensors on the road of various places in California, and they are counted every five minutes.</p><p>Evaluation Metrics. We follow standard setting <ref type="bibr" target="#b42">(Li et al., 2018)</ref> that use one-hour historical data (i.e. T = 12 timesteps) to forecast one-hour future (i.e. T ′ = 12 timesteps). For evaluation the prediction results, we use three standard metrics: Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), and Mean Absolute Percentage Error (MAPE) <ref type="bibr" target="#b56">(Song et al., 2020)</ref>.</p><p>Baseline Methods. We compare LEAF with a variety of baseline methods, including DCRNN <ref type="bibr" target="#b42">(Li et al., 2018)</ref>, ASTGCN <ref type="bibr" target="#b20">(Guo et al., 2019)</ref>, STS-1 <ref type="url" target="https://pems.dot.ca.gov/">https://pems.dot.ca.gov/</ref> GCN <ref type="bibr" target="#b56">(Song et al., 2020)</ref>, HGCN <ref type="bibr" target="#b49">(Wang et al., 2022)</ref>, DyHSL <ref type="bibr" target="#b76">(Zhao et al., 2023)</ref>, STAEformer <ref type="bibr" target="#b48">(Liu et al., 2023)</ref>, COOL <ref type="bibr" target="#b31">(Ju et al., 2024)</ref>, and LLM-MPE <ref type="bibr" target="#b44">(Liang et al., 2024)</ref>. Among these methods, ASTGCN, STSGCN, and COOL are based on graph neural networks, while HGCN and DyHSL are based on hypergraph neural networks. STAEformer directly takes the transformer architecture for the traffic data, while LLM-MPE use LLMs to understand and predict traffic data with textual guidance.</p><p>Implementation Details. For the dual-branch predictor, the number of layers L for both branches is set to 7. We use linear mapping as the input embedding, and the hidden dimension d is set to 64, which is also shared across all baselines. We also use a two layer MLP to map the last hidden embedding to the output. In choice set construction, smoothing is implemented with an average filter, upward/downward trend increases/decreases the traffic flow by 1% to 12% (12 timesteps, linearly increasing), overestimate/underestimate increases/decreases the traffic flow by 5% (for all 12 timesteps). As for the loss function in Eq. 7, we adopt Huber distance for ∆(•, •) and the margin ϵ is set to 0. When training with this loss function, we update the parameters for M iterations, which is set to 5. For the prediction-selection loop, we set K to 2. For the LLM, we use LLaMA 3 70B (AI@Meta, 2024) and vLLM <ref type="bibr" target="#b35">(Kwon et al., 2023)</ref> as the inference software.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Main Results</head><p>The performance of LEAF in comparison with baselines are shown in Table <ref type="table" target="#tab_1">1</ref>. According to the results, we have several observations: Firstly, the proposed LEAF achieves a consistent lead in all three datasets, which demonstrates the effectiveness of the proposed framework that adopts a dual-branch traffic flow predictor and a LLMbased selector. Prior methods often fail to provide satisfactory predictions when there is test-time distribution changes, as they cannot learn adaptively, leaving the room for improvement.</p><p>Secondly, the method that utilizes the generative ability of LLMs (i.e. LLM-MPE) does not perform well on all datasets. As we can see on PEMS03 and PEMS04 datasets, its predictions are generally worse or similar compared to simple methods using graph neural networks. Since LLMs are not very adept in capturing complex spatio-temporal Table 2: Ablation study on the PEMS08 dataset.</p><p>relations, it is reasonable that we see such results on datasets with larger networks like PEMS03. Thirdly, the proposed LEAF generally performs better than graph-based methods (e.g. ASTGCN, STSGCN) and hypergraph-based methods (e.g. HGCN, DyHSL), which shows that our method has the potential to take advantage of both complex spatio-temporal relations captured by the predictor and the knowledge of large language models, achieving LLM enhanced traffic flow forecasting.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Ablation Study</head><p>We also perform ablation studies on the PEMS08 dataset, and the results are shown in Table <ref type="table">2</ref>. Specifically, we perform the following experiments. E1 measures the performance of graph branch only without the LLM-based selector. E2 measures the performance of the hypergraph branch without the selector. The vanilla version (E1 and E2) of both branches performs much worse than LEAF. E3 uses the graph branch in conjunction with the selector, which leads to performance degradation compared to LEAF. This suggests that non-pair-wise relations are important in traffic flow forecasting. E4 only uses the hypergraph branch together with the selector. Similarly, it performs worse than LEAF, which shows that pair-wise and non-pair-wise relations are both important. Moreover, E3 and E4 perform better than E1 and E2, which shows the effect of the LLM-based selector. E5 removes the transformations, i.e. T = ∅. This leads to slightly worse performance, showing the effectiveness of providing more choices. E6 removes the ranking loss, which means that the predictor are not further trained with the results from the selector (reducing to K = 1). This experiment demonstrates the effectiveness of supervising the predictor with a ranking loss using the selection results.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Hyper-parameter Analysis</head><p>We perform experiments with respect to two hyperparameters: (a) M , i.e. the number of iterations when training with the ranking loss in Eq.7 and Eq.8, and (b) the number of K, i.e. the number of prediction-selection iterations in Algorithm 1. The results on the PEMS08 dataset are shown in Figure <ref type="figure" target="#fig_4">4</ref>. As can be seen from the figure, when M increases, both MAE and RMSE decreases, and then plateaus after around 5. This shows that the predictor converges and therefore, we set M to 5. For another hyper-parameter K, the optimal performance is achieved when K is set to 2, and with more iter-  ations, the error increases. One reason is that we use the same prompt across iterations without contexts of previous selections to save computation, so the same factor may be considered multiple times, leading to decreased accuracy. In practice, K = 2 is good enough without too much computation for the LLM-based selector.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5">Visualization</head><p>Visualization of the Selection. We first provide visualizations of the historical traffic flow data, the choices in C i , and the option selected by the LLMbased selector (marked with a green tick). The results on the PEMS03 dataset is shown in Figure <ref type="figure" target="#fig_5">5</ref>. Moreover, we also provide the analysis of the LLM-based selector, which is shown in Figure <ref type="figure" target="#fig_6">6</ref>. According to the results, we can see that the traffic flow is generally going downward, since it is the end of the rush hours. In Figure <ref type="figure" target="#fig_5">5</ref>, we can see that the LLM-based selector chooses the option with the lowest traffic flows. From its analysis in Figure <ref type="figure" target="#fig_6">6</ref>, we can see that it understands that the time period to forecast is around the end of the rush hours, which is the reason why it selects the lowest option. This suggests that the LLM-based selector is able to understand changing traffic conditions.</p><p>Visualization of Errors in Different Timesteps.</p><p>We then provide visualization of the mean absolute error (MAE) under different forecasting timesteps in Figure <ref type="figure" target="#fig_7">7</ref>. The experiments are performed on the PEMS03 dataset, where we compare the MAE values of our framework compared to its two branches (i.e. the graph branch and the hypergraph branch).</p><p>The results show that LEAF reduces forecasting errors generally. Although the errors are similar in the first few timesteps, LEAF quickly diverges from the two branches, resulting in significantly lower errors in the long term. This suggests that with the help of the discriminative ability of the LLM-based selector, our method can select predictions that are more accurate in the long run.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>In this paper, we propose a novel framework named Large Language Model Enhanced Traffic Flow Predictor (LEAF), which consists of a dual-branch traffic flow predictor and an LLM-based selector. The predictor adopts two branches: the graph branch and the hypergraph branch, capturing the pair-wise and non-pair-wise spatio-temporal relations respectively. The selector uses the discriminative ability of the LLM to choose the best forecast of predictor.</p><p>The selection results are then used to supervise the predictor with a ranking loss. We perform extensive experiments to demonstrate the effectiveness of the proposed LEAF framework.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitations</head><p>One limitation of this work is that we only focus on the traffic flow forecasting domain, due to the scope of this paper and the limited computational resources. In the future, we plan to extend this framework to more generalized spatio-temporal forecasting problem. Besides, we do not evaluate our methods on other traffic flow forecasting datasets due to limited resources. For future works, we plan to evaluate our framework using other datasets.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: To use LLMs for traffic flow forecasting, a naive solution is to utilize their generative ability (a), which is hard to incorporate spatial relations. By comparison, LEAF utilizes the discriminative ability of LLMs (b), making it easier for LLMs to predict.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure2: The framework of the proposed LEAF. LEAF consists of a dual-branch traffic flow predictor and a large language model based selector. The predictor generates forecasts of future traffic flows through the graph branch and the hypergraph branch. The selector constructs choice set and then selects the best option using (frozen) LLMs. The results of selection is used to supervise the predictor.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: An illustration of the prompt template.</figDesc><graphic coords="5,70.87,70.86,218.27,207.30" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>1:</head><figDesc>Construct spatio-temporal graph G ST . 2: for j = 1, 2, ..., K do 3: Compute the prediction of the graph branch B G as Y G . 4: Compute the prediction of the hypergraph branch B H as Y H . 5:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: The forecasting errors under different hyperparameters, i.e. M s (left) and Ks (right).</figDesc><graphic coords="7,414.77,256.67,115.27,92.15" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Visualization of historical data, choices, and the prediction in different time periods. The selected choice is marked with a green tick.</figDesc><graphic coords="8,70.87,258.44,218.27,253.69" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 6 :</head><label>6</label><figDesc>Figure 6: The LLM's analysis when selecting data.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure 7 :</head><label>7</label><figDesc>Figure 7: The Mean Absolute Error (MAE) under different timesteps. LEAF better reduces long term errors.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>Forecasting errors on PEMS03, PEMS04, and PEMS08 datasets.</figDesc><table><row><cell>Model</cell><cell></cell><cell cols="2">PEMS03</cell><cell>PEMS04</cell><cell></cell><cell>PEMS08</cell><cell></cell></row><row><cell></cell><cell cols="3">MAE RMSE MAPE</cell><cell cols="2">MAE RMSE MAPE</cell><cell cols="2">MAE RMSE MAPE</cell></row><row><cell>DCRNN (Li et al., 2018)</cell><cell cols="2">29.99 39.52</cell><cell>21.33</cell><cell>34.36 46.19</cell><cell>24.73</cell><cell>31.41 43.91</cell><cell>15.44</cell></row><row><cell>ASTGCN (Guo et al., 2019)</cell><cell>28.4</cell><cell>41.94</cell><cell>15.78</cell><cell>33.09 46.08</cell><cell>18.19</cell><cell>29.20 41.16</cell><cell>12.76</cell></row><row><cell>STSGNN (Song et al., 2020)</cell><cell cols="2">28.21 43.43</cell><cell>15.49</cell><cell>33.43 45.69</cell><cell>18.89</cell><cell>29.58 41.95</cell><cell>12.90</cell></row><row><cell>HGCN (Wang et al., 2022)</cell><cell cols="2">28.43 43.92</cell><cell>15.39</cell><cell>35.77 49.92</cell><cell>20.11</cell><cell>28.83 39.65</cell><cell>12.63</cell></row><row><cell>DyHSL (Zhao et al., 2023)</cell><cell cols="2">27.10 41.59</cell><cell>14.31</cell><cell>33.36 46.96</cell><cell>19.64</cell><cell>27.34 39.05</cell><cell>11.56</cell></row><row><cell cols="3">STAEformer (Liu et al., 2023) 27.87 37.31</cell><cell>16.49</cell><cell>33.77 45.50</cell><cell>18.36</cell><cell>27.43 38.16</cell><cell>11.36</cell></row><row><cell>COOL (Ju et al., 2024)</cell><cell cols="2">27.51 41.11</cell><cell>14.73</cell><cell>34.68 47.22</cell><cell>19.72</cell><cell>27.22 38.47</cell><cell>11.72</cell></row><row><cell cols="3">LLM-MPE (Liang et al., 2024) 33.82 47.06</cell><cell>20.40</cell><cell>35.63 51.41</cell><cell>18.19</cell><cell>26.42 40.02</cell><cell>10.61</cell></row><row><cell>LEAF</cell><cell cols="2">25.46 35.17</cell><cell>14.22</cell><cell>31.49 44.45</cell><cell>17.53</cell><cell>24.68 36.07</cell><cell>10.56</cell></row><row><cell>Experiments</cell><cell cols="3">MAE RMSE MAPE</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>E1: Graph branch</cell><cell cols="2">29.12 41.36</cell><cell>13.54</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>E2: Hypergraph branch</cell><cell cols="2">27.94 39.11</cell><cell>11.82</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">E3: w/o hypergraph branch 26.29 38.18</cell><cell>12.83</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>E4: w/o graph branch</cell><cell cols="2">25.80 37.23</cell><cell>11.00</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>E5: w/o transformation</cell><cell cols="2">25.47 36.47</cell><cell>11.01</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>E6: w/o ranking loss</cell><cell cols="2">25.41 37.00</cell><cell>11.34</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>LEAF</cell><cell cols="2">24.68 36.07</cell><cell>10.56</cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><surname>Ai@meta</surname></persName>
+		</author>
+		<title level="m">Llama 3 model card</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">A new hybrid for improvement of autoregressive integrated moving average models applying particle swarm optimization</title>
+		<author>
+			<persName><forename type="first">Shahrokh</forename><surname>Asadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Akbar</forename><surname>Tavakoli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reza</forename><surname>Seyed</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hejazi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Expert Systems with Applications</title>
+		<imprint>
+			<biblScope unit="volume">39</biblScope>
+			<biblScope unit="issue">5</biblScope>
+			<biblScope unit="page" from="5332" to="5337" />
+			<date type="published" when="2012">2012</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Large language models for recommendation: Past, present, and future</title>
+		<author>
+			<persName><forename type="first">Keqin</forename><surname>Bao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jizhi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyu</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenjie</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fuli</forename><surname>Feng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 47th International ACM SI-GIR Conference on Research and Development in Information Retrieval</title>
+		<meeting>the 47th International ACM SI-GIR Conference on Research and Development in Information Retrieval</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="2993" to="2996" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Remember this event that year? assessing temporal information and understanding in large language models</title>
+		<author>
+			<persName><forename type="first">Himanshu</forename><surname>Beniwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dishant</forename><surname>Patel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kowsik</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2024</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="16239" to="16348" />
+		</imprint>
+	</monogr>
+	<note>Hritik Ladia, Ankit Yadav, and Mayank Singh</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Artificial intelligence-based vehicular traffic flow prediction methods for supporting intelligent transportation systems</title>
+		<author>
+			<persName><forename type="first">Azzedine</forename><surname>Boukerche</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanjie</forename><surname>Tao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Sun</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Computer networks</title>
+		<imprint>
+			<biblScope unit="volume">182</biblScope>
+			<biblScope unit="page">107484</biblScope>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Traffic transformer: Capturing the continuity and periodicity of time series for traffic forecasting</title>
+		<author>
+			<persName><forename type="first">Ling</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Krzysztof</forename><surname>Janowicz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gengchen</forename><surname>Mai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bo</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions in GIS</title>
+		<imprint>
+			<biblScope unit="volume">24</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="736" to="755" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">A survey on evaluation of large language models</title>
+		<author>
+			<persName><forename type="first">Yupeng</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jindong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linyi</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kaijie</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoyuan</forename><surname>Yi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cunxiang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yidong</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Transactions on Intelligent Systems and Technology</title>
+		<imprint>
+			<biblScope unit="volume">15</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="1" to="45" />
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">2022a. Bidirectional spatial-temporal adaptive transformer for urban traffic flow forecasting</title>
+		<author>
+			<persName><forename type="first">Changlu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanbin</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ling</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengqi</forename><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Neural Networks and Learning Systems</title>
+		<imprint>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="issue">10</biblScope>
+			<biblScope unit="page" from="6913" to="6925" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Hongxing Zhang, and Xiping Hu. 2024a. Traffic flow matrixbased graph neural network with attention mechanism for traffic flow prediction</title>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuzhu</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Information Fusion</title>
+		<imprint>
+			<biblScope unit="volume">104</biblScope>
+			<biblScope unit="page">102146</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">2024b. When large language models meet personalization: Perspectives of challenges and opportunities</title>
+		<author>
+			<persName><forename type="first">Jin</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenwang</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qi</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gangwei</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuanhao</forename><surname>Pu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxuan</forename><surname>Lei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaolong</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xingmei</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">World Wide Web</title>
+		<imprint>
+			<biblScope unit="volume">27</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page">42</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Aargnn: An attentive attributed recurrent graph neural network for traffic flow prediction considering multiple dynamic factors</title>
+		<author>
+			<persName><forename type="first">Ling</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Shao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mingqi</forename><surname>Lv</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weiqi</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Youdong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenghu</forename><surname>Yang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Intelligent Transportation Systems</title>
+		<imprint>
+			<biblScope unit="volume">23</biblScope>
+			<biblScope unit="issue">10</biblScope>
+			<biblScope unit="page" from="17201" to="17211" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">2024c. Calibration of timeseries forecasting: Detecting and adapting contextdriven distribution shift</title>
+		<author>
+			<persName><forename type="first">Mouxiang</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lefei</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Han</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuo</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianling</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenghao</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining</title>
+		<meeting>the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining</meeting>
+		<imprint>
+			<biblScope unit="page" from="341" to="352" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">Junyoung</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caglar</forename><surname>Gulcehre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyunghyun</forename><surname>Cho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoshua</forename><surname>Bengio</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1412.3555</idno>
+		<title level="m">Empirical evaluation of gated recurrent neural networks on sequence modeling</title>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">St-innet: Deep spatio-temporal inception networks for traffic flow prediction in smart cities</title>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Penggui</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qi</forename><surname>Mo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaolong</forename><surname>Xu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Intelligent Transportation Systems</title>
+		<imprint>
+			<biblScope unit="volume">23</biblScope>
+			<biblScope unit="issue">10</biblScope>
+			<biblScope unit="page" from="19782" to="19794" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note>Muhammad Bilal, and Houbing Song</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Intelligent transportation systems</title>
+		<author>
+			<persName><forename type="first">George</forename><surname>Dimitrakopoulos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Panagiotis</forename><surname>Demestichas</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Vehicular Technology Magazine</title>
+		<imprint>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="77" to="84" />
+			<date type="published" when="2010">2010</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Scalable deep traffic flow neural networks for urban traffic congestion prediction</title>
+		<author>
+			<persName><forename type="first">Mohammadhani</forename><surname>Fouladgar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostafa</forename><surname>Parchami</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ramez</forename><surname>Elmasri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Ghaderi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2017 international joint conference on neural networks (IJCNN)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="2251" to="2258" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Jean-Christophe</forename><surname>Gagnon-Audet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kartik</forename><surname>Ahuja</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad-Javad</forename><surname>Darvishi-Bayazi</surname></persName>
+		</author>
+		<imprint>
+			<publisher>Pooneh</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Woods: Benchmarks for out-of-distribution generalization in time series</title>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Mousavi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Irina</forename><surname>Dumas</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Rish</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.09978</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Multivariate short-term traffic flow forecasting using time-series analysis</title>
+		<author>
+			<persName><forename type="first">Bidisha</forename><surname>Ghosh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Biswajit</forename><surname>Basu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Margaret O'</forename><surname>Mahony</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE transactions on intelligent transportation systems</title>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="246" to="254" />
+			<date type="published" when="2009">2009</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Large language models are zero-shot time series forecasters</title>
+		<author>
+			<persName><forename type="first">Nate</forename><surname>Gruver</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marc</forename><surname>Finzi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shikai</forename><surname>Qiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">G</forename><surname>Wilson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page">36</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Attention based spatialtemporal graph convolutional networks for traffic flow forecasting</title>
+		<author>
+			<persName><forename type="first">Shengnan</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Youfang</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ning</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chao</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huaiyu</forename><surname>Wan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI conference on artificial intelligence</title>
+		<meeting>the AAAI conference on artificial intelligence</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="922" to="929" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">2024a. Towards explainable traffic flow prediction with large language models</title>
+		<author>
+			<persName><forename type="first">Xusen</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiming</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junyue</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mingxing</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meixin</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Frank</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Communications in Transportation Research</title>
+		<imprint>
+			<biblScope unit="volume">4</biblScope>
+			<biblScope unit="page">100150</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Explainable traffic flow prediction with large language models</title>
+		<author>
+			<persName><forename type="first">Xusen</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiming</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mingxing</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meixin</forename><surname>Zhua</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2404.02937</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Inductive representation learning on large graphs. Advances in neural information processing systems</title>
+		<author>
+			<persName><forename type="first">Will</forename><surname>Hamilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhitao</forename><surname>Ying</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jure</forename><surname>Leskovec</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Event traffic forecasting with sparse multimodal data</title>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhenduo</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiling</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinfeng</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhe</forename><surname>Wu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 32nd ACM International Conference on Multimedia</title>
+		<meeting>the 32nd ACM International Conference on Multimedia</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="8855" to="8864" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Long short-term memory</title>
+		<author>
+			<persName><surname>Hochreiter</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Neural Computation</title>
+		<imprint>
+			<date type="published" when="1997">1997</date>
+			<publisher>MIT-Press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Hybrid evolutionary algorithms in a svr traffic flow forecasting model</title>
+		<author>
+			<persName><forename type="first">Wei-Chiang</forename><surname>Hong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yucheng</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Feifeng</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shih</forename><surname>Yung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Applied Mathematics and Computation</title>
+		<imprint>
+			<biblScope unit="volume">217</biblScope>
+			<biblScope unit="issue">15</biblScope>
+			<biblScope unit="page" from="6733" to="6747" />
+			<date type="published" when="2011">2011</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">From moments to milestones: Incremental timeline summarization leveraging large language models</title>
+		<author>
+			<persName><forename type="first">Qisheng</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Geonsik</forename><surname>Moon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hwee Tou</forename><surname>Ng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 62nd Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="7232" to="7246" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<title level="m" type="main">Trilevel navigator: Llm-empowered tri-level learning for time series ood generalization</title>
+		<author>
+			<persName><forename type="first">Chengtao</forename><surname>Jian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Jiao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2410.07018</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">An urban traffic signal control system based on traffic flow prediction</title>
+		<author>
+			<persName><forename type="first">Chun-Yao</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao-Min</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Neng</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2021 13th international conference on advanced computational intelligence (ICACI)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="259" to="265" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Pdformer: Propagation delayaware dynamic long-range transformer for traffic flow prediction</title>
+		<author>
+			<persName><forename type="first">Jiawei</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengkai</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wayne</forename><forename type="middle">Xin</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingyuan</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI conference on artificial intelligence</title>
+		<meeting>the AAAI conference on artificial intelligence</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">37</biblScope>
+			<biblScope unit="page" from="4365" to="4373" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Cool: a conjoint perspective on spatiotemporal graph neural network for traffic forecasting</title>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Ju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yusheng</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yifang</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyu</forename><surname>Yi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingyang</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiping</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiting</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Information Fusion</title>
+		<imprint>
+			<biblScope unit="volume">107</biblScope>
+			<biblScope unit="page">102341</biblScope>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">When model meets new normals: Test-time adaptation for unsupervised time-series anomaly detection</title>
+		<author>
+			<persName><forename type="first">Dongmin</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sunghyun</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaegul</forename><surname>Choo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="page" from="13113" to="13121" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<title level="m" type="main">Semisupervised classification with graph convolutional networks</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Thomas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Max</forename><surname>Kipf</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Welling</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1609.02907</idno>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Financial forecasting from textual and tabular time series</title>
+		<author>
+			<persName><forename type="first">Ross</forename><surname>Koval</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>Andrews</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xifeng</forename><surname>Yan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2024</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="8289" to="8300" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">Efficient memory management for large language model serving with pagedattention</title>
+		<author>
+			<persName><forename type="first">Woosuk</forename><surname>Kwon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuohan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cody</forename><forename type="middle">Hao</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ion</forename><surname>Stoica</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the ACM SIGOPS 29th Symposium on Operating Systems Principles</title>
+		<meeting>the ACM SIGOPS 29th Symposium on Operating Systems Principles</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<title level="m" type="main">Biomistral: A collection of opensource pretrained large language models for medical domains</title>
+		<author>
+			<persName><forename type="first">Yanis</forename><surname>Labrak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adrien</forename><surname>Bazoge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emmanuel</forename><surname>Morin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre-Antoine</forename><surname>Gourraud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mickael</forename><surname>Rouvier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Dufour</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.10373</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<title level="m" type="main">Large language models in law: A survey</title>
+		<author>
+			<persName><forename type="first">Jinqi</forename><surname>Lai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wensheng</forename><surname>Gan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiayang</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhenlian</forename><surname>Qi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philip</forename></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<publisher>AI Open</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Dstagnn: Dynamic spatial-temporal aware graph neural network for traffic flow forecasting</title>
+		<author>
+			<persName><forename type="first">Shiyong</forename><surname>Lan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yitong</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weikang</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenwu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongyu</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pyang</forename><surname>Li</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International conference on machine learning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="11906" to="11917" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">Spatialtemporal fusion graph neural networks for traffic flow forecasting</title>
+		<author>
+			<persName><forename type="first">Mengzhang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhanxing</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI conference on artificial intelligence</title>
+		<meeting>the AAAI conference on artificial intelligence</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="4189" to="4196" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">Econagent: large language modelempowered agents for simulating macroeconomic activities</title>
+		<author>
+			<persName><forename type="first">Nian</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chen</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mingyu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingmin</forename><surname>Liao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 62nd Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="15523" to="15536" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">A k-nearest neighbor locally weighted regression method for short-term traffic flow forecasting</title>
+		<author>
+			<persName><forename type="first">Shuangshuang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhen</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gang</forename><surname>Xiong</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2012 15th International IEEE Conference on Intelligent Transportation Systems</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2012">2012</date>
+			<biblScope unit="page" from="1596" to="1601" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Diffusion convolutional recurrent neural network: Data-driven traffic forecasting</title>
+		<author>
+			<persName><forename type="first">Yaguang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rose</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cyrus</forename><surname>Shahabi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yan</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">2024b. Urbangpt: Spatio-temporal large language models</title>
+		<author>
+			<persName><forename type="first">Zhonghang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianghao</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiabin</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dawei</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chao</forename><surname>Huang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining</title>
+		<meeting>the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining</meeting>
+		<imprint>
+			<biblScope unit="page" from="5351" to="5362" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<monogr>
+		<title level="m" type="main">Exploring large language models for human mobility prediction under public events. Computers, Environment and Urban Systems</title>
+		<author>
+			<persName><forename type="first">Yuebing</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yichao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaohan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhan</forename><surname>Zhao</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="volume">112</biblScope>
+			<biblScope unit="page">102153</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Dynamic route planning with real-time traffic predictions</title>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Liebig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nico</forename><surname>Piatkowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Bockermann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katharina</forename><surname>Morik</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Information Systems</title>
+		<imprint>
+			<biblScope unit="volume">64</biblScope>
+			<biblScope unit="page" from="258" to="265" />
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">Can large language models reason about medical questions?</title>
+		<author>
+			<persName><surname>Valentin Liévin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Egeberg</forename><surname>Christoffer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andreas</forename><forename type="middle">Geert</forename><surname>Hother</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ole</forename><surname>Motzfeldt</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Winther</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Patterns</title>
+		<imprint>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<monogr>
+		<author>
+			<persName><forename type="first">Chenxi</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sun</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qianxiong</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhishuai</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cheng</forename><surname>Long</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ziyue</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Zhao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2401.10134</idno>
+		<title level="m">Spatialtemporal large language model for traffic prediction</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">Spatio-temporal adaptive embedding makes vanilla transformer sota for traffic forecasting</title>
+		<author>
+			<persName><forename type="first">Hangchen</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Renhe</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiewen</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinliang</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quanjun</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuan</forename><surname>Song</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 32nd ACM international conference on information and knowledge management</title>
+		<meeting>the 32nd ACM international conference on information and knowledge management</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="4125" to="4129" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<monogr>
+		<title level="m" type="main">Out-of-distribution representation learning for time series classification</title>
+		<author>
+			<persName><forename type="first">Wang</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jindong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinwei</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiqiang</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xing</forename><surname>Xie</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2209.07027</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">Directed hypergraph attention network for traffic forecasting</title>
+		<author>
+			<persName><forename type="first">Xiaoyi</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaheng</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IET Intelligent Transport Systems</title>
+		<imprint>
+			<biblScope unit="volume">16</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="85" to="98" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<analytic>
+		<title level="a" type="main">Spatio-temporal fusion graph convolutional network for traffic flow forecasting</title>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haijie</forename><surname>Lou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fanghui</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guoqi</forename><surname>Li</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Information Fusion</title>
+		<imprint>
+			<biblScope unit="volume">104</biblScope>
+			<biblScope unit="page">102196</biblScope>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">Large language models challenge the future of higher education</title>
+		<author>
+			<persName><forename type="first">Silvia</forename><surname>Milano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joshua</forename><forename type="middle">A</forename><surname>Mcgrane</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sabina</forename><surname>Leonelli</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Nature Machine Intelligence</title>
+		<imprint>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="333" to="334" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<monogr>
+		<author>
+			<persName><forename type="first">Shervin</forename><surname>Minaee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tomas</forename><surname>Mikolov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Narjes</forename><surname>Nikzad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meysam</forename><surname>Chenaghlu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Socher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Amatriain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianfeng</forename><surname>Gao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.06196</idno>
+		<title level="m">Large language models: A survey</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<analytic>
+		<title level="a" type="main">Towards greener smart cities and road traffic forecasting using air pollution data</title>
+		<author>
+			<persName><forename type="first">Yilong</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yue</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuai</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boyue</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haiyang</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiyong</forename><surname>Cui</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.02221</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Sustainable Cities and Society</title>
+		<editor>
+			<persName><forename type="first">Nimra</forename><surname>Shahid</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ali</forename><surname>Munam</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Abid</forename><surname>Shah</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Carsten</forename><surname>Khan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Gwanggil</forename><surname>Maple</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Jeon</surname></persName>
+		</editor>
+		<imprint>
+			<biblScope unit="volume">72</biblScope>
+			<biblScope unit="page">103062</biblScope>
+			<date type="published" when="2021">2024. 2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Tpllm: A traffic prediction framework based on pretrained large language models</note>
+</biblStruct>
+
+<biblStruct xml:id="b55">
+	<analytic>
+		<title level="a" type="main">Traffic flow forecasting: comparison of modeling approaches</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Brian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><forename type="middle">J</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Demetsky</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of transportation engineering</title>
+		<imprint>
+			<biblScope unit="volume">123</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="261" to="266" />
+			<date type="published" when="1997">1997</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b56">
+	<analytic>
+		<title level="a" type="main">Spatial-temporal synchronous graph convolutional networks: A new framework for spatialtemporal network data forecasting</title>
+		<author>
+			<persName><forename type="first">Chao</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Youfang</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shengnan</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huaiyu</forename><surname>Wan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI conference on artificial intelligence</title>
+		<meeting>the AAAI conference on artificial intelligence</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="914" to="921" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b57">
+	<analytic>
+		<title level="a" type="main">A bayesian network approach to traffic flow forecasting</title>
+		<author>
+			<persName><forename type="first">Shiliang</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Changshui</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guoqiang</forename><surname>Yu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on intelligent transportation systems</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="124" to="132" />
+			<date type="published" when="2006">2006</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b58">
+	<analytic>
+		<title level="a" type="main">Real-time traffic flow forecasting using spectral analysis</title>
+		<author>
+			<persName><forename type="first">Biswajit</forename><surname>Tigran T Tchrakian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Margaret O'</forename><surname>Basu</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Mahony</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Intelligent Transportation Systems</title>
+		<imprint>
+			<biblScope unit="volume">13</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="519" to="526" />
+			<date type="published" when="2011">2011</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b59">
+	<analytic>
+		<title level="a" type="main">Adapted large language models can outperform medical experts in clinical text summarization</title>
+		<author>
+			<persName><forename type="first">Dave</forename><surname>Van Veen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cara</forename><surname>Van Uden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Blankemeier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jean-Benoit</forename><surname>Delbrouck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Asad</forename><surname>Aali</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Bluethgen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anuj</forename><surname>Pareek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Malgorzata</forename><surname>Polacin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Nature medicine</title>
+		<editor>
+			<persName><forename type="first">Pontes</forename><surname>Reis</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Anna</forename><surname>Seehofnerová</surname></persName>
+		</editor>
+		<imprint>
+			<biblScope unit="volume">30</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="1134" to="1142" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b60">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><surname>Vaswani</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b61">
+	<analytic>
+		<title level="a" type="main">Graph attention networks</title>
+		<author>
+			<persName><forename type="first">Petar</forename><surname>Veličković</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillem</forename><surname>Cucurull</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arantxa</forename><surname>Casanova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adriana</forename><surname>Romero</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pietro</forename><surname>Liò</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoshua</forename><surname>Bengio</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b62">
+	<analytic>
+		<title level="a" type="main">Large-scale traffic prediction with hierarchical hypergraph message passing networks</title>
+		<author>
+			<persName><forename type="first">Jingcheng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yongli</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baocai</forename><surname>Yin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Computational Social Systems</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b63">
+	<analytic>
+		<title level="a" type="main">Multitask hypergraph convolutional networks: A heterogeneous traffic prediction framework</title>
+		<author>
+			<persName><forename type="first">Jingcheng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lixun</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yongli</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinglin</forename><surname>Piao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baocai</forename><surname>Yin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Intelligent Transportation Systems</title>
+		<imprint>
+			<biblScope unit="volume">23</biblScope>
+			<biblScope unit="issue">10</biblScope>
+			<biblScope unit="page" from="18557" to="18567" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b64">
+	<analytic>
+		<title level="a" type="main">Traffic flow prediction via spatial temporal graph neural network</title>
+		<author>
+			<persName><forename type="first">Xiaoyang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yao</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiqi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiliang</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caiyan</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Yu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the web conference 2020</title>
+		<meeting>the web conference 2020</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="1082" to="1092" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b65">
+	<analytic>
+		<title level="a" type="main">Shgcn: a hypergraph-based deep learning model for spatiotemporal traffic flow prediction</title>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Di</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 5th ACM SIGSPA-TIAL International Workshop on AI for Geographic Knowledge Discovery</title>
+		<meeting>the 5th ACM SIGSPA-TIAL International Workshop on AI for Geographic Knowledge Discovery</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="30" to="39" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b66">
+	<analytic>
+		<title level="a" type="main">Chain-of-history reasoning for temporal knowledge graph forecasting</title>
+		<author>
+			<persName><forename type="first">Yuwei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ding</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiang</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shu</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao-Yu</forename><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics ACL 2024</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="16144" to="16159" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b67">
+	<analytic>
+		<title level="a" type="main">How powerful are graph neural networks?</title>
+		<author>
+			<persName><forename type="first">Keyulu</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weihua</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jure</forename><surname>Leskovec</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefanie</forename><surname>Jegelka</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b68">
+	<monogr>
+		<author>
+			<persName><forename type="first">Mingxing</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenrui</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunmiao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xing</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weiyao</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guo-Jun</forename><surname>Qi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongkai</forename><surname>Xiong</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2001.02908</idno>
+		<title level="m">Spatial-temporal transformer networks for traffic flow forecasting</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b69">
+	<analytic>
+		<title level="a" type="main">Optimized structure of the traffic flow forecasting model with a deep learning approach</title>
+		<author>
+			<persName><surname>Hao-Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tharam S</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi-Ping Phoebe</forename><surname>Dillon</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE transactions on neural networks and learning systems</title>
+		<imprint>
+			<biblScope unit="volume">28</biblScope>
+			<biblScope unit="issue">10</biblScope>
+			<biblScope unit="page" from="2371" to="2381" />
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b70">
+	<analytic>
+		<title level="a" type="main">A survey on multimodal large language models</title>
+		<author>
+			<persName><forename type="first">Shukang</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chaoyou</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sirui</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ke</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xing</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tong</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Enhong</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">National Science Review</title>
+		<imprint>
+			<biblScope unit="page">e403</biblScope>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b71">
+	<analytic>
+		<title level="a" type="main">Spatiotemporal graph convolutional networks: a deep learning framework for traffic forecasting</title>
+		<author>
+			<persName><forename type="first">Bing</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haoteng</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhanxing</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 27th International Joint Conference on Artificial Intelligence</title>
+		<meeting>the 27th International Joint Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="3634" to="3640" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b72">
+	<analytic>
+		<title level="a" type="main">Harnessing llms for temporal data-a study on explainable financial time series forecasting</title>
+		<author>
+			<persName><forename type="first">Xinli</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanbin</forename><surname>Lu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing: Industry Track</title>
+		<meeting>the 2023 Conference on Empirical Methods in Natural Language Processing: Industry Track</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="739" to="753" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b73">
+	<analytic>
+		<title level="a" type="main">Unist: a prompt-empowered universal model for urban spatio-temporal prediction</title>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingtao</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Depeng</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>Li</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining</title>
+		<meeting>the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="4095" to="4106" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b74">
+	<analytic>
+		<title level="a" type="main">Datadriven intelligent transportation systems: A survey</title>
+		<author>
+			<persName><forename type="first">Junping</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei-Yue</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kunfeng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Hua</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cheng</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Intelligent Transportation Systems</title>
+		<imprint>
+			<biblScope unit="volume">12</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="1624" to="1639" />
+			<date type="published" when="2011">2011</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b75">
+	<analytic>
+		<title level="a" type="main">Traffic flow forecasting with spatial-temporal graph diffusion network</title>
+		<author>
+			<persName><forename type="first">Xiyue</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chao</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianghao</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liefeng</forename><surname>Bo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junbo</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Zheng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI conference on artificial intelligence</title>
+		<meeting>the AAAI conference on artificial intelligence</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="15008" to="15015" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b76">
+	<analytic>
+		<title level="a" type="main">Dynamic hypergraph structure learning for traffic flow forecasting</title>
+		<author>
+			<persName><forename type="first">Yusheng</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Ju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xian-Sheng</forename><surname>Hua</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE 39th International Conference on Data Engineering (ICDE)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="2303" to="2316" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b77">
+	<analytic>
+		<title level="a" type="main">2023a. Spatio-temporal joint graph convolutional networks for traffic forecasting</title>
+		<author>
+			<persName><forename type="first">Chuanpan</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoliang</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shirui</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haibing</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhaopeng</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zonghan</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cheng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philip</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Knowledge and Data Engineering</title>
+		<imprint>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="372" to="385" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b78">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ou</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohamed</forename><surname>Abdel-Aty</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dongdong</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.05382</idno>
+		<title level="m">Zijin Wang, and Shengxuan Ding. 2023b. Chatgpt is on the horizon: could a large language model be suitable for intelligent traffic safety research and applications? arXiv preprint</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b79">
+	<analytic>
+		<title level="a" type="main">Multispans: A multi-range spatial-temporal transformer network for traffic forecast via structural entropy optimization</title>
+		<author>
+			<persName><forename type="first">Dongcheng</forename><surname>Zou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Senzhang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuefeng</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuandong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunyang</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kehua</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bo</forename><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 17th ACM International Conference on Web Search and Data Mining</title>
+		<meeting>the 17th ACM International Conference on Web Search and Data Mining</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="1032" to="1041" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

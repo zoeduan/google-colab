@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Solving and Generating NPR Sunday Puzzles with Large Language Models</title>
+				<funder ref="#_ECUTBtF">
+					<orgName type="full">unknown</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Jingmiao</forename><surname>Zhao</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">Computer Science Department Wellesley College Wellesley</orgName>
+								<address>
+									<postCode>02482</postCode>
+									<region>MA</region>
+									<country key="US">USA</country>
+								</address>
+							</affiliation>
+						</author>
+						<author role="corresp">
+							<persName><forename type="first">Carolyn</forename><forename type="middle">Jane</forename><surname>Anderson</surname></persName>
+							<email>carolyn.anderson@wellesley.edu</email>
+							<affiliation key="aff0">
+								<orgName type="department">Computer Science Department Wellesley College Wellesley</orgName>
+								<address>
+									<postCode>02482</postCode>
+									<region>MA</region>
+									<country key="US">USA</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Solving and Generating NPR Sunday Puzzles with Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">A7779D0F55DCD428B3167BF09AC1F8E7</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:29+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>We explore the ability of large language models to solve and generate puzzles from the NPR Sunday Puzzle game show using PUZZLEQA, a dataset comprising 15 years of on-air puzzles. We evaluate four large language models using PUZ-ZLEQA, in both multiple choice and free response formats, and explore two prompt engineering techniques to improve free response performance: chain-of-thought reasoning and prompt summarization. We find that state-of-the-art large language models can solve many PUZZLEQA puzzles: the best model, GPT-3.5, achieves 50.2% loose accuracy. However, in our few-shot puzzle generation experiment, we find no evidence that models can generate puzzles: GPT-3.5 generates puzzles with answers that do not conform to the generated rules. Puzzle generation remains a challenging task for future work.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Introduction</head><p>Puzzles and games have long been used to benchmark progress in AI. We continue this tradition by exploring the ability of large language models (LLMs) to solve word puzzles from the NPR Sunday Puzzle on-air game show. Recent advances have led to new techniques for using generalpurpose text generation models to solve a variety of tasks. In few-shot learning, a model is prompted with a handful of examples and asked to generate a solution. In prompt engineering, the input to the model is manipulated in order to improve the model's performance on a task. These techniques have led to surprisingly good performance by LLMs on novel tasks, without any further training of the model.</p><p>In this paper, we explore whether few-shot learning and prompt engineering can allow LLMs to solve questions from the NPR Sunday Puzzle game show, which combines information retrieval, wordplay, and pattern recognition. We introduce PUZZLEQA, consisting of puzzle descriptions, questions, and answers for 558 puzzles, and use it to benchmark four state-of-the-art LLMs. We explore prompt engineering techniques, but find that they have little impact on performance. We also explore whether models can generate new puzzles and find that this remains a challenging task. Although the best model, GPT-3.5, is capable of solving 50.2% of the puzzles, it cannot generate playable games.</p><p>Puzzle Description: Today's puzzle involves "consonyms," which are words that have the same consonants in the same order but with different vowels. Every answer is the name of a country. Question: MINGLE Answer: MONGOLIA </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Benchmarking AI through Games</head><p>Our work continues the tradition of evaluating AI progress through puzzles and games <ref type="bibr">(Ferrucci 2012;</ref><ref type="bibr" target="#b1">Rodriguez et al. 2021;</ref><ref type="bibr" target="#b2">Rozner, Potts, and Mahowald 2021;</ref><ref type="bibr" target="#b2">Sobieszek and Price 2022)</ref>. Contemporary LLMs have demonstrated strong performance on a wide variety of language tasks, including question-answering. However, the extent of their ability to generalize patterns and to solve wordplay puzzles is underexplored.</p><p>The NPR Sunday Puzzle game show represents a particularly interesting genre of puzzle to explore because it synthesizes a variety of skills: information retrieval; rhyming, anagram-solving, and other wordplay; and pattern recognition. Figure <ref type="figure" target="#fig_0">1</ref> shows an example of a puzzle, which involves knowledge of country names and wordplay. Despite the complexity of some NPR Sunday Puzzle games, compared to other question-answering games used to benchmark LLMs, such as Jeopardy! and Quiz Bowl, they are targeted towards a broader audience and require less specialized knowledge.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Dataset</head><p>We present PUZZLEQA, a dataset of 558 NPR Sunday Puzzle games from 2007-2021. During this period, a group of fans ran a mailing list, NPR Puzzle Synopsis, that distributed questions and answers for each week's puzzle. <ref type="foot" target="#foot_0">1</ref> We obtained the puzzle explanations from the NPR website,<ref type="foot" target="#foot_1">foot_1</ref> and extracted the answers from the mailing list, using GPT-J to aid in preprocessing the data. We also classified the puz- zles into 11 different categories. The dataset, preprocessing tools, and analysis scripts will be released publicly.<ref type="foot" target="#foot_2">foot_2</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Model Selection</head><p>We explored two publicly available LLMs, GPT-J (Wang and Komatsuzaki 2021) and LLaMA <ref type="bibr" target="#b3">(Touvron et al. 2023)</ref>, and two proprietary OpenAI LLMs: GPT-3 Davinci and GPT-3.5 <ref type="bibr" target="#b0">(Brown et al. 2020)</ref>. The amount of randomness in each of these model's generations can be manipulated via the temperature hyperparameter, where a high temperature means more randomness. After exploring temperature settings of 0.75, 0.5, 0.25, and 0.1, we found that temperature = 0.1 was optimal.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Multiple Choice Experiments</head><p>As an easier benchmark, we constructed a multiple-choice version of the PUZZLEQA dataset. For each problem, we randomly selected three answers to other questions from the same puzzle to present alongside the correct answer.</p><p>Answer only baseline In multiple choice tasks, there can be biases towards or against certain question options, even in the absence of the question. To obtain an accurate baseline, we measure how often the model selects the correct answer when it is not given the question. An unbiased set of answer options would result in at-chance performance (25%). We refer to this task as the answer-only baseline. We find that the model selects the correct answer 21% of the time when it is not given the question, suggesting that there is no significant bias towards the correct answer from the answer options alone.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Results</head><p>Figure <ref type="figure" target="#fig_1">2</ref> shows the performance of each model on the multiple choice task. The smallest model, GPT-J, does not perform better than chance on this simplified task.</p><p>As a result, we exclude it from the rest of our experiments.</p><p>The other publicly available model, LLaMA, performs well</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Free Response Experiments</head><p>We perform two sets of free response experiments. To explore various prompt engineering techniques, we first create a subset of our data balanced by question type. We then compare the best prompting technique against a baseline on the full dataset. In all experiments, a few-shot paradigm is used: the model is given two examples of solved questions from the same puzzle (following the same game rules) and asked to solve a third.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Evaluation Metrics</head><p>Free response question-answering is difficult to evaluate, since a correct answer may be phrased in various ways. We use two conservative metrics for evaluating performance. Exact Matching: the response is correct if it exactly matches the gold solution.</p><p>Loose Matching: the response is correct if it is contained or contains the gold solution, after removing nonalphabetical characters and lowercasing both strings.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Exploring Prompt Engineering Techniques</head><p>We subsample our dataset in order to evaluate the impact of various prompt engineering techniques. 10 questions from each of our 11 categories were randomly sampled for the subset, for a total of 110 items. We explore two prompt engineering techniques: summarization and chain-of-thought reasoning.</p><p>Summarization One potential challenge for the model in solving the PUZZLEQA puzzles is that the games are described informally. We hypothesize that the lack of consistency in puzzle wording might hinder the model. We experiment with using GPT-3.5 to summarize the puzzle description to a more consistent format (Figure <ref type="figure" target="#fig_2">3</ref>).</p><p>Summarize the following: In the on-air puzzle, you are given the word and must drop two letters so that the remaining letters, in order, spell a color or shade.  Chain-of-thought Reasoning Prompting models to explain their reasoning before generating an answer has been shown to improve model performance on other tasks <ref type="bibr" target="#b4">(Wei et al. 2023)</ref>. This is known as chain-of-thought prompting.</p><p>One limitation of this approach is that humans must write explanations to provide as examples to the model. We automate the process by using the model to generate explanations for rule-question-answer triplets. We then use the generated explanations as input to the chain-of-thought prompting experiment. Figure <ref type="figure" target="#fig_3">4</ref> shows an example prompt used to gather model explanations. GPT-3's generated explanation was The word "blouse" can have two letters dropped to spell the color "blue". This explanation was then added to the example to use in few-shot prompting.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Prompt Engineering Results</head><p>In our small-scale experiment, we found that both summarization and chain-of-thought prompting improved performance. Figure <ref type="figure">5</ref> shows GPT-3 results for each technique.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Free Response Results</head><p>We select the best-performing prompt engineering technique to compare against a baseline prompt on the full PUZ-ZLEQA dataset. Our small-scale experiments suggested that both summarization and chain-of-thought prompting improve performance. We compare this model to a baseline few-shot learning model.</p><p>Figure <ref type="figure" target="#fig_1">2</ref> shows the free response results for the full PUZ-ZLEQA dataset. Although chain-of-thought reasoning and summarization improved model performance in our smallscale experiment, this did not replicate for the entire dataset. The baseline GPT-3.5 model performs best, solving 50.2% of the puzzles. We note that performance is very sensitive to prompt wording: when we rephrase the chain-of-thought prompt to ask for the "answer and reasoning" rather than the "reasoning and answer," performance drops substantially. Discussion Overall, the best model, GPT-3.5, performs fairly well on the PUZZLEQA dataset. We observe a large gap in performance between the LLaMA model, which is available for academic research, and the proprietary Ope-nAI models, illustrating the need for better public LLMs. Surprisingly, we find that the prompt engineering techniques we explored did not improve model performance.</p><p>Although chain-of-thought prompting did not improve performance, we feel that it still has some benefits. The chain-of-thought-prompted model: when prompted this way, GPT-3.5 produces "N/A" 87 times, compared to only 3 refusals to provide an answer in the baseline version. In some cases, the puzzle is faulty due to webscraping errors. When we manually examined the explanations generated by the model, most are consistent with the answer. Thus, chainof-thought prompting may decrease overconfidence in models while providing a window into the model's decisions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Game Generation</head><p>Although our exploration of popular prompt engineering techniques was not fruitful, we nonetheless found that stateof-the-art LLMs are capable of solving many of the NPR puzzles. In this section, we explore whether LLMs are also capable of generating puzzles for humans to play. We explore puzzle generation with the LLM that achieved the highest performance on the free response task, GPT-3.5.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Prompt Design</head><p>We construct a few-shot puzzle generation dataset using our balanced 110 question subset. In each prompt, we provide the model with five examples of puzzles, presented as explanation-question-answer triplets (Figure <ref type="figure" target="#fig_5">6</ref>), for a total of 22 prompts. We then evaluate each generated puzzle by asking the model to generate an answer to the question.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Explanation</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Question</head><p>Response Gold I'll give you a word that can be split into two smaller words. The first word is the name of a U.S. state, and the second word is a type of animal. For example, given "MontanaLion," the answer would be "Montana, Lion." DelawareHawk Delaware, Hawk Delaware, Hawk Every answer is a well-known movie title with one or more letters from the title replaced with a number. For example, if the clue is "Th3 Matrix," the answer would be "The Matrix."</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>F1ght Club</head><p>Fight Club Fight Club  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Evaluation Metrics</head><p>We use two metrics to evaluate the generated games:</p><p>Consistency: can the model solve its own puzzle? We provide the generated explanation and question to  and generate an answer. If the answers match, the puzzle is consistent.</p><p>Conformity: of the questions that are consistent, how many have answers that conform to the rules in the explanation? We assess this manually.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Results</head><p>Of the 22 games generated by GPT-3.5, it answers 17 questions consistently. However, just 6 of the questions conform with the explanation provided. In addition, the conforming games are trivial to solve (Table <ref type="table" target="#tab_0">1</ref>). Thus, though LLMs succeed in playing the NPR Sunday Puzzle, we find no evidence that they can generate new puzzles for human players.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitations and Future Work</head><p>Our experiments with PUZZLEQA show that current LLMs are capable of solving, but not creating, NPR Sunday Puzzle questions. However, our results come with a number of caveats. First, since the training data for GPT-3, GPT-3.5, and LLaMA is not publicly available, we cannot measure whether models have been trained on problems within our dataset. To investigate potential training/test overlap, we manually constructed a test set of questions from 2023, which is more recent than the models' training data cutoff dates <ref type="bibr">(GPT-3: 2019;</ref><ref type="bibr">GPT-3.5: 2021;</ref><ref type="bibr">LLaMA: 2022)</ref>. We find that model performance on this small (n=116) subset is on par with the full dataset (Figure <ref type="figure" target="#fig_6">7</ref>). In general, although q q q q q q q q q q q q q q q q 0.00</p><p>0.25 0.50 0.75 1.00 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2023</p><p>Year Average % correct Model q GPT-3 GPT-3.5 LLAMA Our methodology could also be refined in a number of ways. Our webscraping techniques failed to capture some questions, which could be added to our dataset. Our loose accuracy metric is a conservative measure of model capability, since it may fail to identify some valid answers. Finally, future work could incorporate a rating of question difficulty by identifying from the game transcript whether the human player succeeded or failed in answering the question.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Conclusion</head><p>Using data from the NPR Sunday Puzzle game show, we explore the ability of contemporary large language models to solve and generate word puzzles. We show that PUZZLEQA is a challenging benchmark for LLMs: although GPT-3.5 solves 50.2% of the problems in the free response task, information about its training data is not public, and the best publicly available model achieves only 33%.</p><p>The fact that the prompt engineering techniques we explored failed to improve performance is puzzling, given promising results from chain-of-thought prompting reported for similar tasks <ref type="bibr" target="#b4">(Wei et al. 2023)</ref>. However, we argue that chain-of-thought reasoning is still helpful for explainability.</p><p>Our game generation results show that being able to generate NPR Sunday Puzzle-style games is beyond the capabilities of current LLMs, even if they are capable of solving</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: NPR Sunday Puzzle from March 12, 2023</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Results on full PUZZLEQA dataset, by model, prompting technique, and format.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Summarization prompt to summarized explanations of the rules of the puzzle</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Chain-of-thought prompt to elicit explanations</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure</head><figDesc>Figure GPT-3 results for prompt engineering experiment</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 6 :</head><label>6</label><figDesc>Figure 6: Game generation prompt</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 7 :</head><label>7</label><figDesc>Figure 7: Exact accuracy by puzzle air date</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Game that satisfies both consistency and conformity, but are trivial</figDesc><table><row><cell>You are given several examples of the game, with</cell></row><row><cell>each game including a prompt, question, and an-</cell></row><row><cell>swer.</cell></row><row><cell>5 examples given as:</cell></row><row><cell>Explanation:</cell></row><row><cell>Question:</cell></row><row><cell>Answer:</cell></row><row><cell>Please generate a new game with a prompt, question,</cell></row><row><cell>and answer in the same format.</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://groups.google.com/g/nprpuzzle</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>https://www.npr.org/series/4473090/sunday-puzzle.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>https://github.com/Wellesley-EASEL-lab/PuzzleQA above chance, showing that it is able to correctly identify responses for many problems. GPT-3 and GPT-3.5 both perform well on this task, solving 78% percent of problems.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>We note that puzzle types and topics may vary over time; an in-depth analysis of the puzzle content is one area for future work.</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgements</head><p>We would like to thank our anonymous ICCC reviewers for their helpful feedback. We also extend our thanks to <rs type="person">Eni Mustafaraj</rs> and <rs type="person">Brian Tjaden</rs> for their comments on this work at various stages in its development, and to <rs type="person">Arjun Guha</rs> for the initial idea of exploring the <rs type="programName">NPR Sunday Puzzle game</rs>.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_ECUTBtF">
+					<orgName type="program" subtype="full">NPR Sunday Puzzle game</orgName>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Author Contributions</head><p>All authors contributed to the writing of this paper.</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">We hope that the PUZZLEQA dataset will aid future work in this area. References [Brown et al. 2020]</title>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">B</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">M</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mc-Candlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IBM Journal of Research and Development</title>
+		<imprint>
+			<biblScope unit="volume">56</biblScope>
+			<biblScope unit="page">15</biblScope>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note>Future work could explore fine-tuning a model on our dataset rather than using few-shot learning Language models are few-shot learners Ferrucci 2012] Ferrucci, D. A. 2012. Introduction to &quot;This is Watson</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Quizbowl: The case for incremental question answering</title>
+		<author>
+			<persName><surname>Rodriguez</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021. 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Playing Games with Ais: The Limits of GPT-3 and Similar Large Language Models</title>
+		<author>
+			<persName><forename type="first">Potts</forename><surname>Rozner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Mahowald ; Rozner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Potts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Mahowald</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sobieszek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Price</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2104.08620</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Decrypting Cryptic Crosswords: Semantically Complex Wordplay Puzzles as a Target for NLP</title>
+		<imprint>
+			<date type="published" when="2021">2021. 2021. 2022</date>
+			<biblScope unit="volume">32</biblScope>
+			<biblScope unit="page" from="341" to="364" />
+		</imprint>
+	</monogr>
+	<note>Sobieszek and Price 2022</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">LLaMA: Open and efficient foundation language models</title>
+		<author>
+			<persName><surname>Touvron</surname></persName>
+		</author>
+		<ptr target="https://github.com/kingoflolz/mesh-transformer-jax" />
+	</analytic>
+	<monogr>
+		<title level="m">A 6 Billion Parameter Autoregressive Language Model</title>
+		<editor>
+			<persName><forename type="first">B</forename><surname>Wang</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">A</forename><forename type="middle">2021</forename><surname>Komatsuzaki</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Gpt-J-6b</surname></persName>
+		</editor>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><surname>Wei</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

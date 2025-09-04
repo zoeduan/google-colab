@@ -1,0 +1,1737 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Improving Arithmetic Reasoning Ability of Large Language Models through Relation Tuples, Verification and Dynamic Feedback</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-06-25">25 Jun 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Zhongtao</forename><surname>Miao</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">The University of Tokyo</orgName>
+								<address>
+									<settlement>Tokyo</settlement>
+									<country key="JP">Japan</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Kaiyan</forename><surname>Zhao</surname></persName>
+							<email>zhaokaiyan1006@g.ecc.u-tokyo.ac.jp</email>
+							<affiliation key="aff0">
+								<orgName type="institution">The University of Tokyo</orgName>
+								<address>
+									<settlement>Tokyo</settlement>
+									<country key="JP">Japan</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yoshimasa</forename><surname>Tsuruoka</surname></persName>
+							<email>yoshimasa-tsuruoka@g.ecc.u-tokyo.ac.jp</email>
+							<affiliation key="aff0">
+								<orgName type="institution">The University of Tokyo</orgName>
+								<address>
+									<settlement>Tokyo</settlement>
+									<country key="JP">Japan</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Improving Arithmetic Reasoning Ability of Large Language Models through Relation Tuples, Verification and Dynamic Feedback</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-06-25">25 Jun 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">D88F5116FE61ED519B7727E5A3C273AB</idno>
+					<idno type="arXiv">arXiv:2406.17873v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:19+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Current representations used in reasoning steps of large language models can mostly be categorized into two main types: (1) natural language, which is difficult to verify; and (2) nonnatural language, usually programming code, which is difficult for people who are unfamiliar with coding to read. In this paper, we propose to use a semi-structured form to represent reasoning steps of large language models. Specifically, we use relation tuples, which are not only human-readable but also machinefriendly and easier to verify than natural language. We implement a framework that includes three main components: (1) introducing relation tuples into the reasoning steps of large language models; (2) implementing an automatic verification process of reasoning steps with a local code interpreter based on relation tuples; and (3) integrating a simple and effective dynamic feedback mechanism, which we found helpful for self-improvement of large language models. The experimental results on various arithmetic datasets demonstrate the effectiveness of our method in improving the arithmetic reasoning ability of large language models. The source code is available at <ref type="url" target="https://github.com/gpgg/art">https://github.com/gpgg/art</ref>.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Large language models, such as GPT series <ref type="bibr" target="#b5">(Brown et al., 2020;</ref><ref type="bibr">Achiam et al., 2023)</ref>, PaLM <ref type="bibr" target="#b3">(Anil et al., 2023)</ref>, <ref type="bibr">Mistral (Jiang et al., 2023)</ref>, and LLaMA <ref type="bibr">(Touvron et al., 2023a,b;</ref><ref type="bibr" target="#b2">AI@Meta, 2024)</ref>, have shown great success in numerous tasks that require reasoning. Besides the approach to scaling up the size of large language models and training data to enhance their reasoning ability, many prompting methods have been proposed to improve their reasoning performance. Previous works <ref type="bibr" target="#b29">(Wei et al., 2022;</ref><ref type="bibr" target="#b13">Kojima et al., 2022;</ref><ref type="bibr" target="#b35">Zelikman et al., 2022;</ref><ref type="bibr" target="#b7">Gao et al., 2023)</ref>, which aim to enhance the reasoning ability of large language models, can be categorized into two main types: natural language-based "Q" denotes a question. "NL" means "Natural Language". "RT" means "Relation Tuple". The left subfigure shows our proposed framework ART without Self-Consistency <ref type="bibr" target="#b28">(Wang et al., 2023)</ref>. The right subfigure shows that our framework can be integrated with Self-Consistency seamlessly.</p><p>approaches and non-natural language-based approaches. The natural language-based approaches include Chain-of-Thought (CoT) <ref type="bibr" target="#b29">(Wei et al., 2022)</ref> and Zero-shot CoT <ref type="bibr" target="#b13">(Kojima et al., 2022)</ref>, which utilize intermediate reasoning steps in natural language to elicit the reasoning ability of large language models. The non-natural language-based approaches include PAL <ref type="bibr" target="#b7">(Gao et al., 2023)</ref>, which proposes to use Python code to solve math word problems.</p><p>However, the reasoning steps represented in nat-ural language are usually long, which can significantly increase inference cost and may contain computational errors and unjustified logical leaps <ref type="bibr">(Zhou et al., 2024b)</ref>. Besides, unlike graphs or formal languages, they are difficult to verify because of the nature of natural language <ref type="bibr">(Zhou et al., 2024b)</ref>.</p><p>Recently, there have been some studies that focus on translating natural language statements into formal languages such as Isabelle <ref type="bibr" target="#b19">(Nipkow et al., 2002)</ref> using large language models <ref type="bibr" target="#b1">(Agrawal et al., 2022;</ref><ref type="bibr">Zhou et al., 2024b;</ref><ref type="bibr">Xu et al., 2024b)</ref>. However, those formal languages are hard for humans to read.</p><p>In this study, we propose a framework named ART 1 to enhance the arithmetic reasoning ability of large language models. A schematic overview of our ART framework is shown in Figure <ref type="figure" target="#fig_0">1</ref>. First, we utilize in-context learning to make a large language model generate reasoning steps mixed with a simple semi-structured form, relation tuples. We can obtain an answer after reasoning. These relation tuples are very similar to pseudo-code, which can easily be translated into real programming code. Next, the large language model generates a Python code solution to verify the reasoning steps based on the question and relation tuples. We run the Python code in a local code interpreter to obtain the verification answer. Finally, we check whether the two answers are consistent or not and provide a dynamic feedback when necessary. If the two answers are inconsistent, we will use the large language model to regenerate a new reasoning process based on a simple dynamic feedback mechanism. The answer is determined if the two answers are consistent or reach the maximum number of tries in the feedback loop.</p><p>The main contributions of this paper can be summarized as follows:</p><p>• We introduce a semi-structured representation, relation tuples, into the reasoning steps of large language models. Relation tuples are usually shorter and easier to read, compared with long reasoning steps in natural language. They are more machine friendly because they are very similar to pseudo-code, which can be translated to real Python or other programming language code easily. Our findings also reveal that incorporating relation tuples into few-shot examples can improve the accuracy 1 ART: Improving Arithmetic Reasoning Ability through Relation Tuples, Verification and Dynamic Feedback on four out of seven arithmetic datasets.</p><p>• This study provides a local code interpreter and employs it to develop a reasoning step verifier based on relation tuples. This local code interpreter can be integrated with any large language model seamlessly, regardless of whether they are open source or not.</p><p>• We implement a simple and effective dynamic feedback mechanism. Unlike Self-Refine <ref type="bibr" target="#b17">(Madaan et al., 2023)</ref>, our dynamic feedback mechanism is considerably simpler but effective. Here, "Dynamic" means that feedback is provided when necessary.</p><p>2 Method</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Problem Formulation</head><p>We denote a large language model as LM. Suppose that we have a dataset D. The dataset can be denoted as D = {Q i , A i } N -1 i=0 , where Q i is the i-th question, A i is the answer of Q i and N is the number of examples in the dataset. The CoT method aims to generate a series of reasoning steps and an answer, which can be denoted as:</p><formula xml:id="formula_0">[ Ri , Âi ] = LM(Q i ),<label>(1)</label></formula><p>where Ri denotes the generated intermediate reasoning steps of the large language model LM and Âi denotes the predicted answer after the reasoning steps. The local code interpreter is denoted as LCI.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">ART Framework</head><p>The ART framework can be described in the following steps:</p><p>Step 1: Reasoning with relation tuples. Given a question Q i from the dataset D, LM generates reasoning process Ri = LM(Q i ) and its answer, Âi . The reasoning process consists of a series of reasoning steps and each reasoning step contains a natural language statement and its relation tuple equivalent. The reasoning process can be denoted as a list:</p><p>Ri = [(r 0 , t 0 ), . . . , (r i , t i ), . . . , (r n-1 , t n-1 )],</p><p>(2) where r i is the reasoning step in natural language and t i is its equivalent in the relation tuple form. n is the number of reasoning steps. The prompt used in this step is shown in Figure <ref type="figure">3</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Q</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>…</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Example</head><p>Janet's ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Question</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Reasoning Process with Relation Tuples</head><p>We know that Janet's ducks lay 16 eggs per day, (number-ofeggs-laid-per-day, is, 16). She eats three for breakfast every morning and bakes muffins for her friends every day with four, (number-of-eggs-used-perday, is, 3 + 4). …… To find out how much she makes every day at the farmers' market, we multiply the number of eggs left to sell by the price per egg, (total-earnings-per-day, is, number-of-eggs-leftto-sell-per-day * price-per-egg). 9 * $2 = $18. Thus, Janet makes $18 every day at the farmers' market. Step 2: Automatic verification with relation triples and a local code interpreter. We can extract the relation tuples from the reasoning steps Ri in Step 1. The relation tuples extracted are denoted as a list:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Verification by</head><formula xml:id="formula_1">T i = [t 0 , . . . , t i , . . . , t n-1 ].<label>(3)</label></formula><p>To verify whether the reasoning steps in Step 1 are correct or not, we decide to use Python code and implement a local code interpreter. Based on the question Q i and reasoning steps in relation tuples T i , LM generates a Python code solution C i step by step. The code generation process can be denoted as:</p><formula xml:id="formula_2">C i = LM(Q i , T i ). (<label>4</label></formula><formula xml:id="formula_3">)</formula><p>After obtaining the Python solution C i . We execute it using our local code interpreter LCI and get the verification answer Âv i from the execution result:</p><formula xml:id="formula_4">Âv i = LCI(C i ).<label>(5)</label></formula><p>The prompt used in this step is shown in Figure <ref type="figure">4</ref>.</p><p>Step 3: Checking consistency and providing dynamic feedback when necessary.</p><p>From Step 1, we can get one answer Âi based on reasoning steps with relation tuples. From Step 2, we can obtain the verification answer Âv i . If these two answers are System Prompt You are a helpful assistant that can solve math problems step by step with relation triples. Answer the following question. Write your thoughts first. Please make sure when you make a statement that includes reasoning, you must always write down those reasoning steps as relation triples. The final answer must be in numeric format, not in words. The final answer should be in the format with only a number shown: 'The final answer: &lt;your answer&gt; '. Question: … Answer: … … Question: … Answer: … Figure 3: Prompt of relation tuple reasoning in Step 1. System Prompt You are a helpful assistant capable of solving math problems by using Python functions, based on the question provided and its reasoning steps which are formatted as relation triples. Given a question and its answer's thinking process in format of relation triples, write a python function to solve the question based on those relation triples with the markdown format, that is, ```python\n&lt;your code&gt;\n```. The output of the function should be in this format with only a number shown: 'The final answer: &lt;your answer&gt;'. Question: … Answer: … … Question: … Answer: … Figure 4: Prompt of program verification in Step 2.</p><p>equal, it indicates that the reasoning steps in Step 1 are consistent with Step 2, confirming that there is no computational error. Therefore, the answer is determined. However, if the two answers are inconsistent, the previous reasoning steps Ri will be resent to the large language model LM as a feedback. LM regenerates reasoning process Ri and its answer Âi based on the feedback. The feedback prompt used here is shown in Figure <ref type="figure">5</ref>. We record all the answers from Step 1 and Step 2 and choose the most common one as the final answer, ensuring seamless integration with the Self-Consistency approach <ref type="bibr" target="#b28">(Wang et al., 2023)</ref>. We also provide an example to show the effectiveness of this dynamic feedback mechanism in Figure <ref type="figure">6</ref>. Models. To evaluate our approach, we employ two proprietary large language models, ChatGPT (gpt-3.5-turbo-0301)<ref type="foot" target="#foot_0">foot_0</ref> and GPT4o (gpt-4o-2024-05-13) <ref type="foot" target="#foot_1">3</ref> and one open source large language model, Llama3-8B-Instruct (meta-llama/Meta-Llama-3-8B-Instruct) <ref type="foot" target="#foot_2">4</ref> . Specifically, we utilize ChatGPT for our main ex-</p><p>The Doubtfire sisters are driving home with 7 kittens adopted from the local animal shelter when their mother calls to inform them that their two house cats have just had kittens. She says that Patchy, the first cat, has had thrice the number of adopted kittens, while Trixie, the other cat, has had 12. How many kittens does the Doubtfire family now have?</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Question</head><p>Reasoning with RT w/o feedback (ART) Reasoning with RT w/ feedback (ART)</p><p>We know that Trixie, one of the house cats, has had 12 kittens, (number-ofkittens-from-Trixie, is, 12). Patchy, the other house cat, has had thrice the number of adopted kittens, (numberof-kittens-from-Patchy, is, 3 * number-ofadopted-kittens). …… We cannot determine the exact number of kittens without knowing the value of 'x', the number of adopted kittens. However, we do know that the Doubtfire family has at least 19 kittens. The final answer: At least 19 kittens.</p><p>My apologies, I made a mistake in my previous solution. We can determine the exact number of kittens from Patchy by using the information that Patchy has had thrice the number of adopted kittens. Answer: We know that Trixie, one of the house cats, has had 12 kittens, (number-of-kittens-from-Trixie, is, 12). …… The total number of kittens is the sum of the kittens from Trixie, Patchy, and the adopted kittens, (totalnumber-of-kittens, is, number-of-kittens-from-Trixie + number-of-kittens-from-Patchy + number-of-adoptedkittens).</p><p>Substituting the values we know, we get: total-number-of-kittens = 12 + 21 + 7 = 40. Thus, the Doubtfire family now has 40 kittens. The final answer: 40.</p><p>Figure <ref type="figure">6</ref>: Comparison of "Reasoning with RT" solutions without feedback and with feedback, generated by our framework. This example shows the predicted solution for the 55-th question in the test split of the GSM8K dataset, using our method with ChatGPT (gpt-3.5-turbo-0301).</p><p>periments and use GPT-4o and Llama3-8B-Instruct in our ablation study. In our framework, the temperatures of Llama3-8B-Instruct are set to 0.5 in both Step 1 and Step 2. For the results in Table <ref type="table" target="#tab_2">2</ref>, both temperatures in Step 1 and Step 2 are set to 0, and the top_p parameter is set to 1 to ensure a fair comparison with ModelSelection <ref type="bibr" target="#b36">(Zhao et al., 2023)</ref>. We use the same prompt for all seven arithmetic datasets for each large language model.</p><p>In-context Learning. For ChatGPT and Llama3-8B-Instruct, we employ in-context learning using an eight-shot setting. In this setting, we select the first eight questions from the train split of the GSM8K dataset.  <ref type="bibr">et al. (2023)</ref>. Bold fonts highlight the best performance for each dataset.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Main Results</head><p>As shown in Table <ref type="table" target="#tab_2">2</ref>, we report the accuracy results on the seven arithmetic datasets. Table <ref type="table" target="#tab_2">2</ref> shows that our approach outperforms CoT, PAL and ModelSelection baselines on ChatGPT (gpt-3.5-turbo-0301). Notably, our method is particularly effective on the GSM8K, SVAMP and AddSub datasets. Specifically, it improves accuracy on the SVAMP dataset by 2.8%, compared with ModelSelection and achieves a 1.9% improvement over ModelSelection's 82.6% accuracy on the GSM8K dataset.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Analysis and Discussion</head><p>In this section, we analyze various factors affecting the performance of our framework. The dataset we use here is GSM8K. First, we investigate the effects of prior prompts used in ModelSelection <ref type="bibr" target="#b36">(Zhao et al., 2023)</ref> and GPT-4 generated prompts using the same CoT method because our eight-shot examples are created based on the GPT-4 generated solutions. Then, we assess the contributions of relation tuples, verification by programming code and feedback individually using three different large language models. Finally, we show that our method can be integrated into Self-Consistency.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Original Prompt vs. GPT-4 generated Prompt</head><p>We utilize in-context learning to build our framework. Existing works use the eight-shot examples from CoT while the eight-shot examples in our method are manually created with the help of GPT-4. Therefore, in this section, we aim to test the impact of difficulty of different prompts on the model's performance with CoT. As shown in Table 3, we find that the performance difference between using the two versions of prompts is not significant on ChatGPT and Llama3-8B-Instruct. The GPT-4 generated eight-shot prompt and the eightshot prompt used in our framework are shown in</p><p>Backbone Method GSM8K ChatGPT CoT (original prompt) 80.8 CoT (GPT-4-generated prompt) 80.1 Llama3-8B-Instruct CoT (original prompt) 80.1 CoT (GPT-4-generated prompt) 80.1 Table 3: Accuracy results on GSM8K with different eight-shot examples. The "CoT (original prompt)" result with ChatGPT is quoted from ModelSelection (Zhao et al., 2023)</p><p>Appendix B.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Role of Relation Tuples in Step 1</head><p>In this section, we analyze the role of relation tuples. From Table <ref type="table" target="#tab_4">4</ref>, we can observe that the reasoning process incorporating relation tuples outperforms the CoT reasoning process on four out of the seven arithmetic datasets. Relation tuples in the reasoning process can be viewed as notes that record key points in the reasoning steps in natural language. These relation tuples may function as "pause" tokens <ref type="bibr" target="#b8">(Goyal et al., 2024)</ref>, prompting large language models to "think" before generating the next reasoning step.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Role of Verification by Programming Code in Step 2</head><p>Table <ref type="table">5</ref> shows the accuracy on the GSM8K dataset when using the answers from different steps of our framework as the final answers. In the Table 5: Accuracy results of the ablation study of our framework on the GSM8K dataset. "RT" means Relation Tuples.</p><p>From Table <ref type="table">5</ref>, it is evident that the accuracy scores on the GSM8K dataset using the verification answers from Step 2 of our framework are are lower than those using relation tuples. We can observe that the most obvious one is Llama3-8B-Instruct, which cannot generate programming code very well based on the semi-structured form of reasoning (relation tuples), whereas ChatGPT and GPT-4o excel in this task.</p><p>A possible reason for this discrepancy could be that in Step 2 of our framework, we use relation tuples and questions as inputs for large language models, which are infrequently encountered during their training phases. Consequently, these models struggle with generating Python solutions from this semi-structured form. This is particularly evident in the Llama3-8B-Instruct model, where there is an accuracy gap between using answers from Step 1 and Step 2 as final answers. This indicates that Llama3-8B-Instruct may have difficulty generating Python verification solutions based on relation tuples.</p><p>We also observe several common execution errors when Llama3-8B-instruct generates and executes Python solution code to verify the reasoning process in Step 2. Empirically, the most frequent error is "UnboundLocalError: local variable referenced before assignment", typically caused by using symbols that cannot serve as variable names in Python. Additionally, "SyntaxError" is another commonly encountered error.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Llama3</head><p>ChatGPT  No feedback Feedback (one-time)</p><p>Feedback (two-times) Feedback (three-times)</p><p>Figure 7: Percentage of questions requiring feedback on the test split of the GSM8K dataset. Note that "Llama3" denotes Llama3-8B-Instruct model. The details can be found in Table 7, Appendix C. SVAMP ASDIV SingleEQ SingleOP AddSub MultiArith No feedback Feedback (one-time) Feedback (two-times) Feedback (three-times) Figure 8: Percentage of questions requiring feedback on the test splits of the other six datasets (SVAMP, ASDIV, SingleEQ, SingleOP, AddSub, MultiArith) using Chat-GPT (gpt-3.5-turbo-0301). The details can be found in Table 8, Appendix C.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Role of Feedback in Step 3</head><p>We explore the effect of the dynamic feedback mechanism in our framework in this section. Figure <ref type="figure">7</ref> and 8 show the percentage of questions utilizing feedback on the GSM8K dataset and the other 6 arithmetic datasets, respectively. In Figure <ref type="figure">7</ref>, we observe an interesting phenomenon: as the coding capabilities of the large language models increase (Llama3-8B-Instruct &lt; ChatGPT &lt; GPT-4o) as shown in Table <ref type="table">5</ref>, the percentage of questions requiring feedback continuously decreases.</p><p>From Figure <ref type="figure">8</ref>, we observe that the dataset on which ChatGPT requires feedback most frequently is ASDIV. The percentage of feedback utilization might be related to the quality of datasets and the Backbone Method GSM8K</p><p>Llama3-8B-Instruct ART (SC@1) 80.4 ART (SC@5) 84.2</p><p>Table <ref type="table">6</ref>: Accuracy on the GSM8K dataset after integrating Self-Consistency (SC@5) into our framework ART. "SC@5" means that the number of sampled paths is 5.</p><p>programming code understanding and generation capabilities of large language models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5">Integration with Self-Consistency</head><p>Our framework is designed for seamless integration with the Self-Consistency approach <ref type="bibr" target="#b28">(Wang et al., 2023)</ref>. The core idea of Self-Consistency is to select the most common answer derived from multiple reasoning paths. In our framework, we also determine the final answer by choosing the most frequent answer from different steps. From Table <ref type="table">6</ref>, we can observe that with the aid of Self-Consistency, our framework significantly enhances the arithmetic reasoning performance of Llama3-8B-Instruct on the GSM8K dataset.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Related Work</head><p>Natural language reasoning. There are large amounts of studies <ref type="bibr" target="#b22">(Qiao et al., 2023;</ref><ref type="bibr" target="#b23">Sanyal et al., 2022;</ref><ref type="bibr" target="#b20">Nye et al., 2021;</ref><ref type="bibr" target="#b26">Wang et al., 2022)</ref> focusing on enhancing the reasoning ability of large language models in natural language. Chain-of-Thought (CoT) <ref type="bibr" target="#b29">(Wei et al., 2022)</ref> shows that intermediate reasoning steps can improve the performance of large language models. Zero-shot CoT, as proposed by <ref type="bibr" target="#b13">Kojima et al. (2022)</ref>, involves simply adding "Let's think step by step" before generating answers to elicit the reasoning ability of large language models. Least-to-most prompting <ref type="bibr" target="#b38">(Zhou et al., 2023)</ref> breaks down complex problems to simpler problems and solve them in sequence to enable complex reasoning in large language models. Self-Consistency <ref type="bibr" target="#b28">(Wang et al., 2023)</ref> extends CoT by sampling various reasoning paths, generating multiple answers and choosing the most common one. Tree-of-Thought <ref type="bibr" target="#b33">(Yao et al., 2023)</ref> generalizes over Chain-of-Thought by framing any problem as a search over a tree. <ref type="bibr" target="#b4">Besta et al. (2024)</ref> propose Graph-of-Thoughts to improve large language model's reasoning ability by modeling large language model thoughts as vertices and dependencies between these vertices as edges. Buffer-of-Thoughts <ref type="bibr" target="#b32">(Yang et al., 2024</ref>) is a novel prompting approach which employs a meta-buffer to store a series of thought templates (high-level thoughts) and retrieves a relevant thought template and instantiate it when conducting reasoning.</p><p>Non-natural language reasoning and verification. There are many works <ref type="bibr" target="#b12">(Kadlčík et al., 2023;</ref><ref type="bibr" target="#b7">Gao et al., 2023;</ref><ref type="bibr">Xu et al., 2024b)</ref> aiming to enhance the reasoning ability of large language models by using non-natural language forms during the reasoning process. PAL <ref type="bibr" target="#b7">(Gao et al., 2023)</ref> employs large language models to generate Python code as intermediate reasoning steps. ERA-CoT (Liu et al., 2024) aids large language models in reasoning by analyzing entities and relationships in natural language statements. Zhou et al. (2024a) find that GPT-4's powerful skills in generating and executing code could be utilized to enhance mathematical reasoning ability by analyzing the Code Usage Frequency of the GPT-4 Code Interpreter.</p><p>MathCoder <ref type="bibr" target="#b27">(Wang et al., 2024)</ref> integrates natural language reasoning, code generation and execution results to enhance the mathematical reasoning ability of large language models by fine-tuning them. SymbolCoT <ref type="bibr">(Xu et al., 2024b)</ref> integrates symbolic expressions and logic rules into the reasoning process of large language models to enhance their logical reasoning ability. <ref type="bibr">Zhou et al. (2024b)</ref> translate informal natural language reasoning statements into formal Isabelle code which can be verified automatically to enhance internal consistency of reasoning in large language models. Different from these works, our method utilizes the semistructure understanding and code generation ability of large language models to verify the reasoning process.</p><p>Self-improvement and verification. There are many works focusing on the self-improvement of large language models <ref type="bibr" target="#b10">(Huang et al., 2023;</ref><ref type="bibr" target="#b17">Madaan et al., 2023;</ref><ref type="bibr" target="#b9">Haluptzok et al., 2023;</ref><ref type="bibr">Xu et al., 2024a;</ref><ref type="bibr" target="#b34">Yu et al., 2023)</ref>. <ref type="bibr" target="#b35">Zelikman et al. (2022)</ref> propose Self-Taught Reasoner (STaR), which employs a reasoning process generation loop to produce reasoning steps and use these generated reasoning paths whose final answers are correct to further fine-tune large language models. <ref type="bibr" target="#b17">Madaan et al. (2023)</ref> propose Self-Refine, which has three components (generator, feedback provider and refiner). Compared with Self-Refine, the dynamic feedback in our framework is provided only when necessary. Moreover, our framework does not need the feedback provider.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Conclusion</head><p>In this paper, we propose to use a semi-structured representation for the arithmetic reasoning steps of large language models. Specifically, we utilize relation tuples to connect reasoning in natural language with formal languages, such as programming code, to more effectively verify the reasoning process of large language models. These relation tuples are human-readable and can easily be translated into formal languages.</p><p>Based on this new representation of reasoning steps, we have implemented a novel framework that integrates the semi-structured representation, relation tuples, into the reasoning process of large language models. Additionally, we developed a local code interpreter to verify the reasoning process of large language models. Our framework also includes a simple and effective dynamic feedback mechanism to elicit the self-improvement ability of large language models. Experimental results demonstrate that our framework can improve the arithmetic reasoning ability of large language models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitations</head><p>We utilize programming code based on relation tuples to verify reasoning process. Therefore, our method highly depends on the programming code understanding and generation ability of large language models that we use.</p><p>Besides, the reasoning process in our method is a mixture of informal natural language statements and semi-structured relation tuples. Therefore, the inference cost is high. It will be great if large language models can reason with relation tuples only, which can reduce the inference cost while maintaining readability and are easy for machine to further process these relation tuples (e.g., automatic verification).</p><p>Finally, there might be other semi-structured forms of reasoning steps which are easy to verify.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Ethics Statement</head><p>This research aims to improve arithmetic reasoning ability of large language models by introducing a semi-structured form into reasoning process of large language models, a verification process and a dynamic feedback mechanism. We utilized publicly available datasets compiled from other research papers. No personal data was used in this study. We agree to the License Terms and Privacy Policy of corresponding large language models and datasets used in our study. Our research adheres to ethical AI principles, promoting the beneficial use of AI. In addition, large language models may generate harmful contents which we are trying to avoid. We employ GitHub Copilot to help with coding our experiments.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Comparison of different methods</head><p>A comparison of different methods is shown in Figure <ref type="figure">9</ref>. Figure <ref type="figure" target="#fig_2">13</ref>, Figure <ref type="figure" target="#fig_2">14</ref> and Figure <ref type="figure" target="#fig_2">15</ref> show the full prompts used in step 1 of our framework in the eight-shot setting.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Full Prompts</head><p>Figure <ref type="figure" target="#fig_2">16</ref>, Figure <ref type="figure" target="#fig_2">17</ref>, Figure <ref type="figure" target="#fig_2">18</ref>, Figure <ref type="figure" target="#fig_2">19</ref> and Figure <ref type="figure" target="#fig_1">20</ref> show the full prompts used in step 2 of our framework in the eight-shot setting.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B.2 Five-shot examples</head><p>Figure <ref type="figure" target="#fig_2">21</ref> and Figure <ref type="figure" target="#fig_1">22</ref> show the full prompts used in step 1 of our framework in the five-shot setting.</p><p>Figure <ref type="figure" target="#fig_1">23</ref>, Figure <ref type="figure" target="#fig_1">24</ref> and Figure <ref type="figure" target="#fig_1">25</ref> show the full prompts used in step 2 of our framework in the five-shot setting.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C Number of Questions Using Feedback on Arithmetic Datasets</head><p>The statistics of the number of the questions which need feedback and the questions which do not need feedback during inference using our framework on GSM8K dataset are shown in Table <ref type="table" target="#tab_9">7</ref>.</p><p>The statistics of the number of the questions that need feedback and the questions that do not need feedback in our framework on the other six arithmetic datasets are shown in Table <ref type="table" target="#tab_10">8</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Question</head><p>CoT (GPT-4 8-shot prompt) ModelSelection ART (Ours) John plans to sell all his toys and use the money to buy video games. He has 13 lego sets and he sells them for $15 each. He ends up buying 8 video games for $20 each and has $5 left. How many lego sets does he still have? Let's break down the information provided: 1. John has 13 lego sets. 2. He sells them for $15 each, so he earns a total of \\(13 \times \\$15 = \\$195 \\). 3. He uses the money to buy 8 video games for $20 each, which costs him a total of \\(8 \times \\$20 = \\$160 \\). 4. He has $5 left after buying the video games.</p><p>So, John has $30 left from selling the lego sets. Since he sold each lego set for $15, he must have sold 2 lego sets for a total of $30. Therefore, John still has \\(13 -2 = 11\\) lego sets. The final answer: 11.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>……</head><p>Let's break down the problem step by step: 1. John has 13 Lego sets and sells them for $15 each. …… Therefore, the number of Lego sets he still has is 0.</p><p>(A) CoT (B) PAL def solution(): lego_sets_initial = 13 lego_set_price = 15 …… result = lego_sets_left return result Selection:</p><p>(A) can correctly answer the math problem……</p><p>We know that John has 13 lego sets, (number-of-lego-sets, is, 13). He sells each lego set for $15, (selling-price-per-lego-set, is, $15). So the total amount of money he gets from selling all his lego sets is equal to the number of lego sets he has multiplied by the selling price per lego set, (total-amount-of-money-from-selling-lego-sets, is, number-of-legosets * selling-price-per-lego-set). 13 * 15 = 195. Therefore, John gets $195 from selling all his lego sets. He buys 8 video games for $20 each, (cost-per-video-game, is, $20) and (number-of-video-games, is, 8). So the total cost of the video games is equal to the number of video games he buys multiplied by the cost per video game, (total-cost-of-video-games, is, number-of-video-games * cost-per-video-game). 8 * 20 = 160. Therefore, John spends $160 on video games. He has $5 left, (remaining-money, is, $5).</p><p>To find out how many lego sets he still has, we need to subtract the total cost of the video games and the remaining money from the total amount of money he gets from selling all his lego sets, (number-of-lego-setshe-still-has, is, (total-amount-of-money-from-selling-lego-sets -total-cost-of-video-games -remaining-money) / selling-price-per-lego-set).</p><p>(195 -160 -5) / 15 = 2. Therefore, John still has 2 lego sets. The final answer: 2.</p><p>Step 1</p><p>Here's a Python function to solve the question based on the relation triples provided: ```python def calculate_remaining_lego_sets(): number_of_lego_sets = 13 # Number of lego sets John has selling_price_per_lego_set = 15 # Selling price of each lego set # Calculate the total amount of money John gets from selling the lego sets. total_amount_of_money_from_selling_lego_sets = number_of_lego_sets * selling_price_per_lego_set cost_per_video_game = 20 # Cost of each video game number_of_video_games = 8 # Number of video games John buys # Calculate the total cost of the video games John buys total_cost_of_video_games = number_of_video_games * cost_per_video_game remaining_money = 5 # John has $5 left after buying the video games # Calculate the number of lego sets John still has number_of_lego_sets_he_still_has = (total_amount_of_money_from_selling_lego_sets -total_cost_of_video_games -remaining_money) / selling_price_per_lego_set return f"The final answer: {int(number_of_lego_sets_he_still_has)} " # Call the function to display the result print(calculate_remaining_lego_sets()) ``S tep 2 Step 3: Check consistency Figure 9: Comparison of different methods. Backbone # No Feedback # Feedback (one-time) # Feedback (two-times) # Feedback (three-times) # Feedback Llama3-8B-Instruct 1051 (79.7%) 41 (3.1%) 20 (1.5%) 207 (15.7%) 268 (20.3%) ChatGPT 1077 (81.7%) 34 (2.6%) 43 (3.3%) 165 (12.5%) 242 (18.3%) GPT-4o 1296 (98.3%) 8 (0.6%) 4 (0.3%) 11 (0.8%) 23 (1.7%) Question: Julie is reading a 120-page book. Yesterday, she was able to read 12 pages and today, she read twice as many pages as yesterday. If she wants to read half of the remaining pages tomorrow, how many pages should she read?</p><p>Question: James writes a 3-page letter to 2 different friends twice a week. How many pages does he write a year?</p><p>Question: Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there are yellow and purple flowers. How many flowers does Mark have in his garden?</p><p>Question: Albert is wondering how much pizza he can eat in one day. He buys 2 large pizzas and 2 small pizzas. A large pizza has 16 slices and a small pizza has 8 slices. If he eats it all, how many pieces does he eat that day?</p><p>Question: Ken created a care package to send to his brother, who was away at boarding school. Ken placed a box on a scale, and then he poured into the box enough jelly beans to bring the weight to 2 pounds. Then, he added enough brownies to cause the weight to triple. Next, he added another 2 pounds of jelly beans. And finally, he added enough gummy worms to double the weight once again. What was the final weight of the box of goodies, in pounds?</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>User Prompt</head><p>Figure 10: The system prompt and user prompt of the eight-shot example of CoT (GPT-4-Generated Prompt).</p><p>Assistant Prompt Answer: To calculate Weng's earnings for 50 minutes of babysitting at $12 per hour, you need to convert the time to hours. Since there are 60 minutes in an hour, 50 minutes is \( \frac{50}{60} = \frac{5}{6} \) of an hour. Now, multiply the fraction of an hour by Weng's hourly rate to find her earnings: \[ \frac{5}{6} \times \$12 = \$10 \] So, Weng earned $10 for 50 minutes of babysitting. The final answer: 10. Answer: First, let's calculate how much money Betty has saved so far: 1. Betty has half of the money she needs for the wallet, which is \( \frac{1}{2} \times \$100 = \$50 \). 2. Her parents gave her an additional $15. 3. Her grandparents gave her twice as much as her parents, so that's \( 2 \times \$15 = \$30 \). Now, let's add up all the money Betty has: \[ \$50 (Betty's savings) + \$15 (from parents) + \$30 (from grandparents) = \$50 + \$15 + \$30 = \$95 \]</p><p>Betty now has $95. To find out how much more she needs, subtract the total amount she has from the cost of the wallet: \[ \$100 (cost of wallet) -\$95 (total money saved) = \$5 \] So, Betty still needs $5 more to buy the wallet. The final answer: 5.</p><p>Answer: Let's break down the information given: 1. Julie is reading a 120-page book. 2. Yesterday, she read 12 pages. 3. Today, she read twice as many pages as yesterday, which is \(2 \times 12 = 24\) pages. 4. So far, she has read \(12 + 24 = 36\) pages.</p><p>To find out how many pages she has left to read: \[ \text{Total pages} -\text{Pages read} = 120 -36 = 84 \text{ pages left} \] If Julie wants to read half of the remaining pages tomorrow, she should read \( \frac{1}{2} \times 84 = 42 \) pages. So, Julie should read 42 pages tomorrow. The final answer: 42.</p><p>Answer: Let's break down the information provided:</p><p>1. James writes a 3-page letter to 2 different friends.</p><p>2. He does this twice a week. So, the total number of pages James writes in a week is: \[ 3 \text{ pages/letter} \times 2 \text{ letters} \times 2 \text{ times a week} = 12 \text{ pages/week} \] To find out how many pages he writes in a year, we need to multiply the number of pages he writes per week by the number of weeks in a year. There are typically 52 weeks in a year. \[ 12 \text{ pages/week} \times 52 \text{ weeks/year} = 624 \text{ pages/year} \] So, James writes 624 pages in a year. The final answer: 624.</p><p>Figure <ref type="figure" target="#fig_2">11</ref>: The assistant prompt of the eight-shot example of CoT (GPT-4-Generated Prompt).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Assistant Prompt (continued)</head><p>Answer: Let's break down the information provided:</p><p>1. Mark has flowers of three different colors: yellow, purple, and green. 2. There are ten yellow flowers.</p><p>3. There are 80% more purple flowers than yellow flowers. 4. There are 25% as many green flowers as there are yellow and purple flowers combined. Answer: To find out how many pieces of pizza Albert eats in one day, we first need to calculate the total number of slices.</p><p>For the large pizzas: \[ 2 \text{ large pizzas} \times 16 \text{ slices per pizza} = 32 \text{ slices} \] For the small pizzas: \[ 2 \text{ small pizzas} \times 8 \text{ slices per pizza} = 16 \text{ slices} \] Now, let's add up the slices from both the large and small pizzas to find the total number of pieces of pizza Albert eats in one day: \[ 32 \text{ slices from large pizzas} + 16 \text{ slices from small pizzas} = 48 \text{ slices} \] So, Albert eats 48 pieces of pizza in one day. The final answer: 48.</p><p>Answer: Let's break down the steps Ken took: 1. Ken placed a box on a scale, making its weight 0 pounds. 2. He poured enough jelly beans to bring the weight to 2 pounds. 3. He added enough brownies to cause the weight to triple, so the weight became \(2 \times 3 = 6\) pounds. 4. Next, he added another 2 pounds of jelly beans, bringing the weight to \(6 + 2 = 8\) pounds. 5. Finally, he added enough gummy worms to double the weight again, making the final weight \(8 \times 2 = 16\) pounds. So, the final weight of the box of goodies is 16 pounds. The final answer: 16.</p><p>Figure <ref type="figure" target="#fig_2">12</ref>: The assistant prompt of the eight-shot example of CoT (GPT-4-Generated Prompt) (continued).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Assistant Prompt</head><p>Answer: First, we know that Weng earns $12 an hour for babysitting, (earning-per-hour, is, $12). Yesterday, she did 50 minutes of babysitting, (minutes-weng-worked, is, 50). The question we want to solve is 'How much did she earn', (earnings-during-this-babysitting, is, ?).</p><p>To find out her earnings, we need to calculate how much Weng earns per minute, (earning-per-minute, is, ?). Since there are 60 minutes in an hour, (minutes-in-an-hour, is, 60), we can determine her per-minute earnings, (earningper-minute, is, earning-per-hour / minutes-in-an-hour). Therefore, $12 divided by 60 minutes equals $0.2 per minute. So Weng earns $0.2 per minute of babysitting.</p><p>To find out her earnings for this duration, we multiply her per-minute earnings by the number of minutes she worked, (earnings-during-this-babysitting, is, earning-per-minute * minutes-weng-worked). Therefore, $0.2 multiplied by 50 minutes equals $10. Thus, Weng earned $10 for 50 minutes of babysitting.</p><p>The final answer: 10.</p><p>Answer: First, we know that the new wallet costs $100, (cost-of-wallet, is, $100).</p><p>Betty has half of the money she needs for the wallet, (money-betty-has, is, cost-of-wallet / 2). 100 / 2 = 50. Betty has $50. Her parents gave her $15, (money-parents-gave, is, $15). Her grandparents gave her twice as much as her parents, (money-grandparents-gave, is, money-parents-gave * 2). 15 * 2 = 30. So her grandparents gave her $30. The question is 'How much more money does Betty need to buy the wallet', (money-betty-needs, is, ?). Adding these amounts together will tell us how much money Betty currently has, (money-betty-has, is, money-betty-has + money-parents-gave + money-grandparents-gave). $50 + $15 + $30 = $95. Betty has $95, (money-betty-has, is, $95).</p><p>To find out how much more she needs to buy the wallet, we subtract the total amount she has from the cost of the wallet, (money-betty-needs, is, cost-of-wallet -money-betty-has). 100 -95 = 5. Betty still needs $5 to buy the wallet. The final answer: 5.</p><p>Answer: We know that the book has 120 pages, <ref type="bibr">(total-number-of-pages-in-book, is, 120)</ref>. Yesterday, Julie read 12 pages, (number-of-pages-read-yesterday, is, 12). Today, she read twice as many pages as yesterday, (number-of-pages-read-today, is, number-of-pages-read-yesterday * 2). 12 * 2 = 24. The question is 'If she wants to read half of the remaning pages tomorrow, how many pages should she read'. So first we need to calculate the remaining pages she has to read. The number of pages left in the book is equal to the total number of pages minus the number of pages she read in the previous two days, (number-of-pages-julie-has-left-to-read, is, total-number-of-pages-in-book -number-of-pages-readtoday -number-of-pages-read-today). 120 -12 -24 = 84. Julie has 84 pages left to read.</p><p>To find out how many pages she should read tomorrow, we calculate half of the remaining pages, (number-of-pages-julieshould-read-tomorrow, is, number-of-pages-julie-has-left-to-read / 2). 84 / 2 = 42. Therefore, Julie should read 42 pages tomorrow. The final answer: 42.</p><p>Figure <ref type="figure" target="#fig_2">14</ref>: The assistant prompt of the eight-shot example in step 1 of our framework.</p><p>Answer: We know that James writes a 3-page letter to 2 different frients twice a week, (number-pages-per-letter, is, 3). Because he has two friends, (number-of-friends, is, 2). So each time he writes, he writes 6 pages, (number-pages-each-time, is, number-pages-per-letter * number-of-friends).</p><p>Since he writes twice a week, (number-of-times-per-week, is, 2). Therefore, the number of pages written per week is equal to the number of times James write per week multiplied by the number of pages he write each time, (number-pages-per-week, is, number-pages-each-time * number-of-times-per-week). 6 * 2 = 12. So there are 12 pages written per week.</p><p>There are approximately 52 weeks in a year, (number-of-weeks-in-a-year, is, 52). So, the total number of pages James writes in a year is equal to the number of pages he writes per week multiplied by the number of weeks in a year, (number-pages-per-year, is, number-pages-per-week * number-of-weeks-in-a-year).</p><p>12 * 52 = 624. James writes 624 pages a year to his friends. The final answer: 624.</p><p>Answer: We know that Albert buys 2 large pizzas and 2 small pizzas, (number-of-large-pizzas, is, 2) and (number-ofsmall-pizzas, is, 2).</p><p>A large pizza has 16 slices, (slices-per-large-pizza, is, 16). So the total slices from large pizzas is equal to the number of slices per large pizza multiplied by the number of large pizzas, (total-slices-from-large-pizzas, is, number-of-large-pizzas * slices-per-large-pizza).</p><p>2 * 16 = 32. Therefore, the total slices from large pizzas is 32.</p><p>A small pizza has 8 slices, (slices-per-small-pizza, is, 8). So the total slices from small pizzas is equal to the number of slices per small pizza multiplied by the number of small pizzas, (total-slices-from-small-pizzas, is, number-of-small-pizzas * slices-per-small-pizza).</p><p>2 * 8 = 16. Therefore, the total slices from small pizzas is 16.</p><p>To find the total number of pieces of pizza Albert eats in one day, we add the slices from both the large and small pizzas, (total-slices-for-the-day, is, total-slices-from-large-pizzas + total-slices-from-small-pizzas). 32 + 16 = 48. Thus, Albert eats 48 pieces of pizza in one day. The final answer: 48.</p><p>Answer: We know that Ken placed a box on a scale, and then he poured into the box enough jelly beans to bring the weight to 2 pounds, so the initial weight is 2 pounds, (current-weight, is, 2 pounds). Then, he added enough brownies to cause the weight to triple, (current-weight, is, current-weight * 3). 2 * 3 = 6. Next, he added another 2 pounds of jelly beans, (current-weight, is, current-weight + 2). 6 + 2 = 8. And finally, he added enough gummy worms to double the weight once again, (final-weight, is, current-weight * 2). 8 * 2 = 16. So, the final weight of the box of goodies is 16 pounds. The final answer: 16.</p><p>Answer: We know that number of yellow flowers is 10, (number-of-yellow-flowers, is, 10).</p><p>There are 80% more purple flowers than yellow flowers, (number-of-purple-flowers, is, 80%-more-than-number-ofyellow-flowers). 10 * (1 + 0.80) = 10 * 1.80 = 18. So there are 18 purple flowers. The total number of yellow and purple flowers is the sum of yellow and purple flowers, (total-number-of-yellow-andpurple-flowers, is, number-of-yellow-flowers + number-of-purple-flowers). 10 + 18 = 28. There are only 25% as many green flowers as there are yellow and purple flowers, (number-of-green-flowers, is, 25%-oftotal-number-of-yellow-and-purple-flowers). 28 * 0.25 = 7. So there are 7 green flowers.</p><p>The question is 'How many flowers does Mark have in his garden', so we need to calculate the total number of flowers, (total-number-of-flowers, is, number-of-yellow-flowers + number-of-purple-flowers + number-of-green-flowers). 10 + 18 + 7 = 35. Mark has 35 flowers in his garden. The final answer: 35.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Assistant Prompt (continued)</head><p>Figure <ref type="figure" target="#fig_2">15</ref>: The assistant prompt of the eight-shot example in step 1 of our framework (continued).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>User Prompt (continued)</head><p>Question: Julie is reading a 120-page book. Yesterday, she was able to read 12 pages and today, she read twice as many pages as yesterday. If she wants to read half of the remaining pages tomorrow, how many pages should she read? Thinking process in relation triple format: (total-number-of-pages-in-book, is, 120) (number-of-pages-read-yesterday, is, 12) (number-of-pages-read-today, is, number-of-pages-read-yesterday * 2) (number-of-pages-julie-has-left-to-read, is, total-number-of-pages-in-book -number-of-pages-read-today -number-ofpages-read-today) (number-of-pages-julie-should-read-tomorrow, is, number-of-pages-julie-has-left-to-read / 2) Question: James writes a 3-page letter to 2 different friends twice a week. How many pages does he write a year? Thinking process in relation triple format:</p><p>(number-pages-per-letter, is, 3) (number-of-friends, is, 2) (number-pages-each-time, is, number-pages-per-letter * number-of-friends) (number-of-times-per-week, is, 2) (number-pages-per-week, is, number-pages-each-time * number-of-times-per-week) (number-of-weeks-in-a-year, is, 52) (number-pages-per-year, is, number-pages-per-week * number-of-weeks-in-a-year)</p><p>Question: Albert is wondering how much pizza he can eat in one day. He buys 2 large pizzas and 2 small pizzas. A large pizza has 16 slices and a small pizza has 8 slices. If he eats it all, how many pieces does he eat that day? Thinking process in relation triple format:</p><p>(number-of-large-pizzas, is, 2) (number-of-small-pizzas, is, 2) (slices-per-large-pizza, is, 16) (total-slices-from-large-pizzas, is, number-of-large-pizzas * slices-per-large-pizza) (slices-per-small-pizza, is, 8) (total-slices-from-small-pizzas, is, number-of-small-pizzas * slices-per-small-pizza) (total-slices-for-the-day, is, total-slices-from-large-pizzas + total-slices-from-small-pizzas)</p><p>Question: Ken created a care package to send to his brother, who was away at boarding school. Ken placed a box on a scale, and then he poured into the box enough jelly beans to bring the weight to 2 pounds. Then, he added enough brownies to cause the weight to triple. Next, he added another 2 pounds of jelly beans. And finally, he added enough gummy worms to double the weight once again. What was the final weight of the box of goodies, in pounds? Thinking process in relation triple format: (current-weight, is, 2 pounds) (current-weight, is, current-weight * 3) (current-weight, is, current-weight + 2) (final-weight, is, current-weight * 2)</p><p>Question: Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there are yellow and purple flowers. How many flowers does Mark have in his garden? Thinking process in relation triple format: (number-of-yellow-flowers, is, 10) (number-of-purple-flowers, is, 80%-more-than-number-of-yellow-flowers) (total-number-of-yellow-and-purple-flowers, is, number-of-yellow-flowers + number-of-purple-flowers) (number-of-green-flowers, is, 25%-of-total-number-of-yellow-and-purple-flowers) (total-number-of-flowers, is, number-of-yellow-flowers + number-of-purple-flowers + number-of-green-flowers)</p><p>Figure <ref type="figure" target="#fig_2">17</ref>: The user prompt of the eight-shot example in step 2 of our framework (continued).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Assistant Prompt</head><p>Here is a Python function to solve the question based on the relation triples: igure 20: The assistant prompt of the eight-shot example in step 2 of our framework (continued).</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure1: Schematic overview of our framework, ART. "Q" denotes a question. "NL" means "Natural Language". "RT" means "Relation Tuple". The left subfigure shows our proposed framework ART without Self-Consistency<ref type="bibr" target="#b28">(Wang et al., 2023)</ref>. The right subfigure shows that our framework can be integrated with Self-Consistency seamlessly.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure2: A detailed example illustrating how our method works. This example shows the solution to the first question of the test split of the GSM8K dataset, generated by our framework using ChatGPT.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>B. 1</head><label>1</label><figDesc>Figure10, Figure11and Figure12show the full prompts of CoT (GPT-4-generated Prompt).Figure13, Figure14and Figure15show the full prompts used in step 1 of our framework in the eight-shot setting.Figure16, Figure17, Figure18, Figure19and Figure20show the full prompts used in step 2 of our framework in the eight-shot setting.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><figDesc>First, let's find out how many purple flowers there are: 80% more purple flowers than yellow flowers means there are \( 10 + 80\% \) of 10 purple flowers. \[ 80\% \text{ of } 10 = 0.80 \times 10 = 8 \] So, there are \( 10 + 8 = 18 \) purple flowers. Now, let's find out how many yellow and purple flowers there are combined: \[ 10 \text{ yellow flowers} + 18 \text{ purple flowers} = 28 \text{ flowers (yellow and purple)} \] Now, let's find out how many green flowers there are: There are 25% as many green flowers as there are yellow and purple flowers combined. So, it's \( 25\% \) of 28: \[ 25\% \text{ of } 28 = 0.25 \times 28 = 7 \] So, there are 7 green flowers. To find the total number of flowers, we add up the number of flowers of each color: \[ 10 \text{ yellow flowers} + 18 \text{ purple flowers} + 7 \text{ green flowers} = 35 \text{ flowers} \] So, Mark has 35 flowers in his garden. The final answer: 35.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>`</head><figDesc>Weng's hourly rate minutes_weng_worked = 50 # Minutes she worked minutes_in_an_hour = 60 # Total minutes in an hour # Calculate the earning per minute earning_per_minute = earning_per_hour / minutes_in_an_hour # Calculate the earnings for the actual minutes worked earnings_during_this_babysitting = earning_per_minute * minutes_weng_worked return f"The final answer: {earnings_during_this_babysitting:.2f}" # Call the function to display the result print(calculate_earnings()) ``H ere is a Python function to solve the question based on the given relation triples: ```python def calculate_additional_money_needed(): cost_of_wallet = 100 # The cost of the wallet Betty wants to buy money_betty_has = cost_of_wallet / 2 # Betty initially has half of the money needed money_parents_gave = 15 # Amount given by Betty's parents money_grandparents_gave = money_parents_gave * 2 # Grandparents gave twice as much as her parents # Calculate the total amount of money Betty currently has money_betty_has += money_parents_gave + money_grandparents_gave # Calculate how much more money Betty needs to buy the wallet money_betty_needs = cost_of_wallet -money_betty_has return f"The final answer: {money_betty_needs}" # Call the function to display the result print(calculate_additional_money_needed()) ``H ere's a Python function to solve the question based on the relation triples provided: ```python def calculate_pages_to_read_tomorrow(): total_number_of_pages_in_book = 120 # Total pages in the book number_of_pages_read_yesterday = 12 # Pages Julie read yesterday # Pages Julie read today, twice the amount she read yesterday number_of_pages_read_today = number_of_pages_read_yesterday * 2 # Calculate remaining pages after yesterday and today's reading number_of_pages_julie_has_left_to_read = total_number_of_pages_in_book -(number_of_pages_read_yesterday + number_of_pages_read_today) # Julie wants to read half of the remaining pages tomorrow number_of_pages_julie_should_read_tomorrow = number_of_pages_julie_has_left_to_read / 2 return f"The final answer: {int(number_of_pages_julie_should_read_tomorrow)}" # Call the function to display the result print(calculate_pages_to_read_tomorrow()) ```F igure 18: The assistant prompt of the eight-shot example in step 2 of our framework. Assistant Prompt (continued) Here's a Python function to solve the question based on the given relation triples: ```python def calculate_annual_pages_written(): number_pages_per_letter = 3 # Each letter has 3 pages number_of_friends = 2 # James writes to 2 different friends # Calculate the number of pages each time he writes number_pages_each_time = number_pages_per_letter * number_of_friends number_of_times_per_week = 2 # He writes twice a week # Calculate the total number of pages written per week number_pages_per_week = number_pages_each_time * number_of_times_per_week number_of_weeks_in_a_year = 52 # Number of weeks in a year # Calculate the total number of pages James writes in a year number_pages_per_year = number_pages_per_week * number_of_weeks_in_a_year return f"The final answer: {number_pages_per_year}" # Call the function to display the result print(calculate_annual_pages_written()) ``H ere's a Python function to solve the question based on the relation triples provided: ```python def calculate_total_pizza_slices(): number_of_large_pizzas = 2 # Albert buys 2 large pizzas slices_per_large_pizza = 16 # Each large pizza has 16 slices # Calculate total slices from large pizzas total_slices_from_large_pizzas = number_of_large_pizzas * slices_per_large_pizza number_of_small_pizzas = 2 # Albert buys 2 small pizzas slices_per_small_pizza = 8 # Each small pizza has 8 slices # Calculate total slices from small pizzas total_slices_from_small_pizzas = number_of_small_pizzas * slices_per_small_pizza # Total number of slices Albert can eat in one day total_slices_for_the_day = total_slices_from_large_pizzas + total_slices_from_small_pizzas return f"The final answer: {total_slices_for_the_day}" # Call the function to display the result print(calculate_total_pizza_slices()) ```F igure 19: The assistant prompt of the eight-shot example in step 2 of our framework (continued). Assistant Prompt (continued) Here's a Python function to solve the question based on the relation triples provided: ```python def calculate_final_weight(): current_weight = 2 # Ken first adds jelly beans to make the box weigh 2 pounds. current_weight *= 3 # After adding brownies, the weight triples. current_weight += 2 # Ken adds another 2 pounds of jelly beans. final_weight = current_weight * 2 # Finally, after adding gummy worms, the weight doubles. return f"The final answer: {final_weight}" # Call the function to display the result print(calculate_final_weight()) ``H ere's a Python function to solve the question based on the relation triples provided: ```python def calculate_total_flowers(): number_of_yellow_flowers = 10 # Number of yellow flowers number_of_purple_flowers = int(number_of_yellow_flowers * 1.8) # 80% more purple flowers than yellow # Calculate the total number of yellow and purple flowers total_number_of_yellow_and_purple_flowers = number_of_yellow_flowers + number_of_purple_flowers # 25% of the total number of yellow and purple flowers are green number_of_green_flowers = int(0.25 * total_number_of_yellow_and_purple_flowers) # Sum of all flowers in the garden total_number_of_flowers = number_of_yellow_flowers + number_of_purple_flowers + number_of_green_flowers return f"The final answer: {total_number_of_flowers}" # Call the function to display the result print(calculate_total_flowers()) ```F</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>Number of examples in the test splits of the seven arithmetic datasets we use in this study.</figDesc><table><row><cell>Feedback Prompt</cell><cell></cell></row><row><cell>Question:</cell><cell></cell></row><row><cell>{question_message}</cell><cell></cell></row><row><cell cols="2">Your previous solution is: '{previous_response}'.</cell></row><row><cell cols="2">Please rethink the question based on the previous</cell></row><row><cell>solution.</cell><cell></cell></row><row><cell cols="2">Figure 5: Feedback prompt when ART needs feedback.</cell></row><row><cell cols="2">Dataset Name # Test Set</cell></row><row><cell>GSM8K</cell><cell>1319</cell></row><row><cell>ASDIV</cell><cell>2096</cell></row><row><cell>SVAMP</cell><cell>1000</cell></row><row><cell>SingleOP</cell><cell>562</cell></row><row><cell>SingleEQ</cell><cell>508</cell></row><row><cell>AddSub</cell><cell>395</cell></row><row><cell>MultiArith</cell><cell>600</cell></row><row><cell>3 Experiments</cell><cell></cell></row><row><cell>3.1 Setup</cell><cell></cell></row><row><cell cols="2">Datasets. In this study, we focus on the arith-</cell></row><row><cell cols="2">metic reasoning ability of large language mod-</cell></row><row><cell cols="2">els. We conduct experiments on seven arithmetic</cell></row><row><cell cols="2">datasets, including GSM8K (Cobbe et al., 2021),</cell></row><row><cell cols="2">SVAMP (Patel et al., 2021), ASDIV (Miao et al.,</cell></row><row><cell cols="2">2020), SingleOP, SingleEQ, AddSub and Mul-</cell></row><row><cell cols="2">tiArith (Koncel-Kedziorski et al., 2016), follow-</cell></row><row><cell cols="2">ing Zhao et al. (2023). GSM8K is a high-quality</cell></row><row><cell cols="2">dataset which contains 8.5K problems and solu-</cell></row><row><cell cols="2">tions in total. These problems usually involve 2-8</cell></row><row><cell cols="2">basic arithmetic operation (addition, subtraction,</cell></row><row><cell cols="2">multiplication and division) steps to reach the final</cell></row><row><cell cols="2">answers. SVAMP, ASDIV, SingleOP, SingleEQ,</cell></row><row><cell cols="2">AddSub and MultiArith are different arithmetic</cell></row><row><cell cols="2">datasets which cover various patterns. The statistics</cell></row><row><cell cols="2">of the datasets are shown in Table 1. The primary</cell></row><row><cell cols="2">metric used for evaluation is accuracy.</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 2 :</head><label>2</label><figDesc>Accuracy results on seven arithmetic datasets. The ChatGPT backbone that we use is gpt-3.5-turbo-0301 to ensure a fair comparison with other baselines. The results of CoT, PAL and ModelSelection are quoted from Zhao</figDesc><table><row><cell>The process of obtaining our</cell><cell></cell></row><row><cell>eight-shot examples is as follows: First, we use</cell><cell></cell></row><row><cell>GPT-4 to generate CoT solutions based on the ques-</cell><cell>When the answers from Step 1 and Step 2 are</cell></row><row><cell>tions. Then, we incorporate relation tuples into the</cell><cell>inconsistent, the maximum number of attempts al-</cell></row><row><cell>reasoning steps based on the CoT solutions gener-</cell><cell>lowed in Step 3 of our framework is set to 3.</cell></row><row><cell>ated by GPT-4. The complete eight-shot examples</cell><cell></cell></row><row><cell>are provided in Appendix B. The reason for us-</cell><cell></cell></row><row><cell>ing the first eight examples of the train split of</cell><cell></cell></row><row><cell>GSM8K is to avoid cherry-picking examples for</cell><cell></cell></row></table><note><p>in-context learning. For GPT-4o, following previous works<ref type="bibr" target="#b36">(Zhao et al., 2023)</ref></p><p>, we utilize a five-shot setting. The five examples are sampled from the eight-shot examples used in the eight-shot setting. Further details can be found in Appendix B.</p><p>Implementation. We implement our framework and conduct evaluations based on the ModelSelection codebase 5 provided by<ref type="bibr" target="#b36">Zhao et al. (2023)</ref></p><p>. For our local code interpreter implementation, we developed a customized version by adapting the code from Local-Code-Interpreter 6 . For the Ope-nAI Python library, we use version 1.23.2. For the open source Llama3-8B-Instruct, we employ the large language model inference library vLLM (version 0.4.3) 7<ref type="bibr" target="#b15">(Kwon et al., 2023</ref></p><p>) and a single NVIDIA A100 80GB GPU to run our experiments.</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 4 :</head><label>4</label><figDesc>Comparison of accuracy on the seven arithmetic datasets between using prior eight-shot prompt (CoT eight-shot prompt) and using our eight-shot prompt (reasoning with RT eight-shot prompt).</figDesc><table><row><cell>Backbone</cell><cell>Method</cell><cell cols="7">SVAMP ASDIV SingleOP SingleEQ AddSub MultiArith GSM8K</cell></row><row><cell>ChatGPT</cell><cell>CoT Reasoning with RT</cell><cell>83.0 85.4</cell><cell>89.3 89.1</cell><cell>94.8 96.3</cell><cell>97.4 97.0</cell><cell>90.4 93.0</cell><cell>98.7 98.2</cell><cell>80.8 81.9</cell></row><row><cell>Model</cell><cell>Method</cell><cell></cell><cell cols="2">GSM8K</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>Reasoning with RT</cell><cell></cell><cell></cell><cell>81.9</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>ChatGPT</cell><cell cols="3">Verification by Programming Code Reasoning with RT + Verification w/o Feedback</cell><cell>79.9 75.2</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>ART (ours)</cell><cell></cell><cell></cell><cell>84.5</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>Reasoning with RT</cell><cell></cell><cell></cell><cell>79.6</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Llama3-8B-Instruct</cell><cell cols="3">Verification by Programming Code Reasoning with RT + Verification w/o Feedback</cell><cell>71.6 69.1</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>ART (ours)</cell><cell></cell><cell></cell><cell>80.4</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>Reasoning with RT</cell><cell></cell><cell></cell><cell>96.4</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>GPT-4o</cell><cell cols="3">Verification by Programming Code Reasoning with RT + Verification w/o Feedback</cell><cell>95.5 95.2</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>ART (ours)</cell><cell></cell><cell></cell><cell>96.6</cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table><note><p>table, "Reasoning with RT" represents the accuracy obtained by using the answer from Step 1 of our framework as the final answer. "Verification by Programming Code" indicates the accuracy achieved by using the answer from Step 2 of our framework as the final answer. The third row "Reasoning with RT + Verification w/o Feedback" shows the accuracy when the two answers from Step 1 and Step 2 of our framework are consistent and correct on the first attempt.</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_9"><head>Table 7 :</head><label>7</label><figDesc>Number of questions which require feedback during inference using our framework on the GSM8K dataset.</figDesc><table><row><cell>Dataset</cell><cell cols="5"># No Feedback # Feedback (one-time) # Feedback (two-times) # Feedback (three-times) # Feedback</cell></row><row><cell>SVAMP</cell><cell>874 (87.4%)</cell><cell>27 (2.7%)</cell><cell>22 (2.2%)</cell><cell>77 (7.7%)</cell><cell>126 (12.6%)</cell></row><row><cell>ASDIV</cell><cell>1746 (83.5%)</cell><cell>13 (0.6%)</cell><cell>31 (1.5%)</cell><cell>302 (14.4%)</cell><cell>346 (16.5%)</cell></row><row><cell>SingleEQ</cell><cell>477 (93.9%)</cell><cell>2 (0.4%)</cell><cell>7 (1.3%)</cell><cell>22 (4.3%)</cell><cell>31 (6.1%)</cell></row><row><cell>SingleOP</cell><cell>548 (97.5%)</cell><cell>5 (0.9%)</cell><cell>3 (0.5%)</cell><cell>6 (1.1%)</cell><cell>14 (2.5%)</cell></row><row><cell>AddSub</cell><cell>360 (91.1%)</cell><cell>2 (0.5%)</cell><cell>3 (0.8%)</cell><cell>30 (7.6%)</cell><cell>35 (8.9%)</cell></row><row><cell>MultiArith</cell><cell>590 (98.3%)</cell><cell>4 (0.7%)</cell><cell>4 (0.7%)</cell><cell>2 (0.3%)</cell><cell>10 (1.7%)</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_10"><head>Table 8 :</head><label>8</label><figDesc>Number of questions which need feedback during inference using our framework on SVAMP, ASDIV, SingleEQ, SingleOP, AddSub and MultiArith. Note that there are four questions which do not have solutions on ASDIV because program error occurs.You are a helpful assistant that can solve math problems step by step.Answer the following question. The final answer must be in numeric format, not in words. The final answer should be in this format with only a number shown: 'The final answer: &lt;your answer&gt;.'Here is one example: Question: Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May? Answer: To solve this problem, we first need to determine the number of clips Natalia sold in May. It is given that she sold half as many clips in May as she did in April. From the problem, we know clips sold in April is 48. Therefore, the number of clips sold in May is half of 48. 48/2 = 24. Now, we find the total number of clips sold over both April and May by adding the clips sold in each month. 48+24= 72. Thus, Natalia sold a total of 72 clips in April and May combined. The final answer: 72. Now it's your turn. Here is another math problem: Question: Weng earns $12 an hour for babysitting. Yesterday, she just did 50 minutes of babysitting. How much did she earn?</figDesc><table><row><cell>System Prompt</cell></row></table><note><p>Question: Betty is saving money for a new wallet which costs $100. Betty has only half of the money she needs. Her parents decided to give her $15 for that purpose, and her grandparents twice as much as her parents. How much more money does Betty need to buy the wallet?</p></note></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_0"><p>https://platform.openai.com/docs/ deprecations/2023-06-13-updated-chat-models</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>https://platform.openai.com/docs/models/ gpt-4o</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_2"><p>https://huggingface.co/meta-llama/ Meta-Llama-3-8B</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_3"><p>https://github.com/XuZhao0/ Model-Selection-Reasoning</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_4"><p>https://github.com/MrGreyfun/ Local-Code-Interpreter</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="7" xml:id="foot_5"><p>https://github.com/vllm-project/vllm</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>System Prompt</head><p>You are a helpful assistant that can solve math problems step by step with relation triples. Answer the following question. Write your thoughts first. Please make sure when you make a statement that includes reasoning, you must always write down those reasoning steps as relation triples. The final answer must be in numeric format, not in words. The final answer should be in the format with only a number shown: 'The final answer: &lt;your answer&gt;.' Question: Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?</p><p>Answer: First we know that Natalia sold clips to 48 of her friends in April, <ref type="bibr">is,</ref><ref type="bibr">48)</ref>. She sold half as many clips in May, (number-of-clips-sold-in-May, is, number-of-clips-sold-in-Apirl / 2). 48 / 2 = 24. She sold 24 clips in May. The problem we want to solve is 'How many clips did Natalia sell altogether in April and May'. To find the total number of clips sold in April and May, we add the clips sold in each month, <ref type="bibr">(number-clips-sold-in-Apriland-May, is, number-of-clips-sold-in-Apirl + number-of-clips-sold-in-May)</ref>. 48 + 24 = 72. Thus, Natalia sold a total of 72 clips in April and May combined. The final answer: 72. Now it's your turn. Here is another math problem: Question: Weng earns $12 an hour for babysitting. Yesterday, she just did 50 minutes of babysitting. How much did she earn? Question: Betty is saving money for a new wallet which costs $100. Betty has only half of the money she needs. Her parents decided to give her $15 for that purpose, and her grandparents twice as much as her parents. How much more money does Betty need to buy the wallet? Question: Julie is reading a 120-page book. Yesterday, she was able to read 12 pages and today, she read twice as many pages as yesterday. If she wants to read half of the remaining pages tomorrow, how many pages should she read?</p><p>Question: James writes a 3-page letter to 2 different friends twice a week. How many pages does he write a year? Question: Albert is wondering how much pizza he can eat in one day. He buys 2 large pizzas and 2 small pizzas. A large pizza has 16 slices and a small pizza has 8 slices. If he eats it all, how many pieces does he eat that day? Question: Ken created a care package to send to his brother, who was away at boarding school. Ken placed a box on a scale, and then he poured into the box enough jelly beans to bring the weight to 2 pounds. Then, he added enough brownies to cause the weight to triple. Next, he added another 2 pounds of jelly beans. And finally, he added enough gummy worms to double the weight once again. What was the final weight of the box of goodies, in pounds?</p><p>Question: Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there are yellow and purple flowers. How many flowers does Mark have in his garden?</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>User Prompt</head><p>Figure 13: The system prompt and user prompt of the eight-shot example in step 1 of our framework.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>System Prompt</head><p>You are a helpful assistant capable of solving math problems by using Python functions, based on the question provided and its reasoning steps which are formatted as relation triples. Given a question and its answer's thinking process in format of relation triples. Write a python function to solve the question based on those relation triples with the markdown format, that is, ```python\n&lt;your code&gt;\n```. The output of the function should be in this format with only a number shown: 'The final answer: &lt;your answer&gt;'.</p><p>Question: Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May? Thinking process in relation triple format: (number-of-clips-sold-in-Apirl, is, 48) (number-of-clips-sold-in-May, is, number-of-clips-sold-in-Apirl / 2) (number-clips-sold-in-April-and-May, is, number-of-clips-sold-in-Apirl + number-of-clips-sold-in-May)</p><p>Here is a Python function based on the given relation triples: ```python def total_clips_sold(): number_of_clips_sold_in_April = 48 number_of_clips_sold_in_May = number_of_clips_sold_in_April / 2 number_clips_sold_in_April_and_May = number_of_clips_sold_in_April + number_of_clips_sold_in_May return f"The final answer: {int(number_clips_sold_in_April_and_May)}" # Call the function to display the result print(total_clips_sold()) ``Ǹ ow it's your turn. Question: Weng earns $12 an hour for babysitting. Yesterday, she just did 50 minutes of babysitting. How much did she earn? Thinking process in relation triple format: (earning-per-hour, is, $12) (minutes-weng-worked, is, 50) (earnings-during-this-babysitting, is, ?) (earning-per-minute, is, ?) (minutes-in-an-hour, is, 60) (earning-per-minute, is, earning-per-hour / minutes-in-an-hour) (earnings-during-this-babysitting, is, earning-per-minute * minutes-weng-worked) Question: Betty is saving money for a new wallet which costs $100. Betty has only half of the money she needs. Her parents decided to give her $15 for that purpose, and her grandparents twice as much as her parents. How much more money does Betty need to buy the wallet? Thinking process in relation triple format: (cost-of-wallet, is, $100) (money-betty-has, is, cost-of-wallet / 2) (money-parents-gave, is, $15) (money-grandparents-gave, is, money-parents-gave * 2) (money-betty-needs, is, ?) (money-betty-has, is, money-betty-has + money-parents-gave + money-grandparents-gave) (money-betty-has, is, $95) (money-betty-needs, is, cost-of-wallet -money-betty-has)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>User Prompt</head><p>Figure 16: The system prompt and user prompt of the eight-shot example in step 2 of our framework.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>System Prompt</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>User Prompt</head><p>You are a helpful assistant that can solve math problems step by step with relation triples. Answer the following question. Write your thoughts first. Please make sure when you make a statement that includes reasoning, you must always write down those reasoning steps as relation triples. The final answer must be in numeric format, not in words. The final answer should be in the format with only a number shown: 'The final answer: &lt;your answer&gt;.</p><p>Question: Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?</p><p>Answer: First we know that Natalia sold clips to 48 of her friends in April, (number-of-clips-sold-in-Apirl, is, 48). She sold half as many clips in May, (number-of-clips-sold-in-May, is, number-of-clips-sold-in-Apirl / 2). 48 / 2 = 24. She sold 24 clips in May. The problem we want to solve is 'How many clips did Natalia sell altogether in April and May'. To find the total number of clips sold in April and May, we add the clips sold in each month, (number-clips-sold-in-April-and-May, is, number-of-clips-sold-in-Apirl + number-of-clips-sold-in-May). 48 + 24 = 72. Thus, Natalia sold a total of 72 clips in April and May combined. The final answer: 72. Now it's your turn. Here is another math problem: Question: Weng earns $12 an hour for babysitting. Yesterday, she just did 50 minutes of babysitting. How much did she earn? Question: Albert is wondering how much pizza he can eat in one day. He buys 2 large pizzas and 2 small pizzas. A large pizza has 16 slices and a small pizza has 8 slices. If he eats it all, how many pieces does he eat that day? Question: Ken created a care package to send to his brother, who was away at boarding school. Ken placed a box on a scale, and then he poured into the box enough jelly beans to bring the weight to 2 pounds. Then, he added enough brownies to cause the weight to triple. Next, he added another 2 pounds of jelly beans. And finally, he added enough gummy worms to double the weight once again. What was the final weight of the box of goodies, in pounds?</p><p>Question: Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there are yellow and purple flowers. How many flowers does Mark have in his garden?</p><p>Figure <ref type="figure">21</ref>: The system and user prompt of the five-shot example in step 1 of our framework.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Assistant Prompt</head><p>Answer: First, we know that Weng earns $12 an hour for babysitting, (earning-per-hour, is, $12). Yesterday, she did 50 minutes of babysitting, (minutes-weng-worked, is, 50). The question we want to solve is 'How much did she earn', (earnings-during-this-babysitting, is, ?). To find out her earnings, we need to calculate how much Weng earns per minute, (earning-per-minute, is, ?). Since there are 60 minutes in an hour, (minutes-in-an-hour, is, 60), we can determine her per-minute earnings, (earningper-minute, is, earning-per-hour / minutes-in-an-hour). Therefore, $12 divided by 60 minutes equals $0.2 per minute. So Weng earns $0.2 per minute of babysitting. To find out her earnings for this duration, we multiply her per-minute earnings by the number of minutes she worked, (earnings-during-this-babysitting, is, earning-per-minute * minutes-weng-worked). Therefore, $0.2 multiplied by 50 minutes equals $10. Thus, Weng earned $10 for 50 minutes of babysitting. The final answer: 10.</p><p>Answer: We know that Albert buys 2 large pizzas and 2 small pizzas, (number-of-large-pizzas, is, 2) and (number-ofsmall-pizzas, is, 2). A large pizza has 16 slices, (slices-per-large-pizza, is, 16). So the total slices from large pizzas is equal to the number of slices per large pizza multiplied by the number of large pizzas, (total-slices-from-large-pizzas, is, number-of-large-pizzas * slices-per-large-pizza). 2 * 16 = 32. Therefore, the total slices from large pizzas is 32. A small pizza has 8 slices, (slices-per-small-pizza, is, 8). So the total slices from small pizzas is equal to the number of slices per small pizza multiplied by the number of small pizzas, (total-slices-from-small-pizzas, is, number-of-small-pizzas * slices-per-small-pizza). 2 * 8 = 16. Therefore, the total slices from small pizzas is 16. To find the total number of pieces of pizza Albert eats in one day, we add the slices from both the large and small pizzas, (total-slices-for-the-day, is, total-slices-from-large-pizzas + total-slices-from-small-pizzas). 32 + 16 = 48. Thus, Albert eats 48 pieces of pizza in one day. The final answer: 48.</p><p>Answer: We know that Ken placed a box on a scale, and then he poured into the box enough jelly beans to bring the weight to 2 pounds, so the initial weight is 2 pounds, (current-weight, is, 2 pounds). Then, he added enough brownies to cause the weight to triple, (current-weight, is, current-weight * 3). 2 * 3 = 6. Next, he added another 2 pounds of jelly beans, (current-weight, is, current-weight + 2). 6 + 2 = 8. And finally, he added enough gummy worms to double the weight once again, (final-weight, is, current-weight * 2). 8 * 2 = 16. So, the final weight of the box of goodies is 16 pounds. The final answer: 16.</p><p>Answer: We know that number of yellow flowers is 10, (number-of-yellow-flowers, is, 10). There are 80% more purple flowers than yellow flowers, (number-of-purple-flowers, is, 80%-more-than-number-ofyellow-flowers). 10 * (1 + 0.80) = 10 * 1.80 = 18. So there are 18 purple flowers. The total number of yellow and purple flowers is the sum of yellow and purple flowers, (total-number-of-yellow-andpurple-flowers, is, number-of-yellow-flowers + number-of-purple-flowers). 10 + 18 = 28. There are only 25% as many green flowers as there are yellow and purple flowers, (number-of-green-flowers, is, 25%-oftotal-number-of-yellow-and-purple-flowers). 28 * 0.25 = 7. So there are 7 green flowers. The question is 'How many flowers does Mark have in his garden', so we need to calculate the total number of flowers, (total-number-of-flowers, is, number-of-yellow-flowers + number-of-purple-flowers + number-of-green-flowers).  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>System Prompt</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>User Prompt</head><p>You are a helpful assistant capable of solving math problems by using Python functions, based on the question provided and its reasoning steps which are formatted as relation triples. Given a question and its answer's thinking process in format of relation triples. Write a python function to solve the question based on those relation triples with the markdown format, that is, ```python\n&lt;your code&gt;\n```. The output of the function should be in this format with only a number shown: 'The final answer: &lt;your answer&gt;'.</p><p>Question: Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May? Thinking process in relation triple format:</p><p>Here is a Python function based on the given relation triples: ```python def total_clips_sold(): number_of_clips_sold_in_April = 48 number_of_clips_sold_in_May = number_of_clips_sold_in_April / 2 number_clips_sold_in_April_and_May = number_of_clips_sold_in_April + number_of_clips_sold_in_May return f"The final answer: {int(number_clips_sold_in_April_and_May)}" # Call the function to display the result print(total_clips_sold()) ``Ǹ ow it's your turn. Question: Weng earns $12 an hour for babysitting. Yesterday, she just did 50 minutes of babysitting. How much did she earn? Thinking process in relation triple format: (earning-per-hour, is, $12) (minutes-weng-worked, is, 50) (earnings-during-this-babysitting, is, ?) (earning-per-minute, is, ?) (minutes-in-an-hour, is, 60) (earning-per-minute, is, earning-per-hour / minutes-in-an-hour) (earnings-during-this-babysitting, is, earning-per-minute * minutes-weng-worked) Question: Albert is wondering how much pizza he can eat in one day. He buys 2 large pizzas and 2 small pizzas. A large pizza has 16 slices and a small pizza has 8 slices. If he eats it all, how many pieces does he eat that day? Thinking process in relation triple format: (number-of-large-pizzas, is, 2) (number-of-small-pizzas, is, 2) (slices-per-large-pizza, is, 16) (total-slices-from-large-pizzas, is, number-of-large-pizzas * slices-per-large-pizza) (slices-per-small-pizza, is, 8) (total-slices-from-small-pizzas, is, number-of-small-pizzas * slices-per-small-pizza) (total-slices-for-the-day, is, total-slices-from-large-pizzas + total-slices-from-small-pizzas)</p><p>Figure <ref type="figure">23</ref>: The system and user prompt of the five-shot example in step 2 of our framework.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>User Prompt (continued)</head><p>Question: Ken created a care package to send to his brother, who was away at boarding school. Ken placed a box on a scale, and then he poured into the box enough jelly beans to bring the weight to 2 pounds. Then, he added enough brownies to cause the weight to triple. Next, he added another 2 pounds of jelly beans. And finally, he added enough gummy worms to double the weight once again. What was the final weight of the box of goodies, in pounds? Thinking process in relation triple format: (current-weight, is, 2 pounds) (current-weight, is, current-weight * 3) (current-weight, is, current-weight + 2) (final-weight, is, current-weight * 2) Question: Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there are yellow and purple flowers. How many flowers does Mark have in his garden? Thinking process in relation triple format: (number-of-yellow-flowers, is, 10) (number-of-purple-flowers, is, 80%-more-than-number-of-yellow-flowers) (total-number-of-yellow-and-purple-flowers, is, number-of-yellow-flowers + number-of-purple-flowers) (number-of-green-flowers, is, 25%-of-total-number-of-yellow-and-purple-flowers) (total-number-of-flowers, is, number-of-yellow-flowers + number-of-purple-flowers + number-of-green-flowers)</p><p>Figure <ref type="figure">24</ref>: The user prompt of the five-shot example in step 2 of our framework (continued). </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">Josh</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Adler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lama</forename><surname>Ahmad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilge</forename><surname>Akkaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florencia</forename><surname>Leoni Aleman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Janko</forename><surname>Altenschmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Altman</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.08774</idno>
+		<title level="m">Shyamal Anadkat, et al. 2023. Gpt-4 technical report</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ayush</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siddhartha</forename><surname>Gadgil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Navin</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashvni</forename><surname>Narayanan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anand</forename><surname>Tadipatri</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2211.07524</idno>
+		<title level="m">Towards a mathematics formalisation assistant using large language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><surname>Ai@meta</surname></persName>
+		</author>
+		<title level="m">Llama 3 model card</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<author>
+			<persName><forename type="first">Rohan</forename><surname>Anil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Orhan</forename><surname>Firat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melvin</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dmitry</forename><surname>Lepikhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Passos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siamak</forename><surname>Shakeri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emanuel</forename><surname>Taropa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paige</forename><surname>Bailey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhifeng</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.10403</idno>
+		<title level="m">Palm 2 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Graph of Thoughts: Solving Elaborate Problems with Large Language Models</title>
+		<author>
+			<persName><forename type="first">Maciej</forename><surname>Besta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nils</forename><surname>Blach</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ales</forename><surname>Kubicek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Gerstenberger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukas</forename><surname>Gianinazzi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joanna</forename><surname>Gajda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tomasz</forename><surname>Lehmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michał</forename><surname>Podstawski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hubert</forename><surname>Niewiadomski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Piotr</forename><surname>Nyczyk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Torsten</forename><surname>Hoefler</surname></persName>
+		</author>
+		<idno type="DOI">10.1609/aaai.v38i16.29720</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="page" from="17682" to="17690" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Alec Radford, Ilya Sutskever, and Dario Amodei</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateusz</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Mccandlish</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+	<note>Language models are few-shot learners</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<author>
+			<persName><forename type="first">Karl</forename><surname>Cobbe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vineet</forename><surname>Kosaraju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Bavarian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heewoo</forename><surname>Jun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Plappert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jerry</forename><surname>Tworek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reiichiro</forename><surname>Nakano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Schulman</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2110.14168</idno>
+		<title level="m">Training verifiers to solve math word problems</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">PAL: Program-aided language models</title>
+		<author>
+			<persName><forename type="first">Luyu</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aman</forename><surname>Madaan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuyan</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Uri</forename><surname>Alon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengfei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiming</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jamie</forename><surname>Callan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Graham</forename><surname>Neubig</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th International Conference on Machine Learning</title>
+		<meeting>the 40th International Conference on Machine Learning</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">202</biblScope>
+			<biblScope unit="page" from="10764" to="10799" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Think before you speak: Training language models with pause tokens</title>
+		<author>
+			<persName><forename type="first">Sachin</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ziwei</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ankit</forename><surname>Singh Rawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Krishna Menon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sanjiv</forename><surname>Kumar</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Vaishnavh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">Nagarajan. 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Language models can teach themselves to program better</title>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Haluptzok</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Bowers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Tauman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kalai</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Large language models can self-improve</title>
+		<author>
+			<persName><forename type="first">Jiaxin</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shixiang</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuexin</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongkun</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiawei</forename><surname>Han</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.emnlp-main.67</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2023 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Singapore. Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="1051" to="1068" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Albert Q Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Sablayrolles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Bamford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diego</forename><surname>Singh Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>De Las Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianna</forename><surname>Bressand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lengyel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucile</forename><surname>Lample</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Saulnier</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.06825</idno>
+		<title level="m">Mistral 7b</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Calc-X and calcformers: Empowering arithmetical chain-of-thought through interaction with symbolic systems</title>
+		<author>
+			<persName><forename type="first">Marek</forename><surname>Kadlčík</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michal</forename><surname>Štefánik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ondrej</forename><surname>Sotolar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vlastimil</forename><surname>Martinek</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.emnlp-main.742</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2023 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Singapore</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="12101" to="12108" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Large language models are zero-shot reasoners</title>
+		<author>
+			<persName><forename type="first">Takeshi</forename><surname>Kojima</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">(</forename><surname>Shixiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">)</forename><surname>Shane</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Machel</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yutaka</forename><surname>Reid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yusuke</forename><surname>Matsuo</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Iwasawa</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="22199" to="22213" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">MAWPS: A math word problem repository</title>
+		<author>
+			<persName><forename type="first">Rik</forename><surname>Koncel-Kedziorski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Subhro</forename><surname>Roy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aida</forename><surname>Amini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nate</forename><surname>Kushman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannaneh</forename><surname>Hajishirzi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/N16-1136</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2016 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2016 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies<address><addrLine>San Diego, California</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="page" from="1152" to="1157" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Efficient memory management for large language model serving with pagedattention</title>
+		<author>
+			<persName><forename type="first">Woosuk</forename><surname>Kwon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuohan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cody</forename><forename type="middle">Hao</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ion</forename><surname>Stoica</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3600006.3613165</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 29th Symposium on Operating Systems Principles, SOSP &apos;23</title>
+		<meeting>the 29th Symposium on Operating Systems Principles, SOSP &apos;23<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="611" to="626" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yanming</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyue</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyu</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianwei</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weihao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuhong</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.06932</idno>
+		<title level="m">Era-cot: Improving chain-of-thought through entity relationship analysis</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Self-refine: Iterative refinement with self-feedback</title>
+		<author>
+			<persName><forename type="first">Aman</forename><surname>Madaan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niket</forename><surname>Tandon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prakhar</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Skyler</forename><surname>Hallinan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luyu</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sarah</forename><surname>Wiegreffe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Uri</forename><surname>Alon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nouha</forename><surname>Dziri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shrimai</forename><surname>Prabhumoye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiming</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shashank</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bodhisattwa</forename><surname>Prasad Majumder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katherine</forename><surname>Hermann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sean</forename><surname>Welleck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Yazdanbakhsh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Clark</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="page" from="46534" to="46594" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">A diverse corpus for evaluating and developing English math word problem solvers</title>
+		<author>
+			<persName><forename type="first">Chao-Chun</forename><surname>Shen-Yun Miao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keh-Yih</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Su</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.acl-main.92</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="975" to="984" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Isabelle/HOL: a proof assistant for higher-order logic</title>
+		<author>
+			<persName><forename type="first">Tobias</forename><surname>Nipkow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Markus</forename><surname>Wenzel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lawrence</forename><forename type="middle">C</forename><surname>Paulson</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2002">2002</date>
+			<publisher>Springer-Verlag</publisher>
+			<pubPlace>Berlin, Heidelberg</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<author>
+			<persName><forename type="first">Maxwell</forename><surname>Nye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anders</forename><surname>Johan Andreassen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guy</forename><surname>Gur-Ari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henryk</forename><surname>Michalewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Austin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Bieber</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aitor</forename><surname>Lewkowycz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Luan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2112.00114</idno>
+		<title level="m">Show your work: Scratchpads for intermediate computation with language models</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Are NLP models really able to solve simple math word problems?</title>
+		<author>
+			<persName><forename type="first">Arkil</forename><surname>Patel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Satwik</forename><surname>Bhattamishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Navin</forename><surname>Goyal</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.naacl-main.168</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="2080" to="2094" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Reasoning with language model prompting: A survey</title>
+		<author>
+			<persName><forename type="first">Shuofei</forename><surname>Qiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yixin</forename><surname>Ou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ningyu</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunzhi</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shumin</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chuanqi</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huajun</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.acl-long.294</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics<address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="5368" to="5393" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">FaiRR: Faithful and robust deductive reasoning over natural language</title>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Sanyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harman</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Ren</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.acl-long.77</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Dublin, Ireland</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1075" to="1093" />
+		</imprint>
+	</monogr>
+	<note>Long Papers) Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Edouard Grave, and Guillaume Lample. 2023a. Llama: Open and efficient foundation language models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Faisal</forename><surname>Azhar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aurelien</forename><surname>Rodriguez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Armand</forename><surname>Joulin</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<imprint/>
+	</monogr>
+	<note type="report_type">Preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amjad</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolay</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prajjwal</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shruti</forename><surname>Bhosale</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Bikel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukas</forename><surname>Blecher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cristian Canton</forename><surname>Ferrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Moya</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillem</forename><surname>Cucurull</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Esiobu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jude</forename><surname>Fernandes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeremy</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenyin</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Fuller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cynthia</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vedanuj</forename><surname>Goswami</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anthony</forename><surname>Hartshorn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saghar</forename><surname>Hosseini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hakan</forename><surname>Inan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marcin</forename><surname>Kardas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Viktor</forename><surname>Kerkez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Madian</forename><surname>Khabsa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Isabel</forename><surname>Kloumann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Artem</forename><surname>Korenev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Punit</forename><surname>Singh Koura</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jenya</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diana</forename><surname>Liskovich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yinghai</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuning</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Todor</forename><surname>Mihaylov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pushkar</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Igor</forename><surname>Molybog</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yixin</forename><surname>Nie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Poulton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeremy</forename><surname>Reizenstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rashi</forename><surname>Rungta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kalyan</forename><surname>Saladi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alan</forename><surname>Schelten</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruan</forename><surname>Silva</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+		<editor>Eric Michael Smith, Ranjan Subramanian, Xiaoqing Ellen Tan, Binh Tang, Ross Taylor, Adina Williams, Jian Xiang Kuan, Puxin Xu, Zheng Yan, Iliyan Zarov, Yuchen Zhang, Angela Fan, Melanie Kambadur, Sharan Narang</editor>
+		<imprint>
+			<publisher>Aurelien Rodriguez</publisher>
+			<pubPlace>Robert Stojnic, Sergey Edunov</pubPlace>
+		</imprint>
+	</monogr>
+	<note type="report_type">Preprint</note>
+	<note>and Thomas Scialom. 2023b. Llama 2: Open foundation and fine-tuned chat models</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Iteratively prompt pre-trained language models for chain of thought</title>
+		<author>
+			<persName><forename type="first">Boshi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huan</forename><surname>Sun</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.emnlp-main.174</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2022 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Abu Dhabi</addrLine></address></meeting>
+		<imprint>
+			<publisher>United Arab Emirates. Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="2714" to="2730" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Mathcoder: Seamless code integration in LLMs for enhanced mathematical reasoning</title>
+		<author>
+			<persName><forename type="first">Ke</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Houxing</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aojun</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zimu</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sichun</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weikang</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Renrui</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linqi</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mingjie</forename><surname>Zhan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongsheng</forename><surname>Li</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Self-consistency improves chain of thought reasoning in language models</title>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Quoc V Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="24824" to="24837" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">2024a. WizardLM: Empowering large pre-trained language models to follow complex instructions</title>
+		<author>
+			<persName><forename type="first">Can</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingfeng</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiubo</forename><surname>Geng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pu</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiazhan</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chongyang</forename><surname>Tao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingwei</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daxin</forename><surname>Jiang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title level="m" type="main">2024b. Faithful logical reasoning via symbolic chain-of-thought</title>
+		<author>
+			<persName><forename type="first">Jundong</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Fei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liangming</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qian</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mong-Li</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wynne</forename><surname>Hsu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2405.18357</idno>
+		<imprint/>
+	</monogr>
+	<note type="report_type">Preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ling</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhaochen</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianjun</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shiyi</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Minkai</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wentao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bin</forename><surname>Cui</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2406.04271</idno>
+		<title level="m">Buffer of thoughts: Thoughtaugmented reasoning with large language models</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Tree of thoughts: Deliberate problem solving with large language models</title>
+		<author>
+			<persName><forename type="first">Shunyu</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dian</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Izhak</forename><surname>Shafran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Griffiths</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karthik</forename><surname>Narasimhan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="page" from="11809" to="11822" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title level="m" type="main">Teaching language models to selfimprove through interactive demonstrations</title>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baolin</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michel</forename><surname>Galley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianfeng</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhou</forename><surname>Yu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.13522</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">Star: Bootstrapping reasoning with reasoning</title>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Zelikman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuhuai</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jesse</forename><surname>Mu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><surname>Goodman</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="15476" to="15488" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Automatic model selection with large language models for reasoning</title>
+		<author>
+			<persName><forename type="first">James</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxi</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenji</forename><surname>Kawaguchi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junxian</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Xie</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.findings-emnlp.55</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2023</title>
+		<meeting><address><addrLine>Singapore</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="758" to="783" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">2024a. Solving challenging math word problems using GPT-4 code interpreter with code-based self-verification</title>
+		<author>
+			<persName><forename type="first">Aojun</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ke</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zimu</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weikang</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sichun</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zipeng</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaoqing</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anya</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linqi</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mingjie</forename><surname>Zhan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongsheng</forename><surname>Li</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Least-to-most prompting enables complex reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nathanael</forename><surname>Schärli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nathan</forename><surname>Scales</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claire</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olivier</forename><surname>Bousquet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Quoc V Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Chi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">2024b. Don&apos;t trust: Verify -grounding LLM quantitative reasoning with autoformalization</title>
+		<author>
+			<persName><forename type="first">Jin</forename><forename type="middle">Peng</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><forename type="middle">E</forename><surname>Staats</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenda</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Szegedy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kilian</forename><forename type="middle">Q</forename><surname>Weinberger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuhuai</forename><surname>Wu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

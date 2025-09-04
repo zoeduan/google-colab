@@ -1,0 +1,604 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Panda LLM: Training Data and Evaluation for Open-Sourced Chinese Instruction-Following Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Fangkai</forename><surname>Jiao</surname></persName>
+							<email>jiaofangkai@hotmail.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Nanyang Technological University</orgName>
+								<address>
+									<country key="SG">Singapore</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Bosheng</forename><surname>Ding</surname></persName>
+							<email>bosheng001@ntu.edu.sg</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Nanyang Technological University</orgName>
+								<address>
+									<country key="SG">Singapore</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Tianze</forename><surname>Luo</surname></persName>
+							<email>tianze001@ntu.edu.sg</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Nanyang Technological University</orgName>
+								<address>
+									<country key="SG">Singapore</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Zhanfeng</forename><surname>Mo</surname></persName>
+							<email>zhanfeng001@ntu.edu.sg</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Nanyang Technological University</orgName>
+								<address>
+									<country key="SG">Singapore</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Panda LLM: Training Data and Evaluation for Open-Sourced Chinese Instruction-Following Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">0D9C3FBA39A7DA376E7275DD9420C165</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:52+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>This project focuses on enhancing opensource large language models through instruction-tuning and providing comprehensive evaluations of their performance. We explore how various training data factors, such as quantity, quality, and linguistic distribution, influence the performance of instruction-tuned models trained on publicly accessible high-quality instruction datasets for both English and Chinese languages. Our goal is to supplement evaluation with quantitative analyses, providing valuable insights for the continued advancement of open-source chat models. Our model, data, and code are publicly available 1 for others to use and build upon.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Over the last six months, there has been a significant surge in the development and advancement of instruction-following Large Language Models (LLM) such as <ref type="bibr">GPT-4 (OpenAI, 2023)</ref>,  <ref type="foot" target="#foot_1">foot_1</ref> , ChatGPT<ref type="foot" target="#foot_2">foot_2</ref> , Claude<ref type="foot" target="#foot_3">foot_3</ref> , and Bard<ref type="foot" target="#foot_4">foot_4</ref> . These models have gained widespread popularity due to their exceptional versatility in various natural language proccessing tasks such as code writing and article editing, making them ubiquitous in various industries and significantly enhancing people's productivity <ref type="bibr" target="#b0">(Ding et al., 2022;</ref><ref type="bibr" target="#b17">Zhao et al., 2023)</ref>. However, there are limitations to current off-the-shelf instruction-following large language models, including the lack of trustworthiness in generated results, lack of transparency in the model used which raises concerns about data security, and the unknown training recipe, making it difficult to customize a self-used model for specific purposes <ref type="bibr" target="#b11">(Touvron et al., 2023)</ref>.</p><p>We believe that the cultivation of a strong and versatile open-source community for the development of trustable, transparent, and customizable large language models in all languages worldwide is considered the best approach to address the current issues and make the power of large language models accessible to everyone. In line with this objective, the Dandelion Project is proposed to deploy large language models that are not only accurate but also transparent, trustworthy, and customizable. The project aims to promote more accessible and inclusive AI technology that can benefit individuals regardless of their cultural differences, geographical locations, or language barriers. Through open-source access to high-quality large language models, the Dandelion Project aims to empower developers, researchers, and organizations to leverage AI's potential in various applications such as translation, chatbots, content generation, and more.</p><p>This report presents the Panda LLM, which is the first open-sourced Chinese instruction-following large language model for overseas audiences. It is also the first released LLM of the Dandelion Project. Our Panda LLM model has been trained on <ref type="bibr">Chinese-Wiki-2019</ref><ref type="bibr">, Chinese-News-2016</ref><ref type="bibr">, Chinese-Baike-2018</ref><ref type="bibr">, Chinese-Webtext-2019</ref><ref type="bibr">and Translation-2019</ref><ref type="bibr" target="#b14">(Xu, 2019)</ref> and COIG datasets <ref type="bibr" target="#b16">(Zhang et al., 2023)</ref> with instructiontuning <ref type="bibr">(Wei et al., 2021)</ref> based on the LLaMA model <ref type="bibr" target="#b11">(Touvron et al., 2023)</ref>. Anticipated future releases include progressively larger models such as Panda-13B and Panda-33B, with expected release dates in the near future.</p><p>Due to the presence of the LLaMA weight License, we can not directly publish the complete weights of the checkpoints of our Panda LLM. Therefore, we have released the difference between the parameters of the trained model and the original LLaMA weights to ensure that users with access to the LLaMA weights can still utilize these models.</p><p>A script has been provided to facilitate the conversion process. To this end, the contribution of this project is three-fold:</p><p>• We adopted a two-stage training approach which yielded exemplary results, surpassing all previously available open-sourced Chinese large language models with an equivalent amount of parameters (Section 2).</p><p>• We conducted the first-ever comparative evaluation of various open-sourced Chinese large language models (Section 3).</p><p>• We have made available a collection of model checkpoints and the corresponding source codes, with the objective of promoting the democratization of Artificial Intelligence. These resources are intended to be of benefit not only to the academic community but also to individuals and Small and Medium-sized Enterprises (SMEs).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Training Receipt</head><p>To create a high-quality instruction-following Chinese language model under academic budget constraints, two key components are required: a robust pre-trained language model and a high-quality instruction-following dataset. In this section, we will demonstrate our process of developing the Panda LLM. We started with the powerful LLaMA base model as our foundation and further optimized its performance through fine-tuning with instruction-tuning techniques on six Chinese corpora, enabling it to perform well on a diverse range of tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Base model</head><p>Our Panda LLM is established based on various LLaMA (Large Language Model Meta AI) models <ref type="bibr" target="#b11">(Touvron et al., 2023)</ref>, including Meta's recently released LLaMA-7B, LLaMA-13B, LLaMA-33B, and LLaMA-65B, as our base models. LLaMA models, although smaller than giant commercial models like ChatGPT and GPT4, are highly performant and open-sourced, providing greater accessibility to foundation large language models across various domains with far less computing power and resources. Similar to other large language models, LLaMA works by taking a sequence of words as an input and predicts the next word to recursively generate text. Following recent work on large language models, our network is based on the transformer architecture <ref type="bibr" target="#b12">(Vaswani et al., 2017)</ref>. Various improvement is leveraged to enhance the model capacity, including pre-normalization <ref type="bibr" target="#b15">(Zhang and Sennrich, 2019)</ref>, SwiGLU activation function and rotary embeddings <ref type="bibr" target="#b9">(Su et al., 2021)</ref>. As shown in Table <ref type="table">3</ref>, LLaMA models are trained on a mixture of 7 publicly available datasets, comprising of 1.4T tokens.</p><p>The training configurations and model hyperparameters are shown in Table <ref type="table" target="#tab_0">1</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Training datasets</head><p>While many existing open-sourced large language models have demonstrated impressive performance on English language tasks, they are primarily pretrained on English datasets, limiting their ability to understand Chinese language corpus. In this section, we address the challenge of the  <ref type="bibr" target="#b1">(Duan et al., 2019)</ref>, in which the loss is solely calculated based on the output part, and the instruction and input parts are ignored. A fixed prompt template is utilized for the instruction across these datasets.</p><p>After making several initial attempts to directly train models on a mixture of these datasets, we realized that our model's instruction-following performance was limited. We speculate that this is due to the insufficient number of instruction-following samples in the entire training corpus, which results in suboptimal training of our model for instructionfollowing tasks.</p><p>To enhance the instruction-following capability of Panda LLM, we further incorporate the Chinese Open Instruction Generalist (COIG) dataset <ref type="bibr" target="#b16">(Zhang et al., 2023)</ref> into our corpus. COIG is an opensourced Chinese corpora that contains instructionfollowing samples from various domains, including a manually verified translated general instruction corpus, a manually annotated exam instruction corpus, a human value alignment instruction corpus, a multi-round counterfactual correction chat corpus, and a leetcode instruction corpus. As we shall see later, extra optimization on COIG brings Panda LLM noticeable performance boost. And our model is further improved via up-sampling techniques on the COIG dataset.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3">Training infrastructure</head><p>Our Panda-7B and Panda-13B models were trained on two AWS computation nodes that were equipped with 16 NVIDIA A100-80G GPUs. We leverage the standard Stochastic Gradient Descent (SGD) <ref type="bibr" target="#b8">(Shamir and Zhang, 2013)</ref> optimizer to train our Panda LLMs. For the Panda-7B and Panda-13B models, we set the batch sizes after gradient accumulation to 8192 and 4096, and the learning rates to 1e-5 with 1% of the total training steps allocated for learning rate warm-up steps <ref type="bibr" target="#b5">(Loshchilov and Hutter, 2017)</ref>. We disabled the weight decay for both models. During instruction tuning for the 7B model, we utilized batch sizes of 3e-5 and 128.</p><p>To facilitate efficient model training, we employed DeepSpeed<ref type="foot" target="#foot_5">foot_5</ref> ZERO-1 <ref type="bibr" target="#b7">(Rajbhandari et al., 2020)</ref> with bfloat16 and gradient checkpointing. The training process took approximately 7 and 14 days for the Panda-7B and Panda-13B models, respectively. Additional training details can be found in the config files in our GitHub repository<ref type="foot" target="#foot_6">foot_6</ref> .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Experiments</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Evaluation datasets</head><p>We assessed the reasoning capabilities of our models using three publicly available reasoning benchmarks: LogiQA-v2 <ref type="bibr" target="#b4">(Liu, 2023)</ref>, which contains 8,678 QA instances; C 3 <ref type="bibr" target="#b10">(Sun et al., 2020)</ref>, which contains 13k documents and their associated 19k Chinese multiple-choice free-form questions. For the C 3 dataset, we adopt C 3 -Mixed, which contains non-dialogue documents of mixed genre, and C 3 -Dialogue, of which the dialogue serves as the document.</p><p>All three datasets provided us with a platform to evaluate the QA-reasoning capabilities of our language models. We have presented the relevant statistics of these datasets in Table <ref type="table" target="#tab_5">5</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Results</head><p>We show the experimental results in  Table 3: Training data comparison for LLaMA and Panda. For each subset we list the sampling proportion, number of epochs, and disk size.</p><p>Panda at different stages.</p><p>• Panda-7B: the model that is finetuned on Chinese-Wiki-2019, Chinese-News-2016, Chinese-Baike-2018, Chinese-Webtext-2019, and Translation-2019.</p><p>• Panda-7B-instruction-3k: Panda-7B + instruction tuning on COIG dataset for 3k steps.</p><p>• Panda-7B-instruction-6k: Panda-7B + instruction tuning on COIG dataset for 6k steps.</p><p>• Panda-7B-instruction-9k: Panda-7B + instruction tuning on COIG dataset for 9k steps.</p><p>From the results, we can observe that although a large amount of training effort was consumed in training our model on non-instruction conventional Chinese datasets, the performance of such a model is not desirable. In contrast, instruction-finetuning on COIG datasets provide a high boost to the performance of Panda. Specifically, with instruction tuning on COIG, which only takes up 4.2% of our training samples, the performance of Panda increases from 27.41 to 31.93, 43.02 to 47.30, and 43.66 to 57.04 on LogiQA-v2, C 3 -d and C 3 -m respectively.</p><p>To provide a more comprehensive understanding of the training process, we present the training loss curves of Panda-7B on two datasets, namely the NLP Chinese Corpus dataset and the COIG dataset. Figure <ref type="figure">2</ref> displays these curves. We observed that the training loss on the NLP Chinese Corpus dataset converges gradually until it reaches 0.425. We terminated the training process at approximately 1.5k steps as the model had trained on the entire dataset for one epoch. On the other hand, the training loss on the COIG dataset converged around 8k steps. We concluded training at 9k steps since the model had trained on the dataset for two epochs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Key findings</head><p>The key factor for achieving high performance in reasoning tasks is tuning on a diverse range of domains. Our empirical experiments have shown that training on the NLP Chinese Corpus dataset alone is not enough to produce a high-</p><formula xml:id="formula_0">Model LogiQA-v2 C 3 -d C 3 -m</formula><p>Linly-Chinese-LLaMA-7b-hf 25.91 32.28 34.52 belle-llama-ext-7b <ref type="bibr" target="#b3">(Ji et al., 2023)</ref> 26 Mixing data indiscriminately does not lead to improved performance. In an earlier attempt, we combined the NLP Chinese Corpus dataset with the COIG dataset and trained the entire dataset together. However, this approach did not yield better results and actually hindered the effectiveness of the COIG dataset. As a result, we only achieved a similar performance to the Panda-7B model without instruction tuning.</p><p>In a nutshell, a pipeline that incorporates abundant pretraining followed by instruction tuning on a small but diverse portion of data can lead to a highly effective Chinese language model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Upcoming Works</head><p>The forthcoming objective involves the unveiling of more advanced models, namely Panda-13B, Panda-33B, and Panda-65B, which are characterized by their larger size and enhanced capabilities. In addition, the codes for enabling model parallel during training will be made publicly available, thereby benefiting the wider academic community. Furthermore, efforts will be directed towards the acquisition of additional training data, which will be utilized to improve the performance of both continual pre-training and instruction fine-tuning processes. Meanwhile, our attention will be focused on expanding the range of tasks and datasets included in the evaluation benchmark. Looking ahead, the ultimate goal is to incorporate more languages into our system, thereby further augmenting its versatility and adaptability.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusions</head><p>This study focuses on the development and evaluation of Panda, an open-source Chinese instructionfollowing large language model. The performance of the model was assessed through experiments, which yielded results indicating that it outperforms existing open-source Chinese LLM initiatives and achieved state-of-the-art performance. The findings of this study may contribute to the improvement of open-source initiatives for large language models, as well as provide insight into effective model training strategies. By releasing training data, model checkpoints, and codes, we sincerely hope we can contribute to the democratization of AI.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Illustrations of our proposed method.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>scarcity of high-quality Chinese instruction-following datasets in the training receipts of existing open-source LLMs. To enable our Panda LLM to acquire strong performance on Chinese datasets, we uti-The training configuration and model hyperparameters of LLaMA models.</figDesc><table><row><cell>LLaMA</cell><cell></cell><cell cols="3">Model hyper parameters</cell><cell></cell><cell></cell></row><row><cell cols="7">Number of parameters dimension # heads # layers Learn rate Batch size n tokens</cell></row><row><cell>7B</cell><cell>4096</cell><cell>32</cell><cell>32</cell><cell>3.0 × 10 -4</cell><cell>4M</cell><cell>1 T</cell></row><row><cell>13B</cell><cell>5120</cell><cell>40</cell><cell>40</cell><cell>3.0 × 10 -4</cell><cell>4M</cell><cell>1 T</cell></row><row><cell>33B</cell><cell>6656</cell><cell>52</cell><cell>60</cell><cell>1.5 × 10 -4</cell><cell>4M</cell><cell>1.4 T</cell></row><row><cell>65B</cell><cell>8192</cell><cell>64</cell><cell>80</cell><cell>1.5 × 10 -4</cell><cell>4M</cell><cell>1.4 T</cell></row><row><cell cols="3">lized the powerful instruction-tuning technique to</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">train the base LLaMA model on a mixture of five</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">open-sourced Chinese datasets (Xu, 2019). These</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">datasets, as shown in Table 2, consist of 15.3 mil-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">lion machine comprehension samples from various</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">language domains, such as news articles, commu-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">nity question-answering and translation, etc.</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">Particularly, for dataset other than Chinese-Wiki-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">2019 and Chinese-News-2016, our model is op-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">timized following the conditional text generation</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>paradigm</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 4 .</head><label>4</label><figDesc>Specifically, we demonstrate the performance of</figDesc><table><row><cell>Dataset</cell><cell>Ingredient</cell></row><row><cell>Chinese-Wiki-2019</cell><cell>1M Chinese short paragraphs.</cell></row><row><cell>Chinese-News-2016</cell><cell>2.5M Chinese news from 2014 to 2016.</cell></row><row><cell>Chinese-Baike-2018</cell><cell>1.5M Chinese QA data samples.</cell></row><row><cell cols="2">Chinese-Webtext-2019 4.1M Chinese high-quality QA data samples for various domains.</cell></row><row><cell>Translation-2019</cell><cell>5.2M Chinese-English translation data samples.</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 2 :</head><label>2</label><figDesc>The NLP Chinese Corpus datasets for Panda LLM.</figDesc><table><row><cell></cell><cell>Dataset</cell><cell cols="3">Sampling prop. Epochs Disk size</cell></row><row><cell></cell><cell>CommonCrawl</cell><cell>67.0%</cell><cell>1.10</cell><cell>3.3 TB</cell></row><row><cell></cell><cell>C4</cell><cell>15.0%</cell><cell>1.06</cell><cell>783 GB</cell></row><row><cell></cell><cell>Github</cell><cell>4.5%</cell><cell>0.64</cell><cell>328 GB</cell></row><row><cell>LLaMA</cell><cell>Wikipedia</cell><cell>4.5%</cell><cell>2.45</cell><cell>83 GB</cell></row><row><cell></cell><cell>Books</cell><cell>4.5%</cell><cell>2.23</cell><cell>85 GB</cell></row><row><cell></cell><cell>ArXiv</cell><cell>2.5%</cell><cell>1.06</cell><cell>92 GB</cell></row><row><cell></cell><cell>StackExchange</cell><cell>2.0%</cell><cell>1.03</cell><cell>78 GB</cell></row><row><cell></cell><cell>Chinese-Wiki-2019</cell><cell>9.4%</cell><cell>1</cell><cell>1.6GB</cell></row><row><cell></cell><cell>Chinese-News-2016</cell><cell>52.6%</cell><cell>1</cell><cell>9GB</cell></row><row><cell>Panda (ours)</cell><cell>Chinese-Baike-2018 Chinese-Webtext-2019</cell><cell>5.8% 21.6%</cell><cell>1 1</cell><cell>1GB 3.7GB</cell></row><row><cell></cell><cell>Translation-2019</cell><cell>6.4%</cell><cell>1</cell><cell>1.1GB</cell></row><row><cell></cell><cell>COIG</cell><cell>4.2%</cell><cell>2</cell><cell>350MB</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 4 :</head><label>4</label><figDesc>Experiment results for Panda-7B V.S. baselines on LogiQA-v2, C 3 -d and C 3 -m datasets.</figDesc><table><row><cell>.41</cell><cell>29.52</cell><cell>28.87</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 5 :</head><label>5</label><figDesc>The statistics of the evaluation datasets. We count the length of each sample as the tokenized sequence of context, question, and all options, using the sentence-piece tokenizer of Pre-trained LLaMA.</figDesc><table><row><cell>D7UDLQLQJRQ1/3&amp;KLQHVH&amp;RUSXVGDWDVHW</cell><cell>ing capability, particularly on the C 3 -m dataset,</cell></row><row><cell></cell><cell>with an impressive gain of 13.38.</cell></row><row><cell>/RVV</cell><cell></cell></row><row><cell>6WHSEDWFKVL]H</cell><cell></cell></row><row><cell>E7UDLQLQJRQ&amp;2,*GDWDVHW</cell><cell></cell></row><row><cell>/RVV</cell><cell></cell></row><row><cell>6WHSEDWFKVL]H</cell><cell></cell></row><row><cell>Figure 2: Train steps versus losses on (a). Training</cell><cell></cell></row><row><cell>on NLP Chinese Corpus dataset, and (b). Training on</cell><cell></cell></row><row><cell>COIG dataset.</cell><cell></cell></row><row><cell>performing model. To address this issue, we turned</cell><cell></cell></row><row><cell>to the COIG dataset, which contains instruction</cell><cell></cell></row><row><cell>data from a vast array of domains, including exam</cell><cell></cell></row><row><cell>instructions, human value alignment instructions,</cell><cell></cell></row><row><cell>Leetcode instructions, and more. As demonstrated</cell><cell></cell></row><row><cell>in Section 3.2, even using just 4.2% of the COIG</cell><cell></cell></row><row><cell>dataset dramatically improves our model's reason-</cell><cell></cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://github.com/dandelionsllm/pandallm/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>https://platform.openai.com/docs/models/gpt-3-5</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>https://chat.openai.com/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>https://www.anthropic.com/index/introducing-claude</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_4"><p>https://bard.google.com/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_5"><p>www.deepspeed.ai</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="7" xml:id="foot_6"><p>github.com/dandelionsllm/pandallm/tree/main/conf/llama/zh.</p></note>
+		</body>
+		<back>
+
+			
+			<div type="acknowledgement">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Acknowledgments</head><p>We are very grateful for the support from a few large organizations, which have provided us with a large number of GPUs to support our model training. The high-performance computing power of these GPUs has provided us with strong support in the research and development of the Panda model.</p></div>
+			</div>
+
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">Bosheng</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengwei</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linlin</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lidong</forename><surname>Bing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shafiq</forename><surname>Joty</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boyang</forename><surname>Li</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.10450</idno>
+		<title level="m">Is gpt-3 a good data annotator? arXiv preprint</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Pre-train and plug-in: Flexible conditional text generation with variational auto-encoders</title>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Duan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaxin</forename><surname>Pei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Canwen</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenliang</forename><surname>Li</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Corr</surname></persName>
+		</author>
+		<idno>abs/1911.03882</idno>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Exploring the impact of instruction data scaling on large language models: An empirical study on real-world use cases</title>
+		<author>
+			<persName><forename type="first">Yunjie</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yan</forename><surname>Gong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiping</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiang</forename><surname>Niu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baochang</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangang</forename><surname>Li</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.14742</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Hanmeng</forename><surname>Liu</surname></persName>
+		</author>
+		<idno type="DOI">10.21227/49bc-cm17</idno>
+		<imprint>
+			<date type="published" when="2000">2023. Logiqa 2.0</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">SGDR: Stochastic gradient descent with warm restarts</title>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Loshchilov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Frank</forename><surname>Hutter</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<title level="m">Gpt-4 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Zero: Memory optimizations toward training trillion parameter models</title>
+		<author>
+			<persName><forename type="first">Samyam</forename><surname>Rajbhandari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Rasley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olatunji</forename><surname>Ruwase</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxiong</forename><surname>He</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis, SC &apos;20</title>
+		<meeting>the International Conference for High Performance Computing, Networking, Storage and Analysis, SC &apos;20</meeting>
+		<imprint>
+			<publisher>IEEE Press</publisher>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Stochastic gradient descent for non-smooth optimization: Convergence results and optimal averaging schemes</title>
+		<author>
+			<persName><forename type="first">Ohad</forename><surname>Shamir</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tong</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th International Conference on Machine Learning</title>
+		<meeting>the 30th International Conference on Machine Learning<address><addrLine>Atlanta, Georgia, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="volume">28</biblScope>
+			<biblScope unit="page" from="71" to="79" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Roformer: Enhanced transformer with rotary position embedding</title>
+		<author>
+			<persName><forename type="first">Jianlin</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shengfeng</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bo</forename><surname>Wen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunfeng</forename><surname>Liu</surname></persName>
+		</author>
+		<idno>CoRR, abs/2104.09864</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Investigating prior knowledge for challenging chinese machine reading comprehension</title>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dian</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dong</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claire</forename><surname>Cardie</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="page" from="141" to="155" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Llama: Open and efficient foundation language models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Faisal</forename><surname>Azhar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aurélien</forename><surname>Rodriguez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Armand</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edouard</forename><surname>Grave</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lample</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2302.13971</idno>
+		<idno>CoRR, abs/2302.13971</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niki</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jakob</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Llion</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ł Ukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">2021. Finetuned language models are zero-shot learners</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vincent</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kelvin</forename><surname>Guu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adams</forename><forename type="middle">Wei</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Lester</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Du</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2109.01652</idno>
+		<editor>M. Dai, and Quoc V. Le.</editor>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<author>
+			<persName><forename type="first">Bright</forename><surname>Xu</surname></persName>
+		</author>
+		<idno type="DOI">10.5281/zenodo.3402023</idno>
+		<title level="m">Nlp chinese corpus: Large scale chinese corpus for nlp</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Root mean square layer normalization</title>
+		<author>
+			<persName><forename type="first">Biao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rico</forename><surname>Sennrich</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="volume">32</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Ge</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yemin</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruibo</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruibin</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yizhi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siwei</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Shu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhaoqun</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zekun</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenghua</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenhao</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Fu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>Chinese open instruction generalist: A preliminary release</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Retrieving multimodal information for augmented generation: A survey</title>
+		<author>
+			<persName><forename type="first">Ruochen</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hailin</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weishi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fangkai</forename><surname>Jiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuan</forename><forename type="middle">Long</forename><surname>Do</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengwei</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bosheng</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaobao</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Minzhi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xingxuan</forename><surname>Li</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.10868</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

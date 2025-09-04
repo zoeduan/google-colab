@@ -1,0 +1,1746 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">How well do Large Language Models perform in Arithmetic tasks?</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Zheng</forename><surname>Yuan</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Hongyi</forename><surname>Yuan</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Chuanqi</forename><surname>Tan</surname></persName>
+							<email>chuanqi.tcq@alibaba-inc.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Wei</forename><surname>Wang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Songfang</forename><surname>Huang</surname></persName>
+							<email>songfang.hsf@alibaba-inc.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Alibaba</forename><surname>Group</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">How well do Large Language Models perform in Arithmetic tasks?</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">37CB00D408645D8442DD94AC20D5F5CC</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:20+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large language models have emerged abilities including chain-of-thought to answer math word problems step by step (Wei et al., 2022b). Solving math word problems not only requires abilities to disassemble problems via chain-ofthought but also needs to calculate arithmetic expressions correctly for each step. To the best of our knowledge, there is no work to focus on evaluating the arithmetic ability of large language models. In this work, we propose an arithmetic dataset MATH 401 to test latest large language models including GPT-4, ChatGPT, InstrctGPT, Galactica, and LLaMA with various arithmetic expressions and provide a detailed analysis of the ability of large language models. MATH 401 and evaluation codes are released at <ref type="url" target="https://github.com/GanjinZero/math401-llm">https://github.com/  GanjinZero/math401-llm</ref>. 1</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Emergent abilities show in sufficiently large language models (LLMs) <ref type="bibr">(Wei et al., 2022a</ref>) like chain-of-thought reasoning (COT) <ref type="bibr">(Wei et al., 2022b)</ref>. Chain-of-thought reasoning requires LLMs to solve a question by thinking questions step by step which performs well in school math word problems <ref type="bibr">(Wei et al., 2022b;</ref><ref type="bibr" target="#b9">Kojima et al., 2022)</ref>. Recent LLMs are further fine-tuned with instruction tuning <ref type="bibr">(Sanh et al., 2021;</ref><ref type="bibr" target="#b23">Chung et al., 2022;</ref><ref type="bibr" target="#b15">Ouyang et al., 2022)</ref> which demonstrates improved COT ability compared to only selfsupervised pre-training. To solve a math word problem, COT disassembles the problem into simple steps. For each step, LLMs have to compute correctly based on arithmetic expressions. Thus, evaluating the arithmetic ability of LLMs is necessary since it is the upper bound of LLMs' ability for solving math word problems.</p><p>To this end, we propose an arithmetic dataset named MATH 401. Different difficulties are contained in this dataset including addition (+), subtraction (-), multiplication (×), division (÷), exponentiation (∧), trigonometry functions (sin, cos, tan), and logarithm functions (log, ln) of integers, decimals, and irrational numbers (π, e). Long arithmetic expressions with brackets are also included which are common in complex math word problems. Results in Table <ref type="table" target="#tab_0">1</ref> show detailed evaluations on OpenAI's GPTs including <ref type="bibr">GPT-4 (Ope-nAI, 2023)</ref>, ChatGPT<ref type="foot" target="#foot_1">foot_1</ref> , GPT-3.5 <ref type="bibr" target="#b15">(Ouyang et al., 2022)</ref> and other open-sourced LLMs. We find that GPT-4 and ChatGPT outperform other models by a large margin in all kinds of arithmetic abilities. InstructGPT <ref type="bibr" target="#b15">(Ouyang et al., 2022)</ref> and Galactica <ref type="bibr" target="#b25">(Taylor et al., 2022)</ref> do have some arithmetic abilities. We analyze factors affecting LLMs' arithmetic ability systematically including tokenization ( §4.2), pre-training ( §4.3), prompts ( §4.4), interpolation and extrapolation ( §4.5), scaling laws ( §4.6), COT ( §4.7), and ICL ( §4.8).</p><p>One may say that the ability to solve arithmetic tasks is not necessary for a large language model. LLMs can use the calculator API when they need to decode an answer <ref type="bibr" target="#b21">(Schick et al., 2023)</ref>. Arithmetic ability evaluation can be a gauge for general intelligence since mastering arithmetic serves as a fundamental requirement for performing intricate mathematical tasks including symbolic math reasoning <ref type="bibr" target="#b13">(Noorbakhsh et al., 2021;</ref><ref type="bibr" target="#b6">Gaur and Saunshi, 2022)</ref> and automatic theorem proofing <ref type="bibr" target="#b16">(Polu and Sutskever, 2020;</ref><ref type="bibr" target="#b32">Wu et al., 2022)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related Works</head><p>Evaluate Math Ability of LLMs To show the math reasoning ability of LLMs, <ref type="bibr" target="#b28">Wang and Komatsuzaki (2021);</ref><ref type="bibr" target="#b23">Chung et al. (2022)</ref>; <ref type="bibr">Thoppilan et al. (2022)</ref> evaluate their models on various math word problems benchmark <ref type="bibr" target="#b19">(Saxton et al., 2019;</ref><ref type="bibr" target="#b7">Hendrycks et al., 2021;</ref><ref type="bibr" target="#b4">Cobbe et al., 2021</ref>  <ref type="formula">2021</ref>) evaluate pretrained language models on simple arithmetic expressions including addition (+) and subtraction (-). <ref type="bibr" target="#b11">Muffo et al. (2022)</ref> have further tested the multiplication (×) of language models. They found tokenization <ref type="bibr" target="#b12">(Nogueira et al., 2021;</ref><ref type="bibr" target="#b8">Kim et al., 2021)</ref> and token frequency <ref type="bibr" target="#b17">(Razeghi et al., 2022)</ref> are two important factors for language model arithmetic ability. Compared to previous work, we focus on evaluating Large LMs (with instruction fine-tuning) on comprehensive arithmetic abilities with different types of operators and numbers.</p><p>3 Evaluation Settings</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Arithmetic Expression Settings</head><p>We construct 401 arithmetic expressions to test large language models which include Euler equation (e iπ + 1 = 0) as group 0 and 25 problems each for group 1∼16. If not otherwise mentioned, used numbers are positive integers.</p><p>• Euler Equation.</p><p>• Add &amp; Subtract of two integers within 10.</p><p>• Add &amp; Subtract of two integers within 100.</p><p>• Add &amp; Subtract of two integers within 1,000.</p><p>• Add &amp; Subtract of two integers within 1,000,000,000,000.</p><p>• Add &amp; Subtract of two integers within -10∼10.</p><p>• Add &amp; Subtract of two decimal numbers within -100∼100.</p><p>• Multiply two integers within 100.</p><p>• Multiply two decimal numbers within 10.</p><p>• Multiply two integers within 100,000.</p><p>• Division of two integers within 100.</p><p>• Exponentiation of with integer base within 10 and integer exponent within 2∼4.</p><p>• Exponentiation of with a decimal number within 10 as the base and a decimal number within 2∼4 as the exponent.</p><p>• Add, Subtract &amp; Multiply with one integer within 10 and a common irrational number (i.e. e or π).</p><p>• Long arithmetic expressions with brackets, involved integers are all within 100 and operators contain add, subtract, multiply, and division.</p><p>• Trigonometry functions including sin, cos, and tan. Inputs can be in the format of degrees and radians (π can also appear in the inputs).</p><p>• Logarithm of integers within 1000 of different bases: 2, e, 10.</p><p>These groups cover mathematical operators used in elementary mathematics. We consider groups <ref type="bibr">1,</ref><ref type="bibr">2,</ref><ref type="bibr">3,</ref><ref type="bibr">5,</ref><ref type="bibr">6,</ref><ref type="bibr">7,</ref><ref type="bibr">8,</ref><ref type="bibr">11</ref> as Easy queries and all others as Hard queries. We calculate the results of all arithmetic expressions using built-in functions of Python and round to four decimal places. Examples of expressions are listed in Appendix A.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Metrics</head><p>Since LLMs can decode arbitrary contents (which may contain their step-by-step calculation steps), we first ignore decoded numbers in parentheses and preserve the last number decoded by LLMs. If the decoded number is a fraction, we will convert it to decimal for evaluation except for group 10 which requires calculating division. To measure the arithmetic ability of LLMs, we use the following metrics to measure their outputs.</p><p>Accuracy If the difference between the decoded number and the target number is less than 1e -3, we consider it a correct prediction. Accuracy is calculated based on correct prediction counts.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Relative error</head><p>We denote decoded number is ŷ and target is y. We calculate relative error by:</p><formula xml:id="formula_0">RE = min(10, ŷ -y max( y , 1) )<label>(1)</label></formula><p>If LLM does not decode any number, we consider RE = 10. We truncate the relative error to 10 to prevent that one big mistake dominate the average relative error.</p><p>Non-number ratio If decoded content does not contain any numbers, we consider it a failure. We calculate the non-number ratio based on it.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Evaluation Details</head><p>We test GPT-4 by their official chat UI 3 . Since GPT-4 has limited request counts, we only query GPT-4 with groups that ChatGPT cannot answer correctly. We test GPT-3.5 (including davinci (CodeX, In-structGPT) and turbo (ChatGPT) series models) <ref type="bibr" target="#b15">(Ouyang et al., 2022;</ref><ref type="bibr" target="#b2">Chen et al., 2021)</ref> via Ope-nAI APIs. We also test following open-sourced LLMs including Galactica <ref type="bibr" target="#b25">(Taylor et al., 2022)</ref>, GPT from EleutherAI <ref type="bibr" target="#b28">(Wang and Komatsuzaki, 2021;</ref><ref type="bibr" target="#b0">Black et al., 2022)</ref>, LLaMA <ref type="bibr">(Touvron et al., 2023)</ref>, OPT (with instruction learning) <ref type="bibr" target="#b34">(Zhang et al., 2022)</ref>, Bloom (with instruction learning)</p><p>3 <ref type="url" target="https://chat.openai.com/chat?model=gpt-4">https://chat.openai.com/chat?model=gpt-4</ref> Model Prompt Acc ↑ RE ↓ NNR ↓ gpt-4 Cal*4 83.54 0.07 0.00 gpt-3.5-turbo-0301 Cal* 75.06 0.14 0.50 text-davinci-003 Cal 56.61 0.76 2.99 code-davinci-002 Eqa 21.7 2.39 11.47 galactica-120b Eqa 45.14 1.30 3.99 galactica-30b Eqa 45.14 0.69 1.75 llama-65b Eqa 28.43 1.61 4.74 opt-175b Cal 21.70 3.18 21.70 gpt-neox-20b Eqa 35.41 1.19 4.49 glm-130b $ 25.94 1.27 2.74 bloomz-176b $$ 22.44 1.50 4.74 bloom-176b $ 20.20 2.60 18.45 T0++-11b Cal 4.24 3.34 9.48 flan-t5-xxl-11b Eqa 3.74 5.78 43.89 flan-t5-xl-3b $ 7.48 3.34 25.19 Table 2: Evaluation on MATH 401 with different LLMs. Prompts are selected via best accuracy. Cal means "Calculate:" and Eqa means "\be-gin{equation}". * means providing an additional system-level message.</p><p>( <ref type="bibr">Scao et al., 2022;</ref><ref type="bibr" target="#b10">Muennighoff et al., 2022)</ref>, T0++ <ref type="bibr">(Sanh et al., 2021)</ref>, GLM <ref type="bibr" target="#b33">(Zeng et al., 2022)</ref> and Flan-T5 <ref type="bibr" target="#b23">(Chung et al., 2022)</ref>. We also test the smaller versions of the above models.</p><p>We test following prompts: ∅ (i.e. no prompt), "Calculate:", "$", "$$", and "\begin{equation}". The latest three prompts are inspired by that LLMs may be pretrained with L A T E X sources. We provide three versions of input formats: math texts (π), plain texts (pi), L A T E X texts (\pi). When we use L A T E X-related prompts, we provide the model with L A T E X texts. When we use other prompts, we will provide math texts if their tokenizers can encode them. Otherwise, we will provide plain text. For ChatGPT (gpt-3.5-turbo-0301), we test different system-level prompts as instructions: ∅ (i.e. no prompt), "You are an accurate calculator.", and "You are an accurate calculator, please calculate provided equation to four decimal places.". For GPT-4, we only test prompt "You are an accurate calculator, please calculate provided equation to four decimal places.".</p><p>We use default decode settings for OpenAI APIs, and we use greedy decoding for all other LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Results and Analysis</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Results</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Overall Results</head><p>Table 1, 2, and 3 show results of different LLMs on MATH 401. We find GPT-4 and ChatGPT outperform all other models by a Model Prompt Acc ↑ RE ↓ NNR ↓ gpt-4 Cal*4 83.54 0.07 0.00 gpt-3.5-turbo-0301 Cal* 75.06 0.14 0.50 text-davinci-003 Cal 56.61 0.76 2.99 text-davinci-002 Cal 42.89 2.13 15.96 text-curie-001 Cal 11.47 1.92 6.48 text-babbage-001 Eqa 5.24 2.59 5.74 code-davinci-002 Eqa 21.70 2.39 11.47 galactica-120b Eqa 45.14 1.30 3.99 galactica-30b Eqa 45.14 0.69 1.75 galactica-6.7b Cal 34.41 2.61 8.73 llama-65b Eqa 28.43 1.61 4.74 llama-30b Eqa 30.17 1.72 3.74 llama-13b $ 27.68 2.40 9.73 llama-7b $$ 21.95 2.11 7.48 opt-175b Cal 21.70 3.18 21.70 opt-66b ∅ 20.70 2.66 18.70 opt-iml-max-30b Cal 17.46 1.52 6.23 opt-30b ∅ 15.96 2.28 11.22 opt-13b ∅ 15.21 2.19 10.97 opt-6.7b Cal 14.46 1.46 4.24 gpt-neox-20b Eqa 35.41 1.19 4.49 gpt-j-6b Cal 27.18 1.55 8.98 bloomz-176b $$ 22.44 1.50 4.74 bloom-176b $ 20.2 2.60 18.45 bloomz-7b1 $ 12.72 2.56 15.46 bloom-7b1 Cal 7.23 2.41 6.48 bloomz-3b $$ 7.98 2.63 12.47 bloom-3b Cal 4.24 2.41 8.73 bloomz-1b7 Eqa 4.74 4.28 31.17 bloom-1b7 Cal 5.24 2.54 11.22 T0++-11b Cal 4.24 3.34 9.48 glm-130b $ 25.94 1.27 2.74 glm-10b Cal 14.96 2.30 3.74 flan-t5-xxl-11b Eqa 3.74 5.78 43.89 flan-t5-xl-3b $ 7.48 3.34 25.19 flan-t5-large-780m Cal 3.74 2.31 2.49 flan-t5-base-250m Eqa 2.49 3.18 14.21</p><p>Table 3: Full evaluation on MATH 401 with different LLMs. Prompts are selected via best accuracy.</p><p>large margin<ref type="foot" target="#foot_2">foot_2</ref> . GPT-4 surpasses ChatGPT with accuracy of 10 points and reduce relative error half.</p><p>InstructGPT performs third measured by accuracy and Galactica-30B performs third measured by relative error. Compared to models proposed before InstructGPT (text-davinci-003), GPT-series applies Reinforcement Learning from Human Feedback (RLHF) which may enhance their arithmetic ability significantly. Galactica is pre-trained with massive L A T E X source codes which could be the reason why Galactica performs well in arithmetics.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Grouped Results</head><p>To clearly understand the arithmetic ability of LLMs, we show grouped accuracy in Table <ref type="table" target="#tab_0">1</ref>. GPT-4 obtains first places and Chat-GPT obtains second places for all groups. Most LLMs are only capable of doing addition and subtraction and have some ability for multiplication.</p><p>Division, exponentiation, trigonometry functions, and logarithm functions are hard for most LLMs.</p><p>LLMs have some abilities dealing with decimal, negative, and irrational numbers. Only GPT-4 and ChatGPT have the ability to deal with big numbers (&gt; 1e12) and complex long queries which proves their generalization and reasoning abilities. GPT-4 shows extremely good ability in long arithmetic expressions.</p><p>When will ChatGPT fail? Though ChatGPT obtains such a good performance, we will check when ChatGPT fails to answer. For multiplication (×), ChatGPT passes all queries in Group 7 and 8 and get wrong answers for all queries in Group 9. An example is ChatGPT predicts 71786 × 21638 = 1, 551, 402, 068, while the true answer is 1, 553, 305, 468. ChatGPT gives a very close estimation with the correct head and tail, which proves that ChatGPT does not use a calculator API for math calculation.</p><p>For division in Group 11, ChatGPT sometimes gives correct answers to two decimal places which will be considered incorrect in our metric. We can see in Table <ref type="table">5</ref>, requiring ChatGPT to output four decimal places will improve its accuracy in multiplication and division.</p><p>For exponentiation (∧), ChatGPT correctly answers all queries in Group 10 which contain only integers as bases. It is too hard for any language model (even ChatGPT) correctly estimate the exponentiation of a decimal number as the base and a decimal number as the exponent. It seems that ChatGPT treats * * as multiplication sometimes, for example, ChatGPT estimates 5.5507 * * 2.0434 = 10.31554 which is close to 5.5507 × 2.0434 = 11.3423 and far from answer 33.1895.</p><p>For calculating trigonometry functions, Chat-GPT understands degrees and radians correctly and generates exact answers for special inputs like cos(-210</p><formula xml:id="formula_1">• ) = - √<label>3</label></formula><p>2 (we omit explanation generated by ChatGPT here). However, Chat-GPT may generate wrong explanations which mislead itself. An example is: "We know that the sine function is periodic with a period of 2π, which means that sin(x + 2π) = sin(x) for any value of x. Therefore, we can subtract multiples of 2π from -3.75π until we get a value between 0 and 2π: -3.75π = -3π -0.75π = -9.42477 -2.35619 = -11.78096. Adding 2π, we get: -11.78096 + 2π = -9.42477 etc." Any mistake in explanations may result in a wrong answer.</p><p>For logarithm functions, we find that ChatGPT is capable of using change of base formula and predicting answers within two decimal places.</p><p>For long expressions, ChatGPT can understand the operators' priorities. ChatGPT sometimes generates answers step by step and sometimes generates answers directly. It is very likely to generate wrong answers when it decodes answers directly.</p><p>What about GPT-4? For big number multiplication (×) in group 9, GPT-4 also fails in all cases with similar problems occurring in ChatGPT.</p><p>For exponentiation (∧), GPT-4 will not consider * * as × anymore and give better estimations.</p><p>For calculating expressions with irrational numbers, GPT-4 will consider e as natural logarithm correctly.</p><p>For logarithm functions, GPT-4 calculates logarithm base e and 10 by "using a calculator" (this is a message generated by GPT-4). GPT-4 calculates logarithm base 2 by change of base formula and generates approximate results.</p><p>For long equations, GPT-4 solves all equations step by step and obtains a much higher accuracy.</p><p>We compare and summarize how GPT-4 outperforms ChatGPT here:</p><p>• Better division ability.</p><p>• Better trigonometry ability.</p><p>• Understand irrational numbers properly.</p><p>• Always calculate long expressions step by step.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Tokenization</head><p>Arithmetic expressions have special tokens including π, ×, ÷, • which are not within T5 series models (i.e. T0++ and Flan-T5</p><p>). T0++-11B (Acc 4.24 and RE 3.34) and Flan-T5-xxl-11B (Acc 3.74 and RE 5.78) perform badly on arithmetic tasks compared to other similar-size models: Opt-13B (Acc 15.21 and RE 2.19) and LLaMA-13B (Acc 27.68 and RE 2.4).</p><p>We notice that Galactica and LLaMA split numbers into individual tokens. For example 123.456 is converted into 1 2 3 . 4 5 6. <ref type="bibr" target="#b17">Razeghi et al. (2022)</ref> show that arithmetic ability is related to pre-training term frequencies. For tokens that appear more in pre-training, LLMs can have better accuracy in answering arithmetic expressions about them. Number tokens with more digits (e.g. 23) apparently appear less than single digit token (e.g. 2 and 3). Splitting numbers into individual tokens neglects all number tokens with more digits and makes all single digit tokens (mainly 0 ∼ 9) appear in the pre-training corpus in the same order of magnitude. Galactica-30B and LLaMA-30B obtain 45.14 and 30.17 in terms of accuracy (list in Table <ref type="table">3</ref>) that outperforms , Bloom-176B (20.2), and GLM-130B (25.94), which show superiority of digit-level tokenization.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Training</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Self-supervised</head><p>Pre-training While pretraining, code corpus and L A T E X-sources are possible to relate to arithmetic ability since they all contain arithmetic operators and numbers. Code-davinci-002 is pretrained with code corpus. Code-davinci-002 performs well on many reasoning-related tasks <ref type="bibr" target="#b35">(Zhou et al., 2022)</ref>, however, it performs not good compared to other LLMs in arithmetics. This proves that mathematical reasoning ability is different from arithmetic ability which needs to understand numbers deeply. Galactica with numerous L A T E X-sources outperforms other LLMs except for InstructGPT and ChatGPT which show L A T E X is useful.</p><p>Instruction Tuning is also very important in arithmetic ability. Comparing Opt-30B (Acc 15.96 RE 2.28 NNR 11.22) with Opt-Iml-Max-30B (Acc 17.46 RE 1.52 NNR 6.23), Bloom (Acc 20.2 RE 2.6 NNR 18.45) with BloomZ (Acc 22.44 RE 1.5 NNR 4.74), and code-davinci-002 (Acc 21.7) with text-davinci-002 (Acc 42.89) in Table <ref type="table">3</ref> show that instruction tuning can boost the performance in all metrics. Text-davinci-003 (RLHF) outperforms text-davinci-002 (SFT) in arithmetic tasks which shows RLHF is important for building arithmetic ability.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Prompts</head><p>Input Prompts We find the best prompts are different across LLMs. We list the best and worst prompts for LLMs in Table <ref type="table" target="#tab_10">8</ref>. We find models are sensitive to input prompts and not using prompts is the worst option for most LLMs. For Instruct-GPT and ChatGPT, using "Calculate" as a prompt perform best. For other LLMs, using L A T E X-related prompts perform best.</p><p>System Prompts For ChatGPT, we can also provide system-level messages as instruction prompts. Table 5: Comparing different system prompts in Chat-GPT on MATH 401. Cal means no system prompt. * = "You are an accurate calculator." 4 = "Calculating to four decimal places."</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5">Interpolation and Extrapolation</head><p>LLMs have strong abilities to fit on in-domain data.</p><p>If pretraining corpora contain arithmetic expressions, it is easy for LLMs to memorize them. For out-of-domain data, LLMs need to extrapolate how to calculate them. We do not know what are indomain data and out-of-domain data for models (especially ChatGPT), so it is hard to test their interpolation and extrapolation abilities. We use the easy group and the hard group to estimate the interpolation and extrapolation abilities. The easy group queries have possibilities that appear in the pretraining corpora or instruct-tuning, while the hard group queries contain big numbers / decimal numbers / long expressions which are very unlikely to be covered by pretraining corpora or instructions. Thus answering easy queries may examine the interpolation ability of models and answering hard queries must examine the extrapolation ability of the models. We find ChatGPT performs best on hard queries, and all other models have limited performance on hard queries which show limited extrapolation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.6">Scaling Laws</head><p>To understand how parameter counts influence arithmetic ability, we plot the results with differentsize LLMs in Figure <ref type="figure" target="#fig_0">1</ref>. We do not plot text-davinci-003, gpt-3.5-turbo-0301 and gpt-4 since they do not have smaller versions with the same setting. We find that LLMs have better abilities with larger parameter counts. An interesting phenomenon we found is model over 30B does not improve significantly compared with 30B models, especially in Galactica where the 120B model performs the same as the 30B model. We hypothesize that 30B may be enough for arithmetic ability. ChatGPT may be a model smaller than 175B which outperforms other 175B models a lot, thus larger parameter count does not guarantee better arithmetic ability. For GPT-4, we cannot have any possible guess. Considering its much slower inference speed, we guess it has larger</p><p>Expression Calculate: Zero-shot COT (88 -42) * (33 * 41) -(13 -27) = 62252 First, we need to simplify the expression inside the parentheses: 88 -42 = 46 33 * 41 = 1353 13 -27 = -14 Now we can substitute these values into the original expression: (46) * (1353) -(-14) Multiplying 46 and 1353 gives: 62,238 Remember that subtracting a negative number is the same as adding a positive number, so we can rewrite the expression as: 62,238 + 14 Adding 14 gives: 62,252 Therefore, the answer is: 62,252 First, we simplify the parentheses: (88 -42) * (33 * 41) -(13 -27) = 46 * 1353 -(-14) Next, we simplify the second set of parentheses by changing the subtraction into addition of the opposite: = 46 * 1353 + 14 We can then multiply 46 and 1353: = 62338 + 14 Finally, we add: = 62352 Therefore, (88 -42) * (33 * 41) -(13 -27) = 62352.</p><p>Table 6: Example of Group 14 decoded by ChatGPT with Calculate COT prompts.</p><p>parameter counts than ChatGPT and obtain better reasoning ability (i.e. long arithmetic expression).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.7">Chain-of-Thought</head><p>LLMs can leverage chain-of-thought to better answer math word problems <ref type="bibr">(Wei et al., 2022b)</ref>. We test on ChatGPT whether chain-of-thought will improve arithmetic calculations. We use the prompt "Let us solve this equation step by step" to instruct ChatGPT for zero-shot COT <ref type="bibr" target="#b9">(Kojima et al., 2022)</ref>. We compare the results of zero-shot COT using "Calculate:" in Table <ref type="table" target="#tab_9">7</ref>. Surprisingly, we find that COT does not improve the performance of any group even in group 14 with long arithmetic expressions. To understand the reason for this phenomenon, we check decoded results for these two prompts in Table <ref type="table">6</ref>. We find using "Calculate:" as the prompt can automatically generate chainof-thoughts for long arithmetic expressions and generate answers directly for easy questions. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.8">In-context Learning</head><p>In-context learning (ICL) provides related questionanswer pairs to improve LLMs <ref type="bibr" target="#b1">(Brown et al., 2020;</ref><ref type="bibr">Wei et al., 2022b)</ref>. In our task, we can provide similar arithmetic expressions before the queries to help model understanding the arithmetic operator as done in <ref type="bibr" target="#b24">Smith et al. (2022)</ref>. We provide 8 similar cases (we promise these cases are different from the query) for each query. We test whether ICL can improve the well-behaved model (Galactica) and the underperforming model (Flan-T5). For Galactica, it does not improve accuracy but reduces relative error significantly. For small-sized Flan (smaller than 3B) it cannot generate any number under the setting of in-context-learning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>In this paper, we propose MATH 401 to evaluate the arithmetic ability of LLMs. We find that tokenization, pre-training corpus, prompts, and model parameter counts are important for their arithmetic ability. The reason ChatGPT performs so well in arithmetic still has some mystery, i.e. the parameter counts and instruction datasets of ChatGPT. We hope this paper can help readers improve LLMs with better arithmetic ability. This paper is only focused on arithmetic, testing LLMs on other math topics including symbolic mathematics, solving (ordinary differential, partial differential) equations, calculus, algebra, geometry, probability theory, and graph theory are also interesting topics.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Performances of MATH 401 on LLMs with different sizes. We do not know the parameter count of ChatGPT. We list InstructGPT results with SFT setting (text-davinci-002) only for a fair comparison.</figDesc><graphic coords="6,306.14,70.87,240.37,240.37" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>; ShiArithmetic ability for LLMs measured by accuracy, we only list models with largest parameter counts. E = Euler, Dec = Decimal, Neg = Negative, Irr = Irrational, Big = Big Numbers, Long = Long Expressions.</figDesc><table><row><cell>Model</cell><cell>Size</cell><cell cols="3">E +-×</cell><cell>÷</cell><cell cols="5">∧ Tri log Dec Neg</cell><cell>Irr</cell><cell cols="5">Big Long Easy Hard All</cell></row><row><cell>GPT-4</cell><cell>?</cell><cell></cell><cell>99</cell><cell cols="4">67 100 50 68</cell><cell>76</cell><cell>67</cell><cell>67</cell><cell>100</cell><cell>48</cell><cell>96</cell><cell>100</cell><cell>67</cell><cell>84</cell></row><row><cell>ChatGPT</cell><cell>?</cell><cell></cell><cell>97</cell><cell>65</cell><cell>80</cell><cell cols="2">50 44</cell><cell>56</cell><cell>67</cell><cell>67</cell><cell>64</cell><cell>40</cell><cell>68</cell><cell>100</cell><cell>49</cell><cell>74</cell></row><row><cell cols="3">InstructGPT 175B ×</cell><cell>83</cell><cell>59</cell><cell>80</cell><cell>36</cell><cell>8</cell><cell>16</cell><cell>64</cell><cell>64</cell><cell>36</cell><cell>4</cell><cell>24</cell><cell>92</cell><cell>22</cell><cell>57</cell></row><row><cell>CodeX</cell><cell>175B</cell><cell></cell><cell>36</cell><cell>27</cell><cell>8</cell><cell>10</cell><cell>8</cell><cell>0</cell><cell>25</cell><cell>25</cell><cell>12</cell><cell>0</cell><cell>0</cell><cell>40</cell><cell>4</cell><cell>22</cell></row><row><cell>Galactica</cell><cell>120B</cell><cell></cell><cell>69</cell><cell>43</cell><cell>24</cell><cell cols="2">44 16</cell><cell>0</cell><cell>57</cell><cell>57</cell><cell>28</cell><cell>0</cell><cell>24</cell><cell>78</cell><cell>12</cell><cell>45</cell></row><row><cell>LLaMA</cell><cell>65B</cell><cell></cell><cell>44</cell><cell>35</cell><cell>8</cell><cell>22</cell><cell>8</cell><cell>0</cell><cell>41</cell><cell>41</cell><cell>20</cell><cell>0</cell><cell>4</cell><cell>52</cell><cell>5</cell><cell>28</cell></row><row><cell>OPT</cell><cell>175B</cell><cell></cell><cell>33</cell><cell>35</cell><cell>4</cell><cell>12</cell><cell>0</cell><cell>4</cell><cell>25</cell><cell>25</cell><cell>8</cell><cell>0</cell><cell>0</cell><cell>41</cell><cell>2</cell><cell>22</cell></row><row><cell>GPT-Neox</cell><cell>20B</cell><cell></cell><cell>51</cell><cell>48</cell><cell>4</cell><cell>40</cell><cell>4</cell><cell>0</cell><cell>43</cell><cell>43</cell><cell>20</cell><cell>0</cell><cell>8</cell><cell>66</cell><cell>4</cell><cell>35</cell></row><row><cell>GLM</cell><cell>130B</cell><cell></cell><cell>39</cell><cell>31</cell><cell>8</cell><cell>22</cell><cell>0</cell><cell>0</cell><cell>29</cell><cell>29</cell><cell>24</cell><cell>0</cell><cell>8</cell><cell>46</cell><cell>5</cell><cell>26</cell></row><row><cell>BloomZ</cell><cell cols="2">176B ×</cell><cell>23</cell><cell>37</cell><cell>12</cell><cell>30</cell><cell>8</cell><cell>0</cell><cell>43</cell><cell>43</cell><cell>20</cell><cell>0</cell><cell>8</cell><cell>39</cell><cell>6</cell><cell>22</cell></row><row><cell>Bloom</cell><cell cols="2">176B ×</cell><cell>21</cell><cell>37</cell><cell>12</cell><cell>30</cell><cell>0</cell><cell>0</cell><cell>37</cell><cell>37</cell><cell>16</cell><cell>0</cell><cell>0</cell><cell>37</cell><cell>4</cell><cell>20</cell></row><row><cell>T0++</cell><cell>11B</cell><cell>×</cell><cell>6</cell><cell>3</cell><cell>0</cell><cell>6</cell><cell>8</cell><cell>0</cell><cell>3</cell><cell>3</cell><cell>4</cell><cell>0</cell><cell>0</cell><cell>7</cell><cell>2</cell><cell>4</cell></row><row><cell>Flan-T5</cell><cell>11B</cell><cell>×</cell><cell>1</cell><cell>13</cell><cell>4</cell><cell>0</cell><cell>0</cell><cell>0</cell><cell>11</cell><cell>11</cell><cell>8</cell><cell>0</cell><cell>0</cell><cell>6</cell><cell>2</cell><cell>4</cell></row><row><cell cols="8">et al., 2022). For newly released LLM ChatGPT,</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="8">Shakarian et al. (2023); Frieder et al. (2023) eval-</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="8">uate its mathematical ability independently. To</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="8">notice, our paper evaluates ChatGPT using gpt-</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="8">3.5-turbo-0301 version and GPT-4 using chat UI</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="8">on March 16th which may have different perfor-</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="8">mances compared to their reported results and fu-</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>ture analysis.</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table><note><p>Evaluate Arithmetic Ability of LLMs<ref type="bibr" target="#b12">Nogueira et al. (2021)</ref></p><p>;Wang et al. (</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 4 :</head><label>4</label><figDesc>Table5shows providing system-level messages improves ChatGPT's accuracy and reduces relative Best and worst prompts for different LLMs.error significantly. The most different groups are group 13 irrational numbers and group 16 logarithm functions. Without a system-level message, ChatGPT thinks e can be Euler's number or a variable and cannot give an answer. For logarithm functions, ChatGPT tries to explain how it calculates which may mislead our provided parser. We notice that if we require ChatGPT to output results to four decimal places, it will have a zero nonnumber ratio. To conclude, ChatGPT will try to explain the calculation procedure without a systemlevel prompt and will only provide answers with a system-level prompt.</figDesc><table><row><cell>Model</cell><cell>Best</cell><cell>Acc</cell><cell>Worst</cell><cell>Acc</cell></row><row><cell cols="3">gpt-3.5-turbo-0301 Cal* 75.06</cell><cell>$$</cell><cell>64.59</cell></row><row><cell>text-davinci-003</cell><cell>Cal</cell><cell>56.61</cell><cell>Eqa</cell><cell>43.64</cell></row><row><cell>galactica-120b</cell><cell cols="2">Eqa 45.14</cell><cell>∅</cell><cell>38.9</cell></row><row><cell>llama-65b</cell><cell cols="2">Eqa 28.43</cell><cell>Cal</cell><cell>4.74</cell></row><row><cell>opt-175b</cell><cell>Cal</cell><cell>21.7</cell><cell>∅</cell><cell>15.21</cell></row><row><cell>gpt-neox-20b</cell><cell cols="2">Eqa 35.41</cell><cell>∅</cell><cell>26.93</cell></row><row><cell>glm-130b</cell><cell>$</cell><cell>25.94</cell><cell>∅</cell><cell>22.44</cell></row><row><cell>bloomz-176b</cell><cell>$$</cell><cell>22.44</cell><cell>∅</cell><cell>11.72</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_9"><head>Table 7 :</head><label>7</label><figDesc>Comparing zero-shot COT and Calculate using ChatGPT on MATH 401.</figDesc><table><row><cell>Group</cell><cell></cell><cell>Cal</cell><cell cols="2">0 COT</cell></row><row><cell></cell><cell>Acc</cell><cell>RE</cell><cell>Acc</cell><cell>RE</cell></row><row><cell>0 Euler</cell><cell>100</cell><cell>.00</cell><cell>100</cell><cell>.00</cell></row><row><cell>1 ∼ 6 +-</cell><cell>97</cell><cell>.00</cell><cell>94</cell><cell>.02</cell></row><row><cell>7 ∼ 10 ×÷</cell><cell>69</cell><cell>.20</cell><cell>61</cell><cell>.66</cell></row><row><cell>11 ∼ 12 ∧</cell><cell>50</cell><cell>.24</cell><cell>48</cell><cell>.56</cell></row><row><cell>13 Irr.</cell><cell>64</cell><cell>1.73</cell><cell>28</cell><cell>4.89</cell></row><row><cell>14 Long</cell><cell>68</cell><cell>.19</cell><cell>64</cell><cell>.46</cell></row><row><cell>15 Tri.</cell><cell>44</cell><cell>1.21</cell><cell>40</cell><cell>1.14</cell></row><row><cell>16 Log</cell><cell>56</cell><cell>.80</cell><cell>28</cell><cell>5.37</cell></row><row><cell>Overall</cell><cell>74</cell><cell>.33</cell><cell>66</cell><cell>.98</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_10"><head>Table 8 :</head><label>8</label><figDesc>In-context learning on MATH 401.</figDesc><table><row><cell>Model</cell><cell cols="2">Naive</cell><cell>ICL</cell><cell></cell></row><row><cell></cell><cell>Acc</cell><cell>RE</cell><cell>Acc</cell><cell>RE</cell></row><row><cell cols="2">galactica-120b 45.14</cell><cell>1.3</cell><cell cols="2">45.14 0.42</cell></row><row><cell>galactica-6.7b</cell><cell cols="4">34.41 2.61 32.67 0.65</cell></row><row><cell>flan-t5-xxl</cell><cell>3.74</cell><cell>5.78</cell><cell>0.0</cell><cell>10.0</cell></row><row><cell>flan-t5-base</cell><cell>2.49</cell><cell>3.18</cell><cell>0.0</cell><cell>10.0</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>This project is working in progress.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>https://openai.com/blog/ introducing-chatgpt-and-whisper-apis</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_2"><p>OpenAI states they improve the math of ChatGPT since version Jan 30, and we cannot evaluate any previous version.</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Examples from MATH 401</head><p>We list examples for each group from MATH 401.</p><p>• e iπ + 1 = 0 </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">GPT-NeoX-20B: An opensource autoregressive language model</title>
+		<author>
+			<persName><forename type="first">Sid</forename><surname>Black</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stella</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hallahan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quentin</forename><surname>Anthony</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leo</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laurence</forename><surname>Golding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Horace</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Connor</forename><surname>Leahy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyle</forename><surname>Mcdonell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Phang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Pieler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shivanshu</forename><surname>Usvsn Sai Prashanth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laria</forename><surname>Purohit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Reynolds</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ben</forename><surname>Tow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Samuel</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Weinbach</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the ACL Workshop on Challenges &amp; Perspectives in Creating Large Language Models</title>
+		<meeting>the ACL Workshop on Challenges &amp; Perspectives in Creating Large Language Models</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">J</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">M</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateusz</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Mc-Candlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Amodei</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2005.14165</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jerry</forename><surname>Tworek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heewoo</forename><surname>Jun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiming</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henrique</forename><surname>Ponde</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harrison</forename><surname>Edwards</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yura</forename><surname>Burda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>Joseph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Greg</forename><surname>Brockman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raul</forename><surname>Puri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Petrov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heidy</forename><surname>Khlaaf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brooke</forename><surname>Chan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikhail</forename><surname>Pavlov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alethea</forename><surname>Power</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Bavarian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philippe</forename><surname>Tillet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felipe</forename><forename type="middle">Petroski</forename><surname>Such</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><forename type="middle">W</forename><surname>Cummings</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Plappert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fotios</forename><surname>Chantzis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">;</forename><surname>William</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Guss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Nichol</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Igor</forename><surname>Babuschkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">Arun</forename><surname>Balaji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shantanu</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Carr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joshua</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vedant</forename><surname>Misra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Evan</forename><surname>Morikawa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><forename type="middle">M</forename><surname>Knight</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Miles</forename><surname>Brundage</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mira</forename><surname>Murati</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katie</forename><surname>Mayer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Welinder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bob</forename><surname>Mcgrew</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2107.03374</idno>
+		<title level="m">Evaluating large language models trained on code</title>
+		<meeting><address><addrLine>Elizabeth Barnes, Ariel Herbert-Voss</addrLine></address></meeting>
+		<imprint>
+			<publisher>Sam Mc-Candlish, Ilya Sutskever, and Wojciech Zaremba</publisher>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<author>
+			<persName><forename type="first">Chung</forename><surname>Hyung Won</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shayne</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostafa</forename><surname>Dehghani</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.11416</idno>
+		<title level="m">Siddhartha Brahma, et al. 2022. Scaling instruction-finetuned language models</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<author>
+			<persName><forename type="first">Karl</forename><surname>Cobbe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vineet</forename><surname>Kosaraju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Bavarian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heewoo</forename><surname>Jun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Plappert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jerry</forename><surname>Tworek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reiichiro</forename><surname>Nakano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Schulman</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2110.14168</idno>
+		<title level="m">Training verifiers to solve math word problems</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Mathematical capabilities of chatgpt</title>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Frieder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luca</forename><surname>Pinchetti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan-Rhys</forename><surname>Griffiths</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tommaso</forename><surname>Salvatori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Lukasiewicz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philipp</forename><surname>Christian Petersen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexis</forename><surname>Chevalier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J J</forename><surname>Berner</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2301.13867</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Symbolic math reasoning with language models</title>
+		<author>
+			<persName><forename type="first">Vedant</forename><surname>Gaur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikunj</forename><surname>Saunshi</surname></persName>
+		</author>
+		<idno type="DOI">10.1109/URTC56832.2022.10002218</idno>
+	</analytic>
+	<monogr>
+		<title level="m">2022 IEEE MIT Undergraduate Research Technology Conference (URTC)</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="1" to="5" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Hendrycks</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Collin</forename><surname>Burns</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saurav</forename><surname>Kadavath</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Akul</forename><surname>Arora</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Basart</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dawn</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Steinhardt</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2103.03874</idno>
+		<title level="m">Measuring mathematical problem solving with the math dataset</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Have you seen that number? investigating extrapolation in question answering models</title>
+		<author>
+			<persName><forename type="first">Jeonghwan</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Giwon</forename><surname>Hong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyung Min</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junmo</forename><surname>Kang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sung-Hyon</forename><surname>Myaeng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Conference on Empirical Methods in Natural Language Processing</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Large language models are zero-shot reasoners</title>
+		<author>
+			<persName><forename type="first">Takeshi</forename><surname>Kojima</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shane</forename><surname>Shixiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Machel</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yutaka</forename><surname>Reid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yusuke</forename><surname>Matsuo</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Iwasawa</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2205.11916</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Crosslingual generalization through multitask finetuning</title>
+		<author>
+			<persName><forename type="first">Niklas</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lintang</forename><surname>Sutawika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stella</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Teven</forename><surname>Le Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Saiful Bari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Shen</surname></persName>
+		</author>
+		<editor>Zheng-Xin Yong, Hailey Schoelkopf, Xiangru Tang, Dragomir Radev, Alham Fikri Aji, Khalid Almubarak, Samuel Albanie, Zaid Alyafeai, Albert Webson, Edward Raff, and Colin Raffel</editor>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Evaluating transformer language models on arithmetic operations using number decomposition</title>
+		<author>
+			<persName><forename type="first">Matteo</forename><surname>Muffo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aldo</forename><surname>Cocco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Enrico</forename><surname>Bertino</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Language Resources and Evaluation</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Investigating the limitations of the transformers with simple arithmetic tasks</title>
+		<author>
+			<persName><forename type="first">Rodrigo</forename><surname>Nogueira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiying</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jimmy</forename><forename type="middle">J</forename><surname>Li</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2102.13019</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<author>
+			<persName><forename type="first">Kimia</forename><surname>Noorbakhsh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Modar</forename><surname>Sulaiman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mahdi</forename><surname>Sharifi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kallol</forename><surname>Roy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pooyan</forename><surname>Jamshidi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2110.03501</idno>
+		<title level="m">Pretrained language models are symbolic mathematics solvers too! arXiv preprint</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<title level="m">Gpt-4 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carroll</forename><forename type="middle">L</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katarina</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.02155</idno>
+		<title level="m">Training language models to follow instructions with human feedback</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Generative language modeling for automated theorem proving</title>
+		<author>
+			<persName><forename type="first">Stanislas</forename><surname>Polu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2009.03393</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Impact of pretraining term frequencies on few-shot reasoning</title>
+		<author>
+			<persName><forename type="first">Yasaman</forename><surname>Razeghi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><forename type="middle">V</forename><surname>Robert L Logan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matt</forename><surname>Gardner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sameer</forename><surname>Singh</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2202.07206</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Victor</forename><surname>Sanh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><forename type="middle">H</forename><surname>Bach</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lintang</forename><surname>Sutawika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zaid</forename><surname>Alyafeai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Chaffin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arnaud</forename><surname>Stiegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Teven</forename><surname>Le Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arun</forename><surname>Raja</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manan</forename><surname>Dey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Saiful Bari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Canwen</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Urmish</forename><surname>Thakker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shanya</forename><surname>Sharma Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eliza</forename><surname>Szczechla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Taewoon</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gunjan</forename><surname>Chhablani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nihal</forename><surname>Nayak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Debajyoti</forename><surname>Datta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Tian-Jian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Han</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matteo</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Manica</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng Xin</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harshit</forename><surname>Yong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rachel</forename><surname>Pandey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Bawden</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wang</surname></persName>
+		</author>
+		<editor>Trishala Neeraj, Jos Rozen, Abheesht Sharma, Andrea Santilli, Thibault Fevry, Jason Alan Fries, Ryan Teehan</editor>
+		<imprint>
+			<publisher>Tali Bers, Thomas Wolf, and Alexander M</publisher>
+			<pubPlace>Stella Biderman, Leo Gao</pubPlace>
+		</imprint>
+	</monogr>
+	<note>Rush. 2021. Multitask prompted training enables zero-shot task generalization</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<author>
+			<persName><forename type="first">David</forename><surname>Saxton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edward</forename><surname>Grefenstette</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felix</forename><surname>Hill</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pushmeet</forename><surname>Kohli</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1904.01557</idno>
+		<title level="m">Analysing mathematical reasoning abilities of neural models</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Teven</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angela</forename><surname>Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellie</forename><surname>Akiki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suzana</forename><surname>Pavlick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Ilić</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roman</forename><surname>Hesslow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandra</forename><surname>Castagné</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">François</forename><surname>Sasha Luccioni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Yvon</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Gallé</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2211.05100</idno>
+		<title level="m">Bloom: A 176bparameter open-access multilingual language model</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Toolformer: Language models can teach themselves to use tools</title>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Schick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jane</forename><surname>Dwivedi-Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roberto</forename><surname>Dessì</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roberta</forename><surname>Raileanu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maria</forename><surname>Lomeli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicola</forename><surname>Cancedda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Scialom</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2302.04761</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">An independent evaluation of chatgpt on mathematical word problems (mwp)</title>
+		<author>
+			<persName><forename type="first">Paulo</forename><surname>Shakarian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhinav</forename><surname>Koyyalamudi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noel</forename><surname>Ngu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lakshmivihari</forename><surname>Mareedu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Language models are multilingual chain-of-thought reasoners</title>
+		<author>
+			<persName><forename type="first">Freda</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mirac</forename><surname>Suzgun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Markus</forename><surname>Freitag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suraj</forename><surname>Srivats</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soroush</forename><surname>Vosoughi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyung</forename><forename type="middle">Won</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Ruder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dipanjan</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2210.03057</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Using deepspeed and megatron to train megatron-turing nlg 530b, a large-scale generative language model</title>
+		<author>
+			<persName><forename type="first">Shaden</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostofa</forename><surname>Patwary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brandon</forename><surname>Norick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Legresley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Samyam</forename><surname>Rajbhandari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Casper</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhun</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shrimai</forename><surname>Prabhumoye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">George</forename><surname>Zerveas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vijay</forename><forename type="middle">Anand</forename><surname>Korthikanti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elton</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reza</forename><surname>Yazdani Aminabadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julie</forename><surname>Bernauer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xia</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Shoeybi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxiong</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Houston</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saurabh</forename><surname>Tiwary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bryan</forename><surname>Catanzaro</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2201.11990</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ross</forename><surname>Taylor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marcin</forename><surname>Kardas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillem</forename><surname>Cucurull</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Scialom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anthony</forename><surname>Hartshorn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elvis</forename><surname>Saravia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Poulton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Viktor</forename><surname>Kerkez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Stojnic</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2211.09085</idno>
+		<title level="m">Galactica: A large language model for science</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title/>
+		<author>
+			<persName><forename type="first">Romal</forename><surname>Thoppilan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">De</forename><surname>Freitas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jamie</forename><surname>Hall</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><forename type="middle">M</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Apoorv</forename><surname>Kulshreshtha</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Heng-Tze</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alicia</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Taylor</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leslie</forename><surname>Bos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Baker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yaguang</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongrae</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huaixiu</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marcelo</forename><surname>Ghafouri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanping</forename><surname>Menegali</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maxim</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dmitry</forename><surname>Krikun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Lepikhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dehao</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuanzhong</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhifeng</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanqi</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chung-Ching</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><forename type="middle">A</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Willard</forename><forename type="middle">James</forename><surname>Krivokon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marc</forename><surname>Rusch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kathleen</forename><forename type="middle">S</forename><surname>Pickett</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meredith</forename><forename type="middle">Ringel</forename><surname>Meier-Hellstern</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tulsee</forename><surname>Morris</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Renelito Delos</forename><surname>Doshi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Toju</forename><surname>Santos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johnny</forename><forename type="middle">Hartz</forename><surname>Duke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ben</forename><surname>Søraker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vinodkumar</forename><surname>Zevenbergen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Prabhakaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ben</forename><surname>Díaz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristen</forename><surname>Hutchinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alejandra</forename><surname>Olson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erin</forename><surname>Molina</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Josh</forename><surname>Hoffman-John</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lora</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ravindran</forename><surname>Aroyo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alena</forename><surname>Rajakumar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Butryna</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><forename type="middle">O</forename><surname>Lamm</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><surname>Kuzmina</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaron</forename><surname>Fenton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rachel</forename><surname>Cohen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ray</forename><surname>Bernstein</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Kurzweil</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2201.08239</idno>
+	</analytic>
+	<monogr>
+		<title level="s">Blaise Aguera-Arcas, Claire Cui, Marian Croak</title>
+		<imprint/>
+	</monogr>
+	<note>Quoc Le. 2022. Lamda: Language models for dialog applications</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<title level="m">Faisal Azhar, et al. 2023. Llama: Open and efficient foundation language models</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<title level="m" type="main">GPT-J-6B: A 6 Billion Parameter Autoregressive Language Model</title>
+		<author>
+			<persName><forename type="first">Ben</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aran</forename><surname>Komatsuzaki</surname></persName>
+		</author>
+		<ptr target="https://github.com/kingoflolz/mesh-transformer-jax" />
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Exploring generalization ability of pretrained language models on arithmetic and logical reasoning</title>
+		<author>
+			<persName><forename type="first">Cunxiang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boyuan</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuchen</forename><surname>Niu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yue</forename><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Natural Language Processing and Chinese Computing</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishi</forename><surname>Bommasani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dani</forename><surname>Yogatama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Donald</forename><surname>Metzler</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2206.07682</idno>
+		<title level="m">Emergent abilities of large language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title level="m" type="main">Chain of thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Huai Hsin Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2201.11903</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">Autoformalization with large language models</title>
+		<author>
+			<persName><forename type="first">Yuhuai</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><forename type="middle">Qiaochu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenda</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Markus</forename><forename type="middle">N</forename><surname>Rabe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Staats</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateja</forename><surname>Jamnik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Szegedy</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2205.12615</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<author>
+			<persName><forename type="first">Aohan</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengxiao</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zihan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hanyu</forename><surname>Lai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuoyi</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yifan</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wendi</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weng</forename><surname>Lam Tam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zixuan</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yufei</forename><surname>Xue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jidong</forename><surname>Zhai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenguang</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxiao</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Tang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.02414</idno>
+		<title level="m">Glm-130b: An open bilingual pre-trained model</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<author>
+			<persName><forename type="first">Susan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Roller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikel</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Moya</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuohui</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Dewan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mona</forename><surname>Diab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xian</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xi</forename><surname>Victoria Lin</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2205.01068</idno>
+		<title level="m">Opt: Open pre-trained transformer language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title level="m" type="main">Least-to-most prompting enables complex reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nathanael</forename><surname>Scharli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nathan</forename><surname>Scales</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olivier</forename><surname>Bousquet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Huai Hsin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chi</forename></persName>
+		</author>
+		<idno>ArXiv, abs/2205.10625</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

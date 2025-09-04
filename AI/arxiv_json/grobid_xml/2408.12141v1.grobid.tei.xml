@@ -1,0 +1,1619 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">TRRG: Towards Truthful Radiology Report Generation With Cross-modal Disease Clue Enhanced Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-08-22">22 Aug 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Yuhao</forename><surname>Wang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Great Bay University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Chao</forename><surname>Hao</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Yawen</forename><surname>Cui</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Great Bay University</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="institution">The Hong Kong Polytechnic University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xinqi</forename><surname>Su</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Great Bay University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Weicheng</forename><surname>Xie</surname></persName>
+							<affiliation key="aff2">
+								<orgName type="institution">Shenzhen University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Tao</forename><surname>Tan</surname></persName>
+							<affiliation key="aff3">
+								<orgName type="institution">Macao Polytechnic University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Zitong</forename><surname>Yu</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Great Bay University</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">TRRG: Towards Truthful Radiology Report Generation With Cross-modal Disease Clue Enhanced Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-08-22">22 Aug 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">C02CFC2F85116477023F0725F0889DE9</idno>
+					<idno type="arXiv">arXiv:2408.12141v1[cs.CV]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:48+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>The vision-language modeling capability of multi-modal large language models has attracted wide attention from the community. However, in medical domain, radiology report generation using vision-language models still faces significant challenges due to the imbalanced data distribution caused by numerous negated descriptions in radiology reports and issues such as rough alignment between radiology reports and radiography. In this paper, we propose a truthful radiology report generation framework, namely TRRG, based on stage-wise training for cross-modal disease clue injection into large language models. In pre-training stage, During the pre-training phase, contrastive learning is employed to enhance the visual encoder's ability to perceive fine-grained disease details. In fine-tuning stage, the clue injection module we proposed significantly enhances the disease-oriented perception capability of the large language model by effectively incorporating the robust zero-shot disease perception. Finally, through the cross-modal clue interaction module, our model effectively achieves the multi-granular interaction of visual embeddings and an arbitrary number of disease clue embeddings. This significantly enhances the report generation capability and clinical effectiveness of multi-modal large language models in the field of radiology reportgeneration. Experimental results demonstrate that our proposed pre-training and fine-tuning framework achieves state-of-the-art performance in radiology report generation on datasets such as IU-Xray and MIMIC-CXR. Further analysis indicates that our proposed method can effectively enhance the model's ability to perceive diseases and improve its clinical effectiveness.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Introduction</head><p>Radiology report generation aims to automatically generate radiology reports for medical images, such as X-rays, MRI, and CT scans, etc. Radiology report generation can effectively alleviate the workload of clinical practitioners, minimize misdiagnosis and missed diagnoses resulting from human judgment errors, and expedite clinical workflows. A radiology report typically consists of a paragraph with multiple sentences. Some sentences describe normal organ appearances in radiography, while others delineate the findings of diseases reflected in the images, including the location of lesions, types of diseases, severity, etc. With the development of visual-language models, encoder-decoder-based * Corresponding Author text generation models have become the most prevalent architecture. However, unlike natural domain image captioning <ref type="bibr" target="#b33">(Tang et al. 2021;</ref><ref type="bibr" target="#b25">Lu et al. 2017;</ref><ref type="bibr" target="#b30">Rennie et al. 2017;</ref><ref type="bibr" target="#b27">Pan et al. 2020;</ref><ref type="bibr" target="#b15">Johnson, Karpathy, and Fei-Fei 2016)</ref>, radiology reports contain a significant amount of normal descriptions. Abnormal descriptions related to diseases are crucial for radiology reports. This leads to sparse supervision signals regarding diseases. Many pure encoder-decoder-based models <ref type="bibr">(Li et al. 2019a;</ref><ref type="bibr" target="#b6">Chen et al. 2020;</ref><ref type="bibr" target="#b44">Wang et al. 2021;</ref><ref type="bibr" target="#b46">Yang et al. 2021;</ref><ref type="bibr">Wang et al. 2023a;</ref><ref type="bibr" target="#b48">Yin et al. 2020;</ref><ref type="bibr">Li et al. 2019b;</ref><ref type="bibr">Liu et al. 2021a</ref>) for image-text coarse-grained alignment lack fine-grained perception of diseases. Consequently, these models fail to effectively focus on the correct image regions, resulting in insufficient clinical effectiveness of the generated radiology reports. Multi-modal large language models <ref type="bibr">(Li et al. 2023a;</ref><ref type="bibr" target="#b0">Alayrac et al. 2022;</ref><ref type="bibr" target="#b9">Dai et al. 2023;</ref><ref type="bibr">Chen et al. 2024a)</ref>, as powerful infrastructure adaptable to various downstream tasks, perform well in tasks such as image captioning and Visual Question Answering (VQA). Through techniques such as low-parameter finetuning, these models can efficiently enhance multimodal large language models for radiology report generation.</p><p>To further enhance the clinical effectiveness of radiology report generation (RRG), we propose a stage-wise, cross-modal clue-injection approach based on large language models. Firstly, we perform pretraining using imagetext contrastive learning <ref type="bibr" target="#b29">(Radford et al. 2021</ref>) through sampling sentences from radiology reports to enhance the vision encoder's ability to perceive diseases effectively. Moreover, by harnessing the powerful zero-shot inference capability of the vision encoder, our model can effectively acquire clues about various diseases. In the fine-tuning stage, we conduct clue injection through visual disease tokens and several disease clues embeddings. Subsequently, we propose a cross-modal clue interaction module that effectively integrates visual embeddings and disease clue embeddings to enhance the disease perception capability of the large language model. Finally, we propose a disease-aware consistency loss to assist large language models in training for radiology report generation tasks. The disease-aware consistency loss effectively enhances textual semantic supervision signals, promoting the model to acquire disease-awareness capability while generating radiology reports. Our model achieves optimal performance in generating radiology re-ports. We conduct experiments on the IU-Xray <ref type="bibr" target="#b10">(Dina et al. 2015)</ref> and MIMIC-CXR <ref type="bibr" target="#b14">(Johnson et al. 2019</ref>) datasets. Compared with previous studies, our method achieves stateof-the-art results, significantly improving both the quality of language generation and clinical effectiveness. Further ablation experiments validate the effectiveness of our proposed disease clue injection module, cross-modal clue interaction module, and disease-aware consistency loss. Qualitative results offer intuitive interpretations of the generated radiology reports.</p><p>• We propose the TRRG for truthful radiology report generation using an disease clue injection enhanced large language model. TRRG alleviates the problem of coarsegrained alignment between radiography and report, enabling the model acquire fine-grained disease-aware perception. • We introduce a cross-modal disease clue interaction module, which effectively integrates visual embeddings and disease clue embeddings to guide large language models in producing higher-quality radiology reports. • Experimental results demonstrate that our proposed method outperforms previous approaches in terms of both language generation quality and clinical effectiveness on two datasets, IU-Xray <ref type="bibr" target="#b10">(Dina et al. 2015)</ref> and MIMIC-CXR <ref type="bibr" target="#b14">(Johnson et al. 2019)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Related work</head><p>Radiology Report Generation Currently, most research on radiology report generation adopts an encoder-decoder architecture. Some studies employ CNN-RNN architecture <ref type="bibr" target="#b45">(Xue et al. 2018;</ref><ref type="bibr">Li et al. 2019a;</ref><ref type="bibr">Zhang et al. 2020;</ref><ref type="bibr" target="#b50">Yuan et al. 2019)</ref>. Through convolution neural network encoders, these models encode images into vectors, which are then decoded token by token using recurrent neural networks. Some studies utilize a hierarchical generation process <ref type="bibr" target="#b48">(Yin et al. 2020)</ref>, in which the model initially generates relevant topics as keywords. Subsequently, it employs LSTM architecture to generate sentences for each keyword. With the advancement of transformers <ref type="bibr" target="#b36">(Vaswani et al. 2017)</ref>, which benefit from parallel training, are suitable for modeling long sequences, and have the capacity to integrate various modalities of visual and language data, radiology report generation is gradually transitioning towards architectures based on transformers <ref type="bibr">(Liu et al. 2021a;</ref><ref type="bibr" target="#b49">Yu et al. 2019;</ref><ref type="bibr" target="#b6">Chen et al. 2020</ref><ref type="bibr">Chen et al. , 2022;;</ref><ref type="bibr">Cornia et al. 2020a;</ref><ref type="bibr">Wang et al. 2023b)</ref>. Some studies utilize memory networks <ref type="bibr">(Chen et al. 2022</ref><ref type="bibr" target="#b6">(Chen et al. , 2020;;</ref><ref type="bibr">Cornia et al. 2020b</ref>) to help the model learn more effective patterns of medical knowledge. For example, use a memory matrix to simulate memory information and continuously update this matrix during training to generate higher-quality radiology reports. Others adopt prototype learning <ref type="bibr" target="#b38">(Wang, Bhalerao, and He 2022)</ref>, storing prototype vectors and updating them through cross-modal queries and responses to drive the model to store pattern information in memory. Furthermore, some research enhances the quality of generated radiology reports by incorporating external knowledge embeddings <ref type="bibr">(Li et al. 2019b;</ref><ref type="bibr" target="#b46">Yang et al. 2021)</ref>. This involves constructing knowledge graphs of anatomical structures and disease-related relationships as auxiliary features for embedding, which are then combined with the model for the final text generation. Historical radiography-report pairs <ref type="bibr" target="#b47">(Yang et al. 2022</ref>) are also utilized as domain knowledge, mimicking the process of doctors generating textual reports, thereby improving the performance of the respective models during decoding. With the advancement of large language models. However, all these coarse-grained alignment methods lead to limitations in the clinical effectiveness of the generated radiology reports.</p><p>Multi modal Large Language Model Multi-modal Large Models: With the advancement of large models, many lightweight large models such as LLAMA <ref type="bibr" target="#b35">(Touvron et al. 2023)</ref> and Mistral <ref type="bibr" target="#b12">(Jiang et al. 2023</ref>) have provided possibilities for usage and deployment in low-resource scenarios. The combination of large language models and vision encoders enables these models to effectively process tasks that involve multimodal data. Some studies <ref type="bibr">(Li et al. 2023a;</ref><ref type="bibr" target="#b0">Alayrac et al. 2022;</ref><ref type="bibr" target="#b9">Dai et al. 2023;</ref><ref type="bibr">Chen et al. 2024a</ref>), utilize visual mappers, such as basic linear layers, to map the features from vision encoders to token-level features of large language models with matching dimensions. Through this simple mapping technique, large models demonstrate exceptional performance in various multimodal tasks, such as image captioning and visual question answering. This suggests that multimodal large models can achieve excellent visual perception capabilities with only minor parameter fine-tuning. Fine-tuning large language models through instructions <ref type="bibr">(Chen et al. 2024a;</ref><ref type="bibr" target="#b9">Dai et al. 2023)</ref> to become task-driven for various multimodal tasks is a widely adopted approach. By crafting specific instructions, large language models can generate relevant results tailored to the specific task type. Some studies <ref type="bibr" target="#b13">(Jin et al. 2024</ref>) have injected disease labels as prior information into radiology report generation frameworks; however, this approach limits the scalability of such frameworks</p><p>Vision Language Pretraining Vision language models aim to align vision and language features through crossmodal interaction <ref type="bibr" target="#b19">(Li et al. 2021;</ref><ref type="bibr">Wang et al. 2022a;</ref><ref type="bibr">Li et al. 2023a;</ref><ref type="bibr" target="#b29">Radford et al. 2021)</ref>. One of the most influential studies is CLIP <ref type="bibr" target="#b29">(Radford et al. 2021)</ref>, which utilizes contrastive learning to align paired image embeddings and text embeddings. CLIP achieves a significant performance improvement across several downstream tasks, including zeroshot classification and cross-modal retrieval. Some medical multimodal pretraining methods <ref type="bibr" target="#b34">(Tiu et al. 2022;</ref><ref type="bibr">Wang et al. 2022c;</ref><ref type="bibr" target="#b11">Huang et al. 2021</ref>) have demonstrated strong performance on zero-shot disease classification tasks. Meanwhile, some studies(Chen, Li, and Wan 2022) have effectively enhanced the alignment and reasoning capabilities of multimodal pre-trained models by incorporating external medical knowledge. These approaches achieve inference for common diseases and the diagnosis of rare diseases without the need for extensive structured labels. This provides insights for our model to generate radiology reports.</p><p>Text Encoder Image Vision Encoder Vision Encoder Report Random Sample Contrastive Learning Pretraining Stage：Disease-aware Cross-modal Fine Gained Alignment Fine-tuning Stage：Clue Enhanced Instruct Tuning on Radiology Report Generation Image Clue Injection Cross-modal Interaction Vision Mapper LLM Trainable Frozen Figure 1: The training strategy of our proposed TRRG</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Methods</head><p>The proposed TRRG consists of a two-stage training process. In the pretraining stage, we focus on disease-aware cross-modal fine-grained alignment between radiographs and corresponding radiology reports. Large language models typically facilitate the alignment between images and text through supervised signals at the token level. By utilizing sentence-level contrastive learning, our approach enhances the detailed capture of disease information by the vision encoder. Furthermore, in conjunction with our proposed clue injection module and cross-modal clue interaction module in the fine-tuning stage, our model demonstrates superior performance in both language generation and clinical effectiveness. At the same time, our proposed cross-modal clue interaction module effectively facilitates alignment between visual embeddings and disease clue embeddings. The details of TRRG are shown in Fig. <ref type="figure">4</ref>. v = E img (I).</p><p>(1)</p><p>For the sentence randomly sampled from the corresponding radiology report, a BERT-based model encodes it as t = {t cls , t 1 , ..., t m } ∈ R (m+1) * d , where m is the maximum length of a sentence in the training corpus. We extract their global representations t ∈ R 1 * d by utilizing the "CLS" token of a BERT-like model.</p><formula xml:id="formula_0">t = E txt (T r ),<label>(2)</label></formula><p>where T r is a randomly selected sentence from T . Finally, we compute the text-to-image contrastive loss and image-totext contrastive loss to enhance our vision encoder's ability to learn better disease-oriented representations. We only utilize pooled visual tokens v cls and textual tokens v cls . For an image embedding and text embedding {v ′ i , t i } N i=1 , the optimizing objective is InfoNCE loss <ref type="bibr" target="#b26">(Oord, Li, and Vinyals 2018)</ref>, which can be formulated as:</p><formula xml:id="formula_1">L v2t = -log( exp(σ(t i , v ′ i )/τ ) N j=1 exp(σ(t i , v ′ j )/τ ) ),<label>(3)</label></formula><formula xml:id="formula_2">L t2v = -log( exp(σ(v ′ i , t i )/τ ) N j=1 exp(σ(v ′ i , t j )/τ )</formula><p>).</p><p>(4)</p><p>The total loss of the pretraining stage is calculated as follows, where N represents the batch size, and τ is a temperature factor:</p><formula xml:id="formula_3">L = L v2t + L t2v . (<label>5</label></formula><formula xml:id="formula_4">)</formula><p>Stage 2: Clue Enhanced Instruct Tuning on Radiology Report Generation</p><p>Visual Embedding Given an image x ∈ R H×W ×C , we reshape it into a sequence of flattened 2D patches v ∈ R n×d . The transformer-based frozen vision encoder encodes the input patch tokens into an encoded patch embedding</p><formula xml:id="formula_5">x e = {v cls , v 1 , ..., v n } ∈ R (n+1)×d</formula><p>. Subsequently, the patch embedding will be fed into a visual mapper layer composed of linear layers, which transform the patch embedding v d ∈ R n×d to the same dimension as the LLM's word embedding. Thus, we obtain generative vision embedding v d ∈ R n×d and visual disease expert tokens v cls ∈ R 1×d that have been encoded only by the frozen vision encoder.</p><p>The visual embedding process can be expressed as follows:</p><formula xml:id="formula_6">v e = E img (x),<label>(6)</label></formula><formula xml:id="formula_7">v d = W v e + b,<label>(7</label></formula><p>) where W is the trainable weight of the visual mapper.</p><formula xml:id="formula_8">v cls = 1 n n i=1 v i v i ∈ R 1×d,<label>(8)</label></formula><p>v i is an element of the path token sequences v e . After visual encoding, we obtain the disease visual embedding v d ∈ R n×d and the disease visual expert token v cls ∈ R 1×d .</p><p>Clue Injection Module Following Gloria's work <ref type="bibr" target="#b11">(Huang et al. 2021)</ref>, we utilize a variety of language descriptions to construct disease clue prompts. By extracting multiple descriptive phrases from the dataset related to the severity and location of a specific disease, we randomly combined phrases associated with disease type, severity level, and location to create disease clue prompts. Specifically, our prompt construction template is as follows:</p><p>Clue :&lt; severity &gt;&lt; disease &gt; at &lt; location &gt;</p><p>We created manual templates for m common diseases, such as opacity, pneumonia, and pneumothorax, to act as potential prompts for identifying diseases. Then, the frozen , where c i = {c cls , c 1 , ...., c r }, and c i ∈ R (r+1)×d is the i-th disease clue embedding. Here, m represents the number of diseases defined, and r is the maximum length of disease clue prompts. Subsequently, we compute clue weights, which represent the importance of disease clue expert token c i cls ∈ R 1 * d to visual disease expert tokens v cls ∈ R 1 * d through matrix multiplication. The computing process of clue weight can be formulated as follows:</p><formula xml:id="formula_9">w i = softmax v cls • c i cls i ∈ 1, .....m,<label>(9)</label></formula><p>where clue weight w :</p><formula xml:id="formula_10">{w 1 , w 2 , • • • , w m } ∈ R 1×m</formula><p>, where m represents the number of different disease clues. We assign weights to each clue to represent the importance of this disease relative to the images. After that, we utilize the Hadamard product to obtain the weighted disease clue embedding. The weighted clue embeddings are computed as follows:</p><formula xml:id="formula_11">c i = w i ⊙ c i . (<label>10</label></formula><formula xml:id="formula_12">)</formula><p>Due to some clues being irrelevant to the corresponding images, we only select the top-k important clues as disease expert clues for the final model input. Our final injection clues are:</p><formula xml:id="formula_13">c s : {c i } i ∈ topk(w, k),<label>(11)</label></formula><p>where topk(w, k) presents the indices of the top-k highest values in the set w. Finally, we consider the multiple disease clue embedding c s ∈ R k×r×d as our injection clues.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Cross Modal Clue Interaction</head><p>For multi-disease clues c s ∈ R k×r×d , these clues are highly aligned with visual representations obtained through the frozen vision encoder but do not fully interact with the generated visual features obtained from the visual mapper. Therefore, we propose a Cross-Modal Clue Interaction Module to simultaneously enhance generative representations and facilitate cross-modal MatMul CLS CLS CLS CLS Softmax HP&amp;FL Top K 𝑐 s 𝑐 𝑐𝑙𝑠 𝑣 𝑐𝑙𝑠 𝑐 Clue Weights interaction of disease clues. Typically, there is often a significantly larger number of disease clue tokens compared to visual tokens. To address the excessive disease clue token input, we define a set of learnable queries for cross-modal interaction.</p><p>Finally, we propose a Disease Clue Consistency Loss to maintain sufficient attention to disease clue embeddings in cross-modal interaction and provide disease-oriented supervision signals for fine-tuning with large language models. Attention mechanisms are adopted in the multimodal interaction module. We adopt a two-stream architecture for cross-modal feature interaction. Each structure comprises a self-attention module, a cross-attention module, and a Feed Forward layer. The self-attention layer facilitates intramodal interaction, enhancing feature representation within each modality. Conversely, the cross-attention mechanism ensures alignment between textual clues and visual representations, facilitating cross-modal interaction by enforcing consistency across different modalities. The attention is de-fined as attention:</p><formula xml:id="formula_14">Attn(Q, K, V ) = softmax( QK ⊤ √ d k )V.<label>(12)</label></formula><p>For visual embedding, v d = {v 1 , ..., v n }, disease clue embedding c s ∈ R k×r×d , We flatten the disease clues into clue tokens c s = {c 1 , ..., c (k×r) }, where c i ∈ R 1×d . Next, both visual embeddings and clue embeddings are fed into linear projection layer:</p><formula xml:id="formula_15">Q v = W v Q v d , K v = W v K v d , V v = W v V v d ,<label>(13)</label></formula><formula xml:id="formula_16">Q c = W c Q c s , K c = W c K c s , V c = W c V c s ,<label>(14)</label></formula><formula xml:id="formula_17">V ′ = Attn(Q v , K v , V v ),<label>(15)</label></formula><formula xml:id="formula_18">C ′ = Attn(Q c , K c , V c ),<label>(16)</label></formula><p>where V ′ , C ′ are visual embeddings and disease clue embeddingss after multi-head self attention layer. Next, we utilize learnable tokens E = {E 1 , E 2 , ..., E L } as a common feature space to establish associations between the visual and textual modalities, where L represents the number of learnable tokens. In detail, we employ a scaled dot-product attention layer to calculate the correlation between the learnable tokens E and the mapped visual tokens E v . We perform the same operation on learnable queries and disease clue embeddings and obtained clue tokens E c . This process can be expressed as:</p><formula xml:id="formula_19">E e = Attn(E, E, E),<label>(17)</label></formula><formula xml:id="formula_20">E v = FFN(Attn(E e , V ′ , V ′ )),<label>(18)</label></formula><formula xml:id="formula_21">E c = FFN(Attn(E e , C ′ , C ′ )).<label>(19)</label></formula><p>Furthermore, since disease clues are often sparse during cross-modal interaction, to enhance the consistency between visual tokens and clue tokens and improve effective supervision signals during radiology report generation, we propose a disease-aware consistency loss. Our disease-aware consistency loss is calculated as:</p><formula xml:id="formula_22">L DC = - 1 K K i=1 E v • E c ∥E v ∥∥E c ∥ ,<label>(20)</label></formula><p>We calculate the similarity between visual tokens and clue tokens and aim to maximize the alignment between visual and textual tokens. The disease-aware consistency loss effectively endows visual tokens with the ability to perceive diseases.</p><p>Optimization Objective We train our model by minimizing the negative log-likelihood of P(t) given the image features:</p><formula xml:id="formula_23">L CE = T i=1 logP θ (t i |E v , E c , t i-1 , • • • , t ), (<label>21</label></formula><formula xml:id="formula_24">)</formula><p>where based on the image embedding E v and clue embedding E c and the first (i -1) words. Our overall objective function is:</p><formula xml:id="formula_25">L = L CE + L DC . (<label>22</label></formula><formula xml:id="formula_26">)</formula><p>Self-Attention … Cross-Attention Self-Attention Self-Attention … … Cross-Attention FFN FFN Disease-aware Consistency Loss 𝐸 𝑐 𝐸 𝑣 𝑐 s Learnable Queries 𝑣 𝑑 Figure 4: Architecture of Cross Modal Clue Interaction Module Experiment Datasets and Evaluation Metrics Datasets IU-Xray (Dina et al. 2015) is a widely recognized benchmark dataset for radiology report generation. The dataset consists of over 7,470 chest X-ray images and 3,955 corresponding radiology reports manually annotated by expert radiologists. MIMIC-CXR (Johnson et al. 2019) is a dataset comprising 64,588 patients collected at the Beth Israel Deaconess Radiology Center between 2011 and 2016. It includes 77,110 chest X-ray images and 227,835 corresponding free-text radiology reports. To ensure experimental fairness, we replicated the experimental settings of previous studies. This led to a training set of 222,758 samples, with validation and test sets comprising 1,808 and 3,269 samples, respectively.</p><p>Evaluation Metrics Based on previous research, we evaluate our proposed radiology report generation model from two perspectives. 1) Evaluation of Language Generation Quality (NLG Metrics): Utilizing commonly used linguistic evaluation metrics such as BLEU <ref type="bibr" target="#b28">(Papineni et al. 2002)</ref>, Rouge-L <ref type="bibr" target="#b22">(Lin 2004)</ref>, and CIDEr <ref type="bibr" target="#b37">(Vedantam, Zitnick, and Parikh 2015)</ref>. 2) Clinical Effectiveness Metrics (CE Metrics): We employ NLP text disease labeler ChexBERT <ref type="bibr" target="#b32">(Smit et al. 2020</ref>) for text classification. We extract 14 common diseases from the generated reports and reference report. Precision, recall, and F1 score are used to assess performance in terms of clinical efficacy.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Main Results</head><p>Implementation Details We utilized the Mistral-7B <ref type="bibr" target="#b12">(Jiang et al. 2023</ref>) model as large language model, Swin-Transformer <ref type="bibr">(Liu et al. 2021b</ref>) as the vision encoder, and ClinicalBERT <ref type="bibr" target="#b1">(Alsentzer et al. 2019)</ref> for the text encoder in the pretraining stage. For template construction, we utilized 14 common diseases and created templates for each of them.</p><p>We set the maximum clue number, K to 3, and ultimately selected the top 3 diseases with the highest weights for disease clue injection. The dimensions of visual embedding and text embedding are both set to 1024. Additionally, in the crossmodal cue interaction module, the number of heads in the linear projection layer of the attention mechanism to be 8. Moreover, both the attention layer and the cross-attention layer were set to have one layer. The training process was conducted on four NVIDIA A40 48GB GPUs. We trained the model on the MIMIC-CXR dataset for 5 epochs and on the IU-Xray dataset for 20 epochs. The batch size was set to 8, and the learning rate was 1e-4. We compare the performance of our model with a wide range of state-of-the-art models in image captioning and radiology report generation. Table ?? presents the comparison results for both Natural Language Generation (NLG) metrics and CE metrics. The models we compare include R2Gen <ref type="bibr" target="#b6">(Chen et al. 2020</ref>), R2GenCMN <ref type="bibr">(Chen et al. 2022)</ref>, PPKED <ref type="bibr">(Liu et al. 2021a</ref>), R2GenGPT <ref type="bibr">(Wang et al. 2023c)</ref>, FGIRG <ref type="bibr">(Chen et al. 2024b</ref>) and R2GMMN <ref type="bibr" target="#b31">(Shen et al. 2024</ref>). It can be observed that our model outperforms the current state-of-the-art methods across various language generation metrics, especially on MIMIC-CXR. Our model's performance on the IU-Xray dataset is acceptable but not exceptional. This could be attributed to the limited size of the IU-Xray dataset, which consists of only 2.8K image-text pairs. Consequently, the scarcity of training data may hinder the effective learning of text generation capabilities during the fine-tuning of large language models.The larger sample size of the MIMIC-CXR dataset allows for more comprehensive training of the vision encoder during the pretraining stage, thereby facilitating more consistent cross-modal alignment.</p><p>We achieved a significant improvement across all Natural Language Generation (NLG) metrics except for CIDER <ref type="bibr" target="#b37">(Vedantam, Zitnick, and Parikh 2015)</ref> . METransformer <ref type="bibr">(Wang et al. 2023b</ref>) employed a specialized optimization strategy involving a voting strategy for the CIDER metric, thereby achieving significant superiority in performance according to the CIDER metric. Our model acquire a significant ability to maintain language consistency and rich semantics when generating medical image reports. This suggests that our approach can accurately capture keywords in radiology reports. Further evaluation of clinical efficacy metrics demonstrates the significant potential of our proposed method. Compared to other methods that fine-tuning large language models for radiology report generation, such as R2GenGPT <ref type="bibr">(Wang et al. 2023c)</ref>, our model achieves significant improvements in multiple clinical efficacy metrics without relying on any external disease annotations. We observe that our proposed method achieves an average accu-racy, recall, and F1 score of 0.403, 0.399, and 0.393, respectively, across various diseases. This represents a significant improvement over the current state-of-the-art method R2GMMN <ref type="bibr" target="#b31">(Shen et al. 2024)</ref>, demonstrating the effectiveness of our approach. Furthermore, it indicates that our proposed model has stronger disease perception capabilities, enabling the generation of more truthful radiology reports.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Ablation Study</head><p>Effectiveness of each component. We constructed our baseline model, called the "BASE" model, by solely finetuning the visual mapper during training using visual features. Meanwhile, we introduced a disease clue injection module, a cross-modal clue interaction module, and a disease-aware consistency loss function, abbreviated as "DCI," "CMCI" and "DAL" respectively. The symbol "+" denotes the experimental effects of adding different components to the base model, and specific results are presented in Tab. 2. It can be observed that the three components we proposed all have a positive impact on performance. Despite some randomness in the experiments conducted in the deep learning laboratory, the results demonstrate credible comparability due to the systematic training partition applied to the MIMIC-CXR <ref type="bibr" target="#b14">(Johnson et al. 2019</ref>) dataset. Our proposed three modules have achieved significant improvements of 14.5%, 15.8%, and 13.6%, 11.7%, 9.9% in BLEU-4, ROUGE-L, METEOR, CIDEr, and F1 from the "Base" to our TRRG. The incorporation of different components resulted in varying degrees of improvement on the base model, thus validating the effectiveness of our approach.</p><p>Impact of clue numbers. The number of disease clue injections determines the richness of disease information perceived by the model during the fine-tuning stage. We set the value of k to 1, 2, 3, 4, and 5, and verified the corresponding experimental results on MIMIC-CXR <ref type="bibr" target="#b14">(Johnson et al. 2019)</ref>. The experiments demonstrate that when our parameter k set to 3, the model achieves superior performance across multiple evaluation metrics. This aligns with our intuitive understanding that, typically, a chest X-ray may exhibit concurrent manifestations of 3-4 diseases at most. As k gradually   increases from 1 to 3, the model's performance steadily improves. When the parameter k exceeds 3, there is a decline in model performance. This phenomenon may be attributed to an excessive injection of irrelevant disease cues, which leads the model to inadequately attend to crucial regions within the images and pertinent disease cues.</p><p>Impact of the length of learnable queries. We conducted an ablation study on the length of learnable queries to explore the impact of different levels of compression of disease cues on the final model performance. We set the length L to 4, 8, 16, and 32, respectively, and found that the model achieved the best performance when the length of the learnable queries was set to 16. The appropriate length of learnable queries can ensure effective detection and compression of disease cues by the model. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Qualitative analysis</head><p>We conduct a qualitative analysis to validate the effectiveness of the proposed model. As depicted in Fig 5, our disease clues and probabilities are highlighted using colored fonts.</p><p>Compared to the base model, our proposed model tends to include more disease-related content with injected clues during the process of generating radiology reports. This observation confirms that our model has higher clinical reliability.</p><p>In the second example, the conventional model hinted at the presence of auxiliary devices in the image, but our model failed to provide relevant descriptions. This indicates some limitations of our proposed approach, which may lead to an overemphasis on disease-related content in certain cases, thereby compromising findings and obscuring the expression of basic descriptions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Conclusion</head><p>In this paper, we propose the TRGG for truthful radiology report generation based on fine-tuning large language models with injected disease cues. Our proposed stage-wise training strategy effectively promotes cross-modal alignment between radiography and reports. The clue injection module and cross-modal clue interaction module proposed by us can effectively facilitate the semantic representation of diseases and cross-modal alignment. Experimental results demonstrate the superiority of our approach. Extensive ablation studies and qualitative analyses confirm the effectiveness of our proposed method. Future research directions include developing a generalizable method for medical image report generation that can be applied across various medical imaging text report datasets, enabling further extension to heterogeneous modalities such as CT, MRI, and Ultrasound.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Stage 1 :</head><label>1</label><figDesc>Disease-aware Cross-modal Fine Gained AlignmentStudies(Wang et al. 2022c;<ref type="bibr" target="#b34">Tiu et al. 2022</ref>) demonstrate that pre-trained CLIP models, trained on large-scale medical image-text pairs, exhibit accuracy comparable to human performance in zero-shot disease classification tasks. Inspired by this, we decompose our pipeline into stage-wise training. During the pre-training stage, we utilize random sampling of sentences from radiology reports for training. This approach enhances the representation ability of vision encoders and also accommodates the robust clue prompting of disease clue injection modules. Given an Image-Text Pair (I, T ), where T : {T 1 , T 2 , ..., T t }, T i represents the sentence-level component of the radiology report. The images are encoded into v = {v cls , v 1 , ..., v n } ∈ R (n+1) * d by the transformer-based vision encoder, where n is the number of patches in the images and "cls" represents the pooling token of the outputs.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: During the fine-tuning stage, the visual encoder and the clue encoder are frozen, and disease clues are injected simultaneously through the clue injection module. In this stage, visual embeddings processed by the visual mapper interact with disease clue embeddings through cross-modal clue interaction. Finally, the frozen large language model is fine-tuned through instruction-based fine-tuning to achieve medical image report generation. text encoder encoded disease clue prompts into multiple disease clue embeddings c : {c i } m i=1, where c i = {c cls , c 1 , ...., c r }, and c i ∈ R (r+1)×d is the i-th disease clue embedding. Here, m represents the number of diseases defined, and r is the maximum length of disease clue prompts. Subsequently, we compute clue weights, which represent the importance of disease clue expert token c i cls ∈ R 1 * d to visual disease expert tokens v cls ∈ R 1 * d through matrix multiplication. The computing process of clue weight can be formulated as follows:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Architecture of Clue Injection Module, HP and FL represent Hadamard Product and Flatten, respectively.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>Ground-Truth: There is no clear radiographic change over the past 11 days. Bilateral pleural effusions moderate on the right small on the left and callus pulmonary nodules are unchanged. Confluent opacification at the base of the right lung is probably atelectasis, pleural mild pneumonia is difficult to exclude. Baseline：Frontal and lateral views of the chest. The pulmonary vasculature is normal. The lungs are clear without consolidation, effusion or pneumothorax. The cardiomediastinal silhouette is normal. Ours: The cardiomediastinal silhouette and pulmonary vasculature are within normal limits . Pneumonia at the right lung base is not excluded. there is no focal airspace consolidation pleural effusion or pneumothorax . there is no acute bony abnormality. Top 3 Clue Weights: Ground-Truth: Since the prior study, there is no change in large right pleural effusion and associated atelectasis. Heart size and mediastinum are unchanged including cardiomegaly. Biventricular pacer is redemonstrated Baseline: Frontal views of the chest. Left chest wall pacing device seen with leads in the right atrium. The lungs are clear, and the cardiomediastinal silhouette and hila are normal. pleural effusions show in in right lung zone. Ours: the heart size is normal. the mediastinal and hilar contours are normal. Low lung volumes with probable bibasilar atelectasis. There is no pneumothorax. Pulmonary vascularity is normal. there are small bilateral pleural effusions. Cardiomegaly is unchanged Top 3 Clue Weights:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: We compare the generated results of the base model and the TRRG (Ours) with the ground truth, highlighting key information using colored fonts. Our model effectively generated specific descriptions tailored to diseases.</figDesc><graphic coords="7,466.04,180.76,84.31,63.23" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 1 :</head><label>1</label><figDesc>Comparisons of the proposed TRRG with previous studies on the IU X-RAY and MIMIC-CXR test set with respect to language generation (NLG) and clinical efficacy (CE) metrics. Best results are in bold.</figDesc><table><row><cell>Dataset</cell><cell>Model</cell><cell cols="9">NLG Metrics BLEU-1 BLEU-2 BLEU-3 BLEU-4 ROUGE METEOR CIDEr Precision Recall CE Metrics</cell><cell>F1</cell></row><row><cell></cell><cell>HGRG-Agent (Li et al. 2018)</cell><cell>0.438</cell><cell>0.298</cell><cell>0.208</cell><cell>0.151</cell><cell>0.322</cell><cell>-</cell><cell>0.343</cell><cell>-</cell><cell>-</cell><cell>-</cell></row><row><cell></cell><cell>KERP (Li et al. 2019b)</cell><cell>0.482</cell><cell>0.325</cell><cell>0.226</cell><cell>0.162</cell><cell>0.339</cell><cell>-</cell><cell>0.280</cell><cell>-</cell><cell>-</cell><cell>-</cell></row><row><cell></cell><cell>R2Gen (Chen et al. 2020)</cell><cell>0.470</cell><cell>0.304</cell><cell>0.219</cell><cell>0.165</cell><cell>0.371</cell><cell>0.187</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>-</cell></row><row><cell></cell><cell>PPKED (Liu et al. 2021a)</cell><cell>0.483</cell><cell>0.315</cell><cell>0.224</cell><cell>0.168</cell><cell>0.376</cell><cell>0.187</cell><cell>0.351</cell><cell>-</cell><cell>-</cell><cell>-</cell></row><row><cell></cell><cell>GSK (Yang et al. 2021)</cell><cell>0.496</cell><cell>0.327</cell><cell>0.238</cell><cell>0.178</cell><cell>0.381</cell><cell>-</cell><cell>0.382</cell><cell>-</cell><cell>-</cell><cell>-</cell></row><row><cell>IU X-RAY</cell><cell>R2GenCMN (Chen et al. 2022) METransformer (Wang et al. 2023b)</cell><cell>0.475 0.483</cell><cell>0.309 0.322</cell><cell>0.222 0.228</cell><cell>0.170 0.172</cell><cell>0.375 0.380</cell><cell>0.191 0.192</cell><cell>-0.435</cell><cell>--</cell><cell>--</cell><cell>--</cell></row><row><cell></cell><cell>TRGG (Ours)</cell><cell>0.482</cell><cell>0.302</cell><cell>0.217</cell><cell>0.151</cell><cell>0.377</cell><cell>0.209</cell><cell>0.405</cell><cell>-</cell><cell>-</cell><cell>-</cell></row><row><cell></cell><cell>M2Transformer (Cornia et al. 2020b)</cell><cell>0.332</cell><cell>0.210</cell><cell>0.142</cell><cell>0.101</cell><cell>0.264</cell><cell>0.134</cell><cell>0.142</cell><cell>-</cell><cell>-</cell><cell>-</cell></row><row><cell></cell><cell>R2Gen (Chen et al. 2020)</cell><cell>0.353</cell><cell>0.218</cell><cell>0.145</cell><cell>0.103</cell><cell>0.277</cell><cell>0.142</cell><cell>-</cell><cell>0.333</cell><cell cols="2">0.273 0.276</cell></row><row><cell></cell><cell>PPKED (Liu et al. 2021a)</cell><cell>0.36</cell><cell>0.224</cell><cell>0.149</cell><cell>0.106</cell><cell>0.284</cell><cell>0.149</cell><cell>0.237</cell><cell>-</cell><cell>-</cell><cell>-</cell></row><row><cell></cell><cell>GSK (Yang et al. 2021)</cell><cell>0.363</cell><cell>0.228</cell><cell>0.156</cell><cell>0.115</cell><cell>0.284</cell><cell>-</cell><cell>0.203</cell><cell>-</cell><cell>-</cell><cell>-</cell></row><row><cell></cell><cell>R2GenCMN (Chen et al. 2022)</cell><cell>0.353</cell><cell>0.218</cell><cell>0.148</cell><cell>0.106</cell><cell>0.278</cell><cell>0.142</cell><cell>-</cell><cell>0.334</cell><cell cols="2">0.275 0.278</cell></row><row><cell>MIMIC-CXR</cell><cell>MSAT (Wang et al. 2022b) METransformer (Wang et al. 2023b)</cell><cell>0.373 0.386</cell><cell>0.235 0.250</cell><cell>0.162 0.169</cell><cell>0.120 0.124</cell><cell>0.282 0.291</cell><cell>0.143 0.152</cell><cell>0.299 0.362</cell><cell>-0.364</cell><cell cols="2">-0.309 0.311 -</cell></row><row><cell></cell><cell>DCL (Li et al. 2023b)</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>0.107</cell><cell>0.284</cell><cell>0.150</cell><cell>0.281</cell><cell>0.471</cell><cell cols="2">0.352 0.373</cell></row><row><cell></cell><cell>R2GenGPT (Wang et al. 2023c)</cell><cell>0.365</cell><cell>0.237</cell><cell>0.163</cell><cell>0.117</cell><cell>0.277</cell><cell>0.136</cell><cell>0.145</cell><cell>0.341</cell><cell cols="2">0.312 0.325</cell></row><row><cell></cell><cell>FGIRG (Chen et al. 2024b)</cell><cell>0.379</cell><cell>0.234</cell><cell>0.154</cell><cell>0.106</cell><cell>0.285</cell><cell>0.162</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>-</cell></row><row><cell></cell><cell>R2GMMN (Shen et al. 2024)</cell><cell>0.396</cell><cell>0.244</cell><cell>0.162</cell><cell>0.115</cell><cell>0.274</cell><cell>0.151</cell><cell>-</cell><cell>0.411</cell><cell cols="2">0.398 0.389</cell></row><row><cell></cell><cell>TRGG (Ours)</cell><cell>0.436</cell><cell>0.298</cell><cell>0.213</cell><cell>0.157</cell><cell>0.336</cell><cell>0.167</cell><cell>0.219</cell><cell>0.403</cell><cell cols="2">0.399 0.393</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 2 :</head><label>2</label><figDesc>Ablation study of different componet we proposed, "DCI," "CMCI," and "DAL" respectively denote the Disease Clue Injection module, Cross-Modal Clue Interaction module, and Disease-Aware Loss function.</figDesc><table><row><cell>#</cell><cell>Models</cell><cell cols="9">IU-Xray BLEU-4 ROUGE METEOR CIDEr F1 BLEU 4 ROUGE METEOR CIDEr MIMIC-CXR</cell><cell>F1</cell></row><row><cell cols="2">1 BASE</cell><cell>0.156</cell><cell>0.370</cell><cell>0.194</cell><cell>0.387</cell><cell>-</cell><cell>0.137</cell><cell>0.290</cell><cell>0.147</cell><cell>0.196 0.354</cell></row><row><cell>2 +DCI</cell><cell></cell><cell>0.152</cell><cell>0.365</cell><cell>0.197</cell><cell>0.390</cell><cell>-</cell><cell>0.142</cell><cell>0.311</cell><cell>0.156</cell><cell>0.207 0.384</cell></row><row><cell cols="2">3 +DCI+CMCI</cell><cell>0.147</cell><cell>0.372</cell><cell>0.205</cell><cell>0.402</cell><cell>-</cell><cell>0.159</cell><cell>0.324</cell><cell>0.162</cell><cell>0.211 0.387</cell></row><row><cell cols="2">4 +DCI+CMCI+DAL</cell><cell>0.151</cell><cell>0.377</cell><cell>0.209</cell><cell>0.405</cell><cell>-</cell><cell>0.157</cell><cell>0.336</cell><cell>0.167</cell><cell>0.219 0.393</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 3 :</head><label>3</label><figDesc>Model with different disease clue numbers k, all experiments were conducted concerning varying quantities of disease clue injections on MIMI-CXR.</figDesc><table><row><cell cols="4">k BLEU-4 ROUGE METEOR</cell><cell>F1</cell></row><row><cell>1</cell><cell>0.152</cell><cell>0.312</cell><cell>0.157 4</cell><cell>0.369</cell></row><row><cell>2</cell><cell>0.155</cell><cell>0.341</cell><cell>0.162</cell><cell>0.377</cell></row><row><cell>3</cell><cell>0.157</cell><cell>0.336</cell><cell>0.167</cell><cell>0.393</cell></row><row><cell>4</cell><cell>0.153</cell><cell>0.327</cell><cell>0.159</cell><cell>0.390</cell></row><row><cell>5</cell><cell>0.149</cell><cell>0.315</cell><cell>0.156</cell><cell>0.392</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_6"><head>Table 4 :</head><label>4</label><figDesc>Model with different learnable queries numbers L.</figDesc><table><row><cell cols="4">L BLEU-4 ROUGE METEOR</cell><cell>F1</cell></row><row><cell>4</cell><cell>0.161</cell><cell>0.322</cell><cell>0.161</cell><cell>0.358</cell></row><row><cell>8</cell><cell>0.155</cell><cell>0.332</cell><cell>0.162</cell><cell>0.377</cell></row><row><cell>16</cell><cell>0.157</cell><cell>0.336</cell><cell>0.167</cell><cell>0.393</cell></row><row><cell>32</cell><cell>0.142</cell><cell>0.329</cell><cell>0.156</cell><cell>0.386</cell></row></table></figure>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Reproducibility Checklist</head><p>[YES] [NO] <ref type="bibr">[NA]</ref> 1. This paper:</p><p>(a) Includes a conceptual outline and/or pseudocode description of AI methods introduced.</p><p>[YES] (b) Clearly delineates statements that are opinions, hypothesis, and speculation from objective facts and results.</p><p>[YES] (c) Provides well marked pedagogical references for lessfamiliare readers to gain background necessary to replicate the paper. (d) All source code implementing new methods have comments detailing the implementation, with references to the paper where each step comes from.</p><p>[YES] (e) If an algorithm depends on randomness, then the method used for setting seeds is described in a way sufficient to allow replication of results.</p><p>[YES] (f) This paper specifies the computing infrastructure used for running experiments (hardware and software), including GPU/CPU models; amount of memory; operating system; names and versions of relevant software libraries and frameworks.</p><p>[YES] (g) This paper formally describes evaluation metrics used and explains the motivation for choosing these metrics.</p><p>[YES] (h) This paper states the number of algorithm runs used to compute each reported result.</p><p>[NO] (i) Analysis of experiments goes beyond singledimensional summaries of performance (e.g., average; median) to include measures of variation, confidence, or other distributional information.</p><p>[NO] (j) The significance of any improvement or decrease in performance is judged using appropriate statistical tests (e.g., Wilcoxon signed-rank).</p><p>[NO] (k) This paper lists all final (hyper-)parameters used for each model/algorithm in the paper's experiments.</p><p>[YES] (l) This paper states the number and range of values tried per (hyper-) parameter during development of the paper, along with the criterion used for selecting the final parameter setting. <ref type="bibr">[NO]</ref> </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Flamingo: a visual language model for few-shot learning</title>
+		<author>
+			<persName><forename type="first">J.-B</forename><surname>Alayrac</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Donahue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Luc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Miech</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Barr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Hasson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lenc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Millican</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Reynolds</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">NeurIPS</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">E</forename><surname>Alsentzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Murphy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Boag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-H</forename><surname>Weng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Naumann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Mcdermott</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1904.03323</idno>
+		<title level="m">Publicly available clinical BERT embeddings</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">2024a. LION: Empowering Multimodal Large Language Model with Dual-Level Visual Knowledge</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Shao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Nie</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE Conference on Computer Vision and Pattern Recognition (CVPR)</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">2024b. Fine-Grained Image-Text Alignment in Medical Imaging Enables Explainable Cyclic Image-Report Generation</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yuan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">62nd Annual Meeting of the Association for Computational Linguistics (ACL 2024)</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Align, reason and learn: Enhancing medical vision-and-language pre-training with knowledge</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th ACM International Conference on Multimedia</title>
+		<meeting>the 30th ACM International Conference on Multimedia</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="5152" to="5161" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wan</surname></persName>
+		</author>
+		<title level="m">Crossmodal memory networks for radiology report generation</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Generating radiology reports via memory-driven transformer</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T.-H</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">EMNLP</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Meshed-Memory Transformer for Image Captioning</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Cornia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Stefanini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Baraldi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Cucchiara</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Meshed-Memory Transformer for Image Captioning</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Cornia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Stefanini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Baraldi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Cucchiara</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">InstructBLIP: Towards General-purpose Vision-Language Models with Instruction Tuning</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M H</forename><surname>Tiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Fung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Hoi</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>In NeurIPS</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Preparing a collection of radiology examinations for distribution and retrieval</title>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">F</forename><surname>Dina</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">D</forename><surname>Kohli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">B</forename><surname>Rosenman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">E</forename><surname>Shooshan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Laritza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sameer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">R</forename><surname>Thoma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">J</forename><surname>Mcdonald</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of the American Medical Informatics Association Jamia</title>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">GLoRIA: A Multimodal Global-Local Representation Learning Framework for Label-efficient Medical Image Recognition</title>
+		<author>
+			<persName><forename type="first">S.-C</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">P</forename><surname>Lungren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yeung</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2021 IEEE/CVF International Conference on Computer Vision (ICCV)</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">Q</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sablayrolles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Bamford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">S</forename><surname>Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">D</forename><surname>Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Bressand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Lengyel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Lample</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Saulnier</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.06825</idno>
+		<title level="m">Mistral 7B</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Promptmrg: Diagnosis-driven prompts for medical report generation</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Che</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="page" from="2607" to="2615" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">E W</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">J</forename><surname>Pollard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">R</forename><surname>Greenbaum</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">P</forename><surname>Lungren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">Y</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">G</forename><surname>Mark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">J</forename><surname>Berkowitz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Horng</surname></persName>
+		</author>
+		<title level="m">MIMIC-CXR: A large publicly available database of labeled chest radiographs</title>
+		<imprint>
+			<publisher>CoRR</publisher>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">DenseCap: Fully Convolutional Localization Networks for Dense Captioning</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Karpathy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Fei-Fei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">P</forename><surname>Xing</surname></persName>
+		</author>
+		<title level="m">a. Knowledge-driven Encode, Retrieve</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note>Paraphrase for Medical Image Report Generation</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Knowledge-Driven Encode, Retrieve, Paraphrase for Medical Image Report Generation</title>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">P</forename><surname>Xing</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">AAAI</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Bootstrapping language-image pre-training with frozen image encoders and large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Savarese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Hoi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">ICML</title>
+		<imprint>
+			<biblScope unit="page" from="2023" to="2025" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Align before fuse: Vision and language representation learning with momentum distillation. Advances in neural information processing systems</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Selvaraju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gotmare</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Joty</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">C H</forename><surname>Hoi</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="9694" to="9705" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Dynamic Graph Enhanced Contrastive Learning for Chest X-ray Report Generation</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="3334" to="3343" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Hybrid Retrieval-Generation Reinforced Agent for Medical Image Report Generation</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">P</forename><surname>Xing</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">NeurIPS</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">ROUGE: A Package for Automatic Evaluation of Summaries</title>
+		<author>
+			<persName><forename type="first">C.-Y</forename><surname>Lin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">ACL</title>
+		<imprint>
+			<date type="published" when="2004">2004</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">2021a. Exploring and Distilling Posterior and Prior Knowledge for Radiology Report Generation</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Swin transformer: Hierarchical vision transformer using shifted windows</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Guo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF international conference on computer vision</title>
+		<meeting>the IEEE/CVF international conference on computer vision</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="10012" to="10022" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Knowing When to Look: Adaptive Attention via a Visual Sentinel for Image Captioning</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Socher</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<author>
+			<persName><forename type="first">A</forename><surname>Oord</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Vinyals</surname></persName>
+		</author>
+		<title level="m">Representation Learning with Contrastive Predictive Coding. Cornell University -arXiv</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+		<respStmt>
+			<orgName>Cornell University -arXiv</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">X-Linear Attention Networks for Image Captioning</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Mei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Bleu: a method for automatic evaluation of machine translation</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Papineni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Roukos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Ward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-J</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th annual meeting of the Association for Computational Linguistics</title>
+		<meeting>the 40th annual meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2002">2002</date>
+			<biblScope unit="page" from="311" to="318" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">Learning Transferable Visual Models From Natural Language Supervision</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hallacy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Goh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Amanda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+		<respStmt>
+			<orgName>Cornell University -arXiv,Cornell University -arXiv</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Self-Critical Sequence Training for Image Captioning</title>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">J</forename><surname>Rennie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Marcheret</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Mroueh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ross</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Goel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Automatic Radiology Reports Generation via Memory Alignment Network</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Tian</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="page" from="4776" to="4783" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<author>
+			<persName><forename type="first">A</forename><surname>Smit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Rajpurkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Pareek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">Y</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">P</forename><surname>Lungren</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2004.09167</idno>
+		<title level="m">CheXbert: Combining Automatic Labelers and Expert Annotations for Accurate Radiology Report Labeling Using BERT</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Clip4caption: Clip for video caption</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 29th ACM International Conference on Multimedia</title>
+		<meeting>the 29th ACM International Conference on Multimedia</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="4858" to="4862" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Expert-level detection of pathologies from unannotated chest X-ray images via self-supervised learning</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Tiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Talius</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Patel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">P</forename><surname>Langlotz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">Y</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Rajpurkar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Nature Biomedical Engineering</title>
+		<imprint>
+			<biblScope unit="volume">6</biblScope>
+			<biblScope unit="issue">12</biblScope>
+			<biblScope unit="page" from="1399" to="1406" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-A</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Azhar</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<title level="m">Llama: Open and efficient foundation language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Attention is All you Need</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">NIPS</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">CIDEr: Consensus-based image description evaluation</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Vedantam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">L</forename><surname>Zitnick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Parikh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Cross-modal prototype driven network for radiology report generation</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Bhalerao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>He</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">European Conference on Computer Vision</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="563" to="579" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">2022a. Ofa: Unifying architectures, tasks, and modalities through a simple sequence-tosequence learning framework</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Men</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Yang</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<biblScope unit="page" from="23318" to="23340" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">2023a. Self adaptive global-local feature enhancement for radiology report generation</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ieee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">METransformer: Radiology Report Generation by Transformer with Multiple Learnable Expert Tokens</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="11558" to="11567" />
+		</imprint>
+	</monogr>
+	<note>2023 IEEE International Conference on Image Processing (ICIP) CVPR</note>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">2023c. R2gengpt: Radiology report generation with frozen llms</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Meta-Radiology</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page">100033</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">2022b. A medical semantic-assisted transformer for radiographic report generation</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Medical Image Computing and Computer-Assisted Intervention</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<biblScope unit="page" from="655" to="664" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Sun</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<publisher>Contrastive Learning from Unpaired Medical Images and Text</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<analytic>
+		<title level="a" type="main">A Self-Boosting Framework for Automated Radiographic Report Generation</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<monogr>
+		<title level="m" type="main">Multimodal Recurrent Model with Attention for Automated Radiology Report Generation</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">R</forename><surname>Long</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Xue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Antani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">R</forename><surname>Thoma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Huang</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note>In MICCAI</note>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">Knowledge Matters: Radiology Report Generation with General and Specific Knowledge</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">K</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Xiao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Medical Image Analysis</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<analytic>
+		<title level="a" type="main">Knowledge matters: Chest radiology report generation with general and specific knowledge</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">K</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Xiao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Medical image analysis</title>
+		<imprint>
+			<biblScope unit="volume">80</biblScope>
+			<biblScope unit="page">102510</biblScope>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">Automatic Generation of Medical Imaging Diagnostic Report with Hierarchical Recurrent Neural Network</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Zheng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">ICDM</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<analytic>
+		<title level="a" type="main">Multimodal transformer with multi-view visual representation for image captioning</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Huang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE transactions on circuits and systems for video technology</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="volume">30</biblScope>
+			<biblScope unit="page" from="4467" to="4480" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">Automatic Radiology Report Generation Based on Multi-view Image Fusion and Medical Concept Enrichment</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Liao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Miccai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Yuille</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Xu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI conference on artificial intelligence</title>
+		<meeting>the AAAI conference on artificial intelligence</meeting>
+		<imprint>
+			<date type="published" when="2019">2019. 2020</date>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="12910" to="12917" />
+		</imprint>
+	</monogr>
+	<note>When radiology report generation meets knowledge graph</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

@@ -1,0 +1,1186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">RETHINKING MEMORY AND COMMUNICATION COSTS FOR EFFICIENT LARGE LANGUAGE MODEL TRAINING</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-10-30">30 Oct 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Chan</forename><surname>Wu</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Hanxiao</forename><surname>Zhang</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Lin</forename><surname>Ju</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Jinjing</forename><surname>Huang</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Youshao</forename><surname>Xiao</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Zhaoxin</forename><surname>Huan</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Siyuan</forename><surname>Li</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Fanzhuang</forename><surname>Meng</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Lei</forename><surname>Liang</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Xiaolu</forename><surname>Zhang</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Jun</forename><surname>Zhou</surname></persName>
+						</author>
+						<title level="a" type="main">RETHINKING MEMORY AND COMMUNICATION COSTS FOR EFFICIENT LARGE LANGUAGE MODEL TRAINING</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-10-30">30 Oct 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">396E77D56D81AE4DE5BCEFF9F6558CC0</idno>
+					<idno type="arXiv">arXiv:2310.06003v2[cs.LG]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:31+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Recently, various distributed strategies for large language model training have been proposed. However, these methods provided limited solutions for the trade-off between memory consumption and communication cost. In this paper, we rethink the impact of memory consumption and communication costs on the training speed of large language models, and propose a memory-communication balanced strategy set Partial Redundancy Optimizer (PaRO). PaRO provides comprehensive options which reduces the amount and frequency of inter-group communication with minor memory redundancy by fine-grained sharding strategy, thereby improving the training efficiency in various training scenarios. Additionally, we propose a Hierarchical Overlapping Ring (HO-Ring) communication topology to enhance communication efficiency between nodes or across switches in large language model training. Our experiments demonstrate that PaRO significantly improves training throughput by 1.19×-2.50× compared to the SOTA method and achieves a near-linear scalability. The HO-Ring algorithm improves communication efficiency by 36.5% compared to the traditional Ring algorithm.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">INTRODUCTION</head><p>With the development of machine learning technology, the overall performance of deep learning algorithms in fields such as face recognition, recommender system, and natural language processing has significantly improved <ref type="bibr" target="#b5">(Girshick et al., 2014;</ref><ref type="bibr" target="#b26">Xiao et al., 2023;</ref><ref type="bibr" target="#b3">Brown et al., 2020)</ref>. Recent research shows that large model training is beneficial to improve model quality. Over the past few years, model size has increased from 110 million parameters for BERT <ref type="bibr" target="#b4">(Devlin et al., 2019)</ref> to 175 billion parameters for GPT-3 <ref type="bibr" target="#b3">(Brown et al., 2020)</ref>. However, training such large language model (LLM) is not an easy task, as it requires a significant amount of computing resources and presents challenges in terms of system complexity.</p><p>As the size of the model and the amount of training data increase, the computing power of a single GPU cannot meet the training needs of large-scale networks. In LLM training, to effectively utilize the computing power and memory of hundreds of GPU devices, a variety of distributed parallel training technologies have been proposed, such as data parallelism (DP), tensor parallelism (TP) and pipeline parallelism (PP) <ref type="bibr" target="#b11">(Li et al., 2023)</ref>. In DP, an entire dataset is evenly partitioned into mutually exclusive subsets before training, and each worker works on a separate subset of them. TP divides the calculation and memory load of a single layer onto multiple GPUs by modifying the calculation method within the layer. PP puts different layers on different GPUs, and then divides the computing and memory loads onto multiple GPUs. However, TP and PP require modification of the model implement, which is inefficient for developers. In contrast, data parallelism has become the most mainstream distributed parallel method due to its simplicity.</p><p>In data parallelism, the replicated model on each GPU processes a portion of the input batch, resulting in a large amount of communication data when fusing gradients. Andrew <ref type="bibr" target="#b1">(Andrew, 2017</ref>) applied a ring topology on all-reduce to balance the communication load. By defining the communication topology, the communication pressure is evenly distributed to each GPU. However, since a complete model is copied on each GPU, significant memory redundancy occurs, especially when training large models <ref type="bibr" target="#b16">(Proficz, 2018)</ref>. To this end, Rajbhandari et al. <ref type="bibr" target="#b17">(Rajbhandari et al., 2020)</ref> proposed the Zero Redundancy Optimization (ZeRO) strategy set, which splits the model state (i.e. optimizer state, gradient and parameters) based on data parallelism and reconstructs them through the collective communication. It reduces memory consumption in LLM training and improves training efficiency by applying larger batch sizes.</p><p>Since ZeRO retains the simplicity, ease of use, and versatility of DP, it has been widely used in LLM training. ZeRO needs to be adapted to specific training frameworks and hardware equipment to fully exploit its advantages. In highperformance clusters such as NVIDIA DGX-2 or DGX-A100 <ref type="bibr" target="#b24">(Wang et al., 2020)</ref>, NVLink/NVSwitch with a bandwidth of up to 4.8TGbps is configured within the node, while the bandwidth of InfiniBand or Ethernet between nodes is only 200∼800Gbps. The mismatch of bandwidth within and between nodes limits the training efficiency of ZeRO. To speed up model training, ZeRO requires more GPU resources, which will result in greater collective communication volume. To reduce collective communication volume, MiCS <ref type="bibr" target="#b29">(Zhang et al., 2022)</ref> proposes a cluster grouping strategy in which all model states are partitioned within each group and replicated across different groups. However, this partitioning strategy incurs significant memory costs, particularly in scenarios with a large number of groups.</p><p>In this paper, we systematically combine cluster grouping with different partitioning of different model states to trade off the memory and communication costs. Based on the memory consumption and synchronization frequency of the optimizer state, gradients and parameters, we design several optimization solutions to reduce overall communication costs and frequency with minimal memory redundancy. Additionally, we optimize the communication topology of ring all-gather and reduce-scatter operations by performing intra-and inter-node communication simultaneously. This strategy reduces inter-node communication volume and improves inter-node bandwidth utilization. We plan to release the code, pending approval from the company. The main contributions of the paper are summarized as follows:</p><p>• We systematically analyzed the impact of memory consumption and communication costs on the training speed of LLMs, and proposed an overall guideline for balancing memory and communication.</p><p>• We proposed the Partial Redundancy Optimizer (PaRO) strategy set, which provides more refined options for the trade-off between memory consumption and communication costs in different training scenarios. PaRO significantly increased training throughput by 1.19×-2.50× comparing with ZeRO, and can also improve the efficiency of complex ML systems. • We proposed a Hierarchical Overlapping Ring (HO-Ring) communication topology for inter-node or crossswitch collective communication operations for LLM training or other scenarios. Compared with the traditional Ring, the communication efficiency of HO-Ring was increased by 36.5%.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">BACKGROUND AND RELATED WORKS</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Data and Tensor Parallelism</head><p>According to different parallel objects, distributed parallel training technology can be divided into data parallelism and tensor parallelism <ref type="bibr" target="#b9">(Korthikanti et al., 2023)</ref>.</p><p>Data parallelism divides the input data equally into several shards and assigns them to different GPUs. Each GPU owns the complete replica of model parameters. After forward and backward computation, each GPU obtains the corresponding parameter gradients. These gradients are then aggregated and transmitted back to each GPU through the all-reduce operation. Finally, the model parameters are updated based on the gradient and optimizer state <ref type="bibr" target="#b19">(Sergeev &amp; Balso, 2018)</ref>. Data parallelism simplifies model training and deployment, but requires each GPU to maintain a complete replica of the model state. It may not meet the memory requirements of LLMs, especially when using the Adam optimizer <ref type="bibr" target="#b8">(Kingma &amp; Ba, 2017)</ref>. Additionally, the communication cost during gradient transmission increases almost linearly with the number of GPUs, making the network bandwidth a bottleneck for training efficiency.</p><p>Tensor parallelism shards tensors onto multiple GPU devices by modifying the model structure, and implements model parallelism through distributed matrix multiplication.</p><p>Based on the characteristics of the Transformer architecture, Megatron-LM <ref type="bibr" target="#b20">(Shoeybi et al., 2020)</ref> divides the layers in the row or column dimension to achieve 1D tensor parallelism.</p><p>Since the output of each layer in 1D tensor parallelism is incomplete, an all-gather operation is required to aggregate the complete input before passing it to the next layer. In this process, the collective communication of 1D tensor parallelism generates a large amount of communication cost. Low bandwidth between nodes will affect the efficiency of 1D tensor parallel training. Additionally, 1D tensor parallelism incurs redundant memory consumption due to repeated inputs to each layer and repeated outputs after all-reduce. To address these issues, more advanced tensor parallelism methods, such as 2D <ref type="bibr" target="#b27">(Xu &amp; You, 2023)</ref>, 2.5D <ref type="bibr" target="#b23">(Wang et al., 2021)</ref>, and 3D <ref type="bibr" target="#b2">(Bian et al., 2021)</ref> tensor parallelism, have been introduced in LLM training. These methods shard the initial inputs using distributed matrix multiplication <ref type="bibr" target="#b21">(Solomonik &amp; Demmel, 2011;</ref><ref type="bibr" target="#b0">Agarwal et al., 1995)</ref>, which eliminates communication in the middle layer and only requires one all-gather communication in the last layer.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Model Finetuning</head><p>Powerful BERT <ref type="bibr" target="#b4">(Devlin et al., 2019)</ref> and GPT3 <ref type="bibr" target="#b3">(Brown et al., 2020)</ref> models are both pre-trained on a large amount of general domain data. A widely-used approach, fine-tuning, freezes part of the pre-trained parameters and finetunes the remaining layers on task-specific data provides a significant performance and efficiency gain in different domains <ref type="bibr" target="#b5">(Girshick et al., 2014;</ref><ref type="bibr" target="#b3">Brown et al., 2020)</ref>. Different finetuning approaches vary on the ratio of trainable parameters of existing pre-trained models, including full parameter finetuning, and partial parameter finetuning <ref type="bibr" target="#b12">(Lialin et al., 2023)</ref>.</p><p>The full parameter finetuning is as expensive as the pretraining since all model states must be stored. In the partial parameter finetuing, only the parameters are required to fully stored for computation, while the gradients and optimizer states are limited to trainable parameters. However, the enormity of pre-trained model, such as GPT-3, makes it challenging to perform traditional partial fine-tuning, so Parameter-efficient fine-tuning (PEFT), such as LoRA <ref type="bibr" target="#b6">(Hu et al., 2022)</ref>, P-tuning <ref type="bibr" target="#b13">(Liu et al., 2022)</ref>, is introduced to resolve this problem by only training a very small set of parameters, which might be a subset of the existing model parameters or a set of newly added parameters.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3">ZeRO Optimizer</head><p>The training process of deep learning models mainly consists of three stages: forward computation, backward computation, and model update. During the training process, GPUs need to store both model state and residual memory. ZeRO <ref type="bibr" target="#b17">(Rajbhandari et al., 2020)</ref> primarily reduces the memory consumption of model states, which mainly include model parameters, gradients from backward computation, and optimizer states for parameter updates. ZeRO gradually optimizes redundant memory in three stages: ZeRO-1, ZeRO-2 and ZeRO-3.</p><p>ZeRO-1 globally shards the optimizer state across all GPU devices. During the training process, each GPU performs forward and backward computation independently to obtain the gradient, which are then synchronized among all GPUs using the all-reduce operation. Since each GPU retains a shard of the optimizer state, only the corresponding model parameters can be updated. After that, the updated model parameter shards are retrieved from other GPUs using the all-gather operation to ensure that all GPUs have the latest model parameters.</p><p>Compared to ZeRO-1, ZeRO-2 further shards the optimizer state. During the training process, each GPU stores a complete set of model parameters and independently performs forward and backward computation to obtain a gradient. Afterwards, each GPU updates the gradient shards through the reduce-scatter operation and discards the other gradient shards. The subsequent processes remain the same as in ZeRO-1.</p><p>In ZeRO-3, model parameters, gradients, and optimizer state are all sharded. Before performing forward and backward computation, each GPU performs an all-gather operation to collect model parameter shards from other GPUs and construct the complete model parameters. After gradient calculation, each GPU immediately discards the unmaintained model parameter shards. Then, each GPU updates the corresponding shard of model parameters using the maintained shard of optimizer parameters and gradients. Since each GPU only maintains one model parameter shard, there is no need to perform all-reduce operations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.4">Communication Cost</head><p>For models with billions to trillions of parameters, ZeRO-3 transfers a significant amount of data ranging from tens to hundreds of gigabytes during forward computation, backward computation, and model updates. As the cluster size grows, each GPU needs to communicate multiple times, which amplifies the latency of collective communication operations. Therefore, an efficient communication topology is crucial to reduce communication costs.</p><p>For communication primitives, the traditional ring allreduce fails to consider the differences in intra-and internode network bandwidth, thereby being unable to fully utilize the bandwidth of clusters. The hierarchical ring (H-Ring) all-reduce <ref type="bibr" target="#b7">(Jia et al., 2018)</ref> groups GPUs based on their respective nodes and improves the efficiency through the communication topology of intra-group reduce, intergroup all-reduce, and intra-group broadcast. However, in inter-group all-reduce, only one GPU of each node participates in communication, resulting in low inter-group bandwidth utilization. To address this issue, Mikami et al. <ref type="bibr" target="#b14">(Mikami et al., 2018)</ref> proposed the 2D-Torus all-reduce scheme, where the communication topology is modified into intra-group reduce-scatter, inter-group all-reduce and intragroup all-gather. While the total communication volume of 2D-Torus all-reduce is the same as H-Ring all-reduce, 2D-Torus is more efficient due to the simultaneous communication of all GPUs in inter-group all-reduce.</p><p>The community further optimizes the communication cost based on the inherent characteristic of LLM. To reduce the inter-node communication costs, MiCS <ref type="bibr" target="#b29">(Zhang et al., 2022)</ref> introduces the group sharding strategy by dividing the GPU cluster into subgroups, where the model state is partitioned within the subgroups and replicated across the subgroups. By configuring suitable subgroup sizes, MiCS can leverage the high intra-node bandwidth and a hierarchical communication strategy to reduce the communication volume between nodes. Similarly, the ZeRO++ <ref type="bibr" target="#b25">(Wang et al., 2023)</ref> system performs a secondary sharding of parameters while keeping other model states sharded across all GPUs to reduce inter-node communication volume. In addition, ZeRO++ compresses model parameters and gradients through quantization to reduce inter-node communication volume and latency. Additionally, the PyTorch's official Fully Sharded Data Parallel <ref type="bibr" target="#b30">(Zhao et al., 2023)</ref> provides a hybrid sharding (FSDP-hs) strategy, which leverages data center locality to accelerate training and reduce inter-node communication.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">PARO DESIGN</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Analysis and Insights in LLM Training</head><p>This subsection examines the memory and communication costs of LLM training using the group sharding strategy.</p><p>We consider training tasks with different model sizes and three levels of trainable model parameters: full, partial, and PEFT. We refer finetuning as partial training tasks for simplicity and introduce the following notations to aid in the explanation:</p><formula xml:id="formula_0">N : Number of</formula><p>GPUs in the cluster. M : Number of GPUs in the group or node. g: Number of groups or nodes, g = N/M . s: Step of gradient accumulations. K: Optimizer parameters. Ψ: Number of model parameters. Ψ ′ : Number of trainable parameters. P : Parameter. G: Gradient. OS: Optimizer state.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.1">Analysis of Communication Cost</head><p>As mentioned in the subsection 2.4, there exists a substantial performance gap in the bandwidth and latency between intra-and inter-node networks, which bottlenecks the training efficiency. Grouping GPU with a little memory redundancy can reduce communication participants and communication costs. Additionally, the subgroup could be grouped within the intra-and inter-node networks to fully leverage the high-throughput intra-node network.</p><p>It could significantly improve communication efficiency. Therefore, we define three sharding states: no sharding, intra-group sharding and global sharding, based on the sharding scope for three components of model states. The order of sharding granularity, from coarse-grained to fine-grained, is as follows: no sharding &gt; intra-group sharding &gt; global sharding. More specifically, intra-group sharding means that model states are sharded within the group, while each group holds the complete replica. No sharding means that each GPU holds a replica of model states, while each GPU holds a part of model states in global sharding. In the context of gradient accumulation where one minibatch step contains several mirco-batch steps, we analyze the communication cost of model states with different sharding states. • Parameter sharding: Parameters are utilized in both forward and backward computations during each iteration of micro-batch. In the both global sharding and intra-group sharding states, an all-gather operation is necessary to obtain all parameters of the current layer before usage. While only intra-group all-gather is required when sharding model parameters within a group. It reduces the frequency of high time-cost inter-group communication with little redundant memory across the inter-group. In no sharding state, no communication operation is required since each device holds replicated parameters. • Gradient sharding: Gradients are computed during the backward computation and used in the model update stage. Likewise, in both global sharding and intragroup sharding states, the aggregated gradient of the corresponding local shard is obtained through collective communication. When sharding gradients within a group, only intra-group reduce-scatter is required in mini-batch step. After a number of gradient accumulations in a mini-batch step, an intra-group or global reduce-scatter operation is performed depending on the sharding scope of the optimizer state. In no sharding state, no communication operation is required before parameter update stage. • Optimizer state sharding: The optimizer state is utilized during the model updating stage. However, the communication operations before or after the model updating stage become more complicated since they depend on the consistency of sharding scope between gradients and model parameters. If the sharding scope of optimizer states differs from that of gradients or parameters, the communication operations will vary before and after the model updating stage. For instance, it requires to perform an inter-group reduce-scatter before model updating and an inter-group all-gather after model updating, when the OS is global sharding and others are intra-group sharding.</p><p>Therefore, the order of communication costs is as follows: no sharding &lt; intra-group sharding &lt; global sharding. Additionally, we highlight that the communication bottleneck vary with trainable parameters.</p><p>• When Ψ ′ ≤ Ψ in the full or partial parameters training, the bottleneck lies in the inter-node communication bandwidth. • When Ψ ′ ≪ Ψ, e.g. PEFT, the bottleneck lies in the communication frequency. This is because a large amount of fragmented communications reduces overall bandwidth utilization.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.2">Analysis of Memory Cost</head><p>In contrast to ZeRO optimizer, we account for the memory consumption of the model states with an extra intra-group sharding state.</p><p>Obviously, the order of memory consumption is: global sharding &lt; intra-group sharding &lt; no sharding, which is inverse to the order of communication cost. Memory savings come at the cost of increased communication. In the mainstream mixed precision training using Adam optimizer <ref type="bibr" target="#b8">(Kingma &amp; Ba, 2017)</ref>, the memory consumption of the parameters, gradients and optimizer states are respectively 2Ψ, 2Ψ ′ , and 12Ψ ′ . In PEFT tasks, the sizes of G and OS are relatively small compared to P of mega pre-trained models. We summarize:</p><p>• When Ψ ′ ≤ Ψ, optimizer states consume the most memory. • When Ψ ′ ≪ Ψ, parameters consumes the most memory, followed by optimizer states and model parameters.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.3">Trade-off between Memory and Communication</head><p>The above three levels of sharding granularity on P, G and OS brings up 27 combinations of model sharding strategies.</p><p>Generally, utilizing a more fine-grained sharding level can save memory for larger batch input needs, and thus increases throughput per GPU.</p><p>Therefore, there exists a trade-off between memory savings and communication costs when selecting the appropriate model sharding strategy. In all scenarios, any strategy with sharding priority S OS &gt; S P or S OS &gt; S G is inferior to the corresponding strategy with S OS = S P or S OS = S G . This is because the former not only consumes more memory but also fails to achieve any savings in communication overhead compared to the latter. Based on this key insight, it infers to Principle 1 that S P ≥ S OS and S G ≥ S OS in terms of the order of sharding granularity for all levels of trainable parameters. In other words, a more fine-grained shard strategy should be employed for OS compared to P and G. According to this principle, we can eliminate 13 out of the 27 possible combinations mentioned earlier.</p><p>Secondly, when Ψ ′ ≥ Ψ 6 , the memory consumption of P is greater than or equal to that of G. In the full parameter training when Ψ ′ = Ψ, both P and G own the same memory consumption, however, the communication frequency of P is as twice as G. This is because P is utilized in both the forward pass and backward pass, while G is only used in the backward propagation. Furthermore, in the partial parameter training when Ψ ′ &gt; Ψ 6 , the memory consumption of gradients reduce to Ψ ′ while the P is still Ψ since all of the parameters have to be utilized in the training. Therefore, we infer that S P ≥ S G . Combined with Principle 1, we achieve Principle 2 that S P ≥ S G ≥ S OS when Ψ ′ ≥ Ψ 6 . Thirdly, in PEFT training tasks when Ψ ′ ≪ Ψ, the memory consumption of P is still Ψ to be used in the forward computation while G and OS are quite small. In this case, sharding G would result in a negligible amount of memory savings but would lead to increased communication overhead. This infers to Principle 3 that G should not be sharded in PEFT training.</p><p>Table <ref type="table">1</ref>. Optional sharding strategies for varying numbers of trainable parameters. P/G/OS represents the combination of sharding strategies for Parameter/Gradient/Optimizer, N: no sharding, I: intra-group sharding, G: global sharding.</p><formula xml:id="formula_1">Ψ ′ = Ψ, Ψ ′ ≥ Ψ 6 , Ψ ′ &lt; Ψ</formula><p>6 and PEFT means the different ratios of trainable parameters to model parameters. ✓ is recommended while ✗ is the opposite.</p><formula xml:id="formula_2">P/G/OS Ψ ′ = Ψ Ψ ′ ≥ Ψ 6 Ψ ′ &lt; Ψ 6 PEFT NNN(DDP) ✓ ✓ ✓ ✓ NNI ✓ ✓ ✓ ✓ NNG(ZeRO-1) ✓ ✓ ✓ ✗ NII ✓ ✓ ✓ ✗ NIG ✓ ✓ ✓ ✗ NGG(ZeRO-2) ✓ ✓ ✓ ✗ INI ✗ ✗ ✗ ✓ ING ✗ ✓ ✓ ✗ III(MiCS) ✗ ✗ ✓ ✗ IIG ✓ ✓ ✗ ✗ IGG ✓ ✓ ✓ ✗ GNG ✗ ✓ ✓ ✓ GIG ✗ ✓ ✓ ✗ GGG(ZeRO-3) ✓ ✓ ✓ ✗</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Partial Redundancy Optimizer</head><p>Although ZeRO and MiCS advanced the development of LLM training, they only provide limited solutions. Based on Principle 1, we can filter out 14 meaningful combinations from the previously mentioned 27 combinations. These 14 combinations form our proposed PaRO strategy set, which is presented in Table <ref type="table">1</ref>. Among these solutions, DDP, ZeRO and MiCS can be regard as special cases within the PaRO.</p><p>Based on Principles 2 and 3, we can deduce that certain strategies are meaningless under the conditions of Ψ ′ ≥ Ψ 6 and PEFT. Additionally, based on specific scenarios, more meaningless strategies can be eliminated.For example, in the case of Ψ ′ = Ψ 6 , PaRO-INI is always inferior to PaRO-IIG, due to both the memory and communication costs of the former are greater than those of the latter. Another example is that, in the case of PEFT, PaRO-ING is always worse than PaRO-INI. This is because, for PEFT training, the memory consumption is almost identical for both strategies, but the former has higher communication overhead than the latter. Furthermore, we argue that the comprehensive PaRO strategy set provides more flexibility to complicated machine learning system, such as distributed RLHF system <ref type="bibr" target="#b15">(Ouyang et al., 2022)</ref>. In the following paragraphs, we provide a detailed explanation of three PaRO solutions as running examples in full parameter training: PaRO-IGG, PaRO-IIG, and PaRO-NIG. The implementation of other PaRO strategies can be easily derived from these three solutions.  frequency and volume, model parameters are intra-group sharded, while gradients and optimizer states are globally sharded. Therefore, a complete replica of the model parameters is stored within each group. During the training process, a mini-batch is divided into multiple micro-batches to reduce the memory consumption for storing activation outputs. In the Forward stage, each GPU obtains a complete replica of model parameters through the intra-group all-gather operation. These model parameters are used to perform the forward computation of the current layer on the input micro-batch, and are later released to reduce GPU memory consumption. After completing the Forward stage of the current layer, the system proceeds to the Forward stage of the next layer until the final layer of the network. In the Backward phase, the model parameters are collected again through the intra-group all-gather and released after the backward computation of this layer. After the backward computation, each GPU obtains a complete replica of the gradients and releases the redundant model parameters. Each GPU aggregates gradients from other GPUs through HO-Ring reduce-scatter operations for global gradient synchronization. In addition, each GPU maintains a gradient shard that accumulates gradients generated by each microbatch. Similarly, after completing the Backward phase of the current layer, the system will execute the Backward phase of the previous layer until the first layer of the network. Once the gradients of the last micro-batch are accumulated, each GPU utilizes the gradient shard to update the optimizer state maintained by itself and generate low-precision model parameters. Finally, model parameter shards are obtained from other groups through an inter-group all-gather operation.</p><p>Figure <ref type="figure" target="#fig_2">2</ref> illustrates the schematic of PaRO-IIG. Different from PaRO-IGG, in PaRO-IIG, the model parameters and gradients are intra-group sharded, while the optimizer states are globally sharded. Therefore, full model parameters and gradients are preserved within each group. In the Forward and pre-Backward stages, the computation processes of PaRO-IIG and PaRO-IGG are consistent. After the backward computation, each GPU aggregates gradients from other GPUs through intra-group reduce-scatter operations for local gradient synchronization. These gradients are temporarily stored on each GPU through gradient accumulation.</p><p>Once the gradients of the last micro-batch are accumulated, each GPU performs an inter-group reduce-scatter operation to achieve global gradient synchronization. The subsequent Update operations are the same as PaRO-IGG.  updated gradients by HO-Ring all-gather operations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">PaRO with Gradient Accumulation</head><p>In PaRO, we introduce the gradient accumulation strategy <ref type="bibr" target="#b10">(Li et al., 2021;</ref><ref type="bibr" target="#b28">You et al., 2020)</ref> to obtain large batches of inputs. Furthermore, we narrow the scope of gradient synchronization to reduce communication volume and frequency. Specifically, we perform intra-group sharding and inter-group replication of gradients. The gradients of each micro-batch are synchronized through the intragroup reduce-scatter. After accumulating the gradients from all micro-batches, global gradient synchronization can be achieved by performing an inter-group reduce-scatter operation only once. Compared with the global reduce-scatter, the single-GPU communication volume reduced by the grouped two-step reduce-scatter is calculated as follows:</p><formula xml:id="formula_3">∆ C = s * Ψ N * (N -1)- s * Ψ M * (M -1) + Ψ N * (g -1) = Ψ * (s -1) * (g -1) N (1)</formula><p>where, the first item is the communication volume of global reduce-scatter, and the second item is the total communication volume of intra-and inter-group reduce-scatters. It can be observed that as the number of groups g and the accumulation steps s increase, the communication volume on a single GPU decreases further. In the absence of cluster grouping (i.e. g = 1) or gradient accumulation (i.e. s = 1), there is no reduction in single-GPU communication volume. Therefore, the combination of gradient accumulation and cluster grouping is of practical significance to reduce communication. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">HO-Ring for All-gather and Reduce-scatter</head><p>Since the model state is sharded in a GPU cluster, it is necessary to aggregate or scatter these shards for global synchronization, such as the all-gather for parameters in PaRO-NIG and the reduce-scatter for gradients in PaRO-IGG. In the traditional Ring, each GPU sequentially transfers its shard of data to the next GPU. The transmission efficiency of crossnode communication may be a bottleneck affecting model training. The H-Ring groups GPUs based on their respective nodes. The global all-gather/reduce-scatter is divided into two steps: intra-and inter-group all-gather/reduce-scatter, to improve inter-group bandwidth utilization and avoid partial GPU waiting. However, during inter-group communication, the intra-group bandwidth is idle, resulting in a waste of resources. Therefore, we proposed a HO-Ring communication topology for all-gather/reduce-scatter.</p><p>Figure <ref type="figure" target="#fig_5">4</ref> shows the communication topology of HO-Ring. Like H-Ring, the GPUs in HO-Ring are also grouped based on their respective nodes. Each GPU transmits its own shards simultaneously through the intra-and inter-group communication rings, as shown in the first two steps in Figure <ref type="figure" target="#fig_5">4</ref>. Different from the H-Ring, HO-Ring can simultaneously utilize communication resources within and between groups to improve transmission efficiency. After the inter-group communication ring is completed, an intra-group communication ring is executed to gather the remaining shards within the group, as shown in the third step in Figure <ref type="figure" target="#fig_5">4</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.5">Memory and Communication Analysis</head><p>This section analyzes the advantages of the above three solutions in terms of memory consumption and communication by comparing other solutions.</p><p>Table <ref type="table" target="#tab_3">2</ref> shows the single-GPU memory consumption of parameter P, gradient G and optimizer state OS in different solutions. As can be seen, the single-GPU memory consumption of ZeRO-1, ZeRO-2, and ZeRO-3 is not af- </p><formula xml:id="formula_4">G OS ZeRO-1 2Ψ 2Ψ KΨ N ZeRO-2 2Ψ 2Ψ N KΨ N ZeRO-3 2Ψ N 2Ψ N KΨ N MiCS 2Ψ M 2Ψ M KΨ M ZeRO++ 2Ψ N + 2Ψ M 2Ψ N KΨ N PaRO-IGG 2Ψ M 2Ψ N KΨ N PaRO-IIG 2Ψ M 2Ψ M KΨ N PaRO-NIG 2Ψ 2Ψ M KΨ N</formula><p>fected by the number of groups, as they only perform global sharding operations. MiCS shards the entire model state within the group and introduces inter-group redundancy. As a result, the memory of MiCS linearly increases with the number of groups. Based on ZeRO-3, ZeRO++ additionally retains the intra-group sharding of model parameters, while PaRO-IGG only retains the intra-group sharding of model parameters. Therefore, the memory of PaRO-IGG and ZeRO++ slowly increases with the number of groups.</p><p>PaRO-IIG shards model parameters and gradients within groups, further increasing memory redundancy. Based on ZeRO-2, PaRO-NIG shards gradient groups, and its memory also increases slowly as the number of groups increases.</p><p>Table <ref type="table">3</ref> shows the total communication volume of different solutions in the Forward, Backward and Update stages with a mini-batch input. As can be seen from Table <ref type="table">3</ref>, each GPU in ZeRO-1 performs gradient accumulation locally, and only performs a global synchronization after gradient accumulation. MiCS performs intra-node communication in the Forward and Backward stages, and only performs a partial gradient all-reduce operation for parameter update.</p><p>For ZeRO++, due to the secondary intra-node sharding of the collected model parameters in the Forward stage, the parameters can be collected using an intra-node all-gather operation in the Backward stage. Since MiCS, PaRO-IGG and PaRO-IIG shard the model parameters within the group, the all-gather operation in forward and backward computation is intra-group communication. Compared with ZeRO-3, these solutions increase the size of a single transmission ( Ψ M vs. Ψ N ) and reduce the number of communications (s * (M -1) vs. s * (N -1)), which can improve the bandwidth utilization within the group. Compared with ZeRO-2, PaRO-NIG splits the global reduce-scatter of the gradient into two steps: intra-and inter-group reduce-scatters.</p><p>Figure <ref type="figure" target="#fig_6">5</ref> shows the total intra-and inter-group communication volume of different solutions under the condition of </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.6">Use PaRO in complex ML systems</head><p>PaRO can also be applied in complex ML systems. For instance, in the PPO step of RLHF, it is sometimes necessary to deploy partial states of multiple models, such as Actor, Critical, and Reward models, on a single GPU. Each model has different memory and communication requirements. By applying different PaRO strategies to different models, it is possible to better balance the cost of each model, thereby improving the end-to-end PPO speed.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">EXPERIMENTS AND ANALYSIS</head><p>In this section, we perform end-to-end training to evaluate the throughput and scalability of the proposed PaRO. Afterwards, we evaluate the transmission efficiency of the HO-Ring communication topology. Finally, we demonstrate the consistent convergence of PaRO and ZeRO, which validates the correctness of our system. Table <ref type="table">3</ref>. Total communication volume of different solutions in the Forward, Backward and Update stages with a micro-batch input. A-G(P) represents the all-gather operation for the parameter P; R-S(G) and A-G(G) respectively represent the reduce-scatter and all-reduce (bold) operations on the gradient G. The † symbol in the upper right corner of the data indicates that the operation is inter-group communication, otherwise it is intra-group communication.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Forward</head><p>Backward Update</p><formula xml:id="formula_5">Methods A-G(P) A-G(P) R-S(G) R-S(G)/A-R(G) A-G(P) ZeRO-1 0 0 0 2 * g * Ψ N * (N -1) † + 2 * (N -g) * Ψ N * (N -1) g * Ψ N * (N -1) † + (N -g) * Ψ N * (N -1) ZeRO-2 0 0 g * s * Ψ N * (N -1) † + (N -g) * s * Ψ N * (N -1) 0 g * Ψ N * (N -1) † + (N -g) * Ψ N * (N -1) ZeRO-3 g * s * Ψ N * (N -1) † + (N -g) * s * Ψ N * (N -1) g * s * Ψ N * (N -1) † + (N -g) * s * Ψ N * (N -1) g * s * Ψ N * (N -1) † + (N -g) * s * Ψ N * (N -1) 0 0 MiCS N * s * Ψ M * (M -1) N * s * Ψ M * (M -1) N * s * Ψ M * (M -1) 2 * g * Ψ M * (g -1) † + 2 * (N -g) * Ψ M * (g -1) 0 ZeRO++ g * s * Ψ N * (N -1) † + (N -g) * s * Ψ N * (N -1) N * s * Ψ M * (M -1) g * s * Ψ N * (N -1) † + (N -g) * s * Ψ N * (N -1) 0 0 PaRO-IGG N * s * Ψ M * (M -1) N * s * Ψ M * (M -1) N * s * Ψ N * (g -1) † + N * s * Ψ M * (M -1) 0 N * s * Ψ N * (g -1) † PaRO-IIG N * s * Ψ M * (M -1) N * s * Ψ M * (M -1) N * s * Ψ M * (M -1) N * Ψ N * (g -1) † N * Ψ N * (g -1) † PaRO-NIG 0 0 N * Ψ M * (M -1) N * Ψ N * (g -1) † N * Ψ N * (g -1) † + N * Ψ M * (M -1)</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Experiment Environments</head><p>Our experimental cluster consists of up to 16 DGX nodes, with each node containing 8 Ampere A100 SXM3 80GB GPUs. The GPUs in each node are interconnected via NVLink/NVSwitch with a bidirectional bandwidth of up to 600GB/s. These nodes are connected through 8 Infini-Band adapters without NVIDIA SHARP, which can provide more than 100GB/s of inter-node bandwidth. The software environment includes CUDA-11.7, DeepSpeed-v0.10.0, PyTorch-v1.9.2, and NCCL-v2.14.3.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Throughput Performance</head><p>We used ZeRO-2 and ZeRO-3 in Deepspeed as baselines to implement PaROs with different sharding strategies. To evaluate the performance of PaROs, we compared them with current state-of-the-art solutions, including: ZeRO, ZeRO-3, MiCS, ZeRO++ and FSDP-hs. ZeRO-1 was not considered due to its inability to run the smallest scale model in our experiments. We used two LLMs with different parameter sizes: LLaMA-7B and LLaMA-65B <ref type="bibr" target="#b22">(Touvron et al., 2023)</ref>, to evaluate the throughput and acceleration performance at varying GPU counts. For the LLaMA-65B model, we activated checkpointing to ensure successful training. The C4 corpus in RedPajama was used as the training data set.</p><p>During training, we set the sequence length to 512, the batch size to 40 (divided into 4 micro-batches), the number of gradient accumulation steps to 10, and mixed precision. All throughput data reported was the average of 100 iterations.</p><p>Figure <ref type="figure" target="#fig_7">6</ref> shows the throughput and peak memory of LLaMA-7B and LLaMA-65B in different solutions. In Figure <ref type="figure" target="#fig_7">6</ref>(a), the throughput of PaRO-IGG is only better than that of ZeRO-3 and ZeRO++; the throughput of PaRO-IIG is almost the same as that of MiCS. Compared with the baseline ZeRO-3, the throughput of PaRO-IGG and PaRO-IIG is improved by 1.37x and 1.94x (with 32 GPUs), 1.31x and 2.50x (with 128 GPUs), respectively. Compared with the baseline ZeRO-2, the throughput of PaRO-NIG is improved by 1.70x (with 32 GPUs) and 2.25x (with 128 GPUs), respectively. For the small-scale LLaMA-7B, PaRO-NIG approaches show higher throughput in clusters with 32 and 128 GPUs.       </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Near-linear Scalability</head><p>To analyze the relationship between throughput and GPU resources, we collected the single-GPU throughput of PaRO and ZeRO under different GPU numbers, as shown in Figure <ref type="figure" target="#fig_11">7</ref>. The experiments were conducted using LLaMA-7B. Overall, under the same GPU resource conditions, the single-GPU throughput of PaRO is higher than the baseline ZeRO-2 and ZeRO-3. The single-GPU throughput of different approaches gradually decreases as the number of GPUs increases. The throughput of PaRO-IIG decreases the least, and the throughput of ZeRO-2 decreases the most. Since NCCL adopts a multi-machine communication method based on Double Binary Tree <ref type="bibr" target="#b18">(Sanders et al., 2009)</ref>, the communication efficiency of 96 GPUs (not an integer power of 2) is lower than that of 64 and 128 GPUs.</p><p>It can be seen that as the cluster size increases, PaRO-IIG can maintain near-linear scalability.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">HO-Ring Communication Performance</head><p>In the section, we performed experiments using 16 DGX nodes, with a total communication volume set to 1GB. We measured the communication time of the all-gather operation with the traditional Ring (baseline), H-Ring and HO-Ring. The communication times of traditional Ring, H-Ring and HO-Ring are 288ms, 183ms and 162ms respectively. Compared with Ring and H-Ring, the communication time of HO-Ring is reduced by 36.5% and 11.5% respectively.</p><p>Therefore, HO-Ring can significantly improve communication efficiency by improving the communication topology.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5">Model Convergence</head><p>We used LLaMA-7B and C4 corpus in RedPajama to evaluate the convergence of PaRO. During training, we set the sequence length to 128, the batch size to 1024 (divided into 8 micro-batches) and the number of gradient accumulation steps to 8. The loss validation process does not aim to produce exactly the same loss as ZeRO but to ensure the convergence behaviours are the same. As shown in Figure <ref type="figure" target="#fig_13">9</ref>, PaRO provides the same convergence as ZeRO.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">CONCLUSION</head><p>In this paper, we present PaRO </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1</head><label>1</label><figDesc>Figure 1 illustrates the schematic of PaRO-IGG. To simplify the diagram, we only use four GPUs and divide them into two groups. To reduce inter-group communication</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 1 .</head><label>1</label><figDesc>Figure 1. Schematic of PaRO-IGG in a grouped cluster with four GPUs. The parameters (P) of the model are sharded within the group, while gradients (G) and optimizer states (OS) are sharded globally. Labeled rectangular blocks represent shards of model parameters, gradients, and optimizer states. The solid and dashed rectangular blocks represent fixed and temporary shards respectively. Circular nodes represent operations in different stages (Forward, Backward, and Update). After feeding a micro-batch, the model will sequentially execute the Forward stage of each layer, followed by the reverse execution of the Backward stage of each layer. The Update stage will only be executed after completing the Backward stage of the last micro-batch.</figDesc><graphic coords="6,55.80,67.07,233.25,181.70" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 .</head><label>2</label><figDesc>Figure 2. Schematic of PaRO-IIG in a grouped cluster with four GPUs.</figDesc><graphic coords="6,307.80,67.07,233.23,191.19" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 3</head><label>3</label><figDesc>Figure 3 illustrates the schematic of PaRO-NIG. In PaRO-NIG, the parameters of the model are not sharded, the gradients are intra-group sharded, and the optimizer states are global sharded. Different from the above two solutions, each GPU retains complete model parameters in PaRO-NIG. Therefore, in the Forward and Backward stages, each GPU can directly perform the forward and backward computation without collecting and releasing model parameters. The subsequent four-step computation process of PaRO-NIG is consistent with that of PaRO-IIG. Finally, each GPU collects</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 3 .</head><label>3</label><figDesc>Figure 3. Schematic of PaRO-NIG in a grouped cluster with four GPUs.</figDesc><graphic coords="7,55.80,67.07,233.26,167.57" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 4 .</head><label>4</label><figDesc>Figure 4. Communication topology of HO-Ring. The N (N = 9) GPUs (G0-G8) are divided equally into g (g = 3) groups. Red and black arrows represent intra-and inter-group communication respectively. Orange and green blocks represent data obtained through intra-and inter-group communication, respectively.</figDesc><graphic coords="7,307.80,67.06,233.28,81.47" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 5 .</head><label>5</label><figDesc>Figure 5. Under the conditions of Ψ = 7B, N = 64, s = 8, g = 8, the total communication volume (intra-and inter-group), and single GPU memory of model states.</figDesc><graphic coords="8,326.00,67.05,194.41,119.72" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure 6</head><label>6</label><figDesc>Figure 6(b)  shows the maximum reserved memory during training for different solutions. The peak memory of ZeRO-3 is the smallest. Since both MiCS and FSDP-hs adopt an intra-group sharding strategy, their peak memory is only related to the number of GPUs in the group, but not to the number of GPUs in the cluster. The peak memory of PaRO-IGG, PaRO-IIG and PaRO-NIG increase slightly compared to baseline ZeRO-3 and ZeRO-2 respectively. The peak memory of all three PaROs is smaller than MiCS.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><head>Figure 6</head><label>6</label><figDesc>Figure6(c) presents the single GPU throughput of LLaMA-65B with different approaches. Since LLaMA-65B requires finer-grained sharding, only ZeRO-3, ZeRO++, PaRO-IGG, and PaRO-IIG can perform training, while other solutions suffer from out-of-memory (OOM) issues. Compared with the baseline ZeRO-3, the throughput of PaRO-IGG and PaRO-IIG is improved by 1.19x and 1.35x (with 32 GPUs), 1.36x and 1.77x (with 128 GPUs), respectively. For the large-scale LLaMA-65B, training efficiency is higher with the PaRO-IGG and PaRO-IIG compared to ZeRO-3.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_9"><figDesc>(a) Throughput of LLaMA-7B. (b) Peak memory of LLaMA-7B. (c) Throughput of LLaMA-65B.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_10"><head>Figure 6 .</head><label>6</label><figDesc>Figure 6. Throughput and peak memory of LLaMA-7B and LLaMA-65B models in different solutions. The cross indicates OOM.</figDesc><graphic coords="10,71.02,72.05,145.79,112.87" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_11"><head>Figure 7 .</head><label>7</label><figDesc>Figure 7. Throughput with different number of GPUs.</figDesc><graphic coords="10,73.33,234.77,131.18,80.39" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_12"><head>Figure 8 .</head><label>8</label><figDesc>Figure 8. Time comparison of different strategies for all-gather operation.</figDesc><graphic coords="10,238.87,235.12,116.63,80.04" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_13"><head>Figure 9 .</head><label>9</label><figDesc>Figure 9. Training convergence for LLaMA-7B.</figDesc><graphic coords="10,386.19,246.52,138.48,68.64" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_14"><figDesc>, a system balances the memory occupation and communication costs across diverse training scenarios. PaRO provides comprehensive options which reduces the communication cost of inter-group communication with minor memory redundancy by fine-grained sharding strategy, thereby improving the training efficiency. Additionally, we propose a HO-Ring communication topology to enhance collective communication efficiency between nodes or across switches. We evaluate PaRO on different training workloads on large-scale clusters. PaRO outperforms ZeRO by up to 2.50× and demonstrates nearlinear scalability in various industrial-level training settings.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 2 .</head><label>2</label><figDesc>Single-GPU memory consumption of parameter P, gradient G and optimizer state OS in different solutions.</figDesc><table><row><cell>Model states</cell><cell>P</cell></row></table></figure>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">A three-dimensional approach to parallel matrix multiplication</title>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">C</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">M</forename><surname>Balle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">G</forename><surname>Gustavson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Joshi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Palkar</surname></persName>
+		</author>
+		<idno type="DOI">10.1147/rd.395.0575</idno>
+	</analytic>
+	<monogr>
+		<title level="j">IBM Journal of Research and Development</title>
+		<imprint>
+			<biblScope unit="volume">39</biblScope>
+			<biblScope unit="issue">5</biblScope>
+			<biblScope unit="page" from="575" to="582" />
+			<date type="published" when="1995">1995</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Bringing hpc techniques to deep learning</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Andrew</surname></persName>
+		</author>
+		<ptr target="https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce" />
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Maximizing parallelism in distributed training for huge neural networks</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Bian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>You</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Larochelle</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Ranzato</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Hadsell</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Balcan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Lin</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Pre-training of deep bidirectional transformers for language understanding</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-W</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Toutanova</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bert</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Rich feature hierarchies for accurate object detection and semantic segmentation</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Girshick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Donahue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Darrell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Malik</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE conference on computer vision and pattern recognition</title>
+		<meeting>the IEEE conference on computer vision and pattern recognition</meeting>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="page" from="580" to="587" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">J</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lora</surname></persName>
+		</author>
+		<title level="m">Low-rank adaptation of large language models. International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Highly scalable deep learning training system with mixed-precision: Training imagenet in four minutes</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Rong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Yu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">P</forename><surname>Kingma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ba</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Adam</surname></persName>
+		</author>
+		<title level="m">A method for stochastic optimization</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Reducing activation recomputation in large transformer models. Proceedings of Machine Learning and Systems</title>
+		<author>
+			<persName><forename type="first">V</forename><forename type="middle">A</forename><surname>Korthikanti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Casper</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Lym</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Mcafee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Andersch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Shoeybi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Catanzaro</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">5</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">1bit lamb: Communication efficient large-scale large-batch training with lamb&apos;s convergence speed</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">A</forename><surname>Awan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Rajbhandari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>He</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Colossal-ai: A unified deep learning system for large-scale parallel training</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Bian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Fang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>You</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3605573.3605613</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 52nd International Conference on Parallel Processing</title>
+		<meeting>the 52nd International Conference on Parallel Processing<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="766" to="775" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Scaling down to scale up: A guide to parameter-efficient fine-tuning</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Lialin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Deshpande</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rumshisky</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.15647</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">P-tuning: Prompt tuning can be comparable to fine-tuning across scales and tasks</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Tam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tang</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.acl-short.8</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Dublin, Ireland</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022-05">May 2022</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="61" to="68" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Mikami</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Suganuma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>U-Chupala</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tanaka</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Kageyama</surname></persName>
+		</author>
+		<title level="m">Massively distributed sgd: Imagenet/resnet-50 training in a flash</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ray</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="27730" to="27744" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Improving all-reduce collective operations for imbalanced process arrival patterns</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Proficz</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/s11227-018-2356-z</idno>
+	</analytic>
+	<monogr>
+		<title level="j">The Journal of Supercomputing</title>
+		<idno type="ISSN">1573- 0484</idno>
+		<imprint>
+			<biblScope unit="volume">74</biblScope>
+			<biblScope unit="issue">7</biblScope>
+			<biblScope unit="page" from="3071" to="3092" />
+			<date type="published" when="2018-07">July 2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Memory optimizations toward training trillion parameter models</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Rajbhandari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Rasley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Ruwase</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zero</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis, SC &apos;20</title>
+		<meeting>the International Conference for High Performance Computing, Networking, Storage and Analysis, SC &apos;20</meeting>
+		<imprint>
+			<publisher>IEEE Press</publisher>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Two-tree algorithms for full bandwidth broadcast, reduction and scan</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Sanders</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Speck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">L</forename><surname>Träff</surname></persName>
+		</author>
+		<idno type="DOI">10.1016/j.parco.2009.09.001</idno>
+		<ptr target="https://doi.org/10.1016/j.parco.2009.09.001" />
+	</analytic>
+	<monogr>
+		<title level="j">Parallel Computing</title>
+		<idno type="ISSN">0167-8191</idno>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="issue">12</biblScope>
+			<biblScope unit="page" from="581" to="594" />
+			<date type="published" when="2009">2009</date>
+		</imprint>
+	</monogr>
+	<note>Selected papers from the 14th European PVM/MPI Users Group Meeting</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Horovod: fast and easy distributed deep learning in tensorflow</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sergeev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">D</forename><surname>Balso</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Megatron-lm: Training multibillion parameter language models using model parallelism</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Shoeybi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Patwary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Puri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Legresley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Casper</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Catanzaro</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Communication-optimal parallel 2.5d matrix multiplication and lu factorization algorithms</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Solomonik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Demmel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Euro-Par 2011 Parallel Processing</title>
+		<editor>
+			<persName><forename type="first">E</forename><surname>Jeannot</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Namyst</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">J</forename><surname>Roman</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Berlin, Heidelberg; Berlin Heidelberg</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2011">2011</date>
+			<biblScope unit="page" from="90" to="109" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-A</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Azhar</surname></persName>
+		</author>
+		<title level="m">Open and efficient foundation language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<author>
+			<persName><forename type="first">B</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Bian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>You</surname></persName>
+		</author>
+		<title level="m">5-dimensional distributed model training</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page">2105</biblScope>
+		</imprint>
+	</monogr>
+	<note>arXiv e-prints</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Blink: Fast and generic collectives for distributed ml</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Venkataraman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Phanishayee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Devanur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Thelin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Stoica</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of Machine Learning and Systems</title>
+		<meeting>Machine Learning and Systems</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="172" to="186" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<author>
+			<persName><forename type="first">G</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">A</forename><surname>Jacobs</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Holmes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Rajbhandari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Ruwase</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zero++</surname></persName>
+		</author>
+		<title level="m">Extremely efficient collective communication for giant model training</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Distributed meta learning in gpu clusters for large-scale recommender systems</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Huan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><surname>G-Meta</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3583780.3615208</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 32nd ACM International Conference on Information and Knowledge Management, CIKM &apos;23</title>
+		<meeting>the 32nd ACM International Conference on Information and Knowledge Management, CIKM &apos;23<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="4365" to="4369" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">An efficient 2d method for training superlarge deep learning models</title>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>You</surname></persName>
+		</author>
+		<idno type="DOI">10.1109/IPDPS54959.2023.00031</idno>
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE International Parallel and Distributed Processing Symposium (IPDPS)</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="222" to="232" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<title level="m" type="main">Large batch optimization for deep learning: Training bert in 76 minutes</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>You</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Reddi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hseu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kumar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bhojanapalli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Demmel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Keutzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C.-J</forename><surname>Hsieh</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Mics: Near-linear scaling for training gigantic model on public cloud</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Karypis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Chilimbi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jin</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename></persName>
+		</author>
+		<idno type="DOI">10.14778/3561261.3561265</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proc. VLDB Endow</title>
+		<meeting>VLDB Endow</meeting>
+		<imprint>
+			<date type="published" when="2022-09">sep 2022</date>
+			<biblScope unit="volume">16</biblScope>
+			<biblScope unit="page" from="37" to="50" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Pytorch fsdp: Experiences on scaling fully sharded data parallel</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Varma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C.-C</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Shojanazeri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Shleifer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Desmaison</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Balioglu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Damania</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Chauhan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Hao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mathews</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Li</surname></persName>
+		</author>
+		<idno type="DOI">10.14778/3611540.3611569</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proc. VLDB Endow</title>
+		<meeting>VLDB Endow</meeting>
+		<imprint>
+			<date type="published" when="2023-09">sep 2023</date>
+			<biblScope unit="volume">16</biblScope>
+			<biblScope unit="page" from="3848" to="3860" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

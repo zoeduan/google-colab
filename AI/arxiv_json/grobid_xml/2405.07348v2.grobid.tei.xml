@@ -1,0 +1,895 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">MedConceptsQA: Open Source Medical Concepts QA Benchmark</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Ben</forename><surname>Ofir</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department" key="dep1">Department of Software and Information Systems Engineering Ben</orgName>
+								<orgName type="department" key="dep2">Department of Software and Information Systems Engineering Ben</orgName>
+								<orgName type="institution" key="instit1">Gurion University of the Negev</orgName>
+								<orgName type="institution" key="instit2">Gurion University of the Negev</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><surname>Shoham</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department" key="dep1">Department of Software and Information Systems Engineering Ben</orgName>
+								<orgName type="department" key="dep2">Department of Software and Information Systems Engineering Ben</orgName>
+								<orgName type="institution" key="instit1">Gurion University of the Negev</orgName>
+								<orgName type="institution" key="instit2">Gurion University of the Negev</orgName>
+							</affiliation>
+						</author>
+						<author role="corresp">
+							<persName><forename type="first">Nadav</forename><surname>Rappoport</surname></persName>
+							<email>nadavrap@bgu.ac.il</email>
+							<affiliation key="aff0">
+								<orgName type="department" key="dep1">Department of Software and Information Systems Engineering Ben</orgName>
+								<orgName type="department" key="dep2">Department of Software and Information Systems Engineering Ben</orgName>
+								<orgName type="institution" key="instit1">Gurion University of the Negev</orgName>
+								<orgName type="institution" key="instit2">Gurion University of the Negev</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">MedConceptsQA: Open Source Medical Concepts QA Benchmark</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">2903387EE6EB8F09A5281613ADD5D93C</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:38+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>We present MedConceptsQA, a dedicated open source benchmark for medical concepts question answering. The benchmark comprises of questions of various medical concepts across different vocabularies: diagnoses, procedures, and drugs. The questions are categorized into three levels of difficulty: easy, medium, and hard. We conducted evaluations of the benchmark using various Large Language Models. Our findings show that pre-trained clinical Large Language Models achieved accuracy levels close to random guessing on this benchmark, despite being pre-trained on medical data. However, GPT-4 achieves an absolute average improvement of nearly 27%-37% (27% for zero-shot learning and 37% for few-shot learning) when compared to clinical Large Language Models. Our benchmark serves as a valuable resource for evaluating the understanding and reasoning of medical concepts by Large Language Models. Our benchmark is available at <ref type="url" target="https://huggingface.co/datasets/ofir408/MedConceptsQA">https://huggingface.co/datasets/ofir408/MedConceptsQA</ref> </p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Large Language Models (LLMs) are trained on huge datasets and comprising billions of parameters. LLMs have demonstrated remarkable effectiveness across a range of language-related tasks, including question-answering and text generation <ref type="bibr" target="#b0">[1]</ref>. Their applicability extends beyond traditional language domains to areas such as robotics, cybersecurity, law, and also medicine <ref type="bibr" target="#b1">[2]</ref>.</p><p>Clinical LLMs (CLLMs) are LLMs that are trained on medical datasets. To name a few: Meditron <ref type="bibr" target="#b2">[3]</ref>, BioMistral <ref type="bibr" target="#b3">[4]</ref>, BioMedGPT <ref type="bibr" target="#b4">[5]</ref>, GatorTron <ref type="bibr" target="#b5">[6]</ref>, and Meerkat <ref type="bibr" target="#b6">[7]</ref>. CLLMs have shown their effectiveness to be used in tasks such as clinical text classification <ref type="bibr">[8]</ref>, medical chatbots, healthcare education, and clinical text generation <ref type="bibr" target="#b8">[9]</ref>.</p><p>Clinical data is frequently represented using standardized medical codes rather than natural language descriptions. Therefore, it's essential that CLLMs understand the meaning of these medical codes and their differences. One way to test the understanding of CLLMs is to evaluate their ability to interpret clinical codes.</p><p>Existing clinical benchmarks are available for evaluating CLLMs. For example, BioASQ-QA <ref type="bibr" target="#b9">[10]</ref> is a manually curated corpus of Biomedical Question Answering (QA) for documented retrieval, text snippets extraction, and summarization. EmrQA <ref type="bibr" target="#b10">[11]</ref> is a corpus for QA on Electronic Medical Records based on clinical notes. PubMedQA <ref type="bibr" target="#b11">[12]</ref> is a dataset that contains biomedical QA based on PubMed abstracts. In addition to QA datasets, there are clinical datasets in other fields such as classification <ref type="bibr" target="#b12">[13]</ref> and summarization <ref type="bibr" target="#b13">[14,</ref><ref type="bibr" target="#b14">15]</ref>. Soroush et al. <ref type="bibr" target="#b15">[16]</ref> used real clinical visit data to provide LLMs with a code description and prompted them to generate a billing code. They found that all general-purpose LLMs tested performed poorly at this task. Notably, they did not evaluate CLLMs that were trained on medical data and they only used zero-shot. We used a different approach for evaluation: our proposed benchmark includes a broader set of questions and answers relating to medical concepts and also the differences between them, spanning various levels of difficulty. Furthermore, our evaluation encompasses not only general-purpose LLMs but also CLLMs specialized for the medical domain. Unlike their focus on a single hospital site, our medical coding evaluation covers a wider scope and also contains drugs medical concepts. Additionally, our evaluation also incorporates few-shot learning learning and not only zero-shot learning. Moreover, Soroush et al. generated code from natural language descriptions (a task that is currently performed by human coders), while our study evaluates the "clinical understanding" of LLMs by investigate the inverse direction: selection the right description given a clinical code. In contrast to their approach, which assessed the capability of models to potentially replace human coders, our goal is to provide a more general estimation of the clinical reasoning abilities of LLMs.</p><p>In this study, we introduce MedConceptsQA, a benchmark for evaluating understanding and reasoning abilities in the medical domain. MedConceptsQA comprises over 800,000 questions and answers covering medical concepts, including ICD10 and ICD9 diagnoses codes, ICD9-PROC and ICD10-PROC procedures codes, and ATC drug codes. The benchmark includes questions categorized into three difficulty levels: easy, medium, and hard.</p><p>In addition, we evaluate different LLMs on the MedConceptsQA benchmark using zero-shot and few-shot learning. Surprisingly, we find that the current state-of-the-art CLLMs, as well as general LLMs except two, achieve performance levels comparable to Random guessing. Even medical fine-tuned models were not better than Random guessing. However, GPT-4 <ref type="bibr" target="#b16">[17]</ref> outperforms all medical LLMs, despite its primary focus being a general LLM rather than specifically tailored to the medical domain like the others.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Contributions:</head><p>In summary, we make three main contributions:</p><p>1. We propose a challenging open-source benchmark for evaluating LLMs on their understanding and reasoning of medical concepts. Additionally, our evaluation code is also open-source and available for any use. 2. Due to our large number of examples in the benchmark (more than 800,000), our benchmark can be utilized for training LLMs to comprehend medical concepts and the distinctions between them, making it suitable for techniques such as instruction-tuning <ref type="bibr" target="#b17">[18]</ref>. 3. We demonstrate that GPT-3.5 and GPT-4 outperform the current state-of-the-art CLLMs in understanding and reasoning about medical concepts, despite CLLMs being specifically designed for the medical domain.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">MedConceptsQA Benchmark</head><p>The MedConceptsQA benchmark consists of multiple question-answering medical concepts datasets, categorized into three vocabularies: Diagnoses, Procedures, and Drugs. Within the Diagnoses category, it includes questions related to ICD9-CM and ICD10-CM medical codes. For Procedures, it covers ICD9-PROC and ICD10-PROC codes, and ATC for Drugs. Each vocabulary is further divided into three levels of difficulty: easy, medium, and hard. Table <ref type="table" target="#tab_0">1</ref> illustrates the distribution of questions within the benchmark.</p><p>Each question is about a single medical code and contains four optional answers. The options are four descriptions of medical codes, where only one is the true description of the given medical codes, and the others are randomly chosen according to the category of difficulty of the specific level. The order of the options and the placement of correct answers are chosen randomly.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Difficulty Levels Creation</head><p>We represent the medical code vocabulary hierarchy as an undirected graph using PyHealth <ref type="bibr" target="#b18">[19]</ref>. Each vocabulary is divided into three difficulty levels: easy, medium, and hard. The distinction lies in the options provided for the correct answer. For the easy level, the options are randomly chosen from all the medical concept codes within the vocabulary. For the medium level, we select alternative medical codes within a distance of three, four, or five edges from each node in the vocabulary. For the hard level, the required distance is reduced to two edges. This means that for the hard level, the candidates are closely related, sharing a common parent or a node and its grand-parent or a node and its grand-child. For example, one of the candidates for the medical code S46.211D in ICD10-CM is S46.212A, because these codes share a common parent. Figure <ref type="figure" target="#fig_1">1</ref> presents examples of questions for the same ICD10-CM code across each difficulty level. Algorithm 2.1 presents the pseudo-code we used to generate the questions based on the required distance for each level. We used this algorithm to create the medium and hard questions. Easy questions were generated by a uniform sampling of the codes across the entire codes' graph. for node in nodes do</p><p>7: candidate_nodes ← ∅ 8: for candidate_node in nodes \ {node} do 9: path_length ← get_shortest_path_length(node, candidate_node) 10: if path_length in required_edges_distance then 11: candidate_nodes ← candidate_nodes ∪ {candidate_node} 12: end if 13: end for 14: candidates_number ← length of candidate_nodes 15: if candidates_number ≥ num_of_options then 16: options ← choose_random(candidate_nodes, num_of_options) 17: question ← generate_question(node, options) 18: questions ← questions ∪ {question} 19: end if 20: end for 21: return questions 22: end function Easy Medium Hard What is the description of the medical code S46.211D in ICD10CM? A. Idiopathic aseptic necrosis of left ulna B. Paralysis of vocal cords and larynx, bilateral C. Poisoning by amphetamines, accidental (unintentional) D. Strain of muscle, fascia and tendon of other parts of biceps, right arm, subsequent encounter What is the description of the medical code S46.211D in ICD10CM? What is the description of the medical code S46.211D in ICD10CM? A. Strain of muscle, fascia and tendon of other parts of biceps, right arm, subsequent encounter B. Injury of muscle(s) and tendon(s) of the rotator cuff of shoulder C. Unspecified injury of muscle, fascia and tendon of other parts of biceps, left arm D. Injury of muscle, fascia and tendon of triceps A. Strain of muscle, fascia and tendon of other parts of biceps, right arm, subsequent encounter B. Strain of muscle, fascia and tendon of other parts of biceps, right arm, initial encounter C. Strain of muscle, fascia and tendon of other parts of biceps D. Strain of muscle, fascia and tendon of other parts of biceps, right arm, sequela </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Experiments</head><p>In this section, we evaluate CLLMs on the MedConceptsQA benchmark. The CLLMs we use for evaluations are: BioMistral (BioMistral-7B-DARE) <ref type="bibr" target="#b3">[4]</ref>, BioMedGPT (BioMedGPT-LM-7B) <ref type="bibr" target="#b4">[5]</ref>, Gatortron (gatortron-large) <ref type="bibr" target="#b5">[6]</ref>, Llama3-OpenBioLLM (70B) <ref type="bibr" target="#b19">[20]</ref>, BioBert <ref type="bibr" target="#b20">[21]</ref>, Meerket (7B) <ref type="bibr" target="#b6">[7]</ref>, Meditron (70B) <ref type="bibr" target="#b2">[3]</ref>, Clinical-Longformer <ref type="bibr">[22]</ref>. Additionally, we include GPT-3.5 and GPT-4 <ref type="bibr" target="#b16">[17]</ref> for our evaluation, although the main focus of these models is to be general-purpose LLMs and not specifically focused on a clinical domain.</p><p>Our evaluation is based on zero-shot learning and few-shot learning for all the models. For zero-shot learning we contain the question and general instruction description. For few-shot learning we include 4 shots in the prompt and then the question we want to get the answer for. Figure <ref type="figure" target="#fig_2">2a</ref> shows an example for zero-shot learning prompt for our drugs dataset (ATC) in the benchmark, and figure <ref type="figure" target="#fig_2">2b</ref> shows an example for few-shot learning example from our benchmark, for ICD10-CM vocabulary.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Experiments Setup</head><p>For each dataset in the benchmark, we conduct zero-shot and few-shot evaluations at each difficulty level (easy, medium, and hard). We repeat each evaluation for each model three times and calculate a 95% confidence interval. Due to the large amount of resources required by some of the models, especially GPT4, we limit each type of test (vocabulary and difficulty and shots) to 250 randomly sampled Q&amp;As. Few-shot learning is performed using 4-shot learning. All models except GPT-3.5 (gpt-3.5-turbo) and GPT-4 (gpt-4-0125-preview) were evaluated using HuggingFace <ref type="bibr" target="#b22">[23]</ref> on RTX-6000 GPU, while GPT-3.5 and GPT-4 were inferred using the OpenAI API because these models are not provided as open-source. We use accuracy as the evaluation metric because the datasets in the benchmark are balanced, as we selected the placement of the correct answer randomly during the creation of the benchmark.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Aggregated Analysis</head><p>We perform zero-shot and few-shot evaluations for each model across all vocabularies and difficulty levels (easy, medium, hard). In this section, we present aggregated results for each model. The aggregation includes averaging both the accuracy and the 95% confidence interval. Figure <ref type="figure" target="#fig_4">3</ref> presents the results of zero-shot and few-shot learning evaluation. The full results across all the models, vocabularies, and difficulty levels can be found in the appendix (Table <ref type="table" target="#tab_2">3</ref> for zero-shot learning and (b) Few-shot learning prompt example, for ICD10-CM vocabulary. We used 4 shots, each one contains the question and the answer. The CLLMs achieve performance close to Random guessing. For zero-shot learning evaluation, None of the CLLMs outperforms the Random guessing threshold when considering the error rate (confidence intervals). However, both GPT-3.5 and GPT-4 outperform the CLLMs, with GPT-4 achieving the highest performance at 52.49% accuracy. This result represents a significant improvement over random guessing, with an absolute increase of 27.49%. In the case of few-shot learning, the results are similar for the CLLMs. However, GPT-3.5 shows an improvement in accuracy of 4.418% (absolute), and GPT-4 demonstrates absolute accuracy improvements of 9.422% between zero-shot and few-shot evaluations.  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Results for Difficulty Level</head><p>We create three difficulty levels (easy, medium, and hard) for each dataset in our benchmark. Figure <ref type="figure">4</ref> shows the results of all models across the different levels for both zero-shot and few-shot learning settings. Nearly all the CLLMs achieve random guessing accuracy across levels (considering error bars), except for LLaMA-3B OpenBioLLM-70B, which performs better than random guessing on the easy level under few-shot learning. GPT-3.5 and GPT-4 demonstrate improvement from zero-shot to few-shot learning, indicating that the 4-shot examples enhance their performance. Moreover, the performance of GPT-3.5 and GPT-4 deteriorates as task difficulty increases, validating that our benchmark levels indeed represent a gradual increase in complexity. In Section 3.5, we present a case study focusing on the ICD9-CM vocabulary and analyze results across difficulty levels. Figure <ref type="figure">4</ref>: Zero-shot and few-shot results for each of the levels (easy, medium, and hard) with 95% confidence intervals over three runs. Results are aggregated over difficulty vocabularies.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">Results for Different Vocabularies</head><p>The accuracy results for each vocabulary (ATC, ICD9-CM, ICD10-CM, ICD9-PROC, ICD10-PROC) are presented in Figure <ref type="figure">5</ref>. The aggregation for the accuracy and 95% CI is for all the levels for each vocabulary. Also here, GPT-4 consistently outperform all other models across all vocabularies, with GPT-3.5 in second place. The CLLMs achieve performance close to random guessing. For ATC, GPT-4 get an accuracy of 45.6% with zero-shot learning but 62.045% with few-shot learning.</p><p>In the case of ICD10-CM, GPT-4 demonstrates the highest accuracy at 73.022% with few-shot learning, while for ICD9-CM, it achieves 74.711%. For procedures medical codes (ICD9-PROC and ICD10-PROC), the performance is lower than the other vocabularies. The best model is also GPT-4 for both few-shot evaluations, achieving scores of 44.489% for ICD10-PROC and 55.289% for ICD9-PROC. Overall, these experiments show that almost all CLLMs achieve performance close to random guessing, not only in the overall aggregated score but also for each individual vocabulary. However, for ICD9-CM and ICD10-CM, Llama3-OpenBioLLM-70B outperformed random guessing.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.5">Case Study: ICD9-CM Performance by Difficulty Level</head><p>Table <ref type="table" target="#tab_3">2</ref> illustrates a case study of the ICD9-CM vocabulary and the performance of the models across these levels (easy, medium, and hard). The objective of these experiments is to highlight the diverse range of difficulty levels represented by the questions within our proposed benchmark. As depicted in this table, the results of both GPT-4 and GPT-3.5 decrease as the level becomes more challenging. For easy questions, GPT-4 achieves very high accuracy scores, with 98% for few-shot learning and 95.333% for zero-shot learning. However, for medium questions, which are more difficult than the easy ones, GPT-4 achieves only 65.467% for zero-shot and 72.4% for few-shot learning. As for the hard level questions, the accuracy decreases dramatically, with only 47.467% for zero-shot and 53.733% for few-shot learning. This represents an absolute decrease of 44.267% in few-shot accuracy between the easy and hard questions, and 47.866% for zero-shot. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Discussion</head><p>With the proposed benchmark in this work, we evaluate the understanding of medical concepts across LLMs, including those not pre-trained on medical data. Our experiments show that the current state-of-the-art CLLMs are not adequate in understanding the meaning of medical concepts such as diagnoses, procedures, and drug codes, and the differences between them. The performances of these CLLMs were close to random guessing. However, GPT-3.5 and GPT-4 achieved better accuracy for our benchmark, although the accuracy is still not high enough in some cases. For example, the few-shot learning accuracy of GPT-4 for ICD10-PROC and ICD9-PROC is only 44.489% and 55.289%, respectively. Additionally, we present a case study of the ICD9-CM vocabulary, which shows a significant performance difference between GPT-4 and GPT-3.5 models across different difficulty levels, demonstrating that our benchmark indeed contains questions of varying difficulty.</p><p>In order to investigate why the CLLMs achieve a random guessing guess performance, we calculate the confusion matrix for three CLLMs (Meditron-70B, Meerkat-7B, and BioMistral-7B) for our case study vocabulary, ICD9-CM, under few-shot learning settings. We choose this level because it is the easiest level on the benchmark, and GPT-4 achieved very high accuracy, however, the CLLMs also achieved Random guessing performance on this level. Figure <ref type="figure">6</ref> shows the error analysis using three confusion matrices for Meditron-70B, BioMistral-7B-DARE, and Meerkat-7B on the ICD9-CM easy level. Meditron-70B almost always predicts the label B, and Meerkat-7B almost always predicts A or D but never predicts C. BioMistral-7B does not always predict the same label but predicts diverse answers among the given options (A, B, C, D). However, the answers from this model are mostly incorrect since it also achieved Random guessing accuracy. Our careful dataset design, incorporating diverse label representation through random sampling in the 4-shot examples, ensures that we did not inadvertently influence the models (Meditron-70B and Meerkat-7B) to consistently predict the same label for this dataset. We encourage further studies to investigate this issue, focusing on how effectively existing CLLMs follow instructions, whether in zero-shot or few-shot learning scenarios.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Limitations and Future Work</head><p>Limitations: We did not include all medical code vocabularies, for example, LOINC, which is a vocabulary for identifying medical laboratory observations. Additionally, our benchmark contains questions in only a single form.</p><p>Future Work: In this work, we demonstrated that CLLMs achieved random guessing performance on the MedConceptsQA benchmark. Future research should focus on improving CLLMs to attain a better understanding of medical concepts, aiming for performance comparable to or better than GPT-4, whose primary focus is not medical, unlike CLLMs. Additionally, since our benchmark is competitive and evaluates a LLMs understanding of medical concepts, we encourage new CLLMs to include MedConceptsQA in their evaluation, with the aim of achieving superior results compared to current CLLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Conclusion</head><p>In this study, we introduced MedConceptsQA, an open-source benchmark comprising over 800,000 questions spanning three difficulty levels. It was designed to evaluate the understanding and reasoning capabilities of LLMs on medical concepts across diagnoses, procedures, and drugs. Experimental results showed that state-of-the-art CLLMs, despite being pre-trained on medical data, achieved accuracy levels close to random guessing on this benchmark. However, general-purpose models (GPT-3.5 and GPT-4) outperformed CLLMs. Notably, GPT-4 exhibited the best performance, although its accuracy remained insufficient for certain datasets in our benchmark.</p><p>ICD9PROC ICD9CM ICD10PROC ICD10CM ATC easy medium hard easy medium hard easy medium hard easy medium hard easy medium hard</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Algorithm 1 2 :</head><label>12</label><figDesc>Generating Questions by Distance 1: function CREATEQUESTIONSBYDISTANCE(vocab_graph, required_edges_distance, num_of_options) Input: Vocabulary graph vocab_graph, Required edges distance: required_edges_distance, Number of options:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Questions across three difficulty levels for the S46.211D medical code within the ICD10-CM vocabulary.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Examples of zero-shot and few-shot learning prompts.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>Few-shot aggregated results for each model.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Aggregated results for zero-shot and few-shot evaluations. The vertical line represents the accuracy of random guessing for comparison.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><figDesc>Medium level, zero-shot learning.Medium level, few-shot learning.Hard level, few-shot learning.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>The number of generated questions across different vocabularies and difficulty levels in the benchmark.</figDesc><table><row><cell>Vocab</cell><cell>Level</cell><cell>Questions num</cell></row><row><cell></cell><cell>easy</cell><cell>6440</cell></row><row><cell>ATC</cell><cell>medium</cell><cell>6440</cell></row><row><cell></cell><cell>hard</cell><cell>5938</cell></row><row><cell></cell><cell>easy</cell><cell>94580</cell></row><row><cell>ICD10-CM</cell><cell>medium</cell><cell>81757</cell></row><row><cell></cell><cell>hard</cell><cell>88013</cell></row><row><cell></cell><cell>easy</cell><cell>190987</cell></row><row><cell>ICD10-PROC</cell><cell>medium</cell><cell>190987</cell></row><row><cell></cell><cell>hard</cell><cell>88582</cell></row><row><cell></cell><cell>easy</cell><cell>17736</cell></row><row><cell>ICD9-CM</cell><cell>medium</cell><cell>17736</cell></row><row><cell></cell><cell>hard</cell><cell>16858</cell></row><row><cell></cell><cell>easy</cell><cell>4670</cell></row><row><cell>ICD9-PROC</cell><cell>medium</cell><cell>4670</cell></row><row><cell></cell><cell>hard</cell><cell>4438</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 3</head><label>3</label><figDesc>Answer A,B,C,D according to the answer to this multiple choice question. What is the description of the medical code S62.636S in ICD10CM? A. Displaced fracture of proximal phalanx of other finger B. Displaced fracture of distal phalanx of right little finger, sequela C. Displaced fracture of distal phalanx of right index finger, sequela D. Displaced fracture of distal phalanx of unspecified finger, initial encounter for open fracture Answer:B What is the description of the medical code T82.330 in ICD10CM? A. Leakage of aortic (bifurcation) graft (replacement) B. Mechanical complication of biological heart valve graft C. Displacement of heart valve prosthesis D. Unspecified complication of cardiac and vascular prosthetic device, implant and graft, initial encounter</figDesc><table><row><cell></cell><cell>Answer:A</cell></row><row><cell></cell><cell>What is the description of the medical code S72.414F in ICD10CM?</cell></row><row><cell></cell><cell>A. Fracture of head and neck of femur</cell></row><row><cell></cell><cell>B. Fracture of medial condyle of femur</cell></row><row><cell></cell><cell>C. Nondisplaced unspecified condyle fracture of lower end of right femur, subsequent encounter for open fracture type</cell></row><row><cell>Answer A,B,C,D according to the answer to this</cell><cell>IIIA, IIIB, or IIIC with routine healing D. Nondisplaced supracondylar fracture with intracondylar extension of lower end of unspecified femur</cell></row><row><cell>multiple choice question.</cell><cell>Answer:C</cell></row><row><cell>What is the description of the medical code B05BB04</cell><cell>What is the description of the medical code O31.01X4 in ICD10CM? A. Papyraceous fetus, third trimester</cell></row><row><cell>in ATC?</cell><cell>B. Papyraceous fetus, first trimester, fetus 4 C. Papyraceous fetus, third trimester, fetus 1</cell></row><row><cell>A. electrolytes</cell><cell>D. Placental disorders Answer:B</cell></row><row><cell>B. electrolytes with carbohydrates</cell><cell></cell></row><row><cell>C. IV solutions used in parenteral administration of</cell><cell>What is the description of the medical code S62.346S in ICD10CM? A. Nondisplaced fracture of base of other metacarpal bone, sequela</cell></row><row><cell>fluids, electrolytes and nutrients</cell><cell>B. Unspecified fracture of fourth metacarpal bone, left hand C. Nondisplaced fracture of base of fifth metacarpal bone, right hand, sequela</cell></row><row><cell>D. electrolytes in combination with other drugs</cell><cell>D. Nondisplaced fracture of neck of second metacarpal bone, left hand Answer:</cell></row><row><cell>Answer:</cell><cell></cell></row><row><cell>(a) Zero-shot learning prompt example, for ATC</cell><cell></cell></row><row><cell>vocabulary.</cell><cell></cell></row></table><note><p>for few-shot learning).</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 2 :</head><label>2</label><figDesc>Zero-shot and Few-shot learning results with 95% confidence intervals, for ICD9-CM vocabulary.</figDesc><table><row><cell>Model</cell><cell>Easy</cell><cell>Zero-shot Medium</cell><cell>Hard</cell><cell>Easy</cell><cell>Few-shot Medium</cell><cell>Hard</cell></row><row><cell>BioMistral</cell><cell cols="4">25.333 ± 2.144 24.933 ± 4.091 27.333 ± 2.045 25.6 ± 2.759</cell><cell cols="2">23.067 ± 1.593 26.8 ± 2.357</cell></row><row><cell>BioBert</cell><cell cols="4">23.333 ± 2.237 27.467 ± 5.257 26.133 ± 3.343 25.467 ± 6.81</cell><cell cols="2">25.067 ± 1.833 25.067 ± 1.458</cell></row><row><cell cols="2">Llama3-OpenBioLLM -70B 31.2 ± 7.298</cell><cell cols="3">27.467 ± 9.174 23.467 ± 4.114 36.4 ± 0.454</cell><cell cols="2">26.533 ± 3.666 27.2 ± 1.571</cell></row><row><cell>BioMedGPT</cell><cell>24.0 ± 2.759</cell><cell cols="5">25.067 ± 2.579 22.133 ± 0.944 24.533 ± 5.412 24.267 ± 3.435 24.267 ± 2.046</cell></row><row><cell>Clinical-Longformer</cell><cell>25.2 ± 0.454</cell><cell cols="3">24.933 ± 3.404 24.667 ± 2.328 28.4 ± 1.636</cell><cell cols="2">26.533 ± 4.808 26.4 ± 1.2</cell></row><row><cell>GPT-3.5</cell><cell>64.0 ± 0.454</cell><cell cols="5">36.133 ± 1.309 40.533 ± 1.593 77.067 ± 3.282 40.267 ± 3.282 39.467 ± 1.718</cell></row><row><cell>GPT-4</cell><cell cols="2">95.333 ± 2.328 65.467±2.283</cell><cell cols="2">47.467 ± 4.214 98.0 ± 1.2</cell><cell>72.4 ± 1.815</cell><cell>53.733 ± 2.499</cell></row><row><cell>Gatortron</cell><cell cols="4">24.667 ± 4.763 26.933 ± 4.806 26.133 ± 2.498 25.6 ± 2.078</cell><cell>26.0 ± 3.542</cell><cell>24.667 ± 3.464</cell></row><row><cell>MedMNX-7B</cell><cell>23.6 ± 5.499</cell><cell>24.4 ± 3.543</cell><cell>22.8 ± 4.374</cell><cell cols="3">24.267 ± 1.458 25.067 ± 1.593 25.2 ± 2.975</cell></row><row><cell>Meditron-70B</cell><cell cols="2">27.733 ± 4.655 25.2 ± 2.4</cell><cell cols="4">26.533 ± 3.694 27.067 ± 5.316 24.133 ± 4.634 22.0 ± 5.684</cell></row><row><cell>Meerkat</cell><cell>25.2 ± 2.079</cell><cell cols="5">27.467 ± 3.858 25.333 ± 2.498 26.667 ± 2.499 27.067 ± 0.693 24.133 ± 1.458</cell></row></table></figure>
+		</body>
+		<back>
+
+			
+			<div type="acknowledgement">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Reproducibility</head><p>The MedConceptsQA benchmark is available at <ref type="url" target="https://huggingface.co/datasets/ofir408/MedConceptsQA">https://huggingface.co/datasets/ofir408/MedConceptsQA</ref>.</p><p>Our code for creating this benchmark, and the evaluation code are available at the following link: <ref type="url" target="https://github.com/nadavlab/MedConceptsQA">https://github.com/nadavlab/MedConceptsQA</ref>.</p></div>
+			</div>
+
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Bio</head></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">A survey of large language models</title>
+		<author>
+			<persName><forename type="first">Kun</forename><surname>Wayne Xin Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junyi</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaolei</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yupeng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yingqian</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Beichen</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junjie</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zican</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Dong</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.18223</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Challenges and applications of large language models</title>
+		<author>
+			<persName><forename type="first">Jean</forename><surname>Kaddour</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joshua</forename><surname>Harris</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maximilian</forename><surname>Mozes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Herbie</forename><surname>Bradley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roberta</forename><surname>Raileanu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Mchardy</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.10169</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Meditron-70b: Scaling medical pretraining for large language models</title>
+		<author>
+			<persName><forename type="first">Zeming</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alejandro</forename><forename type="middle">Hernández</forename><surname>Cano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angelika</forename><surname>Romanou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Bonnet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyle</forename><surname>Matoba</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Francesco</forename><surname>Salvi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matteo</forename><surname>Pagliardini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simin</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andreas</forename><surname>Köpf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amirkeivan</forename><surname>Mohtashami</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.16079</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">BioMistral: A Collection of Open-Source Pretrained Large Language Models for Medical Domains</title>
+		<author>
+			<persName><forename type="first">Yanis</forename><surname>Labrak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adrien</forename><surname>Bazoge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emmanuel</forename><surname>Morin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre-Antoine</forename><surname>Gourraud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mickael</forename><surname>Rouvier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Dufour</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.10373</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Biomedgpt: Open multimodal generative pre-trained transformer for biomedicine</title>
+		<author>
+			<persName><forename type="first">Yizhen</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiahuan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siqi</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yushuai</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mu</forename><surname>Qiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zaiqing</forename><surname>Nie</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.09442</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">A large language model for electronic health records</title>
+		<author>
+			<persName><forename type="first">Xi</forename><surname>Yang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Digital Medicine</title>
+		<imprint>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page">194</biblScope>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Small Language Models Learn Enhanced Reasoning Skills from Medical Textbooks</title>
+		<author>
+			<persName><forename type="first">Hyunjae</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyeon</forename><surname>Hwang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiwoo</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sihyeon</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dain</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Taewhoo</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chanwoong</forename><surname>Yoon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiwoong</forename><surname>Sohn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Donghee</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaewoo</forename><surname>Kang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2404.00376</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Cpllm: Clinical prediction with large language models</title>
+		<author>
+			<persName><forename type="first">Ben</forename><surname>Ofir</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nadav</forename><surname>Shoham</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Rappoport</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.11295</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yuting</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fuxiang</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinrui</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxiang</forename><surname>Nie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Minghao</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiguang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2404.03264</idno>
+		<title level="m">Foundation Model for Advancing Healthcare: Challenges, Opportunities, and Future Directions</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">BioASQ-QA: A manually curated corpus for Biomedical Question Answering</title>
+		<author>
+			<persName><forename type="first">Anastasia</forename><surname>Krithara</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anastasios</forename><surname>Nentidis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Konstantinos</forename><surname>Bougiatiotis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Georgios</forename><surname>Paliouras</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Scientific Data</title>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="page">170</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">emrQA: A Large Corpus for Question Answering on Electronic Medical Records</title>
+		<author>
+			<persName><forename type="first">Anusri</forename><surname>Pampari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Preethi</forename><surname>Raghavan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jennifer</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Peng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="2357" to="2368" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">PubMedQA: A Dataset for Biomedical Research Question Answering</title>
+		<author>
+			<persName><forename type="first">Qiao</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bhuwan</forename><surname>Dhingra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengping</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Cohen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinghua</forename><surname>Lu ; Kentaro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Inui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vincent</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaojun</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="middle">Hong</forename><surname>Wan</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Kong</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D19-1259</idno>
+		<ptr target="https://aclanthology.org/D19-1259" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)<address><addrLine>China</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019-11">Nov. 2019</date>
+			<biblScope unit="page" from="2567" to="2577" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">MedAI Dialog Corpus (MEDIC): Zero-Shot Classification of Doctor and AI Responses in Health Consultations</title>
+		<author>
+			<persName><surname>Olumide E Ojo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Olaronke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Adebanji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hiram</forename><surname>Gelbukh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anna</forename><surname>Calvo</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Feldman</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.12489</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">A corpus for research in text processing for evidence based medicine</title>
+		<author>
+			<persName><forename type="first">Diego</forename><surname>Mollá</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elena</forename><surname>María</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abeed</forename><surname>Santiago-Martínez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cécile</forename><surname>Sarker</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Paris</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Language Resources and Evaluation</title>
+		<imprint>
+			<biblScope unit="volume">50</biblScope>
+			<biblScope unit="page" from="705" to="727" />
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">CLUE: A Clinical Language Understanding Evaluation for LLMs</title>
+		<author>
+			<persName><forename type="first">Amin</forename><surname>Dada</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie</forename><surname>Bauer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><forename type="middle">Butler</forename><surname>Contreras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Constantin</forename><surname>Osman Alperen Koraş</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kaleb</forename><forename type="middle">E</forename><surname>Marc Seibold</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jens</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Kleesiek</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2404.04067</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Large Language Models Are Poor Medical Coders-Benchmarking of Medical Code Querying</title>
+		<author>
+			<persName><forename type="first">Ali</forename><surname>Soroush</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eyal</forename><surname>Benjamin S Glicksberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiftach</forename><surname>Zimlichman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Barash</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><forename type="middle">W</forename><surname>Freeman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><forename type="middle">N</forename><surname>Charney</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eyal</forename><surname>Nadkarni</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Klang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">AIdbp2300040</title>
+		<editor>
+			<persName><forename type="first">A</forename><forename type="middle">I</forename><surname>Nejm</surname></persName>
+		</editor>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title/>
+		<author>
+			<persName><forename type="first">Josh</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Adler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lama</forename><surname>Ahmad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilge</forename><surname>Akkaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florencia</forename><surname>Leoni Aleman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Janko</forename><surname>Altenschmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Altman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shyamal</forename><surname>Anadkat</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.08774</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Gpt-4 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Instruction tuning for large language models: A survey</title>
+		<author>
+			<persName><forename type="first">Shengyu</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linfeng</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoya</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sen</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaofei</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuhe</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiwei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Runyi</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianwei</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Wu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.10792</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">PyHealth: A Deep Learning Toolkit for Healthcare Predictive Modeling</title>
+		<author>
+			<persName><forename type="first">Chaoqi</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhenbang</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhen</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junyi</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Danek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jimeng</forename><surname>Sun</surname></persName>
+		</author>
+		<ptr target="https://github.com/sunlabuiuc/PyHealth" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 27th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining (KDD) 2023. 2023</title>
+		<meeting>the 27th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining (KDD) 2023. 2023</meeting>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<author>
+			<persName><forename type="first">Malaikannan</forename><surname>Sankarasubbu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ankit</forename><surname>Pal</surname></persName>
+		</author>
+		<ptr target="https://huggingface.co/aaditya/OpenBioLLM-Llama3-70B.2024" />
+		<title level="m">OpenBioLLMs: Advancing Open-Source Large Language Models for Healthcare and Life Sciences</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">BioBERT: a pre-trained biomedical language representation model for biomedical text mining</title>
+		<author>
+			<persName><forename type="first">Jinhyuk</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wonjin</forename><surname>Yoon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sungdong</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Donghyeon</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sunkyu</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chan</forename><surname>Ho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">So</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaewoo</forename><surname>Kang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Bioinformatics</title>
+		<imprint>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="page" from="1234" to="1240" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">A comparative study of pretrained language models for long clinical text</title>
+		<author>
+			<persName><forename type="first">Yikuan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ramsey M Wehbe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Faraz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hanyin</forename><surname>Ahmad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Luo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of the American Medical Informatics Association</title>
+		<imprint>
+			<biblScope unit="volume">30</biblScope>
+			<biblScope unit="page" from="340" to="347" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Huggingface&apos;s transformers: State-of-the-art natural language processing</title>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Wolf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lysandre</forename><surname>Debut</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Victor</forename><surname>Sanh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julien</forename><surname>Chaumond</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clement</forename><surname>Delangue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anthony</forename><surname>Moi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierric</forename><surname>Cistac</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tim</forename><surname>Rault</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rémi</forename><surname>Louf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Morgan</forename><surname>Funtowicz</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1910.03771</idno>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Appendix Table 3 presents the comprehensive zero-shot learning results for all models, vocabularies, and difficulty levels (easy, medium, and hard)</title>
+		<imprint/>
+	</monogr>
+	<note>Table 4 presents the few-shot learning results model BioMistral/BioMistral-7B-DARE</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Zero-shot learning full results for all the models, vocabularies, and levels</title>
+		<idno>. .785 25.333 ± 2.045 23.333 ± 0.944 27.333 ± 2.498 26.533 ± 2.143</idno>
+		<imprint>
+			<biblScope unit="volume">3</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">Few-shot learning full results for all the models, vocabularies, and levels</title>
+		<imprint>
+			<biblScope unit="volume">4</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

@@ -1,0 +1,607 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Does Correction Remain A Problem For Large Language Models?</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-08-14">14 Aug 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Xiaowu</forename><surname>Zhang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">iSchool of North</orgName>
+								<orgName type="institution" key="instit1">China University of Technology</orgName>
+								<orgName type="institution" key="instit2">Fudan University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xiaotian</forename><surname>Zhang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">iSchool of North</orgName>
+								<orgName type="institution" key="instit1">China University of Technology</orgName>
+								<orgName type="institution" key="instit2">Fudan University</orgName>
+							</affiliation>
+						</author>
+						<author role="corresp">
+							<persName><forename type="first">Cheng</forename><surname>Yang</surname></persName>
+							<email>yangcheng_1212@163.com</email>
+							<affiliation key="aff0">
+								<orgName type="department">iSchool of North</orgName>
+								<orgName type="institution" key="instit1">China University of Technology</orgName>
+								<orgName type="institution" key="instit2">Fudan University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Hang</forename><surname>Yan</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">iSchool of North</orgName>
+								<orgName type="institution" key="instit1">China University of Technology</orgName>
+								<orgName type="institution" key="instit2">Fudan University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xipeng</forename><surname>Qiu</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">iSchool of North</orgName>
+								<orgName type="institution" key="instit1">China University of Technology</orgName>
+								<orgName type="institution" key="instit2">Fudan University</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Does Correction Remain A Problem For Large Language Models?</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-08-14">14 Aug 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">F4DC2E5BCFBD4D4A75AA1532D10DC759</idno>
+					<idno type="arXiv">arXiv:2308.01776v2[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:20+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>As large language models, such as GPT, continue to advance the capabilities of natural language processing (NLP), the question arises: does the problem of correction still persist? This paper investigates the role of correction in the context of large language models by conducting two experiments. The first experiment focuses on correction as a standalone task, employing few-shot learning techniques with GPTlike models for error correction. The second experiment explores the notion of correction as a preparatory task for other NLP tasks, examining whether large language models can tolerate and perform adequately on texts containing certain levels of noise or errors. By addressing these experiments, we aim to shed light on the significance of correction in the era of large language models and its implications for various NLP applications.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Large-scale language models are capable of zeroshot learning, addressing natural language processing (NLP) tasks without relying on training data specific to the given task <ref type="bibr" target="#b3">(Chowdhery et al., 2022)</ref>. The ability to perform new tasks using prompts is an essential step toward general artificial intelligence. Despite exhibiting remarkable generality and versatility, such as question answering <ref type="bibr" target="#b9">(Omar et al., 2023)</ref>, machine translation <ref type="bibr" target="#b5">(Jiao et al., 2023)</ref>, and logical reasoning <ref type="bibr" target="#b4">(Frieder et al., 2023)</ref>, the extent to which large language models (LLM) can correct errors in text and whether they can perform corresponding tasks on data containing erroneous text remains unclear.</p><p>Text correction has always been an important task aimed at detecting and rectifying text errors, improving language accuracy while reducing the cost of manual verification. <ref type="bibr" target="#b16">Xu et al. (2021)</ref> proposed a pre-training model called PLOME, which incorporates spelling error knowledge and uses a GRU network to model the phonetics and strokes of Chinese characters, thereby correcting spelling errors in Chinese text. In English grammar correction, <ref type="bibr" target="#b6">Kaneko et al. (2019)</ref> utilized BERT to classify ungrammatical and grammatical hypotheses and reranked them based on the classification results. <ref type="bibr" target="#b12">Sun et al. (2021)</ref> introduced Shallow Aggressive Decoding (SAD) to the Transformer decoder and achieved excellent results by combining it with a pre-trained BART model. <ref type="bibr">Rothe et al. (2021)</ref> fine-tuned the multilingual version of the T5 model and achieved state-of-the-art performance in GEC benchmark tests for English, Czech, German, and Russian languages.</p><p>This paper evaluates the performance of the text correction task using relevant datasets for Chinese spelling correction (CSC), Chinese text correction (CTC), and English grammar correction (GEC) to determine whether LLM (Language Model) is a qualified text correction model. We assess the corrected results through a combination of human evaluation and self-evaluation using GPT-3.5-Turbo<ref type="foot" target="#foot_0">foot_0</ref> , aiming better to determine the model's reliability in text correction tasks. Additionally, we comprehensively evaluate LLM's performance on datasets containing erroneous text by incorporating tasks such as AGIEval <ref type="bibr" target="#b17">(Zhong et al., 2023)</ref>, Gaokao Bench<ref type="foot" target="#foot_1">foot_1</ref> , machine translation, and sentiment classification. This paper experiments on the GPT-3.5-Turbo model to explore the following two questions.</p><p>Is LLM an excellent text correction model? Text correction has always been an unsolved problem. This paper comprehensively evaluates the text correction capability of LLM by examining Chinese spelling correction, Chinese text correction, and English grammar correction. We evaluate the model using three widely adopted evaluation datasets in the current stage. To address the issue of poor data quality in the CSC task dataset, we manually created a dataset containing 1000 evaluation data points for experimentation to assess the performance of LLM in text correction.</p><p>Can LLM effectively handle tasks involving a certain proportion of erroneous noisy text? We added a certain proportion of erroneous text noise to the datasets of tasks such as AGIEval [5], Gaokao Bench, machine translation, and sentiment classification to evaluate the extent of fluctuation in LLM's performance. It has been verified that LLM demonstrates tolerance towards data containing noisy information.</p><p>After conducting extensive experiments, we have obtained the following results:</p><p>• LLM performs well in text correction tasks and is a highly promising model for text correction. In our evaluation of the CSC task, we found that while LLM has a specific rate of false corrections, it tends to optimize the sentence expression without changing the meaning. Furthermore, the rate of false corrections has been significantly reduced by improving the quality of the dataset and eliminating some erroneous expressions. Meanwhile, for more complex text correction tasks such as CTC and GEC, the increased possibilities in the results lead to a higher rate of false corrections compared to spelling correction. However, manual evaluations also indicate that sentences corrected by LLM are almost free of grammar or spelling errors. All experiments confirm that LLM is an up-and-coming text correction model.</p><p>• LLM performs well in handling data containing erroneous text. The results show that introducing 5% spelling errors only slightly impacts the experiment's outcomes. As the noise ratio increases, the decline in performance becomes more significant. This demonstrates that LLM can tolerate a certain degree of erroneous text data. However, if noise is introduced by adding or deleting text, which alters the sentence structure, the decline in performance becomes more pronounced.</p><p>Through a series of experiments, we have demonstrated that LLM is an up-and-coming text correction model and can effectively handle data containing a certain degree of erroneous text. Although LLM has shown some limitations, such as a tendency to optimize sentence structure or expression, its superior zero-shot learning ability and performance on data with erroneous text indicate that LLM is a viable approach toward transitioning from weak artificial intelligence to general artificial intelligence. 2 Method 2.1 Correction LLM tends to alter sentence structures to optimize expression when performing text correction tasks. This is partly due to the quality issues in the dataset itself and partly because LLM possesses a solid ability to refine texts. Therefore, this paper adopts a new perspective in evaluating the results. The modification is considered correct if only irrelevant parts have been modified and the sentence's meaning remains unchanged while maintaining grammatical correctness. Chinese Spelling Correction (CSC): CSC mainly includes two types of errors: homophonic errors and homographic errors. Due to the large number of sentences with grammatical issues in the dataset, the Language Model (LLM) tends to optimize sentence expression. To mitigate this problem, we introduce additional constraint words in the prompt templates. Although LLM demonstrates remarkable zero-shot capability, incorporating relevant prompt examples can enhance its performance on complex tasks. We provide demonstrations in the prompts to guide the model toward better performance. Following the approach proposed by Min et al. (2022), we consider both Chinese Text Correction(CTC): Unlike the CSC task, CTC also includes four types of errors: missing errors, redundant errors, mixed sentence structures, semantic repetition, and disorder. CTC focuses on detecting and correcting Chinese spelling errors and grammatical errors. Therefore, the design of prompt templates has been adjusted accordingly. For the few-shot case design, we extracted different error types as demonstration examples based on the distribution of error types, aiming to guide LLM to perform better in the correction task.</p><p>English Grammar Correction(GEC): GEC is the task of correcting different types of errors in the text, such as spelling, grammar, word misuse, and punctuation misuse. Similar to the approach used in Chinese text correction, both zero-shot and few-shot approaches were designed for evaluation. The case selection method for GEC is the same as that for Chinese text correction. Examples of different error types, such as replacement errors, omission errors, and insertion errors, were selected based on the dataset as demonstration examples.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Task Evaluation with Introducing Noisy Information</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.1">Noise Sampler</head><p>In order to investigate whether LLM can exhibit remarkable performance on text containing a certain degree of noise or erroneous content, this paper introduces noise information containing erroneous characters into relevant Chinese and English texts.</p><p>In order to ensure consistency (i.e. keep the same distribution as the original error), we design the noise sampler. It augments the data of related tasks with reasonable noise information.</p><p>Chinese Text: Previous research <ref type="bibr" target="#b14">(Wang et al., 2018)</ref> has shown that phonologically similar and visually similar errors are two main factors contributing to errors in Chinese text, where the number of phonologically similar spelling errors is about two times that of visually similar. Based on the analysis of error distribution in the SIGHAN15 test set, we set the proportions for substituting different types of errors as follows: 60% for phonologically similar errors, 30% for visually similar errors, and 10% for random errors, and applied random substitution to the Chinese text. The character confusion set <ref type="bibr" target="#b15">(Wu et al., 2013)</ref> is a collection of Chinese characters that includes characters with similar pronunciation and similar appearance. Using the character confusion set, we constructed texts with 5%, 10%, and 15% error proportions.</p><p>English Text: We added noise information to the English text using the noise introduction method for constructing the GEC training corpus based on Awasthi et al. ( <ref type="formula">2019</ref>). Four types of noise, namely AppendError, VerbError, ReplaceError, and Dele-teError, were added according to the distribution of error counts in the available parallel corpus and the probability of each error. First, the number of errors in a sentence was determined through random sampling from 0.4. Similarly, the selection of each error type was independent and random from AppendError, VerbError, ReplaceError, Dele-teError. For append, replace, and delete errors, a position was randomly chosen for the error occurrence. In the case of an appended error, the word in that position was dropped. A spurious word from a commonly deleted words dictionary was added to that position for a delete error. For a replacement error, both actions were performed. In the case of a verb error, a verb was randomly chosen from the sentence and replaced with a random verb form of the same word. Commonly deleted words were also obtained from the parallel corpus.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.2">Task Evaluation</head><p>Gaokao Bench: GAOKAO-Bench is an evaluation framework for assessing large language models' language comprehension and analytical reasoning capabilities, using Chinese college entrance examination (GAOKAO) questions as the dataset. It consists of 1781 multiple-choice questions, 218 cloze questions, and 812 fill-in-the-blank questions. To evaluate the models under the same experimental settings, a certain proportion of noise information is added to the GAOKAO-Bench dataset, and the evaluation is conducted accordingly. In order to ensure consistent evaluation criteria, this paper selects the 1781 objective questions from the dataset and excludes the subjective questions that require subjective evaluation.</p><p>AGIEval: proposes a new benchmark, AGIEval, for evaluating the general abilities of foundation models in tackling human-level tasks. AGIEval is specifically designed to assess foundation models in the context of human-centric standardized exams, such as college entrance exams, law school admission tests, math competitions, and lawyer qualification tests. It aims to comprehensively evaluate the model's understanding, knowledge, reasoning, and calculation abilities. In this paper, we selected twenty downstream exam tasks from the open-source AGIEval 1.0 as our evaluation dataset. Similarly, we added corresponding noise information to the dataset. The evaluation was conducted using the same experimental settings.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Experiment</head><p>Datasets: The evaluation data in this paper is selected from the test sets of commonly used datasets in various domains. The Chinese spelling correction task uses the SIGHAN15 <ref type="bibr" target="#b13">(Tseng et al., 2015)</ref> dataset, a commonly used dataset for Chinese spelling correction, consisting of 1100 test samples. 969 samples are used for evaluating the Chinese text correction task 3 , including grammar and spelling errors. In addition, English grammar correction is evaluated using 500 extracted data samples from CoNNL14task <ref type="bibr" target="#b8">(Ng et al., 2014)</ref>. For the evaluation of language understanding, logical reasoning, and other abilities of LLM, we utilize the objective question section of the open-source GAOKAO-Bench dataset and the entire dataset of AGIEval 1.0. The sentiment classification task utilizes 1000 samples from the SST-2 English sentiment classification open dataset and 872 samples from the ChnSentiCorp Chinese sentiment classification dataset. We employ the ccmt2019news dataset consisting of 1011 Chinese-to-English translation samples for machine translation.</p><p>Setting: For all our LLM experiments, we used GPT3.5-turbo with a temperature setting of 0.02. Reduce the randomness in generating text 3 <ref type="url" target="https://destwang.github.io/CTC2021-explorer/">https://destwang.github.io/CTC2021-explorer/</ref>  in language models and produce more conservative text. Regarding introducing Chinese noise, we employed phonetic-graphemic and random noise methods only for the GAOKAO-bench experiment. For the remaining experiments, we solely used the phonetic-graphemic noise method to introduce Chinese noise. As for English noise, we followed the method described in the previous section to introduce English noise. For the GAOKAO-bench and AGIEval experiments, we utilized their opensource prompts, For the text correction task, we employed prompt templates as shown in Figure <ref type="figure" target="#fig_2">3</ref>. We employed new evaluation metrics based on different tasks. For GPT-3.5-Turbo, we considered it correct if it corrected a sentence without altering its meaning. We considered it incorrect if it failed to correct the errors or if the corrected sentence underwent significant changes in meaning. We adopted these metrics due to significant issues with the quality of the dataset and the possibility of alternative expressions for each sentence. Therefore, using previous evaluation standards was deemed inappropriate. As shown as Table <ref type="table" target="#tab_1">1</ref>, we found that LLM demonstrated highly competitive performance in the correction task. After conducting manual screening on our dataset, GPT-3.5-Turbo demonstrated excellent performance. This strongly suggests that the high error correction probability is closely related to the dataset's quality. As shown in Figure <ref type="figure" target="#fig_3">4</ref>, through the analysis of erroneous sentences, we found that as the sentence length increases, GPT-3.5-Turbo is more likely to make corrections and tends to optimize sentence expressions. This is because longer sentences convey richer meanings, leading to multiple forms of expression that can potentially mislead GPT-3.5-Turbo to correct them into more common expressions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Prompt</head><p>For the Chinese text correction (CTC) task, GPT-3.5-Turbo has also shown promising results. We guide the LLM to correct erroneous sentences by selecting different error cases (in-context learning), and compared to direct zero-shot (only-prompt) error correction, the error correction rate is reduced to 7.4%. Compared to the CSC task, the CTC task is more complex, as it involves requirements such as addition and deletion, and there are more possible forms for correct expressions, which may be a possible reason for its higher over-correction rate.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">English Grammar Error Correction</head><p>As shown as Table <ref type="table" target="#tab_1">1</ref>, Compared to the CTC task, GPT-3.5-Turbo exhibited relatively better perfor- mance on English text. However, upon analyzing the experimental results, we found that the sentences modified by GPT-3.5-Turbo, while altering the expression of the sentences or phrases, maintained correct grammatical structures. Furthermore, we observed that despite the high rate of erroneous corrections in the corrected sentences, the overall meaning of the sentences remained essentially unchanged.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Sentiment Classification</head><p>To investigate the impact of text errors on downstream NLP tasks, we introduced noise to the sentiment classification datasets and evaluated the performance of LLM before and after incorporating Chinese and English noise using zero-shot and fewshot approaches. We introduced Chinese and English noise to both the Chinese and English sentiment classification datasets, with a noise ratio of 5% for the Chinese noise.</p><p>Datasets Zeroshot Zeroshot-noise Flu Fewshot fewshot-noise Flu SST-2 92.8% 86.0% ↓5.2% 95.8% 91.9% ↓3.9% ChnSentiCorp 85.2% 84.8% ↓0.4% 88.9% 88.1% ↓0.8%</p><p>Table 2: Results of Sentiment Classification Noise Experiment."Flu" stands for fluctuation.</p><p>As shown as Table <ref type="table">2</ref>, It is evident that after introducing noise, the results on the English sentiment classification dataset SST-2 showed a decrease of 6.8% and 3.8% for the zero-shot and few-shot approaches, respectively, compared to the results without noise. On the Chinese sentiment classification dataset ChnSentiCorp, the introduction of Chinese noise had a minimal impact since only character replacements based on phonetic or graphemic similarities were considered, without including insertions or deletions. Therefore, after adding Chinese noise, the zero-shot and few-shot approaches experienced a decrease of 0.4% and 0.8%, respectively, compared to the results without noise.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">Machine Translation</head><p>We further explored the Chinese-English machine translation task to investigate whether GPT-3.5-Turbo performs well without altering sentence structure (i.e., only replacing without involving character additions or deletions). Therefore, using the zero-shot and few-shot approaches, we conducted noise addition experiments using the ccmt2019-news-zh2en dataset with different noise proportions. We evaluated the results using the commonly used machine translation metric BLEU-4 <ref type="bibr" target="#b10">(Papineni et al., 2002)</ref>, averaging the weights for each reference answer. Through the experiments, we found that the variation was minimal when replacing 5% of spelling errors as noise. In the zeroshot and few-shot approaches, the introduced noise decreased BLEU-4 scores of 0.73 and 0.16, respectively. As the noise proportion increased, at a 10% noise level, the zero-shot and few-shot results decreased by 2.42 and 2.79, respectively. Under 15% noise, compared to the no-noise scenario, the zeroshot and few-shot results dropped by 5.29 and 5.35, respectively.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.5">AGI Eval with noise</head><p>As shown as Table <ref type="table" target="#tab_4">3</ref>, The Chinese noise was added at a proportion of 5%, while the English noise was added based on the probability distribution of error counts. The task types included zero-shot, zeroshot-CoT, few-shot, and few-shot-CoT. We did not modify the original prompts to eliminate the influence of unrelated factors.</p><p>We fed the noise-introduced data into the model and obtained output results using the Zeroshot and Zeroshot-CoT approaches. The comparative results are shown in the Table <ref type="table" target="#tab_4">3</ref>. In the Zeroshot setting, we observed a slight decrease in accuracy for 14 tasks, while seven tasks showed a slight increase in accuracy. In the Zeroshot-CoT setting, eight tasks experienced a slight decrease in accuracy, while 13 tasks showed a slight increase in accuracy. However, overall, in the Zeroshot setting, all tasks experienced an average accuracy decrease of 0.05% when affected by noise. In contrast, in the Zeroshot-CoT setting, all tasks experienced an average accuracy improvement of 0.42%. The results remain relatively stable.</p><p>Similarly, we conducted experiments in the Fewshot and Fewshot-CoT settings, obtaining output results using the original prompts from the dataset. The comparative results are shown in the Table <ref type="table" target="#tab_4">3</ref>. In the Fewshot and Fewshot-CoT settings, we observed a slight decrease in accuracy for 12 and 13 tasks, respectively, while 9 and 8 tasks showed a slight increase in accuracy. When noise was introduced to the data, there were minor fluctuations in accuracy compared to the noise-free data. However, overall, in the Fewshot setting, all tasks experienced an average accuracy improvement of 1.14% when affected by noise. In contrast, in the Fewshot-CoT setting, there was a decrease of 0.76%, indicating a relatively stable performance.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.6">GAOKAO-bench with noise</head><p>Following the methods proposed in the previous section, we introduced noise into the open-source GAOKAO-Bench dataset for both Chinese and English texts. This was done to test the model's language comprehension ability under conditions of text errors and to quantify the impact of the introduced noise on the model's comprehension ability. We set three levels of noise proportion for Chinese text (5%, 10%, 15%). Additionally, we conducted experiments using the two Chinese noise addition methods introduced earlier to better simulate text errors in real-world scenarios. The task types include zero-shot (only prompt) and few-shots (incontext learning), with all prompts provided by the AGIEval 1.0 dataset without modification. We conducted a replication experiment under the same experimental conditions as the original paper. According to the evaluation metrics of the GAOKAObench, the experiment used all objective questions, and the results are shown in the Table <ref type="table">4</ref> as the total score of all objective questions. The experimental result was 589 points, which is only 4 points lower than the original paper's score of 593 points, indicating a consistent performance level.</p><p>The results of our experiment with phonetic and graphemic noise are shown in the figure. Adding 5% noise resulted in a score of 599, an improvement of 6 and 10 points compared to the original and replication scores, respectively. However, with a noise proportion of 10%, the score decreased by 28 points compared to the original and replication scores, and it dropped by 34 points compared to the 5% noise result. The 15% noise proportion decreased by 70 points and 66 points compared to the original and replication scores, respectively, and a decrease of 76 points and 42 points compared to the 5% and 10% noise results, respectively. The results of our experiment with random noise are shown in the figure. Adding 5% noise resulted in a score of 579, a decrease of 14 points and 10 points compared to the original and replication scores, respectively. With a noise proportion of 10%, the score decreased by 33 points and 29 points compared to the original and replication scores,respectively, and it dropped by 19 points compared to the 5% noise result. The 15% noise proportion decreased by 68 points and 64 points compared to the original and replication scores, respectively, and a decrease of 54 points and 35 points compared to the 5% and 10% noise results, respectively.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Analysis</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Correction</head><p>Why is there a discrepancy between the evaluation of GPT-3.5-Turbo in testing and manual assessment? Table <ref type="table">5</ref>: Examples of differences between human evaluation and model self-evaluation.</p><p>The disparity in evaluation results is due to GPT-3.5-Turbo's assessment of whether the corrected sentence and the given sentence in the dataset convey the same meaning. Different expressions of the same sentence may mislead GPT-3.5-Turbo in determining whether the corrected sentence matches the intended meaning of the gold sentence in the dataset. For example, in the first sentence, the human evaluation might consider "一起探寻" (explore together) and "一道探寻" (explore along the way) to have the same meaning, but GPT-3.5-Turbo might interpret "一起" (together) and "一道" (along the way) as having different meanings. Similarly, in the third sentence, expressions like "电影 结束" (the movie ends) and "电影完了" (the movie is finished), or "去夜市" (go to the night market) and "到夜市" (arrive at the night market) are more colloquial in the dataset. Human evaluators would consider these expressions to have the same meaning, but GPT-3.5-Turbo would perceive them as having different meanings. Furthermore, due to grammatical issues in the original sentences, such as in the second sentence with "比较更" (comparatively more), which is a semantic repetition error, GPT-3.5-Turbo tends to optimize these grammar errors. However, during subsequent evaluation, the model considers the degree of expression different, leading GPT-3.5-Turbo to believe that the two sentences have different meanings. What are the main reasons for over-correction and under-correction? GPT-3.5-Turbo 有三千名非政府级代表将担任观察员，此外还有二百名记者与会。 Gold Sentence</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>有三千名非政府级代表将担任观察员，此外还有二干名记者与会。 Translation</head><p>There will be 3,000 non-governmental representatives serving as observers, in addition to 20,000 journalists attending the event. GPT-3.5-Turbo 他是吃素的人，所以我介绍他台湾的素食。 Gold Sentence 他是吃素的人，所以我介绍他台湾的青菜。 Translation He is a vegetarian, so I introduced him to Taiwanese greens. GPT-3.5-Turbo 作为AI语言模型，我没有具体的时间安排，因此我一直都是有空的。 Gold Sentence 你明天有空吗？ GPT Translation As an AI language model, I do not have specific time schedules, so I am always available. Gold Translation Do you have free time tomorrow? GPT-3.5-Turbo 他们最喜欢的地方是高雄的旗山，那里很漂亮有山有海。 Gold Sentence 他们最喜欢的地方是高雄的柴山，那里很漂亮有山有海。 Translation Their favorite place is Chai Shan in Kaohsiung, where it is beautiful with both mountains and the sea.</p><p>Table <ref type="table">6</ref>: Some examples of over-correction and undercorrection.</p><p>When conducting manual evaluation analysis, it is easy to observe that GPT-3.5-Turbo tends to optimize the overall structural expression. For example, in the second sentence, it mistakenly corrects "青 菜" (vegetable) to "素食" (vegetarian food). It is widespread for certain word expressions to be revised to more common expressions or their hypernyms. Additionally, in the first sentence, GPT-3.5-Turbo believes that out of 4000 representatives from the Ming government, 3000 should be nongovernment representatives and journalists, so it would change "2000 journalists" to "200" (4000-3000&lt;2000), disregarding the fact that these three categories are not mutually exclusive. Furthermore, in the third sentence, when a sentence to be corrected is a question, GPT-3.5-Turbo is more inclined to answer the question (approximately 40% of the questions are answered).</p><p>In general, using prompts can effectively accomplish the correction task. However, it does not adhere well to requirements such as "do not change the sentence length" or "do not change the meaning of the sentence," and it tends to prioritize optimizing sentence expression. Furthermore, in Chinese spelling correction tasks, GPT-3.5-Turbo is more sensitive to errors with similar pronunciation than to errors with similar character shapes. There is a noticeable increase in over-correction rates for more complex tasks such as CTC and English GEC.</p><p>The model provides various ways to correct such errors, resulting in answers that may be grammatically correct but differ from the standard answers in the dataset. The results tend to favor common expressions, for example, correcting "臆测"(guess) to the more common "猜测"(guess), even though these two words have different meanings in reality.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>In this paper, we conducted experiments using GPT-3.5-Turbo on relevant text correction datasets to evaluate the performance of LLM in the correction task. Extensive experimental results and analysis have demonstrated the enormous potential of LLM. To address potential issues with the dataset, we manually constructed a Chinese spelling correction dataset consisting of 1000 test samples. Experimental results on this new dataset showed that many cases of over-correction were due to inherent grammar or expression issues in the data. Additionally, in both Chinese CTC and English GEC tasks, although there were instances of over-correction, upon manual inspection of the sentences corrected by GPT-3.5-Turbo, it was found that while the expression and structure of the sentences were altered, the grammar and spelling accuracy was maintained. When adding error noise to the evaluation tasks, we found that LLM handled a certain proportion of spelling errors well. However, significant fluctuations in results were observed when adding or removing text from the original text, which changes the sentence structure. Overall, LLM has tremendous potential in the correction task, and the importance of spelling correction tasks is likely to diminish with the development of LLM.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: The illustration shows the feedback results of LLM, humans, and other models (such as Bert) when encountering the wrong text. LLM can ignore the wrong text very well. Human beings may be confused when encountering the wrong text, and if the model encounters the wrong text, there is a high probability of error.</figDesc><graphic coords="1,306.14,212.60,238.68,144.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: LLM is guided to perform error correction tasks through zero-shot and few-shots. Zeroshot only uses prompt learning, and few-shot uses in-context learning to provide a case-guided model to complete text error correction tasks.</figDesc><graphic coords="3,72.46,70.87,216.67,84.36" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: The Mis-correction rate of LLM results as sentence length increases.</figDesc><graphic coords="4,342.91,70.87,144.73,144.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: The Mis-correction rate of LLM results as sentence length increases.</figDesc><graphic coords="5,84.00,191.07,191.99,144.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: 'All' represents cases where all corrections were correct, 'over' indicates that although errors were corrected, the sentence expression was changed (meaning unchanged), and 'Miss' represents the remaining cases. The left side of the figure compares SIGHAN and CSC-Eval. In contrast, the right side shows the results of the Few-shot and Zero-shot approaches in CTC. The dataset's quality is the main factor affecting error correction, and Few-shot can improve the model's performance.</figDesc><graphic coords="5,307.81,70.86,216.60,88.23" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><figDesc>GPT-3.5-Turbo 学生们在老师们的带领下一起探寻徽州文化。 Gold Sentence 学生们在老师们的带领下一道探寻徽州文化。 Translation Students explore Huizhou culture together under the guidance of their teachers. GPT-3.5-Turbo 那个晚上，我睡觉睡得比较安心。 Gold Sentence 那个晚上，我睡觉睡得比较更安心。 Translation That night, I slept more peacefully. GPT-3.5-Turbo 电影结束后，他们就去夜市吃东西，因为他们都很饿。 Gold Sentence 电影完了，他们就去到夜市吃东西，他们都很饿。 Translation After the movie ended, they went to the night market to eat. They were all very hungry.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>Template for Text Correction TasksResults of Text Correction Experiment. T represents the number of correct instances, F represents the number of incorrect instances, and Acc represents the accuracy.Just changed irrelevant parts; as long as the semantics remain unchanged and there are no grammatical errors, it is considered acceptable. In this regard, we attempted to use data with added noise in tasks such as AGI EVAL, GAOKAO-bench, and Machine Translation., Due to the poor quality of SIGHAN13 and 14 expressions, only 15 were adopted for CSC tasks.</figDesc><table><row><cell>Dataset</cell><cell>Evaluation method</cell><cell>T</cell><cell>Zeroshot F</cell><cell>Acc</cell><cell>T</cell><cell>Fewshot F</cell><cell>Acc</cell></row><row><cell>SIGHAN</cell><cell>Human GPT</cell><cell cols="6">994 106 90.4% 1041 59 94.6% 834 266 75.8% 905 195 82.3%</cell></row><row><cell>CSC-Eval</cell><cell>Human GPT</cell><cell cols="6">961 39 96.1% 983 879 121 87.9% 893 107 89.3% 17 98.3%</cell></row><row><cell>CTC</cell><cell>Human GPT</cell><cell cols="6">853 116 88.0% 897 727 242 75.0% 786 183 81.1% 72 92.6%</cell></row><row><cell>GEC</cell><cell>Human GPT</cell><cell cols="4">462 38 92.4% 473 447 53 89.4% 464</cell><cell cols="2">27 94.6% 36 92.8%</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 3 :</head><label>3</label><figDesc>Noise Experiment Results of AGIEval Testing in Zeroshot and Zeroshot-CoT. "Acc" represents accuracy, "Acc-N" represents the results after introducing noise, and "Flu" represents the fluctuation of the results. When we conducted experiments without adding any noise, we found significant discrepancies between some of our results and those provided in the paper. Therefore, we relied on our reproduction results and indicated this portion of the data by bold formatting.</figDesc><table><row><cell>N-Noise</cell><cell cols="2">P-F-Noise</cell><cell cols="2">R-Noise</cell></row><row><cell cols="5">Score-P Ratio Score Ratio Score</cell></row><row><cell>593</cell><cell>5%</cell><cell>599</cell><cell>5%</cell><cell>579</cell></row><row><cell cols="2">Score-R 10%</cell><cell>565</cell><cell>10%</cell><cell>560</cell></row><row><cell>589</cell><cell>15%</cell><cell>523</cell><cell>15%</cell><cell>525</cell></row><row><cell cols="5">Table 4: GAOKAO-bench Noise Experiment Results.</cell></row><row><cell cols="5">N-Noise indicates no noise introduced, P-F-Noise indi-</cell></row><row><cell cols="5">cates PinYin-Font noise introduced. Score represents</cell></row><row><cell cols="5">the total score of objective questions in the experiment.</cell></row><row><cell cols="5">Score-P represents the score mentioned in the paper,</cell></row><row><cell cols="4">and Score-R represents the replicated score.</cell><cell></cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://platform.openai.com/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>https://github.com/OpenLMLab/GAOKAO-Bench</p></note>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m">Task Zeroshot Zeroshot-CoT Fewshot Fewshot-CoT Acc Acc-N Flu Acc Acc-N Flu Acc Acc-N Flu Acc Acc-N Flu aqua</title>
+		<imprint/>
+	</monogr>
+	<note>rat 31.9% 37.6% ↑5.7% 55.9% 50.4% ↓5.5% 51.5% 48.0% ↓3.50% 60.6% 59.2% ↓1.40% math 26.4% 19.9% ↓6.5% 31.9% 27.1% ↓4.8%</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">9% ↓1.30% lsat-lr 52.6% 50.0% ↓2</title>
+		<idno>52.6% 52.8% ↑0.2% 59.2% 53.7% ↓5.50% 52.2% 52.1% ↓0.10% lsat-rc 65.4% 62.5% ↓2.9% 62.1% 61.1% ↓1.0% 67.7% 66.9% ↓0.80% 57.6% 56.9% ↓0.70% sat-math 42.7% 45.5% ↑2.8% 70.9% 73.2% ↑2.3% 69.0% 66.8% ↓2.20% 65.0% 62.7% ↓2.30% sat-en 81.1% 78.2% ↓2.9% 77.7% 79.6% ↑1.9% 81.1% 82.5% ↑1.40% 78.2% 73.8% ↓4</idno>
+		<imprint>
+			<biblScope unit="volume">6</biblScope>
+		</imprint>
+	</monogr>
+	<note>2% ↑0.8% 22.6% 23.0% ↑0.4% 25.7% 23.5% ↓2.20% 25.2% 23 passage 44.2% 44.7% ↑0.5% 45.6% 37.4% ↓8.2% 53.9% 48.5% ↓5.40% 51.5% 49.0% ↓2.50%</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><surname>Gk-Math</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1910.02893</idno>
+		<title level="m">% ↓0.90% References Abhijeet Awasthi, Sunita Sarawagi, Rasna Goyal, Sabyasachi Ghosh, and Vihari Piratla</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Cloze 7.6% 6.8% ↓0.8% 5.1% 5.9% ↑0.8% 5.9% 5.1% ↓0.80% 8.5% 9.3% Parallel iterative edit models for local sequence transduction</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gaurav</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Barham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyung</forename><forename type="middle">Won</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2204.02311</idno>
+		<title level="m">Palm: Scaling language modeling with pathways</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Frieder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luca</forename><surname>Pinchetti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan-Rhys</forename><surname>Griffiths</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tommaso</forename><surname>Salvatori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Lukasiewicz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philipp</forename><surname>Christian Petersen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexis</forename><surname>Chevalier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julius</forename><surname>Berner</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.13867</idno>
+		<title level="m">Mathematical capabilities of chatgpt</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">Wenxiang</forename><surname>Jiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenxuan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jen-Tse</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xing</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhaopeng</forename><surname>Tu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.08745</idno>
+		<title level="m">Is chatgpt a good translator? a preliminary study</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Tmu transformer system using bert for re-ranking at bea 2019 grammatical error correction on restricted track</title>
+		<author>
+			<persName><forename type="first">Masahiro</forename><surname>Kaneko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kengo</forename><surname>Hotate</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Satoru</forename><surname>Katsumata</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mamoru</forename><surname>Komachi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/W19-4422</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Fourteenth Workshop on Innovative Use of NLP for Building Educational Applications</title>
+		<meeting>the Fourteenth Workshop on Innovative Use of NLP for Building Educational Applications<address><addrLine>Florence, Italy</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="207" to="212" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">Sewon</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinxi</forename><surname>Lyu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikel</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannaneh</forename><surname>Hajishirzi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2202.12837</idno>
+		<title level="m">Rethinking the role of demonstrations: What makes in-context learning work? arXiv preprint</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">The conll-2014 shared task on grammatical error correction</title>
+		<author>
+			<persName><forename type="first">Tou</forename><surname>Hwee</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mei</forename><surname>Siew</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ted</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Briscoe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raymond</forename><forename type="middle">Hendy</forename><surname>Hadiwinoto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Susanto</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bryant</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Eighteenth Conference on Computational Natural Language Learning: Shared Task</title>
+		<meeting>the Eighteenth Conference on Computational Natural Language Learning: Shared Task</meeting>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="page" from="1" to="14" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Chatgpt versus traditional question answering for knowledge graphs: Current status and future directions towards knowledge graph chatbots</title>
+		<author>
+			<persName><forename type="first">Reham</forename><surname>Omar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omij</forename><surname>Mangukiya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Panos</forename><surname>Kalnis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Essam</forename><surname>Mansour</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.06466</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Bleu: a method for automatic evaluation of machine translation</title>
+		<author>
+			<persName><forename type="first">Kishore</forename><surname>Papineni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Salim</forename><surname>Roukos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Todd</forename><surname>Ward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Jing</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th annual meeting of the Association for Computational Linguistics</title>
+		<meeting>the 40th annual meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2002">2002</date>
+			<biblScope unit="page" from="311" to="318" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<author>
+			<persName><forename type="first">Sascha</forename><surname>Rothe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Mallinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Malmi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2106.03830</idno>
+		<title level="m">Sebastian Krause, and Aliaksei Severyn. 2021. A simple recipe for multilingual grammatical error correction</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Instantaneous grammatical error correction with shallow aggressive decoding</title>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tao</forename><surname>Ge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Furu</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Houfeng</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2106.04970</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Introduction to sighan 2015 bake-off for chinese spelling check</title>
+		<author>
+			<persName><surname>Yuen-Hsien</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lung-Hao</forename><surname>Tseng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li-Ping</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hsin-Hsi</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Eighth SIGHAN Workshop on Chinese Language Processing</title>
+		<meeting>the Eighth SIGHAN Workshop on Chinese Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="page" from="32" to="37" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">A hybrid approach to automatic corpus generation for chinese spelling check</title>
+		<author>
+			<persName><forename type="first">Dingmin</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yan</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jialong</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haisong</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D18-1273</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Brussels, Belgium</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="2517" to="2527" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Chinese spelling check evaluation at sighan bakeoff 2013</title>
+		<author>
+			<persName><forename type="first">Shih-Hung</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chao-Lin</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lung-Hao</forename><surname>Lee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Seventh SIGHAN Workshop on Chinese Language Processing</title>
+		<meeting>the Seventh SIGHAN Workshop on Chinese Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="35" to="42" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Read, listen, and see: Leveraging multimodal information helps chinese spell checking</title>
+		<author>
+			<persName><forename type="first">Heng-Da</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhongli</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingyu</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chao</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zizhen</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunbo</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heyan</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xian-Ling</forename><surname>Mao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: ACL-IJCNLP 2021</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="716" to="728" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Agieval: A human-centric benchmark for evaluating foundation models</title>
+		<author>
+			<persName><forename type="first">Wanjun</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruixiang</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiduo</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yaobo</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuai</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanlin</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amin</forename><surname>Saied</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Duan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.06364</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

@@ -1,0 +1,952 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Revisiting Automated Topic Model Evaluation with Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-10-22">22 Oct 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Dominik</forename><surname>Stammbach</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Maryland</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Vilém</forename><surname>Zouhar</surname></persName>
+							<email>vzouhar@ethz.ch</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Maryland</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Alexander</forename><surname>Hoyle</surname></persName>
+							<email>hoyle@umd.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Maryland</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Mrinmaya</forename><surname>Sachan</surname></persName>
+							<email>msachan@ethz.ch</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Maryland</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">E</forename><surname>Elliott</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Maryland</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Eth</forename><surname>Zürich</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Maryland</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Revisiting Automated Topic Model Evaluation with Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-10-22">22 Oct 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">E88624B7C500AC14D4836C978A6B0E30</idno>
+					<idno type="arXiv">arXiv:2305.12152v2[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:29+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Topic models help make sense of large text collections. Automatically evaluating their output and determining the optimal number of topics are both longstanding challenges, with no effective automated solutions to date. This paper evaluates the effectiveness of large language models (LLMs) for these tasks. We find that LLMs appropriately assess the resulting topics, correlating more strongly with human judgments than existing automated metrics. However, the type of evaluation task matters -LLMs correlate better with coherence ratings of word sets than on a word intrusion task. We find that LLMs can also guide users toward a reasonable number of topics. In actual applications, topic models are typically used to answer a research question related to a collection of texts. We can incorporate this research question in the prompt to the LLM, which helps estimate the optimal number of topics.</p><p>github.com/dominiksinsaarland/ evaluating-topic-model-output</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Topic models are, loosely put, an unsupervised dimensionality reduction technique that help organize document collections <ref type="bibr" target="#b3">(Blei et al., 2003)</ref>. A topic model summarizes a document collection with a small number of topics. A topic is a probability distribution over words or phrases. A topic T is interpretable through a representative set of words or phrases defining the topic, denoted W T . <ref type="foot" target="#foot_0">1</ref>Each document can, in turn, be represented as a distribution over topics. For each topic, we can retrieve a representative document collection by sorting documents across topic distributions. We denote this set of documents for topic T as D T . Because of their ability to organize large collections of texts, topic models are widely used in the social sciences, digital humanities, and other disciplines to analyze large corpora <ref type="bibr" target="#b26">(Talley et al., 2011;</ref><ref type="bibr" target="#b15">Grimmer and Stewart, 2013;</ref><ref type="bibr" target="#b2">Antoniak et al., 2019;</ref><ref type="bibr">Karami et al., 2020, inter alia)</ref>.</p><p>Interpretability makes topic models useful, but human interpretation is complex and notoriously difficult to approximate <ref type="bibr" target="#b22">(Lipton, 2018)</ref>. Automated topic coherence metrics do not correlate well with human judgments, often overstating differences between models <ref type="bibr" target="#b16">(Hoyle et al., 2021;</ref><ref type="bibr" target="#b10">Doogan and Buntine, 2021)</ref>. Without the guidance of an automated metric, the number of topics, an important hyperparameter, is usually derived manually: Practitioners fit various topic models, inspect the resulting topics, and select the configuration which works best for the intended use case <ref type="bibr" target="#b16">(Hoyle et al., 2021)</ref>. This is a non-replicable and time-consuming process, requiring expensive expert labor.</p><p>Recent NLP research explores whether large language models (LLMs) can perform automatic annotations; e.g., to assess text quality <ref type="bibr" target="#b13">(Fu et al., 2023;</ref><ref type="bibr" target="#b12">Faggioli et al., 2023;</ref><ref type="bibr">Huang et al., 2023, inter alia)</ref>. Here, we investigate whether LLMs can automatically assess the coherence of topic modeling output and conclude that:</p><p>(1) LLMs can accurately judge topic coherence, (2) LLMs can assist in automatically determining reasonable numbers of topics.</p><p>We use LLMs for two established topic coherence evaluation tasks and find that their judgment strongly correlates with humans on one of these tasks. Similar to recent findings, we find that coherent topic word sets W T do not necessarily imply an optimal categorization of the document collection <ref type="bibr" target="#b10">(Doogan and Buntine, 2021)</ref>. Instead, we automatically assign a label to each document in a D T and choose the configuration with the purest assigned labels. This solution correlates well with an underlying ground truth. Thus, LLMs can help find good numbers of topics for a text collection, as we show in three case studies.</p><p>Most topic model evaluations focus on the coherence of W T , the most probable words from the topic-word distribution <ref type="bibr" target="#b30">(Röder et al., 2015)</ref>. Coherence itself can be thought of as whether the top words elicit a distinct concept in the reader <ref type="bibr" target="#b16">(Hoyle et al., 2021)</ref>. To complicate matters, human evaluation of topic models can be done in diverse ways. E.g., we can ask humans to directly rate topic coherence, for example, on a 1-3 scale <ref type="bibr">(Newman et al., 2010a;</ref><ref type="bibr" target="#b26">Mimno et al., 2011;</ref><ref type="bibr">Aletras and Stevenson, 2013, inter alia)</ref>. We can also add an unrelated intruder word to the list of top words, which human annotators are asked to identify. The intuition is that intruder words are easily identified within coherent and self-contained topics, but hard to identify for incoherent or not self-contained topics <ref type="bibr" target="#b6">(Chang et al., 2009)</ref>. High human accuracy on this task is thus a good proxy for high topic coherence. See both in Example 1.</p><p>Intrusion Detection Task water area river park miles game horses horse breed hindu coins silver Rating Task health hospital medicare welfare insure 3 horses zurich race dog canal 1 Example 1: Two examples of intrusion detection (select outlier) and topic rating tasks (rate overall coherence). Each example is on separate row.</p><p>Although many automated metrics exist <ref type="bibr">(Wallach et al., 2009;</ref><ref type="bibr">Newman et al., 2010b;</ref><ref type="bibr" target="#b26">Mimno et al., 2011;</ref><ref type="bibr" target="#b1">Aletras and Stevenson, 2013)</ref>, normalized pointwise mutual information <ref type="bibr">(NPMI, Bouma, 2009)</ref> is the most prevalent when evaluating novel methods <ref type="bibr" target="#b16">(Hoyle et al., 2021)</ref>. Informally, NPMI is larger if two words co-occur together regularly in a reference corpus. Another popular metric, C v , is a combination of NPMI and other measures and is also popular <ref type="bibr" target="#b30">(Röder et al., 2015)</ref>. See the formula definitions in Appendix D.</p><p>Despite their popular use, these metrics correlate poorly with human evaluations <ref type="bibr" target="#b16">(Hoyle et al., 2021;</ref><ref type="bibr" target="#b10">Doogan and Buntine, 2021)</ref>. In this work, we let LLMs perform the rating and intrusion detection tasks for topic model evaluation<ref type="foot" target="#foot_1">foot_1</ref> and propose LLM scores as a novel automated metric. Similar work by <ref type="bibr" target="#b29">Rahimi et al. (2023)</ref> is carried contemporaneously. LLMs have already been used to rank machine translations and generated text <ref type="bibr">(Zhang et al., 2020;</ref><ref type="bibr" target="#b13">Fu et al., 2023;</ref><ref type="bibr" target="#b21">Kocmi and Federmann, 2023)</ref> and have also been shown to perform on par with crowdworkers <ref type="bibr" target="#b14">(Gilardi et al., 2023)</ref>. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">LLM and Coherence</head><p>First, we show that large language models can assess the quality of topics generated by different topic modeling algorithms. We use existing topic modeling output annotated by humans (Hoyle et al.,  2021). 3 This data consists of 300 topics, produced by three different topic modeling algorithms on two datasets: NYtimes (Sandhaus, 2008) and Wikitext <ref type="bibr" target="#b25">(Merity et al., 2017)</ref>. For each of the 300 topics, there are 15 individual human annotations for the topic word relatedness (on 1-3 scale), and 26 individual annotations for whether a crowd-worker correctly detected an intruder word. We replicate both tasks, prompting LLMs instead of human annotators. See Prompt 1 for prompt excerpts, and Appendix A for full details.</p><p>Intruder detection prompt. System prompt: [...] Select which word is the least related to all other words. If multiple words do not fit, choose the word that is most out of place. [...] User prompt: water, area, river, park, miles, game Rating Task prompt. System prompt: [...] Please rate how related the following words are to each other on a scale from 1 to 3 ("1" = not very related, "2" = moderately related, "3" = very related). [...] User prompt: lake, park, river, land, years, feet, ice, miles, water, area Prompt 1: LLM prompts for assessing topic coherence.</p><p>We compute the Spearman correlation between the LLM answer and the human assessment of the topics and show results in Table <ref type="table" target="#tab_1">1</ref>.</p><p>Baseline metrics. For NPMI and C v , we report the best correlation by <ref type="bibr" target="#b16">Hoyle et al. (2021)</ref>. These metrics depend on the reference corpus and other hyperparameters and we always report the best value. <ref type="bibr" target="#b16">Hoyle et al. (2021)</ref> find no single best setting for these automated metrics and therefore this comparison makes the baseline inadequately strong.</p><p>Intrusion detection task. The accuracies for detecting intruder words in the evaluated topics are almost identical -humans correctly detect 71.2% of the intruder words, LLMs identify intruders in 72.2% of the cases. However, humans and LLMs differ for which topics these intruder words are identified. This results in overall strong correlations within human judgement, but not higher correlations than NPMI and C v (in their best setting).</p><p>Coherence rating task. The LLM rating of the W T top word coherence correlates more strongly with human evaluations than all other automated metrics in any setting. This difference is statistically significant, and the correlation between LLM ratings and human assessment approaches the inter-annotator agreement ceiling. Appendix Appendix B shows additional results with different prompts and LLMs.</p><p>Recommendation. Both findings support using LLMs for evaluating coherence of W T in practice as they correlate highly with human judgements.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Determining the Number of Topics</head><p>Topic models require specifying the number of topics. Practitioners usually run models multiple times with different numbers of topics (denoted by k). After manual inspection, the model which seems most suited for a research question is chosen. <ref type="bibr" target="#b11">Doogan et al. (2023)</ref> review 189 articles about topic modeling and find that common use cases are exploratory and descriptive studies for which no single best number of topics exists. However, the most prevalent use case is to isolate semantically similar documents belonging to topics of interest. For this, <ref type="bibr" target="#b10">Doogan and Buntine (2021)</ref> challenge the focus on only evaluating W T , and suggest an analysis of D T as well. If we are interested in organizing a collection, then we would expect the top documents in D T to receive the same topic labels. We provide an LLM-based strategy to determine good number of topics for this use case: We let an LLM assign labels to documents, and find that topic as-signments with greater label purity correlate with the ground-truth in three case studies.</p><p>Topics of interest might be a few broad topics such as politics or healthcare, or many specific topics, like municipal elections and maternity care. Following recent efforts that use research questions to guide LLM-based text analysis <ref type="bibr">(Zhong et al., 2023)</ref>, we incorporate this desideratum in the LLM prompt. We run collapsed <ref type="bibr">Gibbs-sampled LDA (in MALLET: McCallum, 2002)</ref> on two text collections, with different numbers of topics (k = 20 to 400), yielding 20 models per collection. To compare topic model estimates and ground-truth partitions, we experiment with a legislative Bill summary dataset (from <ref type="bibr" target="#b17">Hoyle et al., 2022)</ref> and Wikitext <ref type="bibr" target="#b25">(Merity et al., 2017)</ref>, both annotated with ground-truth topic labels in different granularities.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Proposed Metrics</head><p>Ratings algorithm. For each of the 20 models, we randomly sample W T for some topics and let the LLM rate these W T . The prompt is similar to the ratings prompt shown in Prompt 1, see Appendix E for full details. We then average ratings for each configuration. Intuitively, the model yielding the most coherent W T should be the one with the optimal topic count. However, this procedure does not correlate with ground-truth labels.</p><p>Text labeling algorithm. <ref type="bibr" target="#b10">Doogan and Buntine (2021)</ref> propose that domain experts assign labels to each document in a D T instead. A good topic should have a coherent D T : The same label assigned to most documents. Hence, good configurations have high purity of assigned labels within each topic. We proceed analogously. For each of the 20 models, we randomly sample D T for various topics. We retrieve the 10 most probable documents and then use the LLM to assign a label to these documents. We use the system prompt [...] Annotate the document with a broad|narrow label [...], see Appendix E for full details. We compute the purity of the assigned labels and average purities and we select the configuration with the most pure topics. In both procedures, we smooth the LLM outputs using a rolling window average to reduce noise (the final average goodness is computed as moving average of window of size 3).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Evaluation</head><p>We need a human-derived metric to compare with the purity metric proposed above. We measure the alignment between a topic model's predicted topic assignments and the ground-truth labels for a document collection <ref type="bibr" target="#b17">(Hoyle et al., 2022)</ref>.</p><p>We choose the Adjusted Rand Index (ARI) which compares two clusterings <ref type="bibr" target="#b19">(Hubert and Arabie, 1985)</ref> and is high when there is strong overlap. The predicted topic assignment for each document is its most probable topic. Recall that there exist many different optimal topic models for a single collection. If we want topics to contain semantically similar documents, each ground-truth assignment reflects one possible set of topics of interests.</p><p>If our LLM-guided procedure and the ARI correlate, this indicates that we discovered a reasonable value for the number of topics. In our case, the various ground-truth labels are assigned with different research questions in mind. We incorporate such constraints in the LLM prompt: We specify whether we are interested in broad or specific topics, and we enumerate some example ground-truth categories in our prompt. Practitioners usually have priors about topics of interest before running topic models, thus we believe this setup to be realistic.</p><p>In Figure <ref type="figure" target="#fig_0">1</ref> we show LLM scores and ARI for broad topics in the Bills dataset. We used this dataset to find a suitable prompt, hence this could be considered the "training set". We plot coherence ratings of word sets in blue , purity of document labels in red , and the ARI between topic model and ground-truth assignments in green . The purity of LLM-assigned D T labels correlate with the ARI, whereas the W T coherence scores do not. The argmax of the purity-based approach leads to similar numbers of topics as suggested by the ARI argmax (although not always the same).</p><p>For Wikitext, we evaluate the same 20 topic models, but measure ARI between topic model assignment and two different ground-truth label sets. The LLM scores differ only because of different prompting strategies. The distributions indicate that this strategy incorporates different research questions.</p><p>For Bills, our rating algorithm suggests to use a topic model with k=100 topics. In Appendix G, we show corresponding word sets. The resulting W T seem interpretable, although the ground-truth assignments using document-topic estimates are not correlated with the ground-truth labels. The puritybased approach instead suggests to use k=20 topics, the same k as indicated by the ARI. We show ground-truth labels and LLM-obtained text labels in Appendix G. We further manually evaluate 180 assigned LLM-labels and find that 94% of these labels are reasonable. Appendix F shows further evaluation of these label assignments.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Discussion</head><p>In this work, we revisit automated topic model evaluation with the help of large language models. Many automated evaluation metrics for topic models exist, however these metrics seem to not correlate strongly with human judgment on wordset analysis <ref type="bibr" target="#b16">(Hoyle et al., 2021)</ref>. Instead, we find that an LLM-based metric of coherent topic words correlates with human preferences, outperforming other metrics on the rating task.</p><p>Second, the number of topics k has to be defined before running a topic model, so practitioners run multiple models with different k. We investigate whether LLMs can guide us towards reasonable k for a collection and research question. We first note that the term optimal number of topics is vague and that such quantity does not exist without additional context. If our goal is to find a configuration which would result in coherent document sets for topics, our study supports evaluating D T instead of W T , as this correlates more strongly with the overlap between topic model and ground-truth assignment. This finding supports arguments made in <ref type="bibr" target="#b10">Doogan and Buntine (2021)</ref> who challenge the focus on W T in topic model evaluation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitations</head><p>Choice of LLM. Apart from ChatGPT, we also used open-source LLMs, such as FLAN-T5 <ref type="bibr" target="#b8">(Chung et al., 2022)</ref>, and still obtained reasonable, albeit worse than ChatGPT, coherence correlations. Given the rapid advances, future iterations of opensource LLMs will likely become better at this task.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Number of topics.</head><p>The optimal number of topics is a vague concept, dependent on a practitioner's goals and the data under study. At the same time, it is a required hyperparameter of topic models. Based on <ref type="bibr" target="#b11">Doogan et al. (2023)</ref>, we use an existing document categorization as one possible ground truth. While content analysis is the most popular application of topic models <ref type="bibr" target="#b17">(Hoyle et al., 2022)</ref>, it remains an open question how they compare to alternative clustering algorithms for this use case (e.g., k-means over document embeddings).</p><p>Interpretability. LLM label assignment and intruder detection remain opaque. This hinders the understanding of the evaluation decisions.</p><p>Topic modeling algorithm. In Section 3, we evaluate three topic modeling algorithms: Gibbs-LDA, Dirichlet-VAE and ETM (see <ref type="bibr" target="#b16">Hoyle et al., 2021)</ref>. In Section 4, we use only Gibbs-LDA and expansion to further models is left for future work.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Future work.</head><p>• Evaluation of clustering algorithms with LLMs (e.g., k-means). • More rigorous evaluation of open-source LLMs.</p><p>• Formalization, implementation and release of an LLM-guided algorithm for automatically finding optimal numbers of topics for a text collection and a research question.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Ethics Statement</head><p>Using blackbox models in NLP. Statistically significant positive results are a sufficient proof of models' capabilities, assuming that the training data is not part of the training set. This data leakage problem with closed-source LLMs is part of a bigger and unresolved discussion. In our case, we believe data leakage is unlikely. Admittedly, the data used for our coherence experiments has been publicly available. However, the data is available in a large JSON file where the topic words and annotated labels are stored disjointly. For our case studies in Section 4, the topic modeling was constructed as part of this work and there is no ground-truth which could leak to the language model.</p><p>Negative results with LLMs. In case of negative results, we cannot conclude that a model can not be used for a particular task. The negative results can be caused by inadequate prompting strategies and may even be resolved by advances in LLMs.</p><p>LLMs and biases. LLMs are known to be biased <ref type="bibr" target="#b0">(Abid et al., 2021;</ref><ref type="bibr" target="#b23">Lucy and Bamman, 2021)</ref> and their usage in this application may potentially perpetuate these biases.</p><p>Data privacy. All data used in this study has been collected as part of other work. We find no potential violations of data privacy. Thus, we feel comfortable re-using the data in this work.</p><p>Misuse potential. We urge practicioners to not blindly apply our method on their topic modeling output, but still manually validate that the topic outputs would be suitable to answer a given research question.</p><p>Evan Sandhaus. 2008. The new york times annotated corpus. Edmund M Talley, David Newman, David Mimno, Bruce W Herr 2nd, Hanna M Wallach, Gully A P C Burns, A G Miriam Leenders, and Andrew McCallum. 2011. Database of NIH grants using machinelearned categories and graphical clustering. Nat. Methods, 8(6):443-444. Nguyen Xuan Vinh, Julien Epps, and James Bailey. 2010. Information theoretic measures for clusterings comparison: Variants, properties, normalization and correction for chance. J. Mach. Learn. Res., 11:2837-2854. Hanna M Wallach, Iain Murray, Ruslan Salakhutdinov, and David Mimno. 2009. Evaluation methods for topic models. In Proceedings of the 26th annual international conference on machine learning, pages 1105-1112. Tianyi Zhang, Varsha Kishore, Felix Wu, Kilian Q. Weinberger, and Yoav Artzi. 2020. BERTScore: Evaluating text generation with BERT. In 8th International Conference Learning Representations, ICLR 2020 Addis Ababa, Ethiopia, April 26-30, 2020. OpenReview.net. Ruiqi Zhong, Peter Zhang, Steve Li, Jinwoo Ahn, Dan Klein, and Jacob Steinhardt. 2023. Goal driven discovery of distributional differences via language descriptions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Language Model Prompts</head><p>In this section, we show the used LLM prompts. The task descriptions are borrowed from <ref type="bibr" target="#b16">(Hoyle et al., 2021)</ref> and mimic crowd-worker instructions.</p><p>We use a temperature of 1 for LLMs, and the topic words are shuffled before being prompted. Both introduce additional variation within the results, similar to how some variation is introduced if different crowd-workers are asked to perform the same task.</p><p>Intruder detection task. Analogous to the human experiment, we randomly sample (a) five word from the top 10 topic words and (b) an additional intruder word from a different topic which does not occur in the top 50 words of the current topic.</p><p>We then shuffle these six words. We show the final prompt with an example topic in Prompt 2. We also construct a prompt without the dataset description (see Prompt 3 and results in Table <ref type="table" target="#tab_4">2</ref>).</p><p>System prompt: You are a helpful assistant evaluating the top words of a topic model output for a given topic. Select which word is the least related to all other words. If multiple words do not fit, choose the word that is most out of place. The topic modeling is based on The New York Times corpus. The corpus consists of articles from 1987 to 2007. Sections from a typical paper include International, National, New York Regional, Business, Technology, and Sports news; features on topics such as Dining, Movies, Travel, and Fashion; there are also obituaries and opinion pieces. Reply with a single word.</p><p>User prompt: water, area, river, park, miles, game Prompt 2: Intruder Detection Task (the intruder word in this topic is game). We show the task description for the New York Times dataset in the prompt for the rating task (the dataset descriptions are kept the same).</p><p>System prompt: You are a helpful assistant evaluating the top words of a topic model output for a given topic. Select which word is the least related to all other words. If multiple words do not fit, choose the word that is most out of place.</p><p>Reply with a single word.</p><p>User prompt: water, area, river, park, miles, game Prompt 3: Intruder Detection Task. The intruder word in this topic is game.</p><p>Rating Task. Similar to the human experiment, we retrieve the top 10 topic words and shuffle them.</p><p>We include a task and dataset description which leads to Prompt 4. The minimal prompt without the dataset description is shown in Prompt 5.</p><p>System prompt: You are a helpful assistant evaluating the top words of a topic model output for a given topic. Please rate how related the following words are to each other on a scale from 1 to 3 ("1" = not very related, "2" = moderately related, "3" = very related).</p><p>The topic modeling is based on the Wikipedia corpus. Wikipedia is an online encyclopedia covering a huge range of topics. Articles can include biographies ("George Washington"), scientific phenomena ("Solar Eclipse"), art pieces ("La Danse"), music ("Amazing Grace"), transportation ("U.S. Route 131"), sports ("1952 winter olympics"), historical events or periods ("Tang Dynasty"), media and pop culture ("The Simpsons Movie"), places ("Yosemite National Park"), plants and animals ("koala"), and warfare ("USS Nevada (BB-36)"), among others. Reply with a single number, indicating the overall appropriateness of the topic. User prompt: lake, park, river, land, years, feet, ice, miles, water, area Prompt 4: Rating Task. Topic terms are shuffled.</p><p>System prompt: You are a helpful assistant evaluating the top words of a topic model output for a given topic. Please rate how related the following words are to each other on a scale from 1 to 3 ("1" = not very related, "2" = moderately related, "3" = very related).</p><p>Reply with a single number, indicating the overall appropriateness of the topic.</p><p>User prompt: lake, park, river, land, years, feet, ice, miles, water, area Prompt 5: Rating Task without dataset description. Topic terms are shuffled.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Additional: Topic Model Outputs</head><p>Minimal prompt. Even without the dataset description in the prompt, the results remain similar.</p><p>All human ratings. In our main results, we discard human annotations with low annotator confidence in the rating. We now consider all ratings, even the non-confident ones. The results are slightly better than with the filtering.</p><p>Different LLM. We also evaluate both tasks with FLAN-T5 XL <ref type="bibr" target="#b8">(Chung et al., 2022)</ref>  <ref type="table" target="#tab_1">1</ref> for reference. LLM (min.) -results using a minimal prompt without dataset descriptions. LLM (all ann) -no discarding low-confidence annotations. FLAN-T5 -FLAN-T5 XL instead of ChatGPT. All numbers are the average result of 1000 bootstrapping episodes -re-sampling human annotations and LLM scores. Ceiling shows batched inter-annotator agreement.</p><p>significant. For the NYT and concatenated experiments, the resulting correlation are statistically indistinguishable from the best reported automated metrics NPMI and C v in <ref type="bibr" target="#b16">(Hoyle et al., 2021)</ref>. We also ran our experiments with Alpaca-7B and Falcon-7B, with largely negative results.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C Alternative Clustering Metrics</head><p>In our main results, we show correlations between LLM scores and the adjusted Rand Index, ARI, which measures the overlap between ground-truth clustering and topic model assignments. There are other cluster metrics, such as Adjusted Mutual Information, AMI <ref type="bibr">(Vinh et al., 2010)</ref>, completeness, or homogeneity. In Table <ref type="table">3</ref>, we show Spearman correlation statistics for these metrics. Our correlations are robust to the choice of metric used to measure the fit between the topic model assignment and the ground-truths in our case studies.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D Definitions</head><p>See Bouma (2009) for justification of the NPMI formula. p(w i ) and p(w i , w j ) are unigram and joint probabilities, respectively.</p><formula xml:id="formula_0">NPMI(w i , w j )= PMI(w i , w j ) -log p(w i , w j ) = log p(w i ,w j ) p(w i )p(w j ) -log p(w i , w j )</formula><p>The C v metric <ref type="bibr" target="#b30">(Röder et al., 2015)</ref> is a more complex and includes, among others, the combination of NPMI and cosine similarity for top words.</p><p>Dataset Topics ARI AMI Compl. Homog. Bills Words Broad 0.61 0.74 0.63 -0.58 Wiki Words Broad -0.38 -0.38 -0.38 0.38 Wiki Words Specific 0.03 -0.24 -0.19 0.17 Bills Docs Broad 0.59 0.36 0.57 -0.58 Wiki Docs Broad 0.72 0.72 0.72 -0.70 Wiki Docs Specific 0.72 0.66 0.20 -0.20</p><p>Table <ref type="table">3</ref>: Spearman correlation coefficients between our language-model based scores and various popular metrics for assessing the overlap between the topic model assignment and the underlying ground-truth. Compl. = Completeness, Homog. = Homogenity.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>E Optimal Number of Topics Prompts</head><p>We now show the prompts for the optimal number of topics. We incorporate research questions in two ways: (1) we specify whether we are looking for broad or narrow topics, and (2) we prompt 5 example categories. We believe this is a realistic operationalization. If our goal is a reasonable partitioning of a collection, we usually have some priors about what categories we want the collection to be partitioned into.</p><p>Prompt 6 shows the prompt for rating T ws by models run with different numbers of topics. The task description and user prompt is identical to the prompt used in our prior experiments, displayed in e.g., Prompt 4. However, the dataset description is different and allows for some variation. In Prompt 7, we show the prompt for automatically assigning labels to a document from a T dc . To automatically find the optimal number of topics for a topic model, we prompt an LLM to provide a concise label to a document from the topic document collection, the most likely documents assigned by a topic model to a topic (see Prompt 7).</p><p>You are a helpful assistant evaluating the top words of a topic model output for a given topic. Please rate how related the following words are to each other on a scale from 1 to 3 ("1" = not very related, "2" = moderately related, "3" = very related). The topic modeling is based on a legislative Bill summary dataset. We are interested in coherent broad|narrow topics. Typical topics in the dataset include "topic 1", "topic 2", "topic 3", "topic 4" and "topic 5". Reply with a single number, indicating the overall appropriateness of the topic. User prompt: lake, park, river, land, years, feet, ice, miles, water, area Prompt 6: Rating Task without dataset description. Topic terms are shuffled. We apply this prompt to 2 different datasets and 2 different research goals (broad and narrow topics), and would set this part of the prompt accordingly. Also, we set as topic 1 to topic 5 the 5 most prevalent ground-truth labels from a dataset.</p><p>System prompt: You are a helpful research assistant with lots of knowledge about topic models. You are given a document assigned to a topic by a topic model. Annotate the document with a broad|narrow label, for example "topic 1", "topic 2", "topic 3", "topic 4" and "topic 5". Reply with a single word or phrase, indicating the label of the document. User prompt: National Black Clergy for the Elimination of HIV/AIDS Act of 2011 -Authorizes the Director of the Office of Minority Health of the Department of Health and Human Services (HHS) to make grants to public health agencies and faith-based organizations to conduct HIV/AIDS prevention, testing, and related outreach activities ... Prompt 7: Assigning a label to a document belonging to the top document collection of a topic. The label provided in this example is health. We apply this prompt to 2 different datasets and 2 different research goals (broad and narrow topics), and would set this part of the prompt accordingly. Also, we set as topic 1 to topic 5 the 5 most prevalent ground-truth labels from a dataset.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>F Additional: Document Labeling</head><p>In our study, we automatically label the top 10 documents for five randomly sampled topics. The ARI between-topic model partitioning and ground-truth labels correlates if we were to only examine these top 10 documents or all documents in the collection. The correlation between these two in the Bills dataset is 0.96, indicating that analyzing only the top 10 documents in a topic is a decent proxy for the whole collection.</p><p>Next, we evaluate the LLM-based label assignement to a document. Our documents are usually long, up to 2000 words. We only consider the first 50 words in a document as input to the LLM. For Wikipedia, this is reasonable, because the first 2-3 sentences define the article and give a good summary of the topic of an article. For Bills, we manually confirm that the topic of an article is introduced at the beginning of a document.</p><p>Human evaluation. From each case study, we randomly sample 60 documents and assigned labels (3 examples for each of the twenty topic models), resulting in 180 examples in total. We then evaluate whether the assigned label reasonably captures the document content given the specification in the input prompt (e.g., a broad label such as health or defense, or a narrow label such as warships of germany or tropical cyclones: atlantic. Recall that the prompted labels correspond to the five most prevalent ground-truth categories of the groundtruth annotation. We find that the assigned label makes sense in 93.9% of examined labels. In the 11 errors spotted, the assigned label does not meet the granularity in 6 cases, is no adequate description of the document in 3 cases, and is a summary of the document instead of a label in 2 cases.</p><p>Automated Metrics. Given that we have groundtruth labels for each document, we can compute cluster metrics between the assigned labels by the LLM and the ground-truth labels (see Table <ref type="table">4</ref>). These values refer to comparing all labels assigned during our case study to their ground-truth label (1000 assigned datapoints per dataset).</p><p>Dataset Ground-Truth Labels ARI AMI Bills Broad 19 43 Wiki Broad 52 57 Wiki Narrow 49 34</p><p>Table <ref type="table">4</ref>: Accuracy of the label assignment task. We find that the assigned labels clustering overlaps with the ground-truth labels.</p><p>On average, we assign 10 times as many unique labels to documents than there are ground-truth labels (we assign 172 different labels in the Bills dataset, 348 labels in the broad Wikitext dataset and 515 labels in the narrow Wikitext dataset). Nevertheless, the automated metrics indicate a decent overlap between ground-truth and assigned labels. Thus, the LLM often assigns the same label to documents with the same ground-truth label.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>G Qualitative Results</head><p>In this section, we show qualitative results of our automated investigation of numbers of topics. In Table <ref type="table" target="#tab_7">5</ref>, we show three randomly sampled topics from the preferred topic model in our experiments. We contrast these with three randomly sampled topics from the topic model configuration which our procedures indicate as least suitable.</p><p>In Table <ref type="table">6</ref>, we show true labels and LLMassigned labels for three randomly sampled topics from the preferred topic model, contrasting it with true and LLM-assigned labels from topics in the least suitable configuration. We find that indeed, the assigned labels and the ground-truth label often match -and that the purity of the LLM-assigned labels reflects the purity of the ground-truth label.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Bills (broad categories)</head><p>Most suitable -veterans, secretary, veteran, assistance, service, disability, benefits, educational, compensation, veterans_affairs (3) -land, forest, management, lands, act, usda, projects, secretary, restoration, federal (3) -mental, health, services, treatment, abuse, programs, substance, grants, prevention, program (3) Least suitable -gas, secretary, lease, oil, leasing, act, way, federal, production, environmental (2) <ref type="bibr">-covered, criminal, history, act, restitution, child, background, amends, checks, victim (2) -information, beneficial, value, study, ownership, united_states, act, area, secretary, new_york (1)</ref> Wikitext (broad categories) Most suitable -episode, star, trek, enterprise, series, season, crew, generation, ship, episodes (3) -series, episodes, <ref type="bibr">season, episode, television, cast, production, second, viewers, pilot (3) -car, vehicle, vehicles, engine, model, models, production, cars, design, rear (3)</ref> Least suitable -episode, series, doctor, season, character, time, star, story, trek, set (2) -stage, tour, ride, park, concert, dance, train, coaster, new, roller (1) -said, like, character, time, life, love, relationship, later, people, way (1)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Wikitext (specific categories)</head><p>Most suitable -episode, star, trek, enterprise, series, <ref type="bibr">season, crew, generation, ship, episodes (3) -car, vehicle, vehicles, engine, model, models, production, cars, design, rear (3) -world, record, meter, time, won, freestyle, gold, championships, relay, seconds (2)</ref> Least suitable -fossil, fossils, found, specimens, years, evolution, modern, million, eddie, like (2) -match, event, impact, joe, team, angle, episode, styles, championship, tag (1) -brown, rihanna, usher, love, girl, loud, yeah, wrote, bow, bad (1)  <ref type="table">6</ref>: Assigned LLM labels and ground-truth labels for a given topic from the most and the least suitable cluster configuration according to our algorithm. The purity is higher in the most suitable configuration for LLM labels and ground-truth labels.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: (1) ARI for topic assignment and ground-truth topic labels, (2) LLM word set coherence, (3) LLM document set purity, obtained by our algorithm. ARI correlates with LLM document set purity, but not with LLM word set coherence. The ground-truth number of topics are: 21 topics in the BillSum dataset, 45 broad topics in Wikitext and 279 specific topics in Wikitext. ρ D and ρ W are document-LLM and word-LLM correlations with ARI.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>Spearman correlation between human scores and automated metrics. All results use 1000 bootstrap-</figDesc><table><row><cell>Task</cell><cell cols="4">Dataset NPMI C v LLM Ceiling</cell></row><row><cell></cell><cell>NYT</cell><cell>0.43</cell><cell>0.45  † 0.37</cell><cell>0.67</cell></row><row><cell>Intrusion</cell><cell>Wiki</cell><cell cols="2">0.39  † 0.34 0.35</cell><cell>0.60</cell></row><row><cell></cell><cell>Both</cell><cell cols="2">0.40  † 0.40  † 0.36</cell><cell>0.64</cell></row><row><cell></cell><cell>NYT</cell><cell>0.48</cell><cell>0.40 0.64 ⋆</cell><cell>0.72</cell></row><row><cell>Rating</cell><cell>Wiki</cell><cell>0.44</cell><cell>0.40 0.57 ⋆</cell><cell>0.56</cell></row><row><cell></cell><cell>Both</cell><cell>0.44</cell><cell>0.42 0.59 ⋆</cell><cell>0.65</cell></row></table><note><p>ping episodes -re-sampling human annotations and LLM scores, and averaging the correlations. Marked ⋆ if significantly better than second best (&lt;0.05), otherwise †. Ceiling shows batched inter-annotator agreement.</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 2 :</head><label>2</label><figDesc>Additional experiments reporting Spearman correlation between mean human scores and automated metrics. LLM (main) repeats our main results in Table</figDesc><table><row><cell>Task</cell><cell cols="8">Dataset NPMI C v LLM (main) LLM (min.) LLM (all ann.) FLAN-T5 Ceiling</cell></row><row><cell></cell><cell>NYT</cell><cell>0.43</cell><cell>0.45</cell><cell>0.37</cell><cell>0.41</cell><cell>0.39</cell><cell>0.37</cell><cell>0.67</cell></row><row><cell>Intrusion</cell><cell>Wiki</cell><cell>0.39</cell><cell>0.34</cell><cell>0.35</cell><cell>0.27</cell><cell>0.36</cell><cell>0.18</cell><cell>0.60</cell></row><row><cell></cell><cell>Both</cell><cell>0.40</cell><cell>0.40</cell><cell>0.36</cell><cell>0.34</cell><cell>0.38</cell><cell>0.28</cell><cell>0.64</cell></row><row><cell></cell><cell>NYT</cell><cell>0.48</cell><cell>0.40</cell><cell>0.64</cell><cell>0.64</cell><cell>0.65</cell><cell>0.31</cell><cell>0.72</cell></row><row><cell>Rating</cell><cell>Wiki</cell><cell>0.44</cell><cell>0.40</cell><cell>0.57</cell><cell>0.51</cell><cell>0.56</cell><cell>0.17</cell><cell>0.56</cell></row><row><cell></cell><cell>Both</cell><cell>0.44</cell><cell>0.42</cell><cell>0.59</cell><cell>0.57</cell><cell>0.61</cell><cell>0.25</cell><cell>0.65</cell></row></table><note><p>, which is instruction-finetuned across a range of tasks. This model performs well in zero-shot setting, and compares to recent state-of-the-art<ref type="bibr" target="#b7">(Chia et al., 2023)</ref></p><p>. Although it does not reach ChatGPT, the correlation with human annotators are all statistically</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_7"><head>Table 5 :</head><label>5</label><figDesc>Most and least suitable topics according to our LLM-based assessment on different datasets and use cases. In brackets the LLM rating for the coherence of this topic.</figDesc><table><row><cell></cell><cell cols="2">Bills</cell><cell cols="2">Wikitext (broad)</cell><cell cols="2">Wikitext (specific)</cell></row><row><cell></cell><cell>LLM-label</cell><cell>True label</cell><cell>LLM-label</cell><cell>True label</cell><cell>LLM-label</cell><cell>True label</cell></row><row><cell>Most suitable</cell><cell>health elder abuse prevention health</cell><cell>Health Social Wel-fare Health</cell><cell>amusement park ride amusement park ride amusement</cell><cell>Recreation Recreation Recreation</cell><cell>politician politician american</cell><cell>Historical figures: politicians Historical figures: politicians Historical figures: politicians</cell></row><row><cell></cell><cell></cell><cell></cell><cell>park ride</cell><cell></cell><cell>civil war</cell><cell></cell></row><row><cell></cell><cell>health</cell><cell>Health</cell><cell>amusement</cell><cell>Recreation</cell><cell>lawyer and</cell><cell>Historical figures: other</cell></row><row><cell></cell><cell></cell><cell></cell><cell>park ride</cell><cell></cell><cell>politician</cell><cell></cell></row><row><cell></cell><cell>health</cell><cell>Health</cell><cell>amusement</cell><cell>Recreation</cell><cell>historical</cell><cell>Journalism and newspapers</cell></row><row><cell></cell><cell></cell><cell></cell><cell>park ride</cell><cell></cell><cell>newspaper</cell><cell></cell></row><row><cell>Least suitable</cell><cell>public land public land public land</cell><cell cols="2">Public Lands warship and naval unit Public Lands warship and naval unit Environment warship and</cell><cell cols="2">Armies and mil-itary units Armies and mil-itary units Military people hinduism classical greek poetry hinduism</cell><cell>Poetry Religious doctrines, teachings, texts, events, and symbols Religious doctrines, teachings,</cell></row><row><cell></cell><cell></cell><cell></cell><cell>naval unit</cell><cell></cell><cell></cell><cell>texts, events, and symbols</cell></row><row><cell></cell><cell>indigenous</cell><cell>Government</cell><cell>warship and</cell><cell cols="2">Military people philosophy</cell><cell>Philosophical doctrines, teach-</cell></row><row><cell></cell><cell>affair</cell><cell>Operations</cell><cell>naval unit</cell><cell></cell><cell></cell><cell>ings, texts, events, and symbols</cell></row><row><cell></cell><cell>indigenous</cell><cell>Government</cell><cell>war poetry</cell><cell>Language and</cell><cell>philosophy</cell><cell>Philosophical doctrines, teach-</cell></row><row><cell></cell><cell>affair</cell><cell>Operations</cell><cell></cell><cell>literature</cell><cell></cell><cell>ings, texts, events, and symbols</cell></row><row><cell>Table</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>We think of "words" as an atomic unit in a document, which can also be an n-gram or phrase. E.g., Wlegal = {litigation, attorney-client privilege, intellectual property, . . . }.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>We use ChatGPT as the main LLM (chat.openai.com). We list ablation results using other LLMs in Appendix B.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>Models: Gibbs-LDA<ref type="bibr" target="#b24">(McCallum, 2002)</ref>, Dirichlet-VAE<ref type="bibr" target="#b5">(Burkhardt and</ref><ref type="bibr" target="#b5">Kramer, 2019), and</ref> ETM (Dieng et al., 2020).</p></note>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Persistent anti-muslim bias in large language models</title>
+		<author>
+			<persName><forename type="first">Abubakar</forename><surname>Abid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maheen</forename><surname>Farooqi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Zou</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3461702.3462624</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 AAAI/ACM Conference on AI, Ethics, and Society</title>
+		<meeting>the 2021 AAAI/ACM Conference on AI, Ethics, and Society</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="298" to="306" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Evaluating topic coherence using distributional semantics</title>
+		<author>
+			<persName><forename type="first">Nikolaos</forename><surname>Aletras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Stevenson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 10th international conference on computational semantics (IWCS 2013)-Long Papers</title>
+		<meeting>the 10th international conference on computational semantics (IWCS 2013)-Long Papers</meeting>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="13" to="22" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Narrative paths and negotiation of power in birth stories</title>
+		<author>
+			<persName><forename type="first">Maria</forename><surname>Antoniak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Mimno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karen</forename><surname>Levy</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3359190</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Proc. ACM Hum.-Comput. Interact</title>
+		<imprint>
+			<biblScope unit="volume">3</biblScope>
+			<date type="published" when="2019">2019</date>
+			<publisher>CSCW</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Latent dirichlet allocation</title>
+		<author>
+			<persName><forename type="first">David</forename><forename type="middle">M</forename><surname>Blei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">Y</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><forename type="middle">I</forename><surname>Jordan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">J. Mach. Learn. Res</title>
+		<imprint>
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="page" from="993" to="1022" />
+			<date type="published" when="2003">2003</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Normalized (pointwise) mutual information in collocation extraction</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gerlof</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bouma</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2009">2009</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Decoupling sparsity and smoothness in the dirichlet variational autoencoder topic model</title>
+		<author>
+			<persName><forename type="first">Sophie</forename><surname>Burkhardt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefan</forename><surname>Kramer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">20</biblScope>
+			<biblScope unit="issue">131</biblScope>
+			<biblScope unit="page" from="1" to="27" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Reading tea leaves: How humans interpret topic models</title>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sean</forename><surname>Gerrish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jordan</forename><surname>Boyd-Graber</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Blei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2009">2009</date>
+			<biblScope unit="volume">22</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">INSTRUCTEVAL: Towards holistic evaluation of instruction-tuned large language models</title>
+		<author>
+			<persName><forename type="first">Ken</forename><surname>Yew</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengfei</forename><surname>Chia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lidong</forename><surname>Hong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soujanya</forename><surname>Bing</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Poria</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Scaling instruction-finetuned language models</title>
+		<author>
+			<persName><forename type="first">Chung</forename><surname>Hyung Won</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shayne</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunxuan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostafa</forename><surname>Dehghani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siddhartha</forename><surname>Brahma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shane</forename><surname>Shixiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuyun</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mirac</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyun</forename><surname>Suzgun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie</forename><surname>Castro-Ros</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Pellat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dasha</forename><surname>Robinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Valter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gaurav</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adams</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vincent</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanping</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongkun</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Slav</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Petrov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Dean</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><forename type="middle">V</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wei</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Topic modeling in embedding spaces</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Adji</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Dieng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Francisco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><forename type="middle">M</forename><surname>Ruiz</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Blei</surname></persName>
+		</author>
+		<idno type="DOI">10.1162/tacl_a_00325</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="page" from="439" to="453" />
+		</imprint>
+	</monogr>
+	<note>Transactions of the Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Topic model or topic twaddle? Re-evaluating semantic interpretability measures</title>
+		<author>
+			<persName><forename type="first">Caitlin</forename><surname>Doogan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wray</forename><surname>Buntine</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.naacl-main.300</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="3824" to="3848" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">A systematic review of the use of topic models for short text social media analysis. Artificial Intelligence Review</title>
+		<author>
+			<persName><forename type="first">Caitlin</forename><surname>Doogan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wray</forename><surname>Buntine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henry</forename><surname>Linger</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/s10462-023-10471-x</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="1" to="33" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">Guglielmo</forename><surname>Faggioli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laura</forename><surname>Dietz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Clarke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianluca</forename><surname>Demartini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Hagen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claudia</forename><surname>Hauff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noriko</forename><surname>Kando</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Evangelos</forename><surname>Kanoulas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Potthast</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benno</forename><surname>Stein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henning</forename><surname>Wachsmuth</surname></persName>
+		</author>
+		<title level="m">Perspectives on large language models for relevance judgment</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jinlan</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">See-Kiong</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengbao</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengfei</forename><surname>Liu</surname></persName>
+		</author>
+		<title level="m">GPTScore: Evaluate as you desire</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">ChatGPT outperforms crowd-workers for textannotation tasks</title>
+		<author>
+			<persName><forename type="first">Fabrizio</forename><surname>Gilardi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meysam</forename><surname>Alizadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maël</forename><surname>Kubli</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Text as data: The promise and pitfalls of automatic content analysis methods for political texts</title>
+		<author>
+			<persName><forename type="first">Justin</forename><surname>Grimmer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brandon</forename><forename type="middle">M</forename><surname>Stewart</surname></persName>
+		</author>
+		<idno type="DOI">10.1093/pan/mps028</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Political Analysis</title>
+		<imprint>
+			<biblScope unit="volume">21</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="267" to="297" />
+			<date type="published" when="2013">2013</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Hoyle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Goel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denis</forename><surname>Peskov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Hian-Cheong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jordan</forename><surname>Boyd-Graber</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philip</forename><surname>Resnik</surname></persName>
+		</author>
+		<title level="m">Is automated topic model evaluation broken?: The incoherence of coherence</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Are neural topic models broken?</title>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Miserlis Hoyle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rupak</forename><surname>Sarkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Goel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philip</forename><surname>Resnik</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2022</title>
+		<meeting><address><addrLine>Abu Dhabi, United Arab Emirates</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="5321" to="5344" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title level="m" type="main">Is chatgpt better than human annotators? potential and limitations of chatgpt in explaining implicit hate speech</title>
+		<author>
+			<persName><forename type="first">Fan</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haewoon</forename><surname>Kwak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jisun</forename><surname>An</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.07736</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Comparing partitions</title>
+		<author>
+			<persName><forename type="first">Lawrence</forename><surname>Hubert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phipps</forename><surname>Arabie</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/BF01908075</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of classification</title>
+		<imprint>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="193" to="218" />
+			<date type="published" when="1985">1985</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Twitter and research: A systematic literature review through text mining</title>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Karami</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Morgan</forename><surname>Lundy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Frank</forename><surname>Webb</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yogesh</forename><forename type="middle">K</forename><surname>Dwivedi</surname></persName>
+		</author>
+		<idno type="DOI">10.1109/ACCESS.2020.2983656</idno>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Access</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="page" from="67698" to="67717" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Large language models are state-of-the-art evaluators of translation quality</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Kocmi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Federmann</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">The mythos of model interpretability: In machine learning, the concept of interpretability is both important and slippery</title>
+		<author>
+			<persName><forename type="first">Zachary</forename><forename type="middle">C</forename><surname>Lipton</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3236386.3241340</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Queue</title>
+		<imprint>
+			<biblScope unit="volume">16</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="31" to="57" />
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Gender and representation bias in GPT-3 generated stories</title>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Lucy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Bamman</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Third Workshop on Narrative Understanding</title>
+		<meeting>the Third Workshop on Narrative Understanding</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="48" to="55" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Kachites</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mccallum</forename></persName>
+		</author>
+		<ptr target="http://mallet.cs.umass.edu" />
+		<title level="m">MALLET: A MAachine Learning for LanguagE Toolkit</title>
+		<imprint>
+			<date type="published" when="2002">2002</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Pointer sentinel mixture models</title>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Merity</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caiming</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Bradbury</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Socher</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">5th International Conference on Learning Representations</title>
+		<title level="s">Conference Track Proceedings. Open-Review</title>
+		<meeting><address><addrLine>Toulon, France</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2017-04-24">2017. 2017. April 24-26, 2017</date>
+		</imprint>
+	</monogr>
+	<note>net</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Optimizing semantic coherence in topic models</title>
+		<author>
+			<persName><forename type="first">David</forename><surname>Mimno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hanna</forename><surname>Wallach</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edmund</forename><surname>Talley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Miriam</forename><surname>Leenders</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Mccallum</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2011 conference on empirical methods in natural language processing</title>
+		<meeting>the 2011 conference on empirical methods in natural language processing</meeting>
+		<imprint>
+			<date type="published" when="2011">2011</date>
+			<biblScope unit="page" from="262" to="272" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Automatic evaluation of topic coherence</title>
+		<author>
+			<persName><forename type="first">David</forename><surname>Newman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jey</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Han</forename><surname>Lau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karl</forename><surname>Grieser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothy</forename><surname>Baldwin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Human language technologies: The 2010 annual conference of the North American chapter of the association for computational linguistics</title>
+		<imprint>
+			<date type="published" when="2010">2010</date>
+			<biblScope unit="page" from="100" to="108" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Evaluating topic models for digital libraries</title>
+		<author>
+			<persName><forename type="first">David</forename><surname>Newman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Youn</forename><surname>Noh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edmund</forename><surname>Talley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sarvnaz</forename><surname>Karimi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothy</forename><surname>Baldwin</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/1816123.1816156</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 10th annual joint conference on Digital libraries</title>
+		<meeting>the 10th annual joint conference on Digital libraries</meeting>
+		<imprint>
+			<date type="published" when="2010">2010</date>
+			<biblScope unit="page" from="215" to="224" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hamed</forename><surname>Rahimi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><forename type="middle">Louis</forename><surname>Hoover</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Mimno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hubert</forename><surname>Naacke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Camelia</forename><surname>Constantin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bernd</forename><surname>Amann</surname></persName>
+		</author>
+		<title level="m">Contextualized topic coherence metrics</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Exploring the space of topic coherence measures</title>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Röder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andreas</forename><surname>Both</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Hinneburg</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/2684822.2685324</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the eighth ACM international conference on Web search and data mining</title>
+		<meeting>the eighth ACM international conference on Web search and data mining</meeting>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="page" from="399" to="408" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

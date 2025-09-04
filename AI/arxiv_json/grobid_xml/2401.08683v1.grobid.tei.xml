@@ -1,0 +1,570 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Zero-Shot RTL Code Generation with Attention Sink Augmented Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-01-12">12 Jan 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Selim</forename><surname>Sandal</surname></persName>
+							<email>selim.sandal@ozu.edu.tr</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">Ozyegin University Istanbul</orgName>
+								<address>
+									<country key="TR">Turkey</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Ismail</forename><surname>Akturk</surname></persName>
+							<email>ismail.akturk@ozyegin.edu.tr</email>
+							<affiliation key="aff1">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">Ozyegin University Istanbul</orgName>
+								<address>
+									<country key="TR">Turkey</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Zero-Shot RTL Code Generation with Attention Sink Augmented Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-01-12">12 Jan 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">B251686F3560A0306BF43765DFA5C01C</idno>
+					<idno type="arXiv">arXiv:2401.08683v1[cs.AR]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:21+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>hardware design</term>
+					<term>large language models</term>
+					<term>attention mechanisms</term>
+					<term>design automation</term>
+					<term>RTL code generation</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>The design and optimization of hardware have traditionally been resource-intensive, demanding considerable expertise and dependence on established design automation tools. This paper discusses the possibility of exploiting large language models to streamline the code generation process in hardware design. In contrast to earlier studies, this paper aims to use large language models that accepts high-level design specifications through a single prompt to generate corresponding Register-Transfer Level (RTL) code. The ability to use large language models on RTL code generation not only expedites design iteration cycles but also facilitates the exploration of design spaces that have computational challenges for conventional techniques. Through our evaluation, we demonstrate the shortcoming of existing attention mechanisms, and present the abilities of language models to produce functional, optimized, and industrystandard compliant RTL code when a novel attention mechanism is used. These findings underscore the expanding role of large language models in shaping the future landscape of architectural exploration and automation in hardware design.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>I. INTRODUCTION</head><p>The advanced manufacturing technology has led to the creation of increasingly complex hardware architectures, propelling progress in various sectors including healthcare, telecommunications, and autonomous systems. However, the process of designing and optimizing these architectures remains cumbersome, inefficient, and highly dependent on human expertise. Current methodologies necessitate specialized skills in hardware description languages, such as Verilog or VHDL, and a thorough understanding of design automation tools. This complexity not only results in labor intensive design processes, but also poses limitations on exploring the vast and intricate design spaces. As a result, the industry has been struggling with higher costs and prolonged development cycles.</p><p>Recently, the application of machine learning techniques, specifically large language models (LLMs), has been explored <ref type="bibr" target="#b0">[1]</ref>- <ref type="bibr" target="#b4">[5]</ref> as a solution to automate and optimize code generation tasks. These models show potential in generating modulelevel code in industry standards. However, their capabilities have been largely confined to writing single, isolated modules, leaving a gap in the full-scale architectural exploration and design automation.</p><p>In the context of LLMs, zero-shot denotes the model's capacity to perform tasks for which it has not explicitly trained on. In hardware design, this implies the model's ability to interpret high-level design specifications even in the absence of prior examples related to similar tasks. This approach is particularly valuable, as it facilitates adaptable and responsive handling of a diverse array of design requirements, empowering designers to explore innovative solutions without the need for the model to undergo specialized training for each distinct type of hardware design task. Note that while a given LLM may have been trained on a corpus that includes RTL code (e.g., Verilog), along with other non-hardware-related information, it has not undergone direct training to translate high-level design concepts into RTL. This distinction is crucial for appreciating the contributions of this work.</p><p>Currently, existing LLMs struggle generating large code bases that align seamlessly with the provided prompt, primarily attributed to the limitations imposed by the context window size. This work aims to demonstrate the feasibility of zero-shot prompting to generate high quality RTL code.</p><p>To do so, we present an approach that leverages the power of LLMs in conjunction with a recently introduced attention mechanism called attention sink <ref type="bibr" target="#b5">[6]</ref>. In this scenario, a singular prompt encapsulates high-level design specifications, and the underlying language model, enhanced with attention sink, is employed to generate the comprehensive RTL code. This not only significantly expedites the design process, but also enables tackling design spaces that have hitherto been computationally infeasible for traditional methods.</p><p>Below is the summary of main contributions and novelty of this work:</p><p>• survey the shortcoming of existing LLMs with available attention mechanisms in RTL code generation; • present a methodology that leverages LLMs for automated RTL code generation from high-level specifications, without the need for model fine-tuning specific to RTL (note that fine-tuning for RTL is challenging due to lack of industry-standard compliant comprehensive training data); • integration of a newly introduced attention mechanism, attention sink, with LLMs that addresses the challenges posed by traditional LLMs in managing long-sequence tasks; • demonstrate LLMs ability (with attention sink mechanism) to interpret and generate functional, optimized, and industry-standard compliant RTL code for an Neural Processing Unit (NPU); • provide insights for future innovations in LLM-based hardware design automation tools. In the following, we provide some background on existing efforts within the domain and elucidate their limitations. Subsequently, we provide the specifications of the NPU used as a case study. Thereafter, we outline our proposed approach, explain the methodology employed in evaluation, and present our findings. Our findings suggest that LLMs that enhanced with the novel attention mechanism can produce functional, optimized, and industry-standard compliant RTL code. This work contributes to the ongoing discussions about the potential of LLMs in facilitating more efficient design automation and architectural exploration.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>II. BACKGROUND</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Existing LLMs and their limitations in RTL code generation</head><p>The design of emerging hardware architectures (e.g., AI accelerators) involves complex logic circuits and sophisticated elements tailored to specific tasks, often demanding prompts with long and detailed specifications. To generate effective RTL code, the prompts must encompass comprehensive functional requirements, specifying the design's operational range, data processing capabilities, and logical structures for the desired computation. When utilizing large language models for RTL code generation, accurate interpretation and implementation of these detailed specifications are vital for creating functionally effective and technically accurate hardware designs. Nevertheless, we note that existing LLMs often produce RTL code that is either non-synthesizable or functionally incorrect. Below, we outline the most prevalent failures observed in LLMs when generating RTL code. Redundant copies of variables: LLMs often forget the original prompt (mainly due to the limited context window) and regenerate the variables from the other modules, instead of instantiating these modules, as shown in Listing 1. Hallucinating Variables and Specifications: A notable challenge in LLM generated RTL code is hallucination, where the model diverges from providing the requested code and instead generates extraneous variables or specifications. In LLMs, the Key-Value (KV) cache plays a crucial role in the transformer attention mechanism <ref type="bibr" target="#b6">[7]</ref>, a core component that determines how the model processes and generates text. The KV cache is used to store and manage 'keys' and 'values,' which are elements that represent aspects of the input tokens and their associated contextual information.</p><p>In LLMs, using attention mechanisms like dense and windowed attention reveals context window limitations, especially when processing text longer than the KV cache size. Dense attention may cause model to hallucinate, especially with variable definitions, as shown in Listing 2, due to a weakened</p><p>Listing 1. Redundant Copies of Variables module bfloat16 addsub #( parameter WIDTH = 16 ) ( input logic [WIDTH-1:0] a, input logic [WIDTH-1:0] b, output logic [WIDTH-1:0] result, input is sub ); logic [WIDTH-1:0] a sign, b sign, result sign; logic [WIDTH-1:0] a exp, b exp, result exp; logic [WIDTH-1:0] a mant, b mant, result mant; logic [WIDTH-1:0] shift amount; logic [WIDTH-1:0] shifted mant a, shifted mant b; logic [WIDTH-1:0] sum; logic [WIDTH-1:0] carry; module bfloat16 div #( parameter WIDTH = 16 ) ( input logic [WIDTH-1:0] a, input logic [WIDTH-1:0] b, output logic [WIDTH-1:0] result ); logic [WIDTH-1:0] a sign, b sign, result sign; logic [WIDTH-1:0] a exp, b exp, result exp; logic [WIDTH-1:0] a mant, b mant, result mant; logic [WIDTH-1:0] quotient; logic [WIDTH-1:0] leading zeros; module processing element #( parameter WIDTH = 16 ) ( input logic clk, input rst, input [3:0] opcode, input [WIDTH-1:0] a in, input [WIDTH-1:0] b in, output logic [WIDTH-1:0] result ); logic [WIDTH-1:0] a sign, b sign, result sign; logic [WIDTH-1:0] a exp, b exp, result exp; logic [WIDTH-1:0] a mant, b mant, result mant; logic [WIDTH-1:0] shift amount; logic [WIDTH-1:0] shifted mant a, shifted mant b; logic [WIDTH-1:0] sum; logic [WIDTH-1:0] carry; logic [WIDTH-1:0] product; logic [WIDTH-1:0] quotient;</p><p>context mechanism that loses earlier code segments. While windowed attention is more memory efficient, it can increase language modeling perplexity, thereby reducing the model's coherence and accuracy in code generation. Similarly, Listing 3 shows that instead of producing the desired code, LLM continues to elaborate or invent specifications that were not part of the original prompt. This behavior can be attributed to the model's difficulty in contextual understanding and its tendency to fill gaps in its knowledge by generating plausible-sounding, but ultimately useless content. Hallucination in code generation is particularly problematic as it can lead to bloated, convoluted designs that stray significantly from the intended outcome, necessitating rigorous review and correction by human experts. Addressing this challenge requires refining the model's ability to stay focused on the initial prompt and its relevant context, ensuring that the generated code remains aligned with the specific requirements of the RTL design task.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Listing 3. Hallucinating Specification</head><p>The control module receives commands and data via a wishbone bus from the RISC-V cpu. The control module decodes the instruction and executes the operation. The control module also manages the vector registers and scalar registers. The control module also manages the processing elements. The control module also manages the instruction decoder. The control module also manages the bfloat16 operation modules. The control module also manages the wishbone bus. The control module also manages the RISC-V cpu. The control module also manages the NPU. The control module also manages the bfloat16 operation modules.</p><p>Corrupt output: Corrupt output in the generated RTL code can primarily be attributed to the inherent limitations of window attention mechanism in handling long sequences. While this method is effective for shorter texts, it struggles with longer sequences, such as detailed RTL code specifications. In these situations, as the model progresses through the input, crucial tokens from the initial sections might fall outside the window's reach, leading to a loss of context. This results in the  <ref type="figure">----------------------------------------------------------------------------------------------------------------------------</ref>model generating code that is either incomplete or nonsensical, as illustrated in Listing 4. Variable type and size mismatch: The variable size or type mismatches arise not from erroneous processing of data per se, but from the context-dependent nature of tokenization in fine-tuned LLMs. Tokenization involves breaking down the given text into tokens. In fine-tuned models, this process is often optimized for specific contexts or data types. However, when these models encounter numeric values or specific syntax outside their primary training scope, they may misinterpret the context, leading to tokenization problems. For instance, a model might incorrectly tokenize '11' as '111' if it is not adequately attuned to the nuances of RTL code syntax, as exemplified in Listing 5. Such mismatches in variable sizes and values can result in significant logical errors in the generated code. This limitation highlights the need for more context-sensitive tokenization methods in LLMs, especially in specialized domains like RTL code generation, where the accuracy of every token is crucial for the integrity of the output. Inability to capture intended hardware behavior: LLMs often struggle in adhering to specific conventions within RTL coding, which are crucial for preventing undesired hardware behavior. For example, LLMs often overlook the RTL design principle of avoiding the direct assignment of a single element from one buffer to multiple positions in another buffer, favoring the assignment to a register first <ref type="bibr" target="#b4">[5]</ref>. Furthermore, the generation of unnecessary ports, as depicted in <ref type="bibr">Listing</ref> 6, module instruction decoder ( input [31:0] inst, output logic [3:0] opcode, output logic [1:0] src1, output logic [1:0] src2, output logic [1:0] dest ); assign opcode = inst[3:0]; assign src1 = inst[7:6]; assign src2 = inst[9:8]; assign dest = inst[111:10]; endmodule</p><p>deviates from the best design practices and not only complicate the design but may also lead to conflicts or inefficiencies in hardware implementation. Such deviations from the established RTL coding conventions, underscore the need for more sophisticated understanding and application of hardware design principles in LLMs, ensuring that the generated code not only meets the functional requirements, but also adheres to the practical and efficient design standards essential in RTL development. Improper treatment of user instructions: Oftentimes, users provide custom directions to language models to guide the process of RTL code generation. Nevertheless, these language models can encounter difficulties when it comes to connecting these instructions in natural language with the correct code generation. For example, when asked to break down a given module into specific sub-modules, they might have trouble accomplishing it <ref type="bibr" target="#b4">[5]</ref>.</p><p>The problems described above limits the effective use of LLMs in automated RTL code generation. Some of these problems can be alleviated by employing multiple prompts. In such scenarios, each prompt corresponds to a particular module in the design, and as these modules often have dependencies on one another: the outcomes of earlier prompts need to be transferred to the subsequent prompts. This leads to a lengthy chain of dependency tracking, requiring manual effort, being error-prone, and consuming a significant amount of time. Furthermore, the subsequent prompts in the sequence might not effectively manage lengthy responses from earlier prompts because of their limited context cache size. In this work, however, we focus on automated RTL code generation with a single prompt, which poses event more significant challenges.</p><p>An orthogonal approach to address these problems is to refine existing LLMs by fine-tuning them with annotated RTL code. However, this approach encounters challenges due to the limited availability of well-annotated RTL code with accompanying design explanations and the absence of advanced LLMs suitable for fine-tuning. Below, we provide further details on instruction-tuning and fine-tuning of LLMs for RTL code generation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Instruction-Tuning and fine-tuning LLMs for RTL code generation</head><p>We explore instruction-tuned LLMs specifically for code generation tasks, a methodology that offers distinct advantages over their non-fine-tuned counterparts. These instructiontuned models demonstrate a greater proficiency in adhering to specified design parameters and enable iterative refinement to correct errors, making them particularly suitable for specialized tasks, such as automated RTL code generation. This instruction-tuning process is crucial for enhancing the precision and utility of the generated code, ensuring that domain-specific nuances and technicalities are accurately captured. However, it is important to note that not all LLMs available for RTL code generation are instruction-tuned. For instance, VeriGen <ref type="bibr" target="#b3">[4]</ref> represents an LLM developed for Verilog code generation, but it is not instruction-tuned, which is a primary reason for its exclusion from our analysis. Our focus on instruction-tuned models is driven by the need for high accuracy and relevance in generated RTL code, aligning with the specific requirements of the design tasks at hand.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Attention Mechanisms in LLMs</head><p>In LLMs, the management of attention mechanisms, such as window attention <ref type="bibr" target="#b7">[8]</ref> and dense attention pose distinct challenges and trade-offs. Window attention offer efficiency during inference but can increase language modeling perplexity, particularly when the text length exceeds the cache size. This increase in perplexity is mainly due to the exclusion of initial tokens from the focus of the LLM. In contrast, dense attention, when used with a cache size exceeding the given context size, results in significant memory consumption and slower processing speeds. Moreover, it often leads to poorer output quality, as the model is not trained on excessively long sequences of inputs and struggles with extended contexts beyond its training limits.</p><p>To mitigate the challenges posed by both window and dense attention mechanisms, an effective approach was introduced, recently, called attention sink in the StreamingLLM work <ref type="bibr" target="#b5">[6]</ref>. This attention sink concept underscores the crucial role of initial tokens in maintaining the stability of LLM outputs, addressing the instability issues associated with the exclusion of these tokens in window attention techniques. The attention sink approach recognizes the significance of initial tokens, regardless of their distance from the tokens currently being predicted, offering a nuanced understanding and enhancement of attention mechanisms in the LLMs. Furthermore, StreamingLLM refines the approach to token selection and context caching, which are critical to overcoming the limitations of conventional LLMs. By intelligently managing token retention and context caching, StreamingLLM mitigates the common challenges of handling of extended sequences and ensures a consistent and stable attention mechanism while the model operates on sequences of unlimited length.</p><p>In this work, we use attention sink mechanism to augment an LLM's ability to preserve specifications during the whole generation of RTL code. Attention sink mechanism addresses the challenges associated with high memory demands and the traditional constraints of LLMs handling of long-sequence data. It enables LLMs to maintain critical hardware specifications consistently, thereby enhancing the accuracy and coherence of the generated RTL code.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>III. A CASE STUDY: NPU</head><p>To analyze the RTL code generation capabilities of LLMs with different attention mechanisms (dense, window, and attention sink), we design Neural Processing Unit (NPU) that accelerates bfloat16 vector operations. This design serves as a practical illustration of how these attention mechanisms can be harnessed in a real-world RTL design scenario, thereby providing a tangible comparison of their performance and efficacy in managing complex design tasks.</p><p>Below is an overview of the critical design choices made for the Neural Processing Unit (NPU), focusing on the adoption of the bfloat16 data type and the implementation of a pipelined architecture (see Fig. <ref type="figure" target="#fig_3">1</ref>). These choices are pivotal, influencing the performance, efficiency, and capability to manage complex vector operations of NPU for testing RTL code generation of LLM with different attention mechanisms.</p><p>• Accelerator Design: We employed an NPU vector coprocessor in our evaluation design to comprehensively explore the capabilities of LLMs in generating code for non-standard architectural designs. • Data Type: We chose bfloat16 as the data type to test the capabilities of LLMs' to work with non standard/less used data types. • Pipelined Architecture: We chose a pipelined design to test the abilities of LLMs' usage of signals across modules. The incorporation of bfloat16 and a pipelined architecture into the NPU design allows testing various attention models, maintaining a balance between efficiency and high performance standards.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>IV. EVALUATION A. Evaluation Setup</head><p>We picked four large language models for evaluation: GPT-4 and the top four models from the BigCode LLM Leader- board <ref type="bibr" target="#b8">[9]</ref>. The details of these LLMs are given in Table <ref type="table">I</ref>. Initially, we assessed the ability of these models to accurately follow prompts for converting high-level specifications into RTL code. Subsequently, with the model that best adhered to these instructions, we tested attention sink mechanism against commonly used attention caching techniques in the field. Note that we haven't fine-tuned any LLMs specifically for Verilog code generation. Rather we use existing LLM models with instruction-tuning. This is simply because of the limitations of training large models (scarcity of industry-standard high quality training dataset) and we want to show that it is possible to generate high quality RTL code, even without fine-tuning for Verilog.</p><p>In the evaluation of attention sink enhanced LLMs, we employed a specialized streaming cache (part of the KV cache), tailored specifically for our RTL code generation tasks, using the StreamingLLM framework. This streaming cache is configured to enhance the RTL generation capabilities of the model. Basically, we set the size of the streaming cache to the size of the initial prompt, thereby designating all tokens within the prompt as attention sinks. These tokens, which are critical for retaining the context and specifications of the initial prompt, are permanently kept in memory within the cache. The remainder of the KV cache is dynamically allocated to the newly generated code, effectively combining the static prompt with the dynamic output in a seamless manner. The total KV cache, thus, comprises the streaming cache and the latest generated tokens, filling the context window to optimize both retention of essential context and incorporation of new code. This configuration of the cache ensures that the model efficiently manages extended sequences while maintaining the integrity of both the static and evolving elements of the code generation process.</p><p>The evaluations were performed on the GPU cluster that features NVidia A100 GPUs. The details of the evaluation platform is given in Table <ref type="table">II</ref>.</p><p>We observed distinct differences in how these models responded to our prompts. A notable issue with some of the models was their tendency to rely heavily on comments or non-executable segments, rather than producing functional</p><p>TABLE I LIST OF LLMS EVALUATED Model Name Number of Parameters GPT-4 [10]</p><p>Not Specified WizardCoder-Python-34B-V1.0 <ref type="bibr" target="#b10">[11]</ref> 34B Phind-CodeLlama-34B-v2 <ref type="bibr" target="#b11">[12]</ref> 34B CodeLlama-34b-Instruct <ref type="bibr" target="#b12">[13]</ref> 34B</p><p>TABLE II EVALUATION PLATFORM SPECIFICATIONS Component Specification Server HP Proliant XL675d Gen10 Plus GPUs 8x A100 80GB SXM CPUs 2x AMD EPYC 7742 @ 2.24GHz RAM 1TB RTL code. This pattern is exemplified in Listing 7, where the model generates extensive comments outlining the intended logic, but falls short in translating these concepts into concrete RTL code. Such outputs, while descriptive, do not fulfill the practical requirement of generating usable RTL code. Among the LLMs being used, WizardCoder able to interpret our prompts more effectively, translating high-level specifications into precise and synthesizable RTL code with greater reliability and less reliance on non-executable textual fillers. This ability to generate functional code with minimal extraneous content made WizardCoder a more suitable candidate for further testing and analysis, particularly in assessing attention sink mechanism against other attention mechanism. Again, the selection of WizardCoder for the rest of the analysis was driven by its demonstrated proficiency in adhering closely to the instructions and generating practical, executable RTL code in response to our prompts.</p><p>To rigorously evaluate the correctness of the code generated by the selected LLMs, we employed a comprehensive testing methodology focusing on error rates. The error rate is determined by the percentage of code that is generated incorrectly or not generated at all. For cases where an entire module is missing in the generated code, we calculate the error rate by comparing the token size of the correct implementation with the generated output. In cases where all modules are generated, but contain errors, we utilize the DVT IDE, a specialized Verilog compiler, to identify these errors <ref type="bibr" target="#b13">[14]</ref>. Then, we calculate the error rate by assessing the number of tokens that are incorrect or need to be added to make the code functionally correct. This approach allows us to quantitatively measure the correctness of the code produced by the LLMs, providing a clear metric for comparing their performance and effectiveness in generating RTL code.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Results</head><p>We tested the quality of code produced for the NPU design by the LLM using dense attention, window attention and attention sink mechanism. The results are shown in Fig. <ref type="figure" target="#fig_0">2</ref> that demonstrate the superiority of attention sink mechanism over others. The total number of tokens in the correct code is 4312. LLM with attention sink mechanism generates 4293  of 4312 (99.56%) tokens correctly. Only 16 tokens needed to be fixed for successful compilation of the code for attention sink, whereas dense attention and window attention require 249, and 1957 tokens to be fixed, respectively.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Prompt Generation</head><p>We started the evaluation by creating an initial prompt describing the structure of the NPU design and then made gradual improvements based on the errors we observed as the LLM generates RTL code. The final version of the prompt includes high-level specifications, ports for certain modules, such as the top module with wishbone signals (since these can change from one design to another) and basic reminders on maintaining code quality. Listing 8 outlines the content of the initial prompt. We begin the prompt with a very high level specification that indicates the native data type and supported operations.</p><p>Listing 8. Initial Prompt Design and implement these modules for an NPU coprocessor. This NPU uses bfloat16 as the native data type. This NPU accelerates vector-vector and vector-scalar addition, subtraction, multiplication, division.</p><p>When ports are not listed in a prompt, LLM tends to add internal signals to the port list. The language model specified the necessary ports like opcode and operators but also outputs the modules' port that it itself initializes that's needed to be controlled in module. To prevent this, we specify the ports on arithmetic modules. This can be seen on some runs within the processing element module that contains bfloat16 arithmetic modules. Port specifications are given to the LLM as shown in Listing 9. Also, every module outlined within the prompt is enhanced with a brief, yet comprehensive explanation that details its intended design and functionality. An example explanation is shown in Listing 10. These explanations are crucial as they offer a clear overview of each module's role, particularly in relation to the overall architecture of the design. They articulate the purpose of each modules, data handling strategies, and how to interact with other modules, thereby guiding LLMs to generate more precise and contextually relevant RTL code.</p><p>Listing 10. An excerpt from the prompt that explains a module explanation: instantiates scalar regs, vector regs, 16 processing elements. Handles load, store, execution and writeback.</p><p>Overall, the creation of prompts for RTL code generation followed an iterative approach. Starting with a basic prompt outlining high-level specifications for an NPU design, we continuously refined the prompts based on the output generated by the LLMs. Rather than prescribing specific fixes for the errors, we focused on enriching the prompts with general coding guidelines whenever the model made a mistake. This approach ensured that the LLMs were not just corrected, but were also guided towards a better understanding of the desired coding standards and practices. For instance, when the models added unnecessary internal signals or missed critical functionalities, we did not provide explicit corrections. Instead, we augmented the prompt with more detailed port definitions and operational parameters, along with clear and concise explanations for each module's intended role. This method of iterative enhancement, driven by providing general guidelines rather than specific fixes, allowed LLMs to progressively generate more precise, accurate, and contextually appropriate RTL code. Once a prompt includes all necessary detils, LLMs with augmented with attention sink mechanism allow single-shot industrystandard high quality RTL code generation for the desired design.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>V. DISCUSSION AND FUTURE WORK</head><p>As mentioned in Section II-C, the role of the attention cache mechanism for code generation is crucial. Dense attention, which stores a complete set of specifications in memory, ensures uninterrupted access to all prompt details. This extensive memory utilization helps in preserving the original context's fidelity, a key aspect in intricate coding tasks. However, there are notable downsides. The extensive data volume not only slows down computation but also may cause the model to repeat or create irrelevant lines of code, particularly in scenarios like signal definitions. Such issues often stem from a weakened context mechanism when handling longer sequences.</p><p>On the other hand, the window attention mechanism in LLMs faces challenges in fully capturing the initial specifications in extended sequences, despite its computational efficiency arising from concentrating on smaller input segments. This limitation can cause the model to overlook key elements of the specifications, potentially leading to outputs that don't meet the intended requirements. Thus, while dense attention preserves specifications at the expense of slower computation and a risk of content repetition or inaccuracies, window attention enhances computational speed but risks losing comprehensive context and potentially compromises the accuracy in aligning with the initial prompt.</p><p>In contrast to other attention mechanisms, the attention sink mechanism that focuses on the selective retention of initial tokens can theoretically offer a way to mitigate these challenges. By preserving key initial tokens, LLMs can expand the effective context window, potentially enabling more robust in-context learning over longer text sequences. Nevertheless, LLMs that utilize the attention sink mechanism may face challenges when the size of the prompt surpasses the total context window size. Although attention caching is effective in overcoming limitations of context size, if the prompt itself is larger than the available context window, the inability to fully store the prompt in the cache can lead to problems similar to ones shown in Background section.</p><p>As a future work, we plan to investigate on the mechanisms of RTL code generation using LLMs with shorter, more general prompts, especially in handling designs of varying complexities. This approach would challenge the models to interpret and elaborate on less detailed specifications, pushing the boundaries of their inferential capabilities. By experimenting with minimalist prompts, the research can uncover how effectively LLMs can extrapolate intricate hardware design details from limited information, a crucial aspect in evaluating their practical utility in diverse and complex RTL code generation scenarios. This simplified prompt strategy could potentially reveal new insights into the adaptability and innovation of LLMs in architectural exploration and design automation process.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>VI. RELATED WORK</head><p>Code generation approaches utilizing LLMs mainly address languages that are well-structured and resemble natural languages or concentrates on simpler tasks like code completion. However, these models are not capable of generating complex, domain-specific hardware designs, which requires well-described specifications and lower-level understanding of modules and their interactions via interfaces. Recently, more studies have been conducted on exploiting LLMs for code generation targeting hardware design.</p><p>Hammond et al., conducted the first study on automating the Verilog code generation by fine-tuning an LLM <ref type="bibr" target="#b14">[15]</ref>. In particular, they explored transfer learning to fine-tune GPT-2 and called their model as DAVE. They also built a tool to generate custom dataset needed for fine-tuning the LLM that exploits several natural language templates that encapsulate different design specification scenarios.</p><p>Fu et al., introduced a framework that automates demoaugmented prompt generation pipeline for AI accelerator design <ref type="bibr" target="#b4">[5]</ref>. They employ in-context learning to direct LLMs in the process of automating HLS code generation. However, their method still necessitates human intervention for rectifying discrepancies in module interfaces and for merging them to have a code suitable for synthesis. On the other hand, our zero-shot code generation approach produces RTL code with consistent interfaces and reduces the need for human intervention. This is primarily because the modules are generated in response to a single prompt, enabling more effective utilization of the context cache and thereby facilitating the creation of consistent interface implementations.</p><p>Thakur et al., performed fine-tuning on pre-trained LLMs on Verilog datasets collected from GitHub and Verilog textbooks <ref type="bibr" target="#b1">[2]</ref>, <ref type="bibr" target="#b3">[4]</ref>. While they created fine-tuned models for RTL code generation, their evaluations demonstrated that the syntactic and functional correctness of the generated code on a large scale design are very poor, making it impractical to automate RTL code generation in real world scenarios.</p><p>Chang et al., proposed ChipGPT framework that incorporates a prompt manager before using the LLM model to enable designers to generate high-quality prompts <ref type="bibr" target="#b2">[3]</ref>. Notably, ChipGPT generates RTL code without the need for retraining or modifying weights in the LLMs, making it easily integrable into the latest LLM APIs. However, ChipGPT does not directly modify inaccuracies or complexities in the generated code. Instead, it allows underlying LLM multiple attempts to generate various code versions, refining them iteratively to achieve the final code. Despite aiming to automate RTL code generation using LLMs and reduce manual design efforts, ChipGPT necessitates multiple prompts and manual corrections on the generated code.</p><p>Blocklove et al., developed a set of benchmarks to evaluate the capabilities of LLMs for functional hardware development and verification <ref type="bibr" target="#b0">[1]</ref>. In particular, they used ChatGPT-4 in interactive mode, to demonstrate a case study that involves a prolonged fully conversational scenario in which 8-bit mi-croprocessor code generated. In their case study, fixing errors in the generated code may require moderate human feedback. If the errors persist, advanced human feedback is provided, involving pinpointing the exact location of the error and specifying the method for correction.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>VII. CONCLUSION</head><p>In this paper, we demonstrated that off-the-shelf LLMs can be used for high quality RTL code generation when these models are enhanced with attention sink mechanism introduced in <ref type="bibr" target="#b5">[6]</ref>. We discuss the details and show how it can help to mitigate the automated RTL-code generation problems, especially for zero-shot prompting. Our findings indicate that attention sink and similar mechanisms favorable for future advancements in LLMs, suggesting a trajectory of continued improvement in handling complex, long-sequence tasks in RTL design and beyond.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Listing 2 .</head><label>2</label><figDesc>Hallucinating Variables logic [15:0] a sign; logic [15:0] b sign; logic [15:0] result sign; logic [15:0] result exp; logic [15:0] result mantissa; logic [15:0] a exp; logic [15:0] b exp; logic [15:0] a mantissa; logic [15:0] b mantissa; logic [15:0] a mantissa shifted; logic [15:0] b mantissa shifted; logic [15:0] a mantissa shifted sub; logic [15:0] b mantissa shifted sub; logic [15:0] a mantissa shifted add; logic [15:0] b mantissa shifted add; logic [15:0] a mantissa shifted sub normalized; logic [15:0] b mantissa shifted sub normalized; logic [15:0] a mantissa shifted add normalized; logic [15:0] b mantissa shifted add normalized; logic [15:0] a mantissa shifted sub normalized result; logic [15:0] b mantissa shifted sub normalized result; logic [15:0] a mantissa shifted add normalized result; logic [15:0] b mantissa shifted add normalized result; logic [15:0] a mantissa shifted sub normalized result final; logic [15:0] b mantissa shifted sub normalized result final;</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>opcode, input [WIDTH-1:0] a in, input [WIDTH-1:0] b in, output logic [WIDTH-1:0] result ); logic [WIDTH-1:0] a sign, b sign, result sign; logic [WIDTH-1:0] a exp, b exp, result exp; logic [WIDTH-1:0] a mant, b mant, result mant; logic [WIDTH-1:0] shift amount; logic [WIDTH-1:0] shifted mant a, shifted mant b; logic [WIDTH-1:0] sum; logic [WIDTH-1:0] carry; logic [WIDTH-1:0] product; logic [WIDTH-1:0] quotient; assign a sign = a in[ ↩→</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Listing 6 .</head><label>6</label><figDesc>More Ports than Necessary input logic clk, input logic rst, input logic [3:0] opcode, input logic [15:0] a in, input logic [15:0] b in, input logic [15:0] scalar in, input logic [$clog2(4)-1:0] vector wr addr, input logic vector wr en, input logic [15:0] vector wr data, input logic [$clog2(4)-1:0] scalar wr addr, input logic scalar wr en, input logic [15:0] scalar wr data, input logic [$clog2(4)-1:0] vector rd addr, input logic [$clog2(16)-1:0] vector rd elem addr, output logic [15:0] result</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Fig. 1 .</head><label>1</label><figDesc>Fig. 1. Block diagram of pipelined NPU datapath.</figDesc><graphic coords="5,311.98,50.55,251.06,161.34" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Listing 7 .</head><label>7</label><figDesc>Unfunctional Module module bfloat16 addsub ( input logic [15:0] a, input logic [15:0] b, output logic [15:0] result, input is sub ); // Extract sign, exponent, and mantissa logic [1:0] sign a, sign b, sign res; logic [7:0] exp a, exp b, exp res; logic [7:0] mant a, mant b, mant res; // ... (extract sign, exponent, and mantissa) // Subtract exponents and shift mantissa logic [7:0] exp diff; logic [15:0] mant shifted; // ... (calculate exponent difference and shift mantissa) // Add or subtract mantissas logic [15:0] mant sum; // ... (perform addition or subtraction) // Normalization logic [15:0] mant norm; // ... (perform normalization) // Combine sign, exponent, and mantissa result = {sign res, exp res, mant res}; endmodule</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Fig. 2 .</head><label>2</label><figDesc>Fig. 2. Success percentage of generated tokens with different attention mechanisms using WizardCoder-Python-34B-V1.0.</figDesc><graphic coords="6,318.25,369.12,238.50,95.83" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Listing 9 .</head><label>9</label><figDesc>Prompt given ports ports: input logic [WIDTH-1:0] a, input logic [WIDTH-1:0] b, output logic [WIDTH-1:0] result</figDesc></figure>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Chip-Chat: Challenges and Opportunities in Conversational Hardware Design</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Blocklove</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Garg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Karri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Pearce</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.13243</idno>
+		<imprint>
+			<date type="published" when="2023-05">May 2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Benchmarking large language models for automated verilog RTL code generation</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Thakur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Ahmad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">A</forename><surname>Pearce</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Karri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Dolan-Gavitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Garg</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 Design, Automation &amp; Test in Europe Conference (DATE)</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="1" to="6" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">ChipGPT: How far are we from natural language hardware design</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.14019</idno>
+		<imprint>
+			<date type="published" when="2023-06">June 2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">VeriGen: A Large Language Model for Verilog Code Generation</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Thakur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Ahmad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Pearce</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Dolan-Gavitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Karri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Garg</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.00708</idno>
+		<imprint>
+			<date type="published" when="2023-07">July 2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">GPT4AIGChip: Towards Next-Generation AI Accelerator Design Automation via Large Language Models</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Wan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lin</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.10730</idno>
+		<imprint>
+			<date type="published" when="2023-09">Sept. 2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Efficient Streaming Language Models with Attention Sinks</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.17453</idno>
+		<imprint/>
+	</monogr>
+	<note type="report_type">Sept. 2023.</note>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Attention is All you Need</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems (I. Guyon, U. V. Luxburg</title>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Bengio</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Wallach</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Fergus</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Vishwanathan</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Garnett</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Longformer: The Long-Document Transformer</title>
+		<author>
+			<persName><forename type="first">I</forename><surname>Beltagy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">E</forename><surname>Peters</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Cohan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2004.05150</idno>
+		<imprint>
+			<date type="published" when="2020-12">Dec. 2020</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Big code models leaderboard -a hugging face space by bigcode</title>
+		<ptr target="https://huggingface.co/spaces/bigcode/bigcode-models-leaderboard.Ac-cessed" />
+		<imprint>
+			<biblScope unit="page" from="2024" to="2025" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">GPT-4 Technical Report</title>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.08774</idno>
+		<imprint>
+			<date type="published" when="2023-12">Dec. 2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">WizardCoder: Empowering Code Large Language Models with Evol-Instruct</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Geng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Tao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Jiang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.08568</idno>
+		<imprint>
+			<date type="published" when="2023-06">June 2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Phind/phind-codellama-34b-v2</title>
+		<ptr target="https://huggingface.co/Phind/Phind-CodeLlama-34B-v2" />
+		<imprint>
+			<biblScope unit="page" from="2024" to="2025" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">B</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gehring</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Gloeckle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Sootla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Gat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><forename type="middle">E</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Adi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Remez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Rapin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Kozhevnikov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Evtimov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Bitton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bhatt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">C</forename><surname>Ferrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Grattafiori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Défossez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Copet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Azhar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Usunier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Scialom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Synnaeve</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.12950</idno>
+		<title level="m">Code Llama: Open Foundation Models for Code</title>
+		<imprint>
+			<date type="published" when="2023-08">Aug. 2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">DVT IDE for Visual Studio Code: Design and Verification Tools</title>
+		<author>
+			<persName><forename type="first">Eda</forename><surname>Amiq</surname></persName>
+		</author>
+		<ptr target="https://www.dvteclipse.com/products/dvt-ide-for-visual-studio-code" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="2024" to="2025" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Dave: Deriving automatically verilog from english</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Pearce</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Karri</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 ACM/IEEE Workshop on Machine Learning for CAD, MLCAD &apos;20</title>
+		<meeting>the 2020 ACM/IEEE Workshop on Machine Learning for CAD, MLCAD &apos;20<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="27" to="32" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

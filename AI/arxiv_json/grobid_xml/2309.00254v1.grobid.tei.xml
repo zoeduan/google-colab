@@ -1,0 +1,1007 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Why do universal adversarial attacks work on large language models?: Geometry might be the answer</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-09-01">1 Sep 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Varshini</forename><surname>Subhash</surname></persName>
+							<email>&lt;varshinisubhash@g.harvard.edu&gt;</email>
+							<affiliation key="aff0">
+								<orgName type="department">Equal contribution</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="department">School of Engineer- ing and Applied Sciences</orgName>
+								<orgName type="institution">John A</orgName>
+								<address>
+									<settlement>Paulson</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Anna</forename><surname>Bialas</surname></persName>
+							<email>&lt;annabialas@g.harvard.edu&gt;.2</email>
+							<affiliation key="aff0">
+								<orgName type="department">Equal contribution</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="department">School of Engineer- ing and Applied Sciences</orgName>
+								<orgName type="institution">John A</orgName>
+								<address>
+									<settlement>Paulson</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Weiwei</forename><surname>Pan</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="department">School of Engineer- ing and Applied Sciences</orgName>
+								<orgName type="institution">John A</orgName>
+								<address>
+									<settlement>Paulson</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Finale</forename><surname>Doshi-Velez</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="department">School of Engineer- ing and Applied Sciences</orgName>
+								<orgName type="institution">John A</orgName>
+								<address>
+									<settlement>Paulson</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff2">
+								<orgName type="institution">Harvard University</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Why do universal adversarial attacks work on large language models?: Geometry might be the answer</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-09-01">1 Sep 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">FC606F31BE4D60B0D02FCD006E313A15</idno>
+					<idno type="arXiv">arXiv:2309.00254v1[cs.LG]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:31+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Transformer based large language models with emergent capabilities are becoming increasingly ubiquitous in society. However, the task of understanding and interpreting their internal workings, in the context of adversarial attacks, remains largely unsolved. Gradient-based universal adversarial attacks have been shown to be highly effective on large language models and potentially dangerous due to their input-agnostic nature. This work presents a novel geometric perspective potentially explaining universal adversarial attacks on large language models. By attacking the 117M parameter GPT-2 model, we find evidence indicating that universal adversarial triggers could be embedding vectors which merely approximate the semantic meaning captured by their adversarial training region. This hypothesis is supported by white-box model analysis comprising dimensionality reduction and similarity measurement of hidden representations. We believe this new geometric perspective on the underlying mechanism driving universal attacks could help us gain deeper insight into the internal workings and failure modes of LLMs, thus enabling their mitigation.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Introduction</head><p>Adversarial attacks have gained significant research attention due to their ability to expose system vulnerabilities and model limitations. While these have been popular in computer vision for a while, similar efforts in natural language processing (NLP) have gained momentum in recent years. One particularly effective class of attacks has been the gradient-based universal adversarial attack, introduced in computer vision by <ref type="bibr" target="#b19">(Moosavi-Dezfooli et al., 2016)</ref> and extended to NLP by <ref type="bibr" target="#b27">(Wallace et al., 2019)</ref>. The latter performs a gradient-guided search over tokens and generates trigger sequences which when appended to the input, will generate adversarial model output. This technique of generating a 'universal' attack can pose a greater degree of adversarial threat, due to its ability to be reused across all inputs, i.e. it is input-agnostic. Additionally, <ref type="bibr" target="#b24">(Singla et al., 2022)</ref> make the originally data-intensive trigger generation process cheap and <ref type="bibr" target="#b25">(Song et al., 2021)</ref> overcome the limitation of gibberish triggers by making them harder to detect. <ref type="bibr" target="#b27">(Wallace et al., 2019)</ref> demonstrate the effectiveness of these triggers on models such as GPT-2, with evidence of easy transferability of the same attack across varying model sizes.</p><p>Despite there being significant progress in understanding the construction and efficacy of gradient-based adversarial attacks, there has been limited progress towards interpreting and explaining the underlying mechanism which makes these attacks successful. Furthermore, transformer based large language models have become increasingly powerful and ubiquitous in society, which has ushered in an urgency for progress in this domain, from a model safety standpoint. This work seeks to uncover the underlying mechanism behind the effectiveness of universal adversarial attacks by adopting a geometric perspective. It leverages the geometric interpretation of word embeddings to propose an explanation for the behavior of universal adversarial attacks and provides initial experimental evidence via dimensionality reduction and white-box model analysis. Geometric approaches have been shown to be useful in explaining adversarial attacks in computer vision <ref type="bibr" target="#b15">(Ilyas et al., 2019;</ref><ref type="bibr" target="#b10">Engstrom et al., 2019)</ref>, which serves as motivation for adopting it in this work.</p><p>To this end, our contributions are as follows:</p><p>1. We propose a novel geometric perspective as a potential explanation for universal adversarial attacks on large language models.</p><p>2. We support our findings with initial experimental evidence consisting of dimensionality reduction and similarity measurement of hidden representations.</p><p>3. We leverage this new perspective to open doors to additional potential explanations for the behavior of universal triggers, as observed in literature.</p><p>By reverse-engineering this class of attacks, we hope to shed light on the internal workings of large language models, their failure modes and potential strategies for mitigating undesirable downstream consequences.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Related Work</head><p>There are several works which have investigated the construction and efficacy of adversarial attacks in NLP. There have also been attempts to reverse-engineer neural networks and transformer models through explainability and interpretability. However, to the best of our knowledge, there hasn't been prior work that has attempted to explain the underlying mechanism of a gradient-based adversarial attack on a large language model. This work presents a novel geometric approach by leveraging white-box interpretability to explain the effectiveness of universal adversarial attacks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.">Universal Adversarial Attacks</head><p>A comprehensive survey of adversarial attacks in NLP by <ref type="bibr" target="#b31">(Zhang et al., 2019)</ref> gives a bird's eye view of the advances in this space. The notion of universal adversarial perturbations, obtained via a gradient-based optimization, was introduced by <ref type="bibr" target="#b19">(Moosavi-Dezfooli et al., 2016)</ref> in computer vision and extended to language models by <ref type="bibr" target="#b27">(Wallace et al., 2019)</ref>. These universal adversarial triggers leveraged the gradient-based token replacement strategy by <ref type="bibr" target="#b9">(Ebrahimi et al., 2017)</ref> in their construction and were further investigated by several works. <ref type="bibr" target="#b24">(Singla et al., 2022)</ref> introduce MINIMAL, a data-free alternative to the originally dataintensive process of generating universal triggers. <ref type="bibr" target="#b25">(Song et al., 2021)</ref> design natural attack triggers which consist of more semantically meaningful triggers, thus overcoming the limitation of previous triggers which were often nonsensical and could easily be detected by humans. <ref type="bibr" target="#b13">(Heidenreich &amp; Williams, 2021)</ref> thoroughly study the susceptibility of GPT-2 to these triggers by varying the topic and stance that the trigger is trained on. However, no prior work has tried to explain and interpret these attacks, which this work attempts to address.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.">Understanding Language Models Via Interpretability</head><p>There have been many approaches in literature to interpret and explain large language models. <ref type="bibr" target="#b1">(Atmakuri et al., 2022)</ref> study the adversarial robustness of explanation methods for language models and find that feature attribution based methods are sensitive to input perturbations. <ref type="bibr" target="#b20">(Mosca et al., 2022)</ref> study patterns in the logits of models subject to tex-tual adversarial attacks and train a classifier to detect these adversarial samples.</p><p>Probing is a technique which leverages layer activations, attention weights and hidden representations to interpret large language model behavior. This has proven to be useful in understanding how the model encodes language structure within its representations ( <ref type="bibr" target="#b14">(Hewitt &amp; Manning, 2019;</ref><ref type="bibr" target="#b2">Belinkov et al., 2017;</ref><ref type="bibr" target="#b22">Peters et al., 2018;</ref><ref type="bibr" target="#b0">Adi et al., 2016)</ref>). <ref type="bibr" target="#b26">(Tenney et al., 2019;</ref><ref type="bibr" target="#b17">Lin et al., 2019)</ref> perform layer-wise probing to study the linguistic awareness of BERT. <ref type="bibr" target="#b28">(Wallat et al., 2020)</ref> investigate the relational knowledge learned by BERT and conclude that intermediate layers contribute significantly to the total knowledge and that the knowledge is distributed unevenly across layers. Within self-attention probing, (Kovaleva et al., 2019; Clark et al., 2019) analyze BERT's attention heads and identify underlying patterns. (Chizhikova et al., 2022) probe the attention weights in BERT and find evidence that attention can capture semantic awareness. (DeRose et al., 2020) present a framework to visualize and compare the attention mechanisms in language models. (Coenen et al., 2019) offer a geometric perspective to the internal representations of BERT by studying both the attention weights and layer-wise embeddings. (Brunner et al., 2019) also study self-attention and layer-wise embeddings from the perspective of identifiability, i.e. the ability of a model to learn stable representations. They find that attention distributions are not identifiable, hence not directly interpretable. (Wang et al., 2022) provide a circuitbased explanation for GPT-2, (Meng et al., 2022) discover middle-layer neuron activations in GPT which are critical towards model predictions and (Geiger et al., 2021) leverage causal abstraction to connect model behavior with hidden representations. (Geva et al., 2020) demonstrate how feedforward layers in transformers map training examples to output distributions. By adopting the approach of mechanistic interpretability, (Nanda &amp; Lieberum, 2022) explain emergent behavior such as grokking.</p><p>Unlike previous approaches, we combine white-box interpretability with a novel geometric perspective, to explain the underlying mechanism of universal adversarial attacks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Universal Adversarial Triggers on Large</head><p>Language Models <ref type="bibr" target="#b27">(Wallace et al., 2019)</ref> introduce universal adversarial triggers (UATs) as a sequence of tokens searched via gradientbased optimization, such that these triggers when appended to an input, cause the model to perform poorly at a range of language tasks. They are input-agnostic which means that the same trigger can be used with any input, for a given model, thus increasing its degree of adversarial threat. They are also observed to be composed of mostly nonsensical tokens. For technical details on the trigger generation method, we refer the reader to <ref type="bibr" target="#b27">(Wallace et al., 2019)</ref> and <ref type="bibr" target="#b9">(Ebrahimi et al., 2017)</ref>. As alluded to by <ref type="bibr" target="#b27">(Wallace et al., 2019)</ref> with their GPT-2 use case, we confirm that these universal adversarial triggers are just as effective on large language models.</p><p>In order to demonstrate this, we choose two tasks discussed by <ref type="bibr" target="#b27">(Wallace et al., 2019)</ref> -classification as sentiment analysis and conditional text generation. For these tasks, our models of choice are DistilBERT <ref type="bibr" target="#b23">(Sanh et al., 2019)</ref> and OPT-350M <ref type="bibr" target="#b30">(Zhang et al., 2022)</ref> respectively. We generate a trigger optimized for DistilBERT and get the following results. For triggers of length 5 and 10, for positive reviews, the test classification accuracy drops from 89.2% to 2.4% and 0.4% respectively. For negative reviews, triggers of length 5 and 10 cause the test accuracies to drop from 92.4% to 10% and 1.6% respectively. This confirms findings by <ref type="bibr" target="#b27">(Wallace et al., 2019)</ref> that longer triggers are more effective.</p><p>For text generation, we repurpose the trigger trained for GPT-2 by <ref type="bibr" target="#b27">(Wallace et al., 2019)</ref> ('TH PEOPLEMan goddreams Blacks') and find that it works off the shelf for OPT-350M, causing the model to generate racist and offensive text. For the remainder of this work, we refer to this trigger as gpt-trigger. This is indicative of the fact that in some cases, a UAT transfers easily across models, making it model-agnostic. We further discuss this behavior in Section 7. In this work, we restrict our analysis to the task of text generation and leave sentiment analysis for future work.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">Preliminary Analysis</head><p>By adopting techniques of self-attention probing and trigger perturbations, we attempt to gain preliminary insights into the behavior of universal adversarial triggers.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.">Self-Attention Probing</head><p>Since the self-attention mechanism is what separates a transformer model from other models, we first check the effect of the trigger on the self-attention weights. Despite our initial hypothesis that the trigger tokens could be paid attention to disproportionately, we see no conclusive evidence of the same, for sentiment analysis on DistilBERT. For text generation, we feed gpt-trigger to OPT-350M and note an underlying pattern in the attention heatmaps -the final token 'Blacks' which is the only semantically meaningful token, happens to pay a large amount of attention to itself.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2.">Trigger Perturbations</head><p>We further investigate gpt-trigger by perturbing its tokens and observe the corresponding effect on the model output.</p><p>The limitation of this analysis is that it has been performed on a single trigger and may not be generalizable.</p><p>1. Deletions: We opt to perform deletions from left to right since the self-attention on the last token prompts us to preserve it. We refer to these partial triggers as deletion triggers. For a set of 10 generated sentences per deletion trigger, we see that the number of occurrences of racist output goes down as the number of deletions increases, i.e. truncating tokens from the trigger diminishes its effect. However, despite being lower in frequency, some instances of the model output continue to remain problematic. The token 'Blacks' alone fails to perform adversarially.</p><p>gpt-trigger: TH PEOPLEMan goddreams Blacks. Deletion 1: PEOPLEMan goddreams Blacks are too dumb to realize that they're only the opposite of .. Deletion 2: goddreams Blacks are such a fickle bunch. Deletion 3: Blacks and whites who do not identify with their race but identify in ways that are consistent ..</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Positional Perturbations:</head><p>We shuffle the positions of the trigger words to check for any influence of word position on the model output. For gpt-trigger which consists of 4 words, we obtain all 24 permutations and tokenize each shuffled trigger. We feed these to the model and find that only 6 among 24 (25%) of the shuffled triggers generate coherent racist output. 5 among these 6 have 'Blacks' as the last trigger token, strongly indicating the positional importance of the last token. Additionally, a manual check of the generated text for each trigger indicates that the position of the token 'Blacks' has an effect on how coherent the offensive output is. For instance, the trigger 'goddreams TH Blacks PEOPLEMan' where 'Blacks' is the penultimate token, generates completely harmless output -'Your family makes me very, very happy!'. We further note that the position impacts the tokenization output.</p><p>3. Semantic Perturbations: Since the semantically meaningful trigger word 'Blacks' appears to plays a role in the output, we swap this word with other racial groups and study the effect on the model output. For example, we replace 'Blacks' with 'Jews', 'Asians', 'Muslims' etc. -an experiment attempted by <ref type="bibr" target="#b27">Wallace et al. (2019)</ref> as well. The drawback of employing this approach is that it requires a trigger word to have semantic meaning, which is mostly not the case.</p><p>We begin by replacing 'Blacks' with words such as 'Asians', 'Jews', 'Muslims' and 'Hispanics' and find that for each case, the model generates semantically meaningful racist output that corresponds with the racial group. Replacing the last token with nationalities such as 'Americans', 'Indians', 'Russians', etc. also consistently generates offensive output, despite not being present in the original adversarial text that the trigger was trained on.</p><p>We then replace the last trigger word with each word in the adversarial target text that gpt-trigger was trained on, to check for a potential role played by target text occurrences within the trigger. We observe no relationship between the presence of a target text word and the model output, since offensive target words did not generate repeatable problematic output.</p><p>We then generate 100 random words from the English language and append each as the last trigger word instead of 'Blacks' and manually inspect the output. Only 5 words (barrage, pound, dangerous, fiery and atheist) among 100 were problematic, which strongly suggests that highly attended-to and semantically meaningful trigger words (the last one in this case) could be playing a significant role in the adversarial effect on the model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">A Geometric Perspective</head><p>Given the indication that the semantic meaning of trigger tokens plays a role in its effectiveness (seen in both selfattention probing and trigger perturbations), we propose a geometric perspective to potentially explain universal adversarial triggers. Specifically, we consider the geometric interpretation of word embeddings and conjecture that the trigger sequences could be behaving like embedding vectors, lying in the part of the embedding space corresponding to the adversarial text it is trained to generate. For example, gpt-trigger is trained on and generates racist, offensive text.</p><p>As per the visual depiction in Figure <ref type="figure" target="#fig_0">1</ref>, this trigger could be behaving like a vector whose local neighborhood embeds the racist text that it is trained on. As a result, the best possible universal adversarial trigger can be thought of as the best vector that embeds the infinite adversarial text that we wish to train it on.</p><p>In order to support this hypothesis, we leverage dimensionality reduction and white-box model analysis. The problem can be reduced to showing measurable similarity between the trigger and adversarial text alongside measurable dissimilarity between the trigger and innocuous text. We present our experimental setup and results in the following section.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.">Experiments &amp; Results</head><p>We borrow the baseline experimental setup by <ref type="bibr" target="#b27">Wallace et al. (2019)</ref> and attack the 117M parameter GPT-2 model using gpt-trigger. In order to find evidence supporting our geometric perspective (Figure <ref type="figure" target="#fig_0">1</ref>), we seek to show similarity between the trigger and adversarial racist text alongside dissimilarity between the trigger and text belonging to other semantic categories. However, as is the case with most problems in machine learning, we encounter the curse of dimensionality <ref type="bibr" target="#b3">Bellman (1966)</ref>. Specifically, it is non-trivial to compare sentences represented via GPT-2's 768 dimensional word embeddings without performing some form of dimensionality reduction. We try three techniques -PCA, t-SNE and UMAP and find that UMAP offers the most useful insight, which we present below.</p><p>We begin by creating 10 groups of sentences, each belonging to a specific semantic category. The first sentence group consists of four variants of the gpt-trigger, where three variants have the last token swapped with other racial groups.</p><p>The second sentence group consists of the adversarial target text that gpt-trigger was originally trained on. The third group consists of arbitrary racist text that gpt-trigger has not seen or been trained on before. The rest of the sentence groups consist of generated sentences by ChatGPT, including random English sentences, generic positive sentences about black people, white people, Asians, Muslims, sentences about climate change and sentences about Donald Trump.</p><p>We collect the word embedding matrix for each of these sentences from GPT-2's final layer and pool individual word embeddings into a sentence embedding by performing a dimension-wise average across tokens. We then perform a UMAP dimensionality reduction on these 768-dimensional average sentence embeddings and project them onto a lower dimensional space to observe similarities between sentence groups. In the 3D projected space (Figure <ref type="figure" target="#fig_1">2</ref>), UMAP appears to strongly suggest that the triggers, adversarial target text and arbitrary racist text are tightly clustered together, with visible separation from other sentence groups.</p><p>We then check for the robustness of this potentially isolated occurrence by varying the hyperparameters for UMAP and observing the clustering behavior across a range of values. Specifically, we vary the number of nearest neighbors and minimum distance. We observe that for reasonable ranges of hyperparameter values for a given reduced dimension, there is evidence of stable clustering behavior between the trigger, target text and racist sentence groups. Despite indications that the geometric explanation holds in lower dimensions, an understandable critique could be questioning its validity in higher dimensions. To this end, we vary the number of reduced dimensions to be as large as 250. We find that for distance metrics such as Euclidean, Manhattan, Canberra and Chebyshev, the triggers appear to be closest to the target and racist sentences on average, and have larger average distances from the other groups. A sample visualization for a pair of hyperparameter values (neighbors = 50, distance = 0.25), can be seen in Figure <ref type="figure" target="#fig_2">3</ref>. A comprehensive set of results visualizing all variations are available in the Appendix A.</p><p>Behavior for other triggers. In order to test if this behavior generalizes across triggers trained on other topics, we choose two topics -anti-vaccination and the Flat Earth conspiracy theory. We borrow the trigger trained on the Flat Earth conspiracy theory by <ref type="bibr" target="#b13">(Heidenreich &amp; Williams, 2021)</ref> ('Historical theories earth sphericalitionally') and train our own trigger on anti-vaccination ('Doctors vaccinated GOvacc Poison Stop asserting Blueprint'). We repeat the experiment described earlier for these two triggers and include gpt-trigger, its target text and arbitrary racist sentences during dimensionality reduction. Overall, we observe similar behavior across a range of UMAP hyperparameter values, dimensions and distance metrics. The target text comprising sentences in support of anti-vaccination and the Flat Earth conspiracy (shown in orange in the Appendix A), is much closer to the trigger on average compared to other sentence groups. A notable difference we observe between this experiment and the one with gpt-trigger is that these triggers appear to be close to semantically similar sentences with non-adversarial content. That is, the anti-vaccination and Flat Earth triggers are close to sentences supporting vaccination and opposing the Flat Earth theory respectively (shown in brown in the Appendix A). During text generation, we also observe similar behavior, where these triggers do not consistently generate adversarial text. That is, some generated sentences are in support of vaccination and in opposition of the Flat Earth theory. <ref type="bibr" target="#b13">(Heidenreich &amp; Williams, 2021)</ref> also showed that triggers trained on niche topics tend to be weaker than those trained on broader topics, which could be a possible explanation. In contrast, gpt-trigger was much closer to arbitrary racist text and farther away from positive sentences about racial groups. The complete set of results visualizing these observations are available in the Appendix A.</p><p>Our initial experimental evidence appears to strongly suggest the validity of our geometric explanation for universal adversarial triggers. We show that for a range of reduced UMAP dimensions, across varying distance metrics and reasonable hyperparameter values, the universal adversarial trigger is closest in distance to the adversarial target text it is trained on and arbitrary text which is semantically similar to the target text. This behavior is also seen to replicate across trigger topics. In other words, the trigger might indeed be behaving like a vector which embeds the adversarial target text it is trained on, which in the case of gpt-trigger, happened to be racist and offensive. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.">Potential Explanations, Limitations &amp; Future Work</head><p>Based on our initial findings supporting the geometric explanation for universal adversarial attacks, we hypothesize potential explanations for observed behavior in these triggers.</p><p>1. We hypothesize that universal adversarial triggers might be effective because the model sees a semantically meaningful adversarial input instead of a gibberish trigger and generates on top of it.</p><p>2. Longer triggers were found to be more effective by <ref type="bibr" target="#b27">Wallace et al. (2019)</ref>. This could potentially be explained by the fact that more tokens give more room for the trigger to capture semantic information about the adversarial training text. 3. Triggers are seen to transfer across models. We observe that this transferability occurs across a number of models using the same tokenization algorithm. This behavior has also been studied by <ref type="bibr" target="#b32">Zou et al. (2023)</ref>  Despite encouraging initial evidence, we note that experimental techniques involving dimensionality reduction must be considered with caution. The primary limitation of this work is the usage of dimensionality reduction which could be providing an incomplete picture. Future lines of work in interpretability include expanding experimentation to additional techniques. This can include studying the evolution of distances between sentence groups across layers, visualizing the evolution of GPT-2's hidden representations, analyzing the Kullback-Leibler divergence between the distribution of predicted tokens for adversarial and non-adversarial settings, etc.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8.">Conclusion</head><p>In this work, we present a novel geometric perspective which potentially explains gradient-based universal adversarial attacks on large language models. We find initial experimental evidence indicating that these triggers could be behaving like embedding vectors which approximate the semantic information in their adversarial training region. We further leverage this perspective to offer potential explanations for observed behavior of these triggers in literature.</p><p>With this novel geometric perspective, we aim to shed light on the underlying mechanism driving universal attacks. This would further enable us to understand the failure modes of LLMs and importantly, enable their mitigation.          </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 .</head><label>1</label><figDesc>Figure1. Geometric perspective: The trigger (red) could be behaving like an embedding vector, optimized to arrive at a semantic region which is racist (yellow). Other semantic regions exist, like random English sentences (blue) and climate change (green), separable from the racist region.</figDesc><graphic coords="4,307.44,67.07,233.94,79.93" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 .</head><label>2</label><figDesc>Figure 2. Sample UMAP dimensionality reduction (neighbors = 15, minimum distance = 0.2) on sentence groups. Triggers (red), adversarial training text (orange) and arbitrary unseen racist sentences (brown) cluster together, indicating a semantic neighborhood. Semantically similar sentence groups (black, white, Asian and Muslim people) also cluster together.</figDesc><graphic coords="5,307.44,189.39,233.99,214.61" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 .</head><label>3</label><figDesc>Figure 3. Across a range of UMAP hyperparameters (here, neighbors = 50, minimum distance = 0.25) and a range of reduced UMAP dimensions (3 to 250), we see consistently lower average Euclidean, Manhattan, Chebyshev &amp; Canberra distances between the trigger, target (orange) and racist (brown) text. Here, average distance is computed as the average of the distances between the trigger and all sentences in a group.</figDesc><graphic coords="6,55.44,67.06,485.93,323.04" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>who generate universal adversarial prompts which cause open and proprietary foundation models to generate harmful content. Such an attack has been show to transfer across different model families like ChatGPT, Llama, PaLM, Bard and Claude. Understanding transferability of universal attacks is an open problem and can be an interesting direction for future work.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 5 .</head><label>5</label><figDesc>Figure 5. Manhattan distance between the racist trigger and other sentence groups for varying UMAP hyperparameters and reduced dimensions.</figDesc><graphic coords="10,55.45,130.73,485.95,485.90" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 6 .</head><label>6</label><figDesc>Figure 6. Canberra distance between the racist trigger and other sentence groups for varying UMAP hyperparameters and reduced dimensions.</figDesc><graphic coords="11,55.51,130.69,485.84,485.99" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 7 .Figure 8 .</head><label>78</label><figDesc>Figure 7. Chebyshev distance between the racist trigger and other sentence groups for varying UMAP hyperparameters and reduced dimensions.</figDesc><graphic coords="12,55.44,131.27,485.96,485.87" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure 9 .</head><label>9</label><figDesc>Figure 9. Manhattan distance between the Flat Earth trigger and other sentence groups for varying UMAP hyperparameters and reduced dimensions.</figDesc><graphic coords="14,55.49,130.72,485.92,485.92" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><head>Figure 10 .</head><label>10</label><figDesc>Figure 10. Canberra distance between the Flat Earth trigger and other sentence groups for varying UMAP hyperparameters and reduced dimensions.</figDesc><graphic coords="15,55.47,130.71,485.95,485.93" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_9"><head>Figure 11 .</head><label>11</label><figDesc>Figure 11. Chebyshev distance between the Flat Earth trigger and other sentence groups for varying UMAP hyperparameters and reduced dimensions.</figDesc><graphic coords="16,55.47,130.75,485.96,485.89" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_10"><head>Figure 12 .</head><label>12</label><figDesc>Figure 12. Euclidean distance between the vaccination trigger and other sentence groups for varying UMAP hyperparameters and reduced dimensions.</figDesc><graphic coords="17,55.48,130.70,485.92,485.95" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_11"><head>Figure 13 .</head><label>13</label><figDesc>Figure 13. Manhattan distance between the vaccination trigger and other sentence groups for varying UMAP hyperparameters and reduced dimensions.</figDesc><graphic coords="18,55.47,130.68,485.93,486.01" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_12"><head>Figure 14 .</head><label>14</label><figDesc>Figure 14. Canberra distance between the vaccination trigger and other sentence groups for varying UMAP hyperparameters and reduced dimensions.</figDesc><graphic coords="19,55.45,130.68,485.96,486.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_13"><head>Figure 15 .</head><label>15</label><figDesc>Figure 15. Chebyshev distance between the vaccination trigger and other sentence groups for varying UMAP hyperparameters and reduced dimensions.</figDesc><graphic coords="20,55.48,130.73,485.91,485.90" type="bitmap" /></figure>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgements</head><p>We thank the reviewers of 'The 2 nd New Frontiers in Adversarial Machine Learning Workshop' ICML 2023, for their thoughtful and valuable feedback which helped improve this work. We also thank <rs type="person">Yoon Kim</rs>, <rs type="person">Siddharth Swaroop</rs>, <rs type="person">Abbas Zeitoun</rs> and <rs type="person">Ani Nrusimha</rs> for their generous technical input and helpful suggestions.</p></div>
+			</div>			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0" />			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Fine-grained analysis of sentence embeddings using auxiliary prediction tasks</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Adi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Kermany</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Belinkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Lavi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Goldberg</surname></persName>
+		</author>
+		<idno>CoRR, abs/1608.04207</idno>
+		<ptr target="http://arxiv.org/abs/1608.04207" />
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Robustness of explanation methods for nlp models</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Atmakuri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Chheda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kandula</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Yadav</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Tuinhof</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">What do neural machine translation models learn about morphology?</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Belinkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Durrani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Dalvi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Sajjad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Glass</surname></persName>
+		</author>
+		<idno>CoRR, abs/1704.03471</idno>
+		<ptr target="http://arxiv.org/abs/1704.03471" />
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Dynamic programming</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Bellman</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Science</title>
+		<imprint>
+			<biblScope unit="volume">153</biblScope>
+			<biblScope unit="issue">3731</biblScope>
+			<biblScope unit="page" from="34" to="37" />
+			<date type="published" when="1966">1966</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">On the validity of self-attention as explanation in transformer models</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Brunner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Pascual</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Richter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Wattenhofer</surname></persName>
+		</author>
+		<idno>CoRR, abs/1908.04211</idno>
+		<ptr target="http://arxiv.org/abs/1908.04211" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Attention understands semantic relations</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chizhikova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Murzakhmetov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Serikov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Shavrina</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Burtsev</surname></persName>
+		</author>
+		<ptr target="https://aclanthology.org/2022.lrec-1.430" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Thirteenth Language Resources and Evaluation Conference</title>
+		<meeting>the Thirteenth Language Resources and Evaluation Conference<address><addrLine>Marseille, France</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022-06">June 2022</date>
+			<biblScope unit="page" from="4040" to="4050" />
+		</imprint>
+	</monogr>
+	<note>European Language Resources Association</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">What does BERT look at? an analysis of bert&apos;s attention</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">U</forename><surname>Khandelwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+		<idno>CoRR, abs/1906.04341</idno>
+		<ptr target="http://arxiv.org/abs/1906.04341" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Visualizing and measuring the geometry of BERT</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Coenen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Reif</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Pearce</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">B</forename><surname>Viégas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Wattenberg</surname></persName>
+		</author>
+		<idno>CoRR, abs/1906.02715</idno>
+		<ptr target="http://arxiv.org/abs/1906.02715" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Attention flows: Analyzing and comparing attention mechanisms in language models</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">F</forename><surname>Derose</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Berger</surname></persName>
+		</author>
+		<idno>CoRR, abs/2009.07053</idno>
+		<ptr target="https://arxiv.org/abs/2009.07053" />
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Hotflip: White-box adversarial examples for NLP</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ebrahimi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Lowd</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dou</surname></persName>
+		</author>
+		<idno>CoRR, abs/1712.06751</idno>
+		<ptr target="http://arxiv.org/abs/1712.06751" />
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">A discussion of &apos;adversarial examples are not bugs, they are features</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Engstrom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gilmer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Goh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Hendrycks</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ilyas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Madry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Nakano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Nakkiran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Santurkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Tsipras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Wallace</surname></persName>
+		</author>
+		<idno type="DOI">10.23915/distill.00019</idno>
+		<ptr target="https://distill.pub/2019/advex-bugs-discussion" />
+	</analytic>
+	<monogr>
+		<title level="j">Distill</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Causal abstractions of neural networks</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Geiger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Icard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Potts</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2106.02997" />
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Transformer feed-forward layers are key-value memories</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Geva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Schuster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Berant</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Levy</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2012.14913" />
+		<imprint>
+			<date type="published" when="2012">CoRR, abs/2012.14913, 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">The earth is flat and the sun is not a star: The susceptibility of gpt-2 to universal adversarial triggers</title>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">S</forename><surname>Heidenreich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Williams</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3461702.3462578</idno>
+		<ptr target="https://doi.org/10.1145/3461702.3462578" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 AAAI/ACM Conference on AI, Ethics, and Society, AIES &apos;21</title>
+		<meeting>the 2021 AAAI/ACM Conference on AI, Ethics, and Society, AIES &apos;21<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="566" to="573" />
+		</imprint>
+	</monogr>
+	<note>Association for Computing Machinery</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">A structural probe for finding syntax in word representations</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hewitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/N19-1419</idno>
+		<ptr target="https://aclanthology.org/N19-1419" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<title level="s">Long and Short Papers</title>
+		<meeting>the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies<address><addrLine>Minneapolis</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2019-06">June 2019</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="4129" to="4138" />
+		</imprint>
+	</monogr>
+	<note>Minnesota</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<title level="m" type="main">Adversarial examples are not bugs</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ilyas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Santurkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Tsipras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Engstrom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Madry</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note>they are features</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Revealing the dark secrets of BERT</title>
+		<author>
+			<persName><forename type="first">O</forename><surname>Kovaleva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Romanov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rogers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rumshisky</surname></persName>
+		</author>
+		<idno>CoRR, abs/1908.08593</idno>
+		<ptr target="http://arxiv.org/abs/1908.08593" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Open sesame: Getting inside bert&apos;s linguistic knowledge</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">C</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Frank</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title level="m" type="main">Locating and editing factual associations in gpt</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Bau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Andonian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Belinkov</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2202.05262" />
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Universal adversarial perturbations</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Moosavi-Dezfooli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fawzi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Fawzi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Frossard</surname></persName>
+		</author>
+		<idno>CoRR, abs/1610.08401</idno>
+		<ptr target="http://arxiv.org/abs/1610.08401" />
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">that is a suspicious reaction!&quot;: Interpreting logits variation to detect NLP adversarial attacks</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Mosca</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Ramí Rez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Groh</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.acl-long.538</idno>
+		<ptr target="https://doi.org/10.18653%2Fv1%2F2022.acl-long.538" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">A mechanistic interpretability analysis of grokking. Alignment Forum</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Nanda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lieberum</surname></persName>
+		</author>
+		<ptr target="https://www.alignmentforum.org/posts/N6WM6hs7RQMKDhYjB/a-mechanistic-interpretability-analysis-of-grokking" />
+		<imprint>
+			<date type="published" when="2022-08">Aug 2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">E</forename><surname>Peters</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Neumann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Iyyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Gardner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<title level="m">Deep contextualized word representations</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Distilbert, a distilled version of BERT: smaller, faster, cheaper and lighter</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Sanh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Debut</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chaumond</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wolf</surname></persName>
+		</author>
+		<idno>CoRR, abs/1910.01108</idno>
+		<ptr target="http://arxiv.org/abs/1910.01108" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Mining models for universal adversarial triggers</title>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">K</forename><surname>Singla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Parekh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Krishnamurthy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">R</forename><surname>Shah</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">AAAI</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">Universal adversarial attacks with natural triggers for text classification</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H.-T</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Narasimhan</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2005.00174</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<author>
+			<persName><forename type="first">I</forename><surname>Tenney</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Pavlick</surname></persName>
+		</author>
+		<title level="m">Bert rediscovers the classical nlp pipeline</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<title level="m" type="main">Universal adversarial triggers for NLP</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Wallace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Kandpal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Gardner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Singh</surname></persName>
+		</author>
+		<idno>CoRR, abs/1908.07125</idno>
+		<ptr target="http://arxiv.org/abs/1908.07125" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">BERTnesia: Investigating the capture and forgetting of knowledge in BERT</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wallat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Anand</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.blackboxnlp-1.17</idno>
+		<ptr target="https://aclanthology.org/2020.blackboxnlp-1.17" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Third BlackboxNLP Workshop on Analyzing and Interpreting Neural Networks for NLP</title>
+		<meeting>the Third BlackboxNLP Workshop on Analyzing and Interpreting Neural Networks for NLP</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020-11">November 2020</date>
+			<biblScope unit="page" from="174" to="183" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">Interpretability in the wild: a circuit for indirect object identification in gpt-2 small</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Variengien</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Conmy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Shlegeris</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Steinhardt</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2211.00593" />
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Roller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Dewan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Diab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><forename type="middle">V</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Mihaylov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Shleifer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Shuster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Simig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">S</forename><surname>Koura</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sridhar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note>Opt: Open pre-trained transformer language models</note>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title level="m" type="main">Generating textual adversarial examples for deep learning models: A survey</title>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">E</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">Z</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Alhazmi</surname></persName>
+		</author>
+		<idno>CoRR, abs/1901.06796</idno>
+		<ptr target="http://arxiv.org/abs/1901.06796" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">Universal and transferable adversarial attacks on aligned language models</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">Z</forename><surname>Kolter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Fredrikson</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

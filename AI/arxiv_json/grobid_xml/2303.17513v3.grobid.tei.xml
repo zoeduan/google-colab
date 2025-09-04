@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Improving the Diproche CNL through Autoformalization via Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Merlin</forename><surname>Carl</surname></persName>
+							<email>merlin.carl@uni-flensburg.de</email>
+							<affiliation key="aff0">
+								<orgName type="department">Institut für Mathematik Europa</orgName>
+								<orgName type="institution">Universität Flensburg Flensburg</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Euf</forename><surname>Flensburg</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">Institut für Mathematik Europa</orgName>
+								<orgName type="institution">Universität Flensburg Flensburg</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><surname>Germany</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">Institut für Mathematik Europa</orgName>
+								<orgName type="institution">Universität Flensburg Flensburg</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Improving the Diproche CNL through Autoformalization via Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">FC8A4529AC3D86AFF4303C9670DF0C90</idno>
+					<idno type="DOI">10.4204/EPTCS.400.4</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:52+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>The Diproche system is an automated proof checker for texts written in a controlled fragment of German, designed for didactical applications in classes introducing students to proofs for the first time. The first version of the system used a controlled natural language for which a Prolog formalization routine was written. In this paper, we explore the possibility of prompting large language models for autoformalization in the context of Diproche, with encouraging first results.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>The Diproche ("Didactical Proof Checking") <ref type="bibr" target="#b0">1</ref> system is an automated proof checker for proofs in a controlled natural language (CNL) specifically adapted to elementary proving exercises in "introduction to proof" classes in first-year university education. Users can enter a proof in a controlled fragment of German and receive immediate feedback on logical correctness, type correctness, fulfillment of proof goals etc.; see [3], [4] for an introduction to the system and [5] for a report on the experiences with the first version of the system.</p><p>In spite of the impressive progress recently made with machine translation and the possibility of using this for the task of autoformalization (see, e.g., [11]), the Diproche CNL was implemented using classical techniques from computational linguistics, more specifically via a definite clause grammar written in Prolog. This was used to convert the natural language input into an internal list format, from which the proof obligations at each proof step are generated, to be passed on to an automated theorem provers (ATPs) in which those steps that should be accepted in the context of a specific exercise are hard-coded. The reason for this choice was to make the system as transparent as possible to the user: There should be no surprises concerning how the program interprets certain formulations, or which formulations it accepts. However, in practice, it quickly became apparent that this goal is in conflict with the other, similarly important, goal of providing a convenient CNL sufficiently rich for expressing proof texts in a way that resembles natural mathematical texts well enough to spare users the burden of learning a formalism on top of the difficulties they face when learning how to prove. Since the intended users are mathematical beginners with little to no experience with formal deduction, formal languages or proof calculi, it turned out that transparency is lost rather quickly. This leaves little reason to not take advantage of the possibilities of natural language processing based on machine learning techniques, such as pretrained language models. An obvious reason in favor of this approach is that developing, refining and changing such a prompt-based CNL is much easier and quicker than (re-)writing a formal grammar. In particular, making the model work in other natural languages is as easy as translating the natural language sentences in the prompt, no matter how (grammatically) different the new language is from the current one. <ref type="bibr" target="#b1">2</ref> In this paper, we begin to explore the possibilities of using the language model DaVinci-3 developed by OpenAI <ref type="bibr" target="#b2">3</ref> for various tasks in didactical systems that aim at teaching how to prove, in particular transforming natural language input into a formal representation that can be further processed by formal proof checkers. For this purpose, we built a prototype in which a Python-based preprocessing routine using DaVinci-3 was combined with the logical components of Diproche written in Prolog. We also consider a very recent version of GPT-4, which shows an even stronger autoformalization performance.</p><p>At first, the experiences reported in Avigad et al. [1] with using large language models for autoformalization appear to be discouraging for this plan: Only about 11 percent of the natural language inputs were formalized correctly ( [1], p. 3). Much better results were reported in [12], where more than 25 percent of the natural language inputs (which were problems for math competitions) were translated correctly into Isabelle (ibid., p. 1). Still, for reliably checking even a simple natural language argument consisting of typically more than 10 sentences with sufficient reliability to be of didactical use to beginner's students, anything considerably below a hundred percent is not good enough.</p><p>However, one needs to keep in mind that the approach in the works just mentioned is explicitly not to use a CNL, but to formalize sentences from everyday mathematical discourse. In contrast, our aim is by far more modest: Retaining the restriction to a small fragment of natural mathematical language, we want to use language models to (i) simplify the process of designing and converting to such languages and (ii) allow for more freedom in the specific choice of formulations compared with a CNL given by a formal syntax. The classical approach to translating between a CNL and a formal representation would be to implement a formal grammar for it, which is a quite cumbersome task. In contrast, our experience shows that, with certain qualifications, the Diproche CNL could be learned and improved with merely 71 lines of example formalization by text-davinci-003. Even more impressingly, if one merely requires translation to a more standard first-order format that is easily convertible to the internal representation format used by Diproche, the same effect could be achieved for GPT-4-Turbo with a prompt merely containing the relevant to notation, but no examples. <ref type="bibr" target="#b3">4</ref> The new system architecture, adapted from the one given in [3], is as follows, where Python components are marked with "Py" and Prolog components are marked with "Pr", while "LLM" denotes the large language model used for the autoformalization: <ref type="bibr" target="#b4">5</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Autoformalization and Proof-Checking</head><p>A naive approach to using autoformalization in automated proof-checking is the following: Each natural language sentence corresponds to some formula in first-order logic. By translating each sentence separately, one obtains a formalization of the whole text, which can then be given to an automated theorem prover for verification. This view, however, ignores a great deal of well-known features of natural language mathematics:<ref type="foot" target="#foot_5">foot_5</ref>  Sentences have different functions, such as goal announcements, deductions, assumptions, annotations. For a (logical) check of the text, these need to be identified, along with the content.</p><p>2. Sentences may have content that is not immediately expressible in first order logic. Consider "Since a = b, it follows that a 2 = b 2 ". The claim here is apparently that, at this point of the argument, it is established that a = b and that, from this, a 2 = b 2 can be deduced. It would certainly be wrong to formalize this as (a = b) → (a 2 = b 2 ), since then, only the implication would be established, while it is its conclusion that the sentence is claiming. However, omitting the "Since a = b" would considerably distort the sentence's meaning: We do not want a sentence like "Since grass is green, it follows that a 2 = b 2 " to be marked as correct. Another example would be a sentence containing multiple conclusions, such as "Now we have A, so we get A ∨ B, and thus also C → (A ∨ B)". Thus, the formal representation of a sentence will need to use means beyond mere first-order logic.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>3.</head><p>The whole text has a structure. It may contain subproofs, variables and assumptions are introduced for certain parts of the argument and gone in others. <ref type="bibr" target="#b6">7</ref> This overall structure needs to be taken into account when formally representing proofs.</p><p>4. Elliptic sentences that gain their meaning from context: "We show that there are infinitely many primes. Suppose otherwise."; "Thus, there is a line passing through P and Q. Call it l."; "Hence, n has at least one prime divisor. Pick one, and call it p."; "So we have x ∈ A. Consequently, it is even." <ref type="bibr" target="#b7">8</ref> Thus, a naive "sentence by sentence"-formalization is not enough as a basis for automated proofchecking. Along with a formalization of content, one needs to identify the function of the sentence, which is a task for automated text classification, one needs a formalism capable of representing figures such as justifications that do not appear in first-order logic (and the autoformalization routine needs to translate to this formalism), and one needs some kind of structural markers to identify the scope of declarations and assumptions, and, when formalizing a sentence, it must be possible to take into account earlier sentences as context.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Prompting and Training Large Language Models</head><p>The pre-trained language models offered by OpenAI can be adapted to a specific task in two different ways: Prompting and fine-tuning. While prompting can simply mean writing a description of the task at hand (such as "Write a birthday card for the person named in the input"), in the case of autoformalization, it is best done by offering a carefully chosen series of examples. <ref type="bibr" target="#b8">9</ref> Prompting leaves the model internally unchanged; intuitively, one could regard it as writing a (long) question. Fine-tuning, in contrast, means actually modifying (training) the language model with an appropriate data set. This option is currently only available for language models considerably weaker than text-davinci-003; in order to achieve satisfying result, a considerably larger amount of examples is required. <ref type="bibr" target="#b9">10</ref> Since such data is currently unavailable for Diproche, and also somewhat cumbersome to generate, we will only consider prompting in this paper, which seems to offer a quick and easy way to achieve an impressive level of autoformalization sufficient for basic didactical applications. <ref type="bibr" target="#b10">11</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">The Diproche CNL and the Internal List Format</head><p>The Diproche CNL is explained in some detail in [3]. Here, we recall some basic features. The Diproche CNL is a fragment of natural mathematical German, comprising typical ways to express assumptions ("Suppose that x is even"), claims ("Hence, x + 1 is odd"), variable declarations ("Let k be an integer"), goal announcements ("We will show that x is a square") and annotations ("Proof:", "qed", "Case 1:" etc.); further sub-types include declarations combined with assumptions, such as "Let k be an integer such that n = 2k" (which are existentially loaded and are in need of verification) and justified claims ("Since x = 3(a + b), x is a multiple of 3"). The sentences <ref type="bibr" target="#b11">12</ref> written in this CNL are converted into an internal list format whose crucial ingredients are a list of the of variables occuring in the sentence, its type (assumption, declaration, claim, annotation,...) and its actual content (which can be empty, as in the case of annotations). Thus, the sentence "Therefore, x is even" would be translated as</p><formula xml:id="formula_0">[[x],beh,[even,[x]]].</formula><p>When processing formulations such as "Suppose not" or resolving anaphors, prior sentences need to be taken into account as the context in which a certain sentences is to be translated. A typical line of our prompt looks like this:<ref type="foot" target="#foot_12">foot_12</ref> context:{We show that the intersection of A and B is a subset of the union of A and</p><formula xml:id="formula_1">B.} Suppose not. # [[A,B],ang,[not,[[A,cap,B],subseteq,[A,cup,B]]]] §</formula><p>Here, the part "context:{}" contains the relevant context, the next part ("Suppose not") is the sentence to be translated, # serves to separate the natural language sentence from its formalization, then we have the formalization in the internal list format and finally § as the stop symbol, which prevents the language model from generating further text, such as more examples of natural language sentences and their formalizations in the same spirit. The examples also included ungrammatical and formally invalid sentences, for which the translation was "invalid" ("ungültig"). If the formalization routine leads to this result, the process is stopped and the sentence in question is reported to the user as not processable.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">First Experiences</head><p>The first experiences with prompting DaVinci-3 for autoformalization in Diproche were encouraging: After only a few examples, the model had "grasped" the extraction of variables along with the classification and even offered (usually sensible) completions in the "spirit" of the given examples although no specific example for the case at hand was given; for example, after learning that "x is even" was to be formalized as [even,[x]], it drew the obvious analogy for "x is odd" or "x is prime". It correctly dealt with formulations that it had not seen in the examples -for example, after having seen that x ∈ X was to be turned into [x,in,X], it correctly processed sentences like "x is an element of X" or "X contains x"; 14 similarly, after being given one example of how to formalize an assumption, it correctly identified a variety of ways to formulate assumptions -including some that, such as "Gesetzt, es wäre der Fall, dass" ("Let it be the case that"), were intentionally chosen to be somewhat uncommon. It even had a considerable success rate when, after a series of German prompts, it was given a sentence in English, French, Italian or Chinese; a system once developed in this way can thus be easily made available in other languages as well. Even without prior examples, the model exhibited the ability introduce variable names not given in the text and pick them in a sensible way; thus, for example, "Every natural number has a prime divisor" was formalized as [all,[n,in,nat],[exists,p,[[prime,p],and,[divides,[p,n]]]]]; in particular, in no instance was a variable name used for different variables. In most cases, the model was able to resolve anaphors, taking advantage not merely of grammatical categories, but even of content: For example, for the input "Hence x is an element of A. Thus, it is even. Consequently, it cannot be empty.", the first "it" was formalized as x, while the second was formalized as A. Turning formulas into the internal list format was also "learned" reliably along the way. Likewise, the model could correctly deal with elliptic formulations such as "We will show that A = B. Suppose not." of "Hence, there exists k such that n = 2k. Pick one.". We also observed that a rather common input format for automated theorem provers, namely THF<ref type="foot" target="#foot_14">foot_14</ref> was already "known" to DaVinci-3; when merely asked to "formalize" various statements without given specific examples, it generated THF formulas. <ref type="bibr">16</ref> This, however, is not of immediate relevance for our purposes, since Diproche uses its own internal format.</p><p>Still, there were issues, most of which, however, could be resolved to our satisfaction:</p><p>1. Along with the requested formalization, the model occasionally generated extra example pairs of natural language and formalization of its own. This could be prevented by introducing § as a stop symbol and putting this after each formalization.</p><p>2. Even so, the model sometimes added to the natural language input rather than merely formalizing the given expression. This was resolved by separating the natural language expression from the formalization by an # and making # a part of the input for each request.</p><p>3. When the input consisted of several sentences, the model frequently misrepresented later sentences, perhaps according to "expectations" of what these should have been rather than what was actually there. Only giving it one sentence per time was not an option, since this would have ruled out using the abilities of the model to refer to context, e.g., in the resolution of anaphors, or in processing such constructions as "We will show that p is prime. Suppose not." (see above). This was solved by explicitly labeling the preceding sentences as "context". The model was prompted with examples of sentences that could not be formalized without further context, in which case it should return the error message "missing context". In order to minimize such unwanted interference, the autoformalization routine works with the minimal amount of context that is required for the sentence at hand: Thus, given a list of sentences [S 1 , S 2 , ..., S n ], it will, in the i-step, attempt to formalize S i without invoking context (i.e., using the empty context). If this yields to a "missing context" error, S i is tried again, this time with context {S i-1 }. If the error persists, the earlier sentences are added one by one; when all earlier sentences up to S 1 were added without success, the formalization attempt is stopped unsuccessfully.</p><p>4. Even when the correct formalization was given in several examples, the model occasionally choose to express it differently, i.e., express A ∪ B as [A,union,B], rather than [A,cup,B]. Since these cases were of a limited and surveyable number, this problem could be dealt with by a postprocessing routine.</p><p>5. There were also difficulties to distinguish between implications ("If x is even, then x + 1 is odd") and justifications ("Now x + 1 is odd, because x is even"): rewriting the examples and adding the tag "justification" improved the performance, but attained nothing near perfect accuracy. We therefore decided to drop phrases containing justifications from the CNL in the first version.</p><p>Moreover, it soon became apparent that converting all types of formulas occuring in any of the subareas currently available in Diproche -in particular, propositional logic, Boolean set theory, axiomatic geometry and elementary number theory -was too much to ask from a model prompted with only 4000 tokens. We thus decided to further specify the task by writing separate prompts for each of these areas; when requested, the system would then use the model for the area to which the current proof text belongs. For the first experiments reported here, we concentrated on writing a prompt for Boolean set theory, an area for which several example Diproche texts are available and which also forms an important part of the beginner's lectures taught in Flensburg.</p><p>Besides text-davinci-003, we also had the opportunity to test an "assistant" based on a recent version of GPT-4. An assistant is a chatbot whose behaviour can be controlled by a prompt describing its intended functioning. <ref type="bibr">17</ref> In order to keep the prompt length limited, we did not insist on a direct translation into the internal Diproche format, but were instead content with a standard first-order format that is easily automatically translatable into the required format. It turned out that, with a prompt explaining in detail the desired output format, the performance of the assistant was satisfying (see below) even without presenting a single example. However, it should be noted that the model's responses still depend on the previous course of the dialogue, so that answers to earlier requests play a role similar to the examples given to text-davinci-003. Thus, while the model was able to autoformalize the given statements with a rather high success rate, this might have been different had the statements been given in a different order. Thus, adding a set of examples representative of the task at hand seems advisable also for this option.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Performance on Typical Diproche Texts</head><p>To see whether the prompted language model would perform, we tested it against three solutions for set-theoretical exercises written in the Diproche CNL, and also modified versions of these solutions that contained mistakes. Not counting these variants, and only considering sentences that were actually passed on to the language model 18 , these texts contained 33 sentences, all of which were processed correctly. Since these texts were typical texts that users of the system would be expected to write, this confirms that the prompted language model could serve as a replacement for the Diproche CNL in a practical setting.</p><p>In order to evaluate the performance of the GPT-4-based assistant, we used 50 example sentences from the area of Boolean set theory. The model was then asked to identify the type of the sentence (declaration, assumption, claim, declaration with additional assumption) and to provide a formalization. The results of this experiment can be found in a table in the appendix. In order to make it easier for the reader to evaluate the quality of the formalizations, we worked with English sentences, although the Diproche CNL is a fragment of German. As experiments suggest, the performance on German translations of the given sentences did not substantially deviate.</p><p>We also asked several mathematicians to write up clearly structured solutions using short and simple sentences to several sample exercises, but without mentioning any particular syntax. Our goal is to <ref type="bibr">17</ref> See, e.g., <ref type="url" target="https://platform.openai.com/docs/assistants/how-it-works/agents">https://platform.openai.com/docs/assistants/how-it-works/agents</ref>. 18 Some standard annotations are processed separately and not given to the language model. evaluate how much of these solution texts will be processed correctly by the model in order to quantify the "naturalness" of the "learned CNL". The results of this will appear in future work.</p><p>These results show that, at least in the field of Boolean set theory, the "learned CNL", covers most of what the hard-coded Diproche-CNL for this purpose had to offer (we recall that "justified claims" were excluded in this investigation). On the other hand, it offers a much greater degree of freedom of expression; in particular, natural language variants of simple formal expressions, such as "x is an element of the intersection of A and B" are usually processed correctly, which would be somewhat cumbersome to obtain with a formal syntax. <ref type="bibr">19</ref> Moreover, it turned out to be rather tolerant with respect to minor misspellings or typos, in contrast to the Diproche CNL, the orthographical strictness of which had apparently been a source of frustration for several students. This is a clear advantage of using large language models over using hand-crafted formalization routines.</p><p>To get a clearer picture of the prospects of this approach, it would certainly be desirable to have a systematic statistical evaluation of the system. This, however, would in fact of limited value due to the following reason: Since the models used above are continually modified, the performance measured at one point of time can be vastly different from the performance a few months later, even when evaluated using the exactly same requests. <ref type="bibr">20</ref> We are planning such an evaluation after the system has been changed to work with local LLMs that can be kept stable over time (see also the next section). Moreover, since the preparation of the first version of this paper (in spring 2023) and the present version (in December 2024), new LLMs have become available that show a strongly improved performance for autoformalization tasks relevant to our purposes.</p><p>To give the reader at least some impression of the possibilities, we discuss here briefly the 50 abovementioned example sentences processed with an OpenAI API-assistant based on the (currently experimental) model GPT-4-Turbo. <ref type="bibr">21</ref> The precise prompt and the table of results can be found in the appendix. Note that the prompt does not contain any examples. Of these 50 examples, 49 were processed correctly, leading to a success rate of 98 percent. The resolvation of anaphorical expressions worked well in most cases, see, e.g., (13), ( <ref type="formula">19</ref>), (23), (24). The exception was example (30) "From this, we get that, if A is not empty, then B is", where the anaphorical expression "then B is" was wrongly interpreted as referring to "not empty", while it would usually be understood as "empty". Phrases such as "exactly one" were correctly interpreted (46). The results also show that a variety of formulations was correctly processed, which considerably goes beyond the Diproche CNL, including in particular term description in natural language (13), (39), (41). Still, there are several points to be noted: First of all, the input format in this case did not take into account context. Due to this, sentences such as "Let x be an element of X" (sentence 11) become ambiguous in their role, being either variable declarations (if x appears for the first time in this sentence) or plain assumptions (if x was introduced earlier on). Similarly, sentence 16 ("Let A be a subset of B") was interpreted as a variable declaration of A (but not of B). While this is indeed a plausible reading, there are of course contexts where it would be wrong. In order to fix this, some kind of context needs to be provided, at least in the form of declared variables available at a certain point in the text. While sentence 6 was correctly formalized, the use of an existential quantifier for formalizing the phrase "non-empty intersection", rather than merely writing G ∩ H ̸ = / 0, would in many contexts lead to difficulties in the further processing. In sentence (36), "whenever" could be read as an implicit universal quantifier, in which case the given formalization would be missing the quantifiers. However, since the formalization would be processed correctly in the context of Diproche, we regarded this as correct.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion and Further Work</head><p>The work reported in this paper indicates that prompting large language models such as DaVinci-3 is apparently a good "quick and dirty" way for developing and improving controlled natural languages for didactical systems such as Diproche which aim at automated proof verification at the beginner level; in particular, such languages tend to be more flexible and error-tolerant than those obtainable by classical methods with reasonable effort. Clearly, this merely scratches the surface of the possibilities that large language models open for such systems, and which will be the subject of further work. Moreover, the purpose of the present paper is merely to present the general concept and argue for its prospects; an accurate evaluation of the didactical advantages of using LLMs over formal grammars will be done once a system version suitable for the actual employment in teaching has been obtained.</p><p>On the one hand, the quality and of autoformalization, which is currently mainly hindered by the bound on prompt length, could most likely be considerably improved by "specialization", i.e., writing prompts for various sub-tasks, classifying the input accordingly and then handing them to the appropriate sub-module.</p><p>On the other hand, there is a number of other tasks relevant for such systems, which could conceivably be treated with large language models, including the following:</p><p>1. Immediate feedback on the proof text. Our experiments indicate that GPT is currently quite poor and unstable in evaluating the logical coherence of a proof text. However, for other kinds of feedback, such as stylistic remarks, it may be more useful.</p><p>2. Generating hints. While GPT is currently not able to reliably solve basic proving exercises, the texts it generates quite often tend to have the right overall structure. This could be used to provide hints for users how to approach a certain problem.</p><p>3. Mistake diagnosis. The current Diproche version includes an "Anti-ATP", a logical (and algebraic) mal-rule library that codifies typical false deduction steps (such as deducing ¬B from ¬A and A → B) and reports them to the user; the hope is that this can help becoming aware of such mistakes and eventually to avoid them. Using large language models for mistake diagnosis at least for algebraic manipulations may lead to a more "semantical" approach to this task, in contrast to the current one based on formal patterns. <ref type="bibr">22</ref> Concerning the practical use in (large) teaching situations, however, the following should be considered:</p><p>• Since DaVinci-3 and similar large language models cannot be run locally, each checking requires a considerable amount of web traffic between the user's device and the servers on which the model is hosted. Compared with the good old-fashioned parsing approach, this takes noticably more time, in particular depending on the internet connection. In our experiments, the time from demanding feedback to receiving feedback typically went up from hardly noticable to at least 30 seconds.</p><p>• The servers to which the formalization requests are sent are of limited capacity and, if too many requests are sent in a certain amount of time, will refuse them. This already happened to the author frequently during development. With a considerable amount of students frequently using the system, it can be expected to happen regularly.</p><p>• Also, requests aren't free: One call to DaVinci-3 with the full amount of 4000 tokens costs about 8¢. <ref type="bibr">23</ref> With a class of 250 students who are supposed to use the system regularly for their homework and make frequent intermediate checks when working on the exercises -which is the whole purpose of the system -this can quickly get expensive: Four such exercises with an average of five intermediate checkings would lead to a weekly price of 400$.</p><p>• Moreover, this approach has all the disadvantages of relying on external services: The underlying model may be changed, resulting in unexpected behaviour, or discontinued altogether; prices can go up; a certain amount of user data is sent to external servers, which may potentially lead to privacy issues etc.</p><p>• In particular, as [6] indicate, the continued modifications to GPT have led to a considerable decrease in certain mathematical abilities in three months. Similarly, we observed that certain requests that consistently worked fine at some point of time did so no longer some months later.</p><p>• The "learned CNL", although quite accurate most of the time, is still somewhat unreliable and occasionally shows surprising behaviour. Thus, for example, the sentence "Thus, x is an element of A or x is an element of A." was reported by text-davinci-003 as "invalid", while it worked perfectly well when replacing one of the A's by a different letter. This is likely due to the fact that such constructions are extremely uncommon in natural language. Moreover, there were instances where claims in the form conditional constructions were mis-identified as assumptions. In one case, a sentence was processed wrongly after changing the variable names. These difficulties can certainly be overcome by providing more examples, but it should still be kept in mind that, compared with hard-coded parsers, a certain amount of reliability is lost.</p><p>• A potential problem that may arise in use is that a "less controlled CNL" may make it more difficult for users to develop a feeling for what will be understood and what not. Whether this is an actual problem will have to be evaluated empirically.</p><p>To sum up, experiences indicate that large language models can be fruitfully and easily applied in developing CNLs for proof checkers for didactical applications. However, for practical applications, the aim should be to train models that can be run locally. This would at least solve the first five of the issues mentioned above. To this end, we have experimented with several large language models available on Hugging Face. <ref type="bibr">24</ref> A general experience so far is that even the largest of the general LLMs perform poorly on autoformalization tasks and, perhaps surprisingly, large models specifically trained with mathematical content, such as WizardLM-70B<ref type="foot" target="#foot_22">foot_22</ref> fare not much better. However, models trained for automated for code generation, such as WizardCoder-Python-34B<ref type="foot" target="#foot_23">foot_23</ref> (apparently the largest local LLM for code generation currently available) show an autoformalization performance comparable to that reported above for textdavinci-003. We plan to systematically develop and evaluate this approach in the near future.</p><p>The ideal would be to create a language model specifically trained on large amounts of data for the task of autoformalization. Work towards such models is done, e.g., in [11]. However, until such pretrained models are available, the approach discussed in this paper seems to offer a workable alternative for certain applications.</p><p>33 For all sets X, Y , Z it holds that:</p><p>If it holds that Y is a subset of Z, then it also holds that the intersection of X and Y is a subset of the intersection of X and Z. </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>InterfaceFigure 1 :</head><label>1</label><figDesc>Figure 1: Flowchart of Diproche with integrated LLM</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>claim∀X∀Y ∀Z((Y ⊆ Z) → (X ∩Y ⊆ X ∩ Z)) + 34 We will now show that A is in fact empty.goal A = / 0 + 35 We need to show that x belongs to K.goal x ∈ K + 36 We need to demonstrate that, whenever A ∩ B = A ∪ B, then A = B. goal (A ∩ B = A ∪ B) → (A = B) +37 Our goal is to see that x and y belong toQ goal (x ∈ Q) ∧ (y ∈ Q) +38 To see this, first suppose that A is empty while B is not.assmpt (A = / 0) ∧ (B ̸ = / 0) +39 Now it remains to establish the pairwise disjointness of U, V and W .goal(U ∩V = / 0) ∧ (U ∩W = / 0) ∧(V ∩W = / 0) + 40 If x ∈ A, then x ∈ (A ∪ B) claim ∀x(x ∈ A → x ∈ (A ∪ B)) + 41As we will presently show, the complement of A ∪ B equals the intersection of the complements of A and B. goal c(A ∪ B) = c(A) ∩ c(B) + 42 It is thus excluded that A is a subset of B. claim ¬(A ⊆ B) + 43 Therefore, we get that, if A is empty, then B is not. claim (A = / 0) → (B ̸ = / 0) + 44 If X and Y are non-empty and disjoint then both are subsets of U. claim (X ̸ = / 0 ∧Y ̸ = / 0 ∧ X ∩Y = / 0) → (S ⊆ U ∧Y ⊆ U) + 45 It now follows that at least one of A and B must be empty. claim (A = / 0) ∨ (B = / 0) + 46 From this, we get that exactly one of A and B is empty. A, B, C be sets and additionally pick D to be a non-empty set. decl/assmpt [[[A,set], [B,set], [C, set], [D, set]], D ̸ = / 0] + 48 Consider sets A, B, C satisfying A ∩ B = c(C) decl/assmpt [[[ A,set], [B, set], [C,set]], A ∩ B = c(C)] + 49 If one of A, B is equal to C, then C ⊆ (A ∪ b) claim ((A = C) ∨ (B = C)) → (C ⊆ (A ∪ B)) + 50 Thus, the empty set is disjoint from every set. claim ∀X( / 0 ∩ X = / 0) +</figDesc></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>Both the system's architecture and its name are inspired by the Naproche system, of which it is a kind of didactical "offspring", see https://naproche-net.github.io/0.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>Not even this may be necessary: Prompted entirely with German sentences, our model was able to correctly process several (simple) sentences written in English, French and Chinese.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>See https://openai.com/product.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>Some qualifications apply here; see below.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_4"><p>An experimental system has been implemented using text-davinci-003. The integration of GPT-4-Turbo is currently being developed.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_5"><p>Cf., e.g.,<ref type="bibr" target="#b7">[8]</ref>, p. 171; for a detailed treatments of the specifics of the language of mathematics, see Ganesalingam<ref type="bibr" target="#b8">[9]</ref>.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="7" xml:id="foot_6"><p>See, e.g., Cramer<ref type="bibr" target="#b6">[7]</ref>, p. 255.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="8" xml:id="foot_7"><p>Cf, e.g.,<ref type="bibr" target="#b9">[10]</ref>, p. 7-8.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="9" xml:id="foot_8"><p>This approach is also taken in Avigad et al.<ref type="bibr" target="#b0">[1]</ref>.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="10" xml:id="foot_9"><p>According to OpenAI https://platform.openai.com/docs/guides/fine-tuning/preparing-your-dataset , one should "aim for at least ∼100 examples per class" for the classification task alone of associating sentences with their logical function, which would in our case amount to 700 sentences; the actual formalization task being by far more complex, one would likely need several thousand example sentences for reasonable results.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="11" xml:id="foot_10"><p>A word of warning is in order here: A prompt length currently cannot go beyond 4000 tokens, which is quite limited.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="12" xml:id="foot_11"><p>In the relevant sense here, "sentence" includes annotations.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="13" xml:id="foot_12"><p>Translated into English for the convenience of the reader; the actual prompt lines are German.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="14" xml:id="foot_13"><p>Although our actual prompts were written in German, we offer English translations here for the sake of the reader. Although it would surprise us if it was otherwise, we therefore cannot guarantee that the results can be reproduced with prompts written in English.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="15" xml:id="foot_14"><p>See, e.g., https://www.tptp.org/Seminars/THF/Contents.html or<ref type="bibr" target="#b1">[2]</ref>.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="16" xml:id="foot_15"><p>A similar "surprise" is reported in<ref type="bibr" target="#b11">[12]</ref>, p. 1.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="19" xml:id="foot_16"><p>We remark, though, that this did not always work reliably: For example, we observed one case where the model confused "the intersection of the complements of A and B" with "the complement of the intersection of A and B".</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="20" xml:id="foot_17"><p>See, e.g.,<ref type="bibr" target="#b5">[6]</ref>, which indicates that the performance of GPT-4 and GPT-3.5 considerably dropped from March to June 2023 in several areas.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="21" xml:id="foot_18"><p>Available under the name gpt-4-1106-preview.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="22" xml:id="foot_19"><p>For example, both (x + y) 2 = x 2 + y 2 and (x + 1) 3 = x 3 + 1 are currently identified as an instance of a distributive use of exponentiation, but (x + y + z) 2 = x 2 + y 2 + z 2 is not; in contrast, DaVinci-3 was able to recognize the third example as an instance of the same mistake, even though only examples with two summands were given to it in the prompt.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="23" xml:id="foot_20"><p>2¢per 1000 tokens, see https://openai.com/pricing (accessed 12.03.2023).</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="24" xml:id="foot_21"><p>https://huggingface.co/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="25" xml:id="foot_22"><p>https://huggingface.co/WizardLM/WizardLM-70B-V1.0</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="26" xml:id="foot_23"><p>https://huggingface.co/WizardLM/WizardCoder-Python-34B-V1.0</p></note>
+		</body>
+		<back>
+
+			
+			<div type="acknowledgement">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Acknowledgements</head><p>We thank our three anonymous referees for several comments that helped in improving the presentation of the paper, along with constructive criticism concerning its content.</p></div>
+			</div>
+
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Appendix</head><p>We give here the precise prompt for the assistant used in the autoformalization experiments with GPT-4-Turbo, along with the table listing the results.</p><p>We used the following prompt (typesetting adapted for the sake of the reader):</p><p>Given a sentence, translate it into the format [type,subtype,formalization], where "type" is one of the following: "claim", "assumption", "variable declaration", "goal declaration". "variable declaration" has the subtypes "plain" and "with additional assumption", for statements in which an assumption is made about the introduced variables beyond the type declaration. "formalization" works as follows:</p><p>• For a plain claim, it is just a formalization of the statement in first-order logic.</p><p>• For an assumption, it is a formalization in first-order logic of the assumed statement.</p><p>• For a plain variable declaration, it is a list of pairs [var,type], where var is the variable to be declared and type is the type assigned to it.</p><p>• For a variable declaration with additional assumption, it is a pair [declarations,assumption] consisting of the list of declarations as for a plain declaration and a formalization of the assumption. A mere existence claim is not a declaration; thus, "there is an integer x such that ..." is a claim, not a declaration. Declarations are indicated by words such as "Let", "pick", "Choose" etc.</p><p>• If the given sentence contains free variables -that are not quantified over in the sentencethey should remain free in the formalization.</p><p>Return only the triple [type,subtype,formalization], nothing else. Use / 0 for the empty set, c(X) for the complement of X, ∪ for the union of sets, ∩ for the intersection of sets, = for equality, ⊆ for the subset relation, ∈ for the element relation.</p><p>The results obtained with this prompt for 50 example sentences can be found in the below </p><p>5 Let Q, X and U as well as P be non-empty sets.  </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<author>
+			<persName><forename type="first">Zhangir</forename><surname>Azerbayev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bartosz</forename><surname>Piotrowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hailey</forename><surname>Schoelkopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edward</forename><forename type="middle">W</forename><surname>Ayers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Dragomir</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeremy</forename><surname>Radev</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Avigad</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2302.12433</idno>
+	</analytic>
+	<monogr>
+		<title level="m">ProofNet: Autoformalizing and Formally Proving Undergraduate-Level Mathematics</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">THF0 -The Core of the TPTP Language for Higher-Order Logic</title>
+		<author>
+			<persName><forename type="first">Christoph</forename><surname>Benzmüller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>Rabe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Geoff</forename><surname>Sutcliffe</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/978-3-540-71070-7_41</idno>
+		<editor>A. Armando, P. Baumgartner &amp; G. Dowek</editor>
+		<imprint>
+			<date type="published" when="2008">2008. 2008</date>
+			<biblScope unit="volume">5195</biblScope>
+			<biblScope unit="page" from="491" to="506" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Number Theory and Axiomatic Geometry in the Diproche System</title>
+		<author>
+			<persName><forename type="first">Merlin</forename><surname>Carl</surname></persName>
+		</author>
+		<idno type="DOI">10.4204/EPTCS.328.4</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Electronic Proceedings in Theoretical Computer Science</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">328</biblScope>
+			<biblScope unit="page" from="56" to="78" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Diproche -ein automatisierter Tutor für den Einstieg ins Beweisen</title>
+	</analytic>
+	<monogr>
+		<title level="j">Digitale Kompetenzen und Curriculare Konsequenzen</title>
+		<editor>
+			<persName><forename type="first">Merlin</forename><surname>Carl</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">&amp; Regula</forename><surname>Krapf</surname></persName>
+		</editor>
+		<imprint>
+			<biblScope unit="page" from="43" to="56" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Natural Language Proof Checking in Introduction to Proof Classes -First Experiences with Diproche</title>
+		<author>
+			<persName><forename type="first">Merlin</forename><surname>Carl</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Lorenzen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Schmitz</surname></persName>
+		</author>
+		<idno type="DOI">10.4204/EPTCS.354.5</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Electronic Proceedings in Theoretical Computer Science</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">354</biblScope>
+			<biblScope unit="page" from="59" to="70" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">How is ChatGPT&apos;s behavior changing over time?</title>
+		<author>
+			<persName><forename type="first">Lingjiao</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matei</forename><surname>Zaharia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">&amp;</forename><surname>James</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zou</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2307.09009</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page">259951081</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Proof-checking mathematical texts in controlled natural language</title>
+		<author>
+			<persName><forename type="first">Marcos</forename><surname>Cramer</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+		</imprint>
+		<respStmt>
+			<orgName>Rheinische Friedrich-Wilhelms-Universität Bonn</orgName>
+		</respStmt>
+	</monogr>
+	<note type="report_type">Ph.D. thesis</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<author>
+			<persName><forename type="first">Marcos</forename><surname>Cramer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bernhard</forename><surname>Fisseni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Koepke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Kühlwein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bernhard</forename><surname>Schröder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jip</forename><surname>Veldman</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/978-3-642-14418-9_11</idno>
+	</analytic>
+	<monogr>
+		<title level="m">The Naproche Project Controlled Natural Language Proof Checking of Mathematical Texts</title>
+		<imprint>
+			<date type="published" when="2009">2009. 2009</date>
+			<biblScope unit="volume">5972</biblScope>
+			<biblScope unit="page" from="170" to="186" />
+		</imprint>
+	</monogr>
+	<note>Controlled Natural Language</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">The language of mathematics</title>
+		<author>
+			<persName><forename type="first">Mohan</forename><surname>Ganesalingam</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/978-3-642-37012-0</idno>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+			<publisher>Springer</publisher>
+			<pubPlace>Berlin Heidelberg</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">ProofML -eine Annotationssprache für natürliche Beweise</title>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Koepke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bernhard</forename><surname>Schröder</surname></persName>
+		</author>
+		<idno type="DOI">10.21248/jlcl.18.2003.48</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+	</analytic>
+	<monogr>
+		<title level="j">LDV Forum</title>
+		<imprint>
+			<biblScope unit="volume">18</biblScope>
+			<biblScope unit="page">30895733</biblScope>
+			<date type="published" when="2003">2003</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Exploration of Neural Machine Translation in Autoformalization of Mathematics in Mizar</title>
+		<author>
+			<persName><forename type="first">Wang</forename><surname>Qingxiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chad</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cezary</forename><surname>Kaliszyk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Josef</forename><surname>Urban</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3372885.3373827</idno>
+	</analytic>
+	<monogr>
+		<title level="m">CPP 2020: Proceedings of the 9th ACM SIGPLAN International Conference on Certified Programs and Proofs</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="85" to="98" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Autoformalization with Large Language Models</title>
+		<author>
+			<persName><forename type="first">Yuhuai</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenda</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Markus</forename><surname>Rabe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Staats</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateja</forename><surname>Jamnik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Szegedy</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2205.12615</idno>
+	</analytic>
+	<monogr>
+		<title level="m">36th Conference on Neural Information Processing Systems (NeurIPS)</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

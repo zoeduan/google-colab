@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">DNAHLM -DNA sequence and Human Language mixed large language Model</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Wang</forename><surname>Liang</surname></persName>
+							<email>wangliang.f@gmail.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Huazhong University of Science and Technology</orgName>
+								<address>
+									<postCode>430070</postCode>
+									<country key="CN">P.R. China</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">DNAHLM -DNA sequence and Human Language mixed large language Model</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">AD6EA53C12375C990F63095E752257CE</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:41+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>Determine the following dna sequence is promoter or terminator？ &quot;&quot;&quot; GATTCCGTGGACTCGAGGCCCGCGTCCTCCGCCCTCCTGTGGCCCCGACCTGCCCGGAGCGCGTTCCCCGCCGGCGTCCGCTG CCGCTCACACCCACCCCAGTACCTGGCGGGCCCGGAGCGCGCGCG</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>There are already many DNA large language models, but most of them still follow traditional uses, such as extracting sequence features for classification tasks. More innovative applications of large language models, such as prompt engineering, RAG, and zero-shot or few-shot prediction, remain challenging for DNA-based models. The key issue lies in the fact that DNA models and human natural language models are entirely separate; however, techniques like prompt engineering require the use of natural language, thereby significantly limiting the application of DNA large language models. This paper introduces a pre-trained model trained on the GPT-2 network, combining DNA sequences and English text, and uses a unified BPE tokenization method. We then convert classification and other downstream tasks into Alpaca format instruction data, and perform instruction fine-tuning on this pre-trained model to create a fine-tuned model capable of handling multiple tasks. The model has demonstrated its effectiveness in DNA related zero-shot prediction and multitask application. This research provides a highly promising direction for building a unified DNA sequence task framework.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Large language models have emerged as a groundbreaking innovation in the field of artificial intelligence. Large language models are also applied in the analysis of DNA and protein sequences. Particularly for nucleic acid-focused tasks, such as DNABert2, HyenaDNA, ScBert <ref type="bibr" target="#b0">(1)</ref><ref type="bibr" target="#b1">(2)</ref><ref type="bibr" target="#b2">(3)</ref>, these studies primarily focus on issues such as the classification and structure prediction of DNA sequences. Similarly, for protein-related tasks, models like ProTrans, ProteinBERT, ESM2 have been developed, which include applications like structure prediction and function annotation <ref type="bibr" target="#b3">(4)</ref><ref type="bibr" target="#b4">(5)</ref><ref type="bibr" target="#b5">(6)</ref> .</p><p>Most large DNA models use common large language model architectures and are pretrained using genomic DNA sequence data. For example, models like DNABERT, DNABERT2, and GEN-LM, which are based on the BERT-style architecture, use Masked Language Modeling (MLM) for training <ref type="bibr" target="#b6">(7,</ref><ref type="bibr" target="#b7">8)</ref>. Models like DNAGPT, which are based on the GPT architecture, use Causal Language Modeling (CLM) for training <ref type="bibr" target="#b8">(9)</ref>. Subsequently, based on the pretrained models, specific model heads are set up and fine-tuned for different downstream tasks. Large DNA language models perform better on tasks such as classification compared to smaller models like CNNs and LSTMs <ref type="bibr" target="#b9">(10)</ref><ref type="bibr" target="#b10">(11)</ref><ref type="bibr" target="#b11">(12)</ref>.</p><p>Despite their successes, DNA large language models face several limitations. One significant challenge is the difficulty in applying novel prompt engineering techniques. Prompt engineering is the foundation of large model applications, as approaches like RAG , agents, and function calls all rely on well-crafted prompts to be built effectively.</p><p>For example, current large language models can easily accomplish the following tasks: Question: Answer:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Terminator</head><p>In the context of large language model strategies, various downstream tasks such as translation, sentiment classification, named entity recognition, part-of-speech tagging, and more are unified under a single task: prompt-based dialogue.</p><p>But in the current exploration of large DNA models, a unifying "dialogue" task that can consolidate various downstream tasks has not yet been found. Instead, the approach still relies on fine-tuning the pre-trained model with small-scale, high-quality supervised data to create specialized models for specific tasks. In light of these limitations, there is a growing need to explore hybrid models that can integrate the strengths of DNA sequences with natural language.</p><p>For example, when large language models handle classification problems, a common approach is to introduce specific symbol labels, transforming the classification problem into a token prediction problem for the language model. Consider two classification data points with categories 1 and 0: GATTCCGTGGACTCGAGGC (Category: 1)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>CACCCACCCCAGTACCT (Category: 0)</head><p>These can be converted into the following general text sequences:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>[CLS]GATTCCGTGGACTCGAGGC[SEP]1[SEP][CLS]CACCCACCCCAGTACCT[SEP]0</head><p>Here:</p><p>[CLS] (Classification Token): this token is placed at the beginning of the input sequence, and it used as the representation of classification tasks.</p><p>[SEP] (Separator Token): Used to separate different sentences or paragraphs. Such sequences can be treated like general text for training language models. When predicting the category of following sequence:</p><formula xml:id="formula_0">[CLS]GATTCCGTGGACTCGAGGC[SEP]</formula><p>The task is to predict the next token after <ref type="bibr">[SEP]</ref>.</p><p>Base on this idea, DNAGPT adds more types of tokens to the pre-training input sequences to represent concepts such as "categories" and "numerical values." For instance, &lt;A&gt; represents a positive example, and &lt;N&gt; represents a negative example. Additionally, it designs extra pre-training tasks to help the model learn to understand these concepts and prepare for downstream tasks <ref type="bibr" target="#b8">(9)</ref>. HyenaDNA, on the other hand, introduces a "Soft Prompting" method that includes the SEP token to mark that the token to be predicted is a "category" rather than the "next base." <ref type="bibr" target="#b1">(2)</ref> In addition, gene annotation data has also been used for model training. For example, ESM3 introduced 256 functional keyword tokens <ref type="bibr" target="#b12">(13)</ref>, while LucaOne utilized protein annotation information. In these models primarily focused on DNA analysis, the tokens mainly serve as classification IDs or label functions and generally do not utilize their semantic representation capabilities <ref type="bibr" target="#b13">(14)</ref>.</p><p>On the other hand, many biological research papers contain sequences such as proteins. Studies like BioMedGPT and ProtSt leverage large amounts of biological literature and annotated protein sequences for unified large model training and fine-tuning <ref type="bibr" target="#b15">(15,</ref><ref type="bibr" target="#b16">16)</ref>. This can effectively improve the performance of biomedical question answering, literature summarization, and natural language function prediction for protein sequences. However, these studies involve relatively little in terms of building a unified framework for biological sequence analysis tasks.</p><p>These innovative methods have achieved some SOTA results. But introducing a small number of specific natural language labels can also lead to issues with the label design system, label proliferation, and label semantic understanding.On the other hand, using a large amount of natural language text combined with a small amount of biological sequences makes it difficult to handle various downstream analysis tasks for biological sequences. There is still a gap before achieving a unified framework for downstream tasks.</p><p>However, these methods provide an interesting idea: since designing a complete system of task-specific symbols is challenging, why not use the full set of natural language symbols/tokens instead?</p><p>Our research involves using DNA sequences and English text to train a base GPT-2 model. We then convert the data related to DNA classification tasks into an instruction-tuning format and fine-tune the GPT-2 model accordingly. This process results in a model that can complete a variety of DNA-related tasks using natural language prompts.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Materials and methods</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">DNAHLM</head><p>To develop the DNAHLM, we adopted the GPT-2 as the foundation structure .We use English and The technology for training GPT-2 base models from scratch is already very mature. We will primarily focus on the fine-tuning methods. For comparison, we used two fine-tuning methods: classification tuning and instruction tuning.</p><p>1 Classification tuning.This is currently the most common application approach for large models in the field of DNA. In classification tuning, the model is trained to recognize specific category label ids, such as "0(promoter)" and "1(terminator)." Classification tasks can also include recognizing Splice site, Transcription factor, etc. However, a model fine-tuned for classification can only make judgments about the specified categories and cannot perform other types of judgments on the input text, Fig.  2 Instruction tuning. Instruction tuning involves training the model on specific tasks to enhance its ability to understand and execute tasks described in natural language prompts, as shown in Fig. <ref type="figure" target="#fig_3">3</ref>.</p><p>We can think of classification-tuned models as highly specialized models. By contrary，Models fine-tuned with instruction tuning are generally capable of performing a broader range of tasks. That means we could predict the DNA Splice site, Transcription factor, even functions by one model. This is precisely the focus of our research. The DNAHLM uses the exact same model architecture as GPT-2, with the primary difference being the training corpus. For the research validation, the base model is structured as GPT-2 Small, which can be trained on a single 4090 GPU. For classification fine-tuning, a typical classification head is used, outputting two classes. For instruction fine-tuning, the same head as the petrained model is used, and the training mode is also identical to that of the pre-training. The structure of DNAHLM is shown in Fig. <ref type="figure">4</ref>. Fig. <ref type="figure">4</ref>. Structure of DNAHLM.The model architecture is identical to that of GPT-2 small. Pre-training and instruction tuning use the same causal language header,the layer mapped 768 hidden units to 50,257 units (the number of tokens in the vocabulary). Classification uses sequence classification header, The layer maps from 768 hidden units to only 2 units, where the 2 units represent the two classes id.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Data Preprocessing</head><p>To prepare the data for training the DNAHL model, we first need to convert DNA and English sequences into a format suitable for processing. This involves several steps:</p><p>1 DNA and English datasets. For the DNA data, we used human genome data, dividing the human genome into segments of 300 to 1000 base pairs (bp) in length, and then randomly selected some of these segments as the DNA training data. For the English text data, we used data from the English version of Wikipedia. We selected 150MB of DNA sequence data and 150MB of English text data, and then combined them to serve as the training data for the GPT-2 model. Since there is currently a lack of a standard evaluation dataset for DNA downstream tasks, we used the GUE datasets constructed in the DNA-BERT paper and the GENA-LM Promoter prediction datasets <ref type="bibr" target="#b0">(1,</ref><ref type="bibr" target="#b7">8)</ref>. The original data was hosted on Google Drive; we performed a simple format conversion and uploaded it to Hugging Face <ref type="bibr" target="#b17">(17)</ref>.</p><p>These tasks were transformed into an instruction-tuning format to fine-tune the model.</p><p>Instruction tuning is a supervised learning method where the training data consists of instructions, inputs, and outputs. These three components are then formatted into a specific prompt format.</p><p>Below are two common methods of formatting.Fig. <ref type="figure" target="#fig_5">5</ref>. In this article, we will use the Alpaca-style prompt formatting method. Table.1 An example of a classification task Task name sequence label name label promoter detection CATGCGGGTCGATAT... Non-promoter 0 promoter detection CTGAATCTCTCAGCC... promoter 1</p><p>We use tabular data as an example to illustrate the entire process of converting DNA downstream tasks into instruction fine-tuning data:</p><p>Step 1. For classification tasks, a template like the following can generally be used to construct instructions： instruction = "Determine the {task_name} of following dna sequence, The result will be one of the following: {label_name1}, {label_name2}, {...}"</p><p>Step 2.Correspondingly, a classification data can be converted into an instruction tuning data：</p><p>{'instruction': 'Determine core promoter detection of following dna sequence, The result will be one of the following: Non-promoter, promoter.', 'input': 'CATGCGGGTCG...', 'output': 'Non-promoter'} Step 3. By applying the Alpaca prompt template, the text data for fine-tuning training can be formed： Below is an instruction that describes a task. Write a response that appropriately completes the request. ### Instruction: Determine core promoter detection of following dna sequence, The result will be one of the following: Non-promoter, promoter.' ### Input: TCTTTCTCTTCTGTATCATTCTACTT... ### Response: Non-promoter</p><p>It's important to note that the instruction conversion templates for downstream tasks are not fixed.</p><p>For example, a binary classification problem can also use the following template:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Determine whether the {task_name} of following DNA sequence {sequence} answer with {label_name1} or {label_name2}</head><p>Then the instruction tuning data will be: Here, you only need to set the input as empty. In the instructions, DNA sequences and English text can be combined arbitrarily, which allows our model to be compatible with a wider range of downstream tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3">Training Strategy</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>2.3.1Tokenization and Encoding</head><p>Currently, most large biological models that support multimodal data generally use different encoding methods for annotations, DNA, proteins, structural information, and natural language.</p><p>For instance, BioMedGPT uses GraphMVP as the encoder for 2D molecular graphs, ESM2-3B as the encoder for protein sequences, and BPE tokenization for encoding natural language <ref type="bibr" target="#b15">(15)</ref>.</p><p>LucaOne model distinguishes nucleotides and amino acids by utilizing token-type encoding, assigning 0 to nucleotides and 1 to amino acids <ref type="bibr" target="#b13">(14)</ref>.</p><p>These approaches, where different sequences use different encoders, can more effectively capture the feature information of the sequences. However, it introduces an encoder selection issue and requires preliminary determination of the sequence types when handling downstream tasks. This method increases the difficulty of building a unified model for DNA tasks.</p><p>The GPT-2 model uses BPE (Byte Pair Encoding) by default to encode natural language.</p><p>For DNA sequences, K-mer tokenization an approach that has been widely used. The k-mer representation incorporates richer contextual information for each deoxynucleotide base by concatenating it with its following ones. The concatenation of them is called a k-mer.For example, a DNA sequence 'ATGGCT' can be tokenized to a sequence of four 3-mers: {ATG, TGG, GGC, GCT} or to a sequence of two 5-mers: {ATGGC, TGGCT}. But Byte-Pair Encoding (BPE) tokenization has been shown to be more efficient in large DNA models. For example, the sequence 'ATGGCT' can be tokenized as {ATGG, CT}.</p><p>Therefore, we also used the BPE tokenization algorithm. We built a vocabulary of approximately 50,000 tokens based on a mixed corpus of English and DNA sequences, with DNA tokens comprising about 55% and English tokens about 45%. The tokenizer includes special tokens::&lt;|endoftext|&gt;. The statistical distribution of the dictionary is shown in Fig. <ref type="figure" target="#fig_5">5</ref>.</p><p>Fig. <ref type="figure">6</ref> Statistical distribution of the dictionary.Among these, English vocabulary accounts for 45%, and DNA vocabulary accounts for 55%.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.2">Pre-training</head><p>According to the typical design of GPT-2, it accepts sequences with a maximum length of 1024 as input. We used the same architecture as the GPT-2 Small model, which consists of 12</p><p>Transformer layers, each with 768 hidden units and 12 attention heads. This small model has approximately 117 million parameters.We trained the GPT-2 model using mixed-precision floating-point arithmetic on a machine equipped with a single Nvidia 4090 GPU. We employed a dynamic learning rate schedule, and the model was trained for a total of 3 to 5 epochs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.3">Classification Fine-tuning</head><p>For each downstream application, we started from the pre-trained parameters and fine-tuned DNAHLM with task-specific data. The model's header is set to the commonly used softmax classification form; see Fig. <ref type="figure">4</ref> for specifics. We utilized the same training tricks across all the applications, where the learning rate was first linear warmed-up to the peak value and then linear decayed to near 0. Due to the limited amount of data, we divided the fine-tuning datasets into a training set and a validation set and did not set aside a dedicated test set. Model evaluations were conducted on the validation set.</p><p>Due to the smaller scale of model parameters and the datasets size being in the tens of thousands of samples, we used the full-parameter fine-tuning method. Fine-tuning can be completed within about an hour on a single 4090 GPU. If using larger models such as GPT-2 Large or datasets with greater volumes, the LoRA method can be adopted, combined with the DeepSpeed multi-GPU mode for fine-tuning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.4">Instruction Fine-tuning</head><p>The method for instruction tuning is entirely consistent with the training method of the GPT-2 pre-trained model. All use exactly the same causal language model head; see Fig. <ref type="figure">4</ref> for specifics.</p><p>This involves treating the constructed instruction data as general text sequences and inputting them into the GPT-2 model. In other words, instruction tuning is the same as the pre-training process, which is key to enabling multi-task handling. This is also key to how ChatGPT-like models are able to handle a variety of natural language tasks. We typically train for 2 to 3 epochs.</p><p>Since the training data is relatively small, fine-tuning on a 4090 GPU usually takes only about ten minutes to complete.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.4">Model Evaluation</head><p>The performance of the DNAHL model is evaluated using a series of benchmarks that assess its capabilities in both DNA sequence and promotion tasks.</p><p>For classification fine-tuning, we evaluate the model according to typical classification tasks.This benchmark evaluates the model's ability to classify DNA sequences into different categories based on their functional or structural properties. The model's accuracy is used to measure its performance.</p><p>For the evaluation of the instruction-tuned model, as a comparison, we commonly use accuracy as evaluation metrics. The assessment is based on whether the model's output tokens semantically match the expected ones. In contrast, the output for classification fine-tuning is typically a numerical class ID, such as 1, 2, etc, we need to output exact equality.</p><p>For example, if the model outputs "promoter AGCC GGG" while the expected output is "promoter ", we still consider the model's prediction to be accurate. This is because, as a generative model, GPT is not specifically trained to recognize stop tokens. With more training data and a larger model size, it would be possible to produce outputs that exactly match the expected tokens.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Experimental Results</head><p>For the specific promoter prediction task, the classification fine-tuned model achieved an accuracy of approximately 76%-83%, while the instruction-tuned model achieved an accuracy of approximately 74%. This indicates that the instruction-tuned model remains effective even when dealing with specialized classification problems.</p><p>For multiple tasks such as Core Promoter Detection and Transcription Factor Prediction, the classification fine-tuning method requires training a different model for each task, with an average accuracy of approximately 80%. In contrast, the instruction-tuned model, when facing multiple types of classification tasks, achieved an accuracy of around 83%, but these results were obtained using a single model.</p><p>Table.2. Accuracy of different models Task DNAHLM(Classifica tion Fine-tuning) GENA-LM DNABert2 DNAHLM(Instruction Fine-tuning) Promoter Detection 1 0.83 0.76 -0.74 Core Promoter Detection 0.76 -0.74 0.83 Transcription Factor Prediction 0.75 -0.87 Promoter Detection 2 0.88 -0.94 Splice Site Detection 0.82 -0.86 Here, 'Promoter Detection 1' uses data from the GENA-LM paper, while the rest use data from the DNABert2 paper.</p><p>By contrast, the current state-of-the-art (SOTA) model DNABert2 has an average accuracy of approximately 0.85, which is slightly higher than our instruction fine-tuned model. However, this also validates the effectiveness of our method, which involves unified encoding of different sequence types and fine-tuning the model using a standardized instruction format.</p><p>More importantly, the instruction-tuned model can interact with users in a conversational manner and can leverage prompt engineering, RAG, chain of thought, and other techniques commonly used with large language models.Fig7. This significantly expands the range of applications for the model. The main innovations of this study are twofold. First, it uses unified BPE encoding for both DNA sequences and English text. Then, using prompt templates, it converts different DNA downstream tasks into standardized instruction fine-tuning data. Although this method ignores the biological characteristics of DNA, it still yields good results in downstream tasks such as Promoter prediction.</p><p>This "simple" approach to model construction has clear advantages. Similar to ChatGPT, it enables solving various DNA downstream tasks through a conversational interface, where the input can be any combination of DNA sequences and natural language. Additionally, it allows for the direct application of mature large-model application frameworks such as prompt engineering, RAG (Retrieval-Augmented Generation), function calls, and agents to develop large-scale DNA model applications. The complete training code for the model is open-sourced on GitHub <ref type="bibr" target="#b18">(18)</ref>.</p><p>Future research could involve using larger-scale models, such as llama series, and training on more extensive datasets, such as genomic and protein data from multiple model organisms , additional fine-tuning data for various DNA-related downstream tasks.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><figDesc>Fig.1DNAHLM training process. This model uses human genome data and English encyclopedia data as pre-training corpora, employing the BPE method for uniform encoding without distinguishing between the two types of text. It then undergoes training from scratch based on the GPT2-small network, resulting in a pre-trained model. Following this, specific prompt templates are used to convert DNA downstream tasks into instructions. These instructions are then formatted into the standard Alpaca format, generating instruction data for fine-tuning the pre-trained model. This process leads to the creation of DNAHLM. The usage of this model can adopt a dialogue mode based on prompt engineering.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>2. For example, promoter detection need one classification fine-tuned model, the Transcription factor classification need another.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Fig2</head><figDesc>Fig2 DNA Classification fine-tuning tasks.The input to the model is a DNA sequence, and the output is a list of IDs.</figDesc><graphic coords="6,90.36,462.12,414.60,134.04" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Fig 3 .</head><label>3</label><figDesc>Fig 3. DNA Instruction fine-tuning tasks.The input to the model is instruction data, typically composed of DNA sequences and natural language text. The output is also in this format. Due to the adoption of a unified encoding method, the model can support the promoter classification task mentioned above, as well as the gene function prediction task below.</figDesc><graphic coords="7,90.60,160.32,414.24,183.36" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>2</head><figDesc>Fine-tuning datasets.For fine-tuning, we used typical DNA sequence analysis tasks and converted them into a fine-tuning data format for instruction tuning. A typical example includes the following downstream tasks:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Fig. 5</head><label>5</label><figDesc>Fig.5 Build instruction datasets. For different downstream tasks, design specific instruction templates to convert downstream task data into instructions. Then, using the Alpaca prompt template, transform these instructions into uniformly formatted instruction fine-tuning data.</figDesc><graphic coords="10,90.48,76.80,414.36,266.16" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>{</head><figDesc>'instruction': 'Determine the core promoter detection of following DNA sequence 'CATGCGGGTCG...', answer with Non-promoter or promoter .', 'input': '', 'output': 'Non-promoter'}</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Fig. 7 .</head><label>7</label><figDesc>Fig.7. Chat with DNAHLM</figDesc><graphic coords="16,150.60,279.96,292.56,159.96" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="8,90.24,77.28,414.36,384.84" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="13,140.28,72.96,314.76,178.08" type="bitmap" /></figure>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Dnabert-2: Efficient foundation model and benchmark for multi-species genome</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.15006</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Hyenadna: Long-range genomic sequence modeling at single nucleotide resolution</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Nguyen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">36</biblScope>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">scbert as a large-scale pretrained deep language model for cell type annotation of single-cell rna-seq data</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Yang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Nature Machine Intelligence</title>
+		<imprint>
+			<biblScope unit="volume">4</biblScope>
+			<biblScope unit="page" from="852" to="866" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Prottrans: Toward understanding the language of life through selfsupervised learning</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Elnaggar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE transactions on pattern analysis and machine intelligence</title>
+		<imprint>
+			<biblScope unit="volume">44</biblScope>
+			<biblScope unit="page" from="7112" to="7127" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Proteinbert: a universal deeplearning model of protein sequence and function</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Brandes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Ofer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Peleg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Rappoport</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Bioinformatics</title>
+		<imprint>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="page" from="2102" to="2110" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Evolutionary-scale prediction of atomic-level protein structure with a language model</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Lin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Science</title>
+		<imprint>
+			<biblScope unit="volume">379</biblScope>
+			<biblScope unit="page" from="1123" to="1130" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">DNABERT: Pre-trained bidirectional encoder representations from transformers model for DNA-language in genome</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">V</forename><surname>Davuluri</surname></persName>
+		</author>
+		<idno type="DOI">10.1093/bioinformatics/btab083</idno>
+		<idno>1093/bioinformatics/btab083</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Bioinformatics</title>
+		<imprint>
+			<biblScope unit="volume">37</biblScope>
+			<biblScope unit="page" from="2112" to="2120" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">GENA-LM: A Family of Open-Source Foundational DNA Language Models for Long Sequences</title>
+		<author>
+			<persName><surname>Veniamin Fishman</surname></persName>
+		</author>
+		<idno type="DOI">10.1101/2023.06.12.544594</idno>
+		<idno>06.12.544594</idno>
+		<ptr target="https://doi.org/10.1101/2023.06.12.544594" />
+	</analytic>
+	<monogr>
+		<title level="j">BioRxiv</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">DNAGPT: A Generalized Pretrained Tool for Multiple DNA Sequence Analysis Tasks</title>
+		<author>
+			<persName><forename type="first">Daoan</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="DOI">10.1101/2023.07.11.548628</idno>
+		<idno>BioRxiv 2023.07.11.548628</idno>
+		<ptr target="https://doi.org/10.1101/2023.07.11.548628" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Pre-trained Language Models in Biomedical Domain: A Systematic Survey</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3611651</idno>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Comput. Surv</title>
+		<imprint>
+			<biblScope unit="volume">56</biblScope>
+			<biblScope unit="page" from="1" to="52" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Foundation models for bioinformatics</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Gao</surname></persName>
+		</author>
+		<idno type="DOI">10.1002/qub2.69</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Quant. Biol</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<author>
+			<persName><forename type="first">G</forename><surname>Benegas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Albors</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">C</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">S</forename><surname>Song</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arxiv.2407.11435</idno>
+		<title level="m">Genomic Language Models: Opportunities and Challenges</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Simulating 500 million years of evolution with a language model</title>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Hayes</surname></persName>
+		</author>
+		<idno type="DOI">10.1101/2024.07.01.600583</idno>
+		<idno>2024.07.01.600583</idno>
+		<ptr target="https://doi.org/10.1101/2024.07.01.600583" />
+	</analytic>
+	<monogr>
+		<title level="j">BioRxiv</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>He</surname></persName>
+		</author>
+		<title level="m">Generalized Biological Foundation Model with Unified Nucleic Acid and Protein Language</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title/>
+		<idno type="DOI">10.1101/2024.05.10.592927</idno>
+		<idno>BioRxiv 2024.05.10.592927</idno>
+		<ptr target="https://doi.org/10.1101/2024.05.10.592927" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">A generalist vision-language foundation model for diverse biomedical tasks</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Adhikarla</surname></persName>
+		</author>
+		<idno type="DOI">10.1038/s41591-024-03185-2</idno>
+		<ptr target="https://doi.org/10.1038/s41591-024-03185-2" />
+	</analytic>
+	<monogr>
+		<title level="j">Nat Med</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">ProtST: multi-modality learning of protein sequences and biomedical texts</title>
+		<author>
+			<persName><forename type="first">Minghao</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyu</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Santiago</forename><surname>Miret</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Tang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th International Conference on Machine Learning (ICML&apos;23)</title>
+		<title level="s">JMLR.org, Article</title>
+		<meeting>the 40th International Conference on Machine Learning (ICML&apos;23)</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">202</biblScope>
+			<biblScope unit="page" from="38749" to="38767" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Dnahlm Huggingface</surname></persName>
+		</author>
+		<ptr target="https://huggingface.co/dnagpt" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Dnahlm Github</surname></persName>
+		</author>
+		<ptr target="https://github.com/maris205/DNAHL" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

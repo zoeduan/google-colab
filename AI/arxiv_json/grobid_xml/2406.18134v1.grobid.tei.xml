@@ -1,0 +1,1870 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Assessing &quot;Implicit&quot; Retrieval Robustness of Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-06-26">26 Jun 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+							<email>xyshen@eitech.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Eastern Institute of Technology</orgName>
+								<address>
+									<addrLine>Ningbo 2 Amazon AGI</addrLine>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Rexhina</forename><surname>Blloshmi</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Dawei</forename><surname>Zhu</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="institution">Saarland University</orgName>
+								<address>
+									<addrLine>Saarland Informatics Campus 4 Centrum Wiskunde &amp; Informatica</addrLine>
+									<settlement>Amsterdam</settlement>
+									<country key="NL">The Netherlands</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Jiahuan</forename><surname>Pei</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Wei</forename><surname>Zhang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Eastern Institute of Technology</orgName>
+								<address>
+									<addrLine>Ningbo 2 Amazon AGI</addrLine>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Assessing &quot;Implicit&quot; Retrieval Robustness of Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-06-26">26 Jun 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">8B029DB1863DB95C3F3EEEF45FFA16A9</idno>
+					<idno type="arXiv">arXiv:2406.18134v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:40+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Retrieval-augmented generation has gained popularity as a framework to enhance large language models with external knowledge. However, its effectiveness hinges on the retrieval robustness of the model. If the model lacks retrieval robustness, its performance is constrained by the accuracy of the retriever, resulting in significant compromises when the retrieved context is irrelevant. In this paper, we evaluate the "implicit" retrieval robustness of various large language models, instructing them to directly output the final answer without explicitly judging the relevance of the retrieved context. Our findings reveal that fine-tuning on a mix of gold and distracting context significantly enhances the model's robustness to retrieval inaccuracies, while still maintaining its ability to extract correct answers when retrieval is accurate. This suggests that large language models can implicitly handle relevant or irrelevant retrieved context by learning solely from the supervision of the final answer in an end-toend manner. Introducing an additional process for explicit relevance judgment can be unnecessary and disrupts the end-to-end approach. 1</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Large language models (LLMs) have brought about a paradigm shift in the field of Natural Language Processing, enabling remarkable advancements in various tasks <ref type="bibr" target="#b4">(Brown et al., 2020;</ref><ref type="bibr">Su et al., 2022a,b;</ref><ref type="bibr" target="#b7">Chowdhery et al., 2023;</ref><ref type="bibr">Achiam et al., 2023)</ref>. However, their static nature imposes limitations, preventing them from fully encompassing all specialized knowledge or maintaining its currency <ref type="bibr" target="#b11">(Dhingra et al., 2022;</ref><ref type="bibr" target="#b18">Kandpal et al., 2023)</ref>. To mitigate this constraint, a prevailing trend involves the adoption of retrieval-augmented generation (RAG) methodologies <ref type="bibr" target="#b15">(Guu et al., 2020;</ref><ref type="bibr" target="#b22">Lewis et al., 2020;</ref><ref type="bibr"></ref> Explicit Implicit Who wrote the song "Leaving on a jet plane"? Corpus Query (q)</p><p>"Leaving on a jet plane" is a song written by John Denver in 1966... elling the relevance of retrieved context. The explicit approach evaluates whether the retrieved context is relevant and then calls different functions based on this assessment. In contrast, the implicit approach directly generates the final answer in an end-to-end manner. <ref type="bibr" target="#b16">Izacard et al., 2022)</ref>. Through bringing extra context from the retriever, these models can tap into external knowledge reservoirs, refining their outputs with heightened precision and contextually fitting information <ref type="bibr" target="#b43">(Wang et al., 2023;</ref><ref type="bibr" target="#b13">Gao et al., 2023;</ref><ref type="bibr" target="#b5">Chen and Shu, 2023)</ref>.</p><p>Nevertheless, acquiring a reliable retriever is challenging. Since the number of candidate documents for retrieval is typically much larger than the vocabulary size of LLMs, it is often easier to generate the correct answer from the knowledge stored in the model parameters rather than retrieving it <ref type="bibr">(Yu et al., 2023a;</ref><ref type="bibr" target="#b26">Maekawa et al., 2024;</ref><ref type="bibr" target="#b12">Feldman et al., 2024)</ref>. When the retriever is imperfect, the quality of LLM generations can be significantly compromised, which often leads to poorer performance compared to scenarios where no retriever is employed at all <ref type="bibr" target="#b23">(Li et al., 2022;</ref><ref type="bibr">Luo et al., 2023)</ref>.</p><p>The main reason that influences the quality of RAG is their retrieval robustness <ref type="bibr" target="#b49">(Yoran et al., 2024)</ref>. Ideally, a retrieval-robust model should possess two key capabilities: I Properly incorporate helpful retrieved information to provide an accurate answer.</p><p>II Ignore distracting information and rely on its own internal knowledge as a fallback. <ref type="foot" target="#foot_0">2</ref>Capability I pertains to scenarios where the retrieved information aids in deriving the answer, while Capability II pertains to scenarios where the retriever only returns distracting information. A wide range of approaches have been proposed to improve the retrieval robustness of LLMs, which can be classified into two categories: The first category explicitly decouples Capability I and II by injecting an intermediate process to judge the relevance of retrieved information, based on which different functions are called <ref type="bibr" target="#b8">(Creswell and Shanahan, 2022;</ref><ref type="bibr">Yu et al., 2023b)</ref>. The second category, on the contrary, relies on the model itself to implicitly judge the relevance of the retrieved information and generate the right answer directly <ref type="bibr">(Luo et al., 2023;</ref><ref type="bibr" target="#b49">Yoran et al., 2024)</ref>. Figure <ref type="figure" target="#fig_0">1</ref> depicts the difference between explicit and implict approaches.</p><p>Despite being finer-grained, explicit approaches increase runtime latency and the risk of error propagation. They also require annotations regarding the relevance of retrieved information, which can be costly to obtain on a large scale. <ref type="foot" target="#foot_1">3</ref> In this paper, we conduct a thorough analysis in a controlled setting to evaluate the "implicit" retrieval robustness of LLMs. More concretely, we aim to determine the extent to which we can uphold the retrieval robustness without requiring explicit judgment of the retrieval's relevance.</p><p>To conduct this analysis, we run extensive experiments with 5 question-answering tasks spanning different domains and scenarios; 5 open-source LLMs (Vicuna-7/13/33B and Llama 2-7/13B); 2 closed-source models (GPT-3.5 and GPT-4) and 3 testing scenarios (zero-shot with prompting, full fine-tuning and LoRA fine-tuning). For each experiment, we run controlled tests to evaluate Capability I and II of the models separately. Our findings can be summarized as follows:</p><p>• Without fine-tuning, open-source LLMs often under-perform GPT-3.5/GPT-4 in terms of Capability I, but match them in terms of Capability II. Larger models generally exhibit greater resilience to distractions.</p><p>• Fine-tuning on gold context enhances Capability I on challenging tasks, but often hits a plateau on easier tasks, accompanied by a drop in Capability II. LoRA matches full finetuning in improving Capability I and better preserves Capability II.</p><p>• Fine-tuning on noisy context can significantly enhance Capability II of LLMs without affecting their Capability I. A higher noise ratio (50%) can often lift the performance of Capability II to the level of non-retrieval models, except on questions requiring multi-hop or multi-turn inference.</p><p>Overall, we suggest that LLMs are notably robust at noisy retrievals during fine-tuning. With a high noise ratio, the "implicit" retrieval robustness of LLMs can be remarkably effective. For most question-answering tasks that do not involve sophisticated multi-hop or multi-turn inference, relying on the model's implicit retrieval robustness may already suffice.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related Work</head><p>Retrieval-Augmented Generation Due to the static nature of the knowledge stored within their parameters, large language models encounter difficulties in tasks that require extensive knowledge or have temporal dependencies <ref type="bibr" target="#b30">(Qiu et al., 2023)</ref>. Retrieval-augmented generation has emerged as a valuable approach to address these limitations by enabling models to retrieve and integrate information from external sources during the generation process <ref type="bibr" target="#b15">(Guu et al., 2020;</ref><ref type="bibr" target="#b22">Lewis et al., 2020;</ref><ref type="bibr" target="#b9">Del Tredici et al., 2021</ref><ref type="bibr">, 2022)</ref>. The external sources may include knowledge bases, search engines, multi-turn histories, or private databases, depending on the specific knowledge needed for the task <ref type="bibr" target="#b13">(Gao et al., 2023)</ref>. Various studies have explored the integration of retrieval mechanisms into generative models to enhance the quality and relevance of generated text from LLMs <ref type="bibr" target="#b29">(Peng et al., 2023;</ref><ref type="bibr" target="#b37">Shi et al., 2023;</ref><ref type="bibr" target="#b32">Ren et al., 2023)</ref>. The retrieval-augmented mechanism not only improves performance but also offers a cost-effective approach to adapting the model for diverse domains by dynamically adjusting external knowledge sources <ref type="bibr" target="#b3">(Barlacchi et al., 2022;</ref><ref type="bibr" target="#b31">Ram et al., 2023)</ref>. Although improvement has been observed, the quality of generations is strongly affected by the accuracy of retrievers. Inaccuracies in retrievers can lead to the incorporation of irrelevant or misleading information, resulting in lower-quality generated content <ref type="bibr" target="#b47">(Xu et al., 2024;</ref><ref type="bibr" target="#b12">Feldman et al., 2024)</ref>.</p><p>Retrieval-Robust Large Language Model Recognizing that the quality of text generations from LLMs is significantly influenced by the retriever's quality, various research works have been proposed to enhance the retrieval robustness of LLMs, i.e. , the model should effectively utilize accurate retrieved information while also disregarding distracting information in cases where the retriever is inaccurate <ref type="bibr" target="#b49">(Yoran et al., 2024)</ref>. The first line of research introduces an intermediary step to assess the relevance of retrieved information, aligning with conventional methods of step-by-step planning in text generation <ref type="bibr" target="#b20">(Konstas and Lapata, 2013;</ref><ref type="bibr" target="#b28">Moryossef et al., 2019;</ref><ref type="bibr" target="#b35">Shen et al., 2020)</ref>. When the information is detected to be unhelpful, the model will simply fall back to use its own parameterized knowledge to answer the question. This helpfulness label is usually obtained by manual annotation <ref type="bibr" target="#b14">(Glaese et al., 2022;</ref><ref type="bibr" target="#b38">Shuster et al., 2022)</ref>, chain-of-thought prompting on a powerful LLM <ref type="bibr" target="#b8">(Creswell and Shanahan, 2022;</ref><ref type="bibr">Yu et al., 2023b;</ref><ref type="bibr" target="#b52">Zhang et al., 2024)</ref>, or inspecting its effect on the model generation <ref type="bibr" target="#b17">(Jeong et al., 2024)</ref>. Although this step-by-step approach provides finergrained signals, it also leads to increased runtime latency and training costs, with potential risks of error propagation <ref type="bibr" target="#b43">(Wang et al., 2023)</ref>. Conversely, the alternative line of research employs an endto-end approach to train models to autonomously discern the relevance of retrieved information from without extra helpfulness labels. The key to achieving successful end-to-end learning is to incorporate noisy retrievals, allowing the model to adjust to distracting information <ref type="bibr">(Luo et al., 2023;</ref><ref type="bibr" target="#b49">Yoran et al., 2024)</ref>. Nonetheless, existing studies lack quantitative analysis on how the retrieval robustness is influenced by factors such as the model, fine-tuning method, data, and noise ratio. Our research seeks to address this gap in the literature.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Definition of Retrieval Robustness</head><p>Let q, c, a denote the question, context retrieved from an external source, and answer respectively. The variable p denotes the probability estimator from the LLM generator. In retrieval-augmented generation, the retriever retrieves some context c<ref type="foot" target="#foot_2">foot_2</ref> from external sources where c can be either helpful or unhelpful depending on the accuracy of the retriever. The answer is generated from p(a|q, c) by conditioning on q and c. An LLM is considered retrieval-robust if the probability estimation p(a|q, c) remains effective regardless of the helpfulness of c. It corresponds to two different capabilities that the LLM should possess:</p><formula xml:id="formula_0">I When c is helpful, i.e.</formula><p>, the correct answer a * can be derived from the information contained in c, then it should return a * . II When c is not helpful, it should discard the information in c and rely on its own parameterized knowledge p(a|q) to answer the question.</p><p>Equation 1 illustrates the ideal p robust (a|q, c) from a retrieval-robust LLM mathematically, where δ is the dirac-delta function.</p><formula xml:id="formula_1">p robust (a|q, c) = δ(a -a * ), if a * ∈ c p(a|q), otherwise<label>(1)</label></formula><p>4 Experiment Setup</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Model</head><p>We test 5 open-source LLMs: Vicuna-1.3-7/13/33B <ref type="bibr" target="#b6">(Chiang et al., 2023)</ref> and Llama 2chat-7B/13B <ref type="bibr" target="#b41">(Touvron et al., 2023)</ref>, as well as two closed-source LLMs GPT-3.5 and GPT-4 <ref type="bibr">(Achiam et al., 2023)</ref>. For open-source LLMs, we test their performance with zero-shot prompting, LoRA and full fine-tuning on task-specific datasets. For closed-source LLMs, we only report their performance by prompting them with instructions.</p><p>Dataset In order to test model capabilities comprehensively, we test the models on 5 datasets covering diverse domains, question types and knowledge sources: AmbigQA <ref type="bibr" target="#b27">(Min et al., 2020)</ref>, ePQA <ref type="bibr">(Shen et al., 2022a,b)</ref>, Musique (Trivedi et al., 2022), SciQ <ref type="bibr" target="#b45">(Welbl et al., 2017)</ref> and <ref type="bibr">Top-ioCQA (Adlakha et al., 2022)</ref>.</p><p>We specifically choose datasets with short answers because evaluating long answers is known to be challenging <ref type="bibr" target="#b46">(Xu et al., 2023)</ref>. AmbigQA is a refined version of Natural Questions <ref type="bibr" target="#b21">(Kwiatkowski et al., 2019)</ref> after removing the ambiguity among questions. It contains general-knowledge questions answerable with Wikipedia contents. ePQA contains product-specific questions from the Amazon website. Testing on ePQA reduces the chance that the model memorizes the knowledge since product information is tail-distributed. MuSiQue is an improved version of HotpotQA <ref type="bibr" target="#b48">(Yang et al., 2018)</ref> after removing potential short cuts. It contains questions requiring multi-hop reasoning, which have to be answered with at least two passages. SciQ contains scientific questions about physics, chemistry, etc. TopioCQA contains questions in multi-turn conversations. Table <ref type="table" target="#tab_0">1 provides</ref>  Hyperparameter When fine-tuning models, we observe that the learning rate can have big impact on the performance. In general for 7B/13B models, full fine-tuning requires a small learning rate (in the scale of 1e-6) while LoRA fine-tuning requires a larger learning rate (in the scale of 1e-4). For 33B models, a small learning rate in the scale of 1e-6 is necessary. Due to the large impact of learning rate, we perform a grid search over [1e-6, 3e-6, 5e-6, 1e-5, 3e-5, 5e-5, 1e-4, 3e-5, 5e-4, 1e-3, 3e-3, 5e-3] for every model fine-tuning in the following section, then choose the checkpoint with the best score. <ref type="foot" target="#foot_3">5</ref>The batch size is fixed as 64 for all runs. The model is fine-tuned for 1 epoch with the best-performing learning rate.</p><p>Prompt We conduct a series of prompt engineering and finalize two prompt templates: Template 4.1 is used when the retrieval is not involved and 4.2 is used when the retrieval is involved. For the ePQA dataset, we add an additional instruction to let the model always start with "yes/no" for binary questions to enable easier evaluation. For the TopiOCQA dataset, we further instruct the LLM to be aware that the question is within a conversation and turns are separated by the &lt;SEP&gt; symbol. Details are in Appendix A. Empirically we find these templates are the best at inducing LLMs to produce answers at the desired format. In order to keep a fair comparison, we use the same set of prompts both when directly prompting the original LLMs, and when fine-tuning them, such that we can quantify how fine-tuning changes the retrieval robustness. Answer the following question with less than 10 words. The context is retrieved information which may or may not be helpful. When the context is unhelpful, answer it with your own knowledge. Question:</p><formula xml:id="formula_2">[Q] Context: [C]</formula><p>Metric We evaluate the model's performance using recall, which indicates the number of words (excluding punctuation) from the gold answer that also appear in the model prediction. The recall metric is averaged across the test samples. This choice is made because LLMs may generate answers that are correct but longer than the concise answers in the original dataset, so using other metrics such as precision or F1 scores can significantly underestimate their performance <ref type="bibr" target="#b1">(Adlakha et al., 2023)</ref>. Empirically we also observe that the recall score correlates the best with human evaluations by manually examining 100 cases from each dataset.</p><p>Evaluation We evaluate the model performance under three scenarios to quantitatively measure the two capabilities of retrieval robustness: (1) when no retrieval is provided; (2) when gold retrieval is provided; and (3) when distracting retrieval is provided. The gold retrieved information is extracted from the original dataset. To acquire the distracting retrieval, we retrieve the top 10 documents from the knowledge sources of each dataset. <ref type="foot" target="#foot_4">6</ref> Subsequently, we consider the document with the lowest recall score with the answer as distracting information. <ref type="foot" target="#foot_5">7</ref>The rationale for selecting from the top-10 DPR results is to align the process with realistic use cases. If the passages are blatantly distracting, it could make it too simplistic for the model to differentiate. We run all model generations with beam search under the beam size of 5.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Results and Analysis</head><p>We evaluate how retrieval robust different LLMs are in three scenatios: when directly prompting the original LLMs without fine-tuning them; when fine-tuning them only on gold context, and when fine-tuning them on mixed gold and distracting context. The results are presented in this order. Full results tables are in Appendix C</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">Without Fine-Tuning</head><p>Figure <ref type="figure" target="#fig_4">2</ref> presents the results of directly prompting original LLMs without fine-tuning when provided with (1) no context, (2) gold context and (3) distracting context.</p><p>Without Context When no context is provided, LLMs often struggle to recall exact answers from their internal knowledge. As expected, larger models generally perform better than smaller ones. While GPT-3.5 and GPT-4 outperform open-source LLMs, their advantage is not substantial. For questions involving tail product knowledge (ePQA) or requiring multi-hop inferences (Musique), GPT-3.5 and GPT-4 face the same challenges as open-source models, limiting their advantages. Notably, most questions in ePQA are binary, allowing models to achieve decent scores through random guessing. As a result, performance on ePQA appears reasonable despite the LLMs' lack of specific product knowledge.</p><p>Capability I When gold context is provided, all LLMs exhibit large improvement across all tasks, demonstrating their remarkable capabilities in extracting the right answers from the retrieved context. As model size increases, Vicuna-series models show more consistent performance improvements. However, for Llama 2-series models, the</p><p>0 20 40 60 80 AmbigQA 0 20 40 60 80 ePQA 0 20 40 60 Musique 0 20 40 60 80 SciQ V ic u n a -7 B V ic u n a -1 3 B V ic u n a -3 3 B L la m a 2 -7 B L la m a 2 -1 3 B G P T 3 .5 G P T -4 0 20 40 60 80 TopioCQA Distraction None Gold Capability II When distracting context is introduced, all LLMs experience a decline in performance compared to having no context at all. However, the decline with distracting context is usually much smaller than the gain from gold context, suggesting that existing LLMs are quite good at ignoring distracting context. 8 The decline also varies across datasets. On datasets with tail knowledge, such as ePQA, the decline is minimal because the original LLM has almost no prior knowledge about specific products. Compared to Capability I, there is a more consistent trend that larger models are more resilient with distracting context, suggesting that model size has a greater impact on the inherent capability for instruction following than on the understanding of additional context information. Surprisingly, powerful closed-source LLMs are even more vulnerable to distracting context, particularly on questions involving common knowledge (Am-bigQA and SciQ). The largest open-source LLM we tested, Vicuna-33B, is comparable to or better than GPT-3.5/4 in terms of performance drop when faced with distracting context. In summary, when directly prompting LLMs, we have the following observations:</p><p>1. In terms of Capability I, open-source LLMs significantly under-performs GPT-3.5/4, especially on challenging tasks with complex question types and knowledge sources.</p><p>2. In terms of Capability II, open-source LLMs can be comparable or better than GPT-3.5/4. Larger models are more resilient with distracting context.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Fine-Tuning on Gold Context</head><p>While directly prompting existing LLMs can showcase remarkable performance, further task-specific fine-tuning is often necessary to fully tailor an LLM for a specific task. In order to see how taskspecific fine-tuning can improve Capability I and II of LLMs, we perform full and LoRA fine-tuning on every task. During fine-tuning, the gold context is provided to teach LLMs to extract answers from the context, a common setup in retrieval-augmented training. Figure <ref type="figure" target="#fig_6">3</ref> depicts the experiment results.</p><p>8 Previous research typically reports larger declines because they did not explicitly instruct the LLM to revert to its own knowledge when the context is unhelpful <ref type="bibr" target="#b49">(Yoran et al., 2024)</ref>.</p><p>20 40 60 80 AmbigQA 40 50 60 70 80 ePQA 20 40 60 Musique 20 40 60 80 SciQ Distraction None Gold 20 40 60 TopioCQA Distraction None Gold Vicuna-7B Llama 2-13B LoRA FT Vicuna-13B GPT-3.5 Full FT Vicuna-33B GPT-4 Llama 2-7B Prompting Without Context Before fine-tuning on gold context, we first analyze the performance change when fine-tuning without context ("None" as in Figure <ref type="figure" target="#fig_6">3</ref>). This can serve as an upper-bound performance for an LLM when the retrieved context is distracting (p(a|q) as in Equation <ref type="formula" target="#formula_1">1</ref>). As observed, fine-tuning without context often results in limited improvement. The only exception is the TopioCQA dataset, likely because the original LLMs struggle to understand the conversational format of the input and require fine-tuning to fully grasp the task format. This supports the superficial alignment hypothesis, which suggests that fine-tuning mainly trains the model to follow task-specific formats rather than adding new knowledge <ref type="bibr" target="#b53">(Zhou et al., 2024)</ref>.</p><p>Capability I When fine-tuning LLMs with gold context, performance often improves significantly in terms of extracting the correct answer from the provided context. The improvement is especially pronounced on the ePQA and TopioCQA datasets, as these tasks are not inherently difficult but re-quire adaptation to specific knowledge sources and conversational questions. On the ePQA dataset, the fine-tuned models can even outperform the closed-source GPT-3.5 and GPT-4 models. After fine-tuning, there is a more consistent trend of larger models performing better, as the variance from prompting formats is reduced. However, all open-source LLMs struggle to further improve on the AmbigQA dataset, even with task-specific fine-tuning, possibly because their initial performance is already high and adding more data alone does not yield significant improvement. Llama 2 models also hit a performance plateau on the Musique dataset. This suggests that task-specific fine-tuning alone may not be sufficient for opensource LLMs to match GPT-3.5 and GPT-4 in Capability I. Additional factors beyond task-specific fine-tuning might be necessary to close this gap. Across all models and datasets, there is no clear advantage of full fine-tuning over LoRA fine-tuning, even though training costs associated with full finetuning are significantly higher.</p><p>Capability II Despite the improvement of Capability I, fine-tuning LLMs only on gold context can mislead them to always rely on the provided context, even when the information is distracting. This can eventually harm Capability II, preventing LLMs from safely falling back to their internal knowledge. As observed in Figure <ref type="figure" target="#fig_6">3</ref>, there is indeed some performance decrease when LLMs are provided with distracting context. The gap between the LLM's probability estimation p(a|q, c) and the ideal upper bound p(a|q) widens. However, unexpectedly, the decrease is often small compared to the big performance boost when provided with gold context, especially on the more challenging ePQA, Musique and TopioCQA datasets. This may be because existing open-source LLMs struggle to handle distracting context on these more difficult datasets, so their initial performance is already close to random, leaving little room for further decline even when fine-tuning only on gold context. On the easier AmbigQA and SciQ datasets, LoRA fine-tuning often results in less performance drop compared to full fine-tuning due to the smaller number of adjustable training parameters. In summary, when fine-tuning LLMs only on gold context, we have the following observations:</p><p>1. Capability I is improved significantly on challenging datasets, but hit a plateau on easier ones, suggesting other factors might be needed to fully close the gap with GPT-3.5/4.</p><p>2. Capability II is decreased mainly on easier datasets, potentially because the original performance on harder datasets with distracting context is already close to random.</p><p>3. LoRA fine-tuning is similar to full fine-tuning in terms of improving Capability I, but better at maintaining capability II. Fine-tuning LLMs solely with gold context can reduce their robustness to distracting context, which are inevitable in real-world retrievalaugmented generation scenarios. Therefore, we further explore whether the retrieval robustness can be improved by mixing distracting context into When the distraction ratio is increased to 50%, LLMs can achieve performance comparable to the upper-bound performance without retrieval.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3">Fine-Tuning on Mixed Context</head><p>the fine-tuning datasets. We experiment with two distraction ratios: 20% and 50%. All distracting context are hard negative samples from the top-10 retrieved contents with dense retrieval to simulate real-case scenarios.</p><p>Capability I Figure <ref type="figure" target="#fig_7">4</ref> illustrates the performance of LLMs when fine-tuning with varying distraction ratios and testing on gold context. The results indicate that different levels of distracting context have little impact on performance. Even when fine-tuned with 50% distracting context (i.e. the training examples with gold context is reduced to half), the models still maintain their performance on gold context. Interestingly, in several instances, especially on challenging datasets such as Musique, augmenting the fine-tuning datasets with more distracting context actually enhances performance on gold context. This suggests that Capabilities I and II are not mutually exclusive, and that incorporating some noisy context during fine-tuning can also be advantageous for Capability I. Regarding the fine-tuning methods, LoRA fine-tuning performs similarly to full fine-tuning, with the only exception being observed on the Musique dataset for the Llama 2-7B model. This is due to the fact that fine-tuning cannot further enhance performance, allowing LoRA to preserve the original model performance to the greatest extent possible.</p><p>Capability II After confirming that mixing distracting context into the fine-tuning dataset will not affect Capability I, we further investigate whether it can benefit Capability II by testing on distracting context. The results are visualized on Figure <ref type="figure" target="#fig_8">5</ref>.</p><p>As can be seen, increasing the distracting ratios steadily improves the performance when provided with distracting context. On the easier AmbigQA, ePQA and SciQ datasets, after LLMs getting used to their input formats, the performance when provided with distracting context can be very close to the performance when no context is provided, i.e. , the model is not affected by the distracting context. This holds true for models of varying sizes, with LoRA fine-tuning performing similarly to full finetuning. On the more challenging datasets, Musique and TopioCQA, despite the steady improvement, there is still some room for growth before the model can be fully robust against distracting context. We hypothesize that the model may require more data to effectively understand longer input sequences, considering that Musique includes multiple context passages and TopioCQA involves an entire conversation as the input question. In summary, when fine-tuning LLMs on a mixture of gold and distracting context, we have the following observations:</p><p>1. Capability I is maintained, or sometimes even enhanced, when the distracting ratio is increased in the fine-tuning data.</p><p>2. Capability II gets improved steadily. On easier datasets with shorter inputs, the model can even achieve complete robustness against distracting context.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Conclusion</head><p>Retrieval robustness is the key to determine the quality of model generations in RAG. In this paper, we conduct an extensive assessment of the "implicit" retrieval robustness of LLMs without explicitly letting models judge the relevance of the retrieved context. Our findings indicate that LLMs are remarkably adept at handling context with varied retrieval accuracy, without needing explicit relevance annotations. By incorporating a certain ratio of distracting context into the fine-tuning dataset, LLMs can maintain their ability to extract correct answers from relevant context while hardly being misled by irrelevant information.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitations</head><p>We aim to perform an extensive evaluation of the implicit retrieval robustness across various LLMs. However, due to resource and time constraint there are several limitations of this paper. First, we select models based only on LLama and LLama-2 with up to 33B parameters. By the time of writing, there have been more advanced and larger open-source models available. The conclusions drawn from this paper, especially the comparison between open-source LLMs and closed-source LLMs might not hold with up-to-date models.</p><p>Second, we choose only datasets with short answers for simplicity of evaluations in this paper. Long answers are also an important research direction and is attracting growing attention. When instructing models to generate more complex long answers, the retrieval robustness of LLMs need to be re-examined.</p><p>Finally, despite conducting a grid search over a wide range of learning rates, it is possible that the optimal configuration lies outside the range we considered. We also did not extensively test results with different batch sizes and data sizes, which could impact model performance in various ways.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Dataset Examples</head><p>Table <ref type="table" target="#tab_1">2</ref> shows example snippets from each of the datasets used in this paper. Musique contains at least 2 gold passages per question as all questions require multi-hop inferences. The other datasets contain only 1 gold passage per question. When sampling distracting passages, the numper of distracting passages is the same as that of gold passages.</p><p>The original ePQA dataset contains onesentence answers. In order to extract short answers from them, we apply ChatGPT to extract a short span from each annotated answer. If ChatGPT judges the annotated answer cannot answer the question, then we discard this example. Namely, we only keep examples that ChatGPT thinks as valid answers, so that we can reduce the chance of noisy annotations in the original dataset. For the test data, in order to catch diverse answers per question, we manually annotated other possible spans apart from the one generated by ChatGPT.</p><p>When evaluating model generations, a generation is considered correct as long as it matches any one of the gold answers. We report the maximum recall scores with all possible gold answers.</p><p>For all datasets, we select ∼3000 samples as the training data and 200 samples as the test data. Since our purpose is not to achieve state-of-the-art performances but rather to inspect the effects of retrieval-augmented generation, we use this data split to reduce running time. <ref type="table">Table 3</ref>, <ref type="table">4</ref>, <ref type="table">5</ref> and <ref type="table">6</ref> show the full results presented in this paper. We only reported the results with the best tried learning rate.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C Result Tables</head><p>We run all experiments on 8 Nvidia A100 GPUs. Each example is cut off with 1024 sub-tokens. On each dataset, we train the model for one epoch and select the run with the best learning rate. Each training takes about 10 GPU hours for a 7B model, 15 hours for a 13B model and 30 hours for a 33B model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Dataset</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Question</head><p>Context Answer AmbigQA when did the first star wars movie come out, in less than 32 theaters?</p><p>"star wars" debuted on wednesday, may 25, 1977, in fewer than 32 theaters, and eight more on thursday and friday. kurtz said ... <ref type="bibr">['may 25, 1977','25th may, 1977','05/25/1977']</ref> ePQA how much do these weigh? item_weight: { unit:ounces, normalized_value:{ unit:pounds, value:0.34 }, value:5.4 } <ref type="bibr">['0.34 pounds', '5.4</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>ounces']</head><p>Musique who is the father of the creator of the white rabbit?</p><p>["the white rabbit is a fictional character in lewis carroll's book ...", "charles dodgson was born in 1800 in hamilton ..   Table 3: Prompting Performance</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Difference between explicitly and implicitly mod-</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>a summary of used datasets. Dataset examples are in Appendix B.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><figDesc>Prompt 4.1: Instruction w/o Retrieval Answer the following question with less than 10 words. Question: [Q] Prompt 4.2: Instruction w. Retrieval</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Performance by Prompting different LLMs when provided with no context (None), gold context (Gold) and distracting context (Distract).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Performance by fine-tuning LLMs with and without context. When fine-tuning without context, we also test without context (None). When fine-tuning with context, we use only gold context when fine-tuning, then testing on gold and distracting context (Gold and Distraction).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Fine-tuning LLMs with varied distraction ratios and then testing on gold context. Incorporating distracting context during fine-tuning does not compromise performance when provided with gold context.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><head>Figure 5 :</head><label>5</label><figDesc>Figure5: Fine-tuning LLMs with varying distraction ratios (0%, 20% and 50%) and then testing on distracting contexts. Incorporating distracting context during fine-tuning significantly enhances retrieval robustness in distracting contexts. When the distraction ratio is increased to 50%, LLMs can achieve performance comparable to the upper-bound performance without retrieval.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_9"><figDesc>reactions and physical changes can release absorb heat. a change that releases heat is called what? matter undergoing chemical reactions and physical changes can release or absorb heat. a change that releases heat is called an ...['exothermic process']TopioCQA where do guinea pigs come from in the wild [sep] they originated in the andes of south america [sep] how do they look like [sep] guinea pigs are large for rodents; the common pet breeds weigh between when full grown and measure between in length [sep] which club is associated with it cavy clubs and associations dedicated to the showing and breeding of guinea pigs have been established worldwide. the american cavy breeders association, an adjunct to the american rabbit breeders' association, is the governing body in the united states and canada. the british cavy council ...</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_10"><figDesc>['cavy clubs dedicated to the showing and breeding of guinea pigs have been established worldwide.', 'cavy clubs', 'the american cavy breeders association, british cavy council and australian national cavy council', 'cavy clubs -the american cavy breeders association']</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Datasets used in this paper. We choose 5 datasets with diverse question types and knowledge sources.</figDesc><table><row><cell>Dataset</cell><cell>Question</cell><cell>Knowledge Source</cell></row><row><cell cols="2">AmbigQA General-Knowledge</cell><cell>Wikipedia</cell></row><row><cell>ePQA</cell><cell>Product-Specific</cell><cell>Amazon</cell></row><row><cell>Musique</cell><cell>Multi-Hop</cell><cell>Wikipedia</cell></row><row><cell>SciQ</cell><cell>Scientific</cell><cell>TextBook</cell></row><row><cell>TopioCQA</cell><cell>Conversational</cell><cell>Wikipedia</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 :</head><label>2</label><figDesc>Dataset Examples. Musique contains at least 2 passages per question as all questions require multi-hop inferences.The other datasets contain only 1 passage per question.</figDesc><table><row><cell>Dataset</cell><cell cols="8">Retrieval Vicuna-7B Vicuna-13B Vicuna-33B Llama 2-7B Llama 2-13B GPT3.5 GPT4</cell></row><row><cell></cell><cell>None</cell><cell>32.75</cell><cell>41.78</cell><cell>57.59</cell><cell>37.22</cell><cell>45.78</cell><cell>57.69</cell><cell>71.07</cell></row><row><cell>AmbigQA</cell><cell>Gold</cell><cell>66.35</cell><cell>67.56</cell><cell>74.76</cell><cell>68.40</cell><cell>80.95</cell><cell>85.30</cell><cell>89.98</cell></row><row><cell></cell><cell>Distract</cell><cell>22.24</cell><cell>30.02</cell><cell>53.25</cell><cell>33.52</cell><cell>41.20</cell><cell>41.93</cell><cell>52.50</cell></row><row><cell></cell><cell>None</cell><cell>42.21</cell><cell>47.84</cell><cell>49.71</cell><cell>45.17</cell><cell>45.35</cell><cell>54.83</cell><cell>55.27</cell></row><row><cell>ePQA</cell><cell>Gold</cell><cell>50.00</cell><cell>62.53</cell><cell>63.30</cell><cell>61.44</cell><cell>51.08</cell><cell>79.78</cell><cell>77.96</cell></row><row><cell></cell><cell>Distract</cell><cell>39.36</cell><cell>45.80</cell><cell>45.62</cell><cell>44.89</cell><cell>42.91</cell><cell>50.70</cell><cell>47.51</cell></row><row><cell></cell><cell>None</cell><cell>11.10</cell><cell>11.21</cell><cell>19.75</cell><cell>15.22</cell><cell>19.69</cell><cell>12.80</cell><cell>22.23</cell></row><row><cell>Musique</cell><cell>Gold</cell><cell>39.10</cell><cell>36.60</cell><cell>43.65</cell><cell>43.63</cell><cell>40.46</cell><cell>58.56</cell><cell>74.11</cell></row><row><cell></cell><cell>Distract</cell><cell>4.58</cell><cell>6.24</cell><cell>12.80</cell><cell>10.48</cell><cell>10.60</cell><cell>7.25</cell><cell>16.71</cell></row><row><cell></cell><cell>None</cell><cell>45.92</cell><cell>54.75</cell><cell>61.92</cell><cell>50.75</cell><cell>53.33</cell><cell>63.67</cell><cell>71.00</cell></row><row><cell>SciQ</cell><cell>Gold</cell><cell>69.33</cell><cell>73.75</cell><cell>64.75</cell><cell>66.83</cell><cell>64.08</cell><cell>80.33</cell><cell>90.25</cell></row><row><cell></cell><cell>Distract</cell><cell>29.92</cell><cell>39.42</cell><cell>54.08</cell><cell>39.75</cell><cell>53.00</cell><cell>51.25</cell><cell>61.50</cell></row><row><cell></cell><cell>None</cell><cell>29.91</cell><cell>30.99</cell><cell>35.16</cell><cell>30.52</cell><cell>32.79</cell><cell>41.54</cell><cell>57.38</cell></row><row><cell>TopioCQA</cell><cell>Gold</cell><cell>26.87</cell><cell>30.34</cell><cell>50.19</cell><cell>34.38</cell><cell>35.56</cell><cell>64.14</cell><cell>76.44</cell></row><row><cell></cell><cell>Distract</cell><cell>19.75</cell><cell>22.13</cell><cell>28.98</cell><cell>22.65</cell><cell>21.95</cell><cell>30.87</cell><cell>55.65</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_0"><p>Some works take a conservative strategy of refraining from answering if the retrieved context is unhelpful. However, this limits the model's potential to the accuracy of the retriever and underutilizes LLMs' internal knowledge<ref type="bibr" target="#b24">(Li et al., 2023)</ref>.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>Annotations can be circumvented by developing complex self-supervision or weak-supervision algorithms<ref type="bibr" target="#b44">(Wang et al., 2024)</ref>, but these algorithms often come with additional costs, such as increased computations or suboptimal performance.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_2"><p>Depending on the granularity of the retrieval, the context can be in the unit of documents, passages, sentences, entities, etc(Shen et al., 2022c).</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_3"><p>As the learning rate increases, the behavior of the curve varies between full FT and LoRA FT. In full FT, the model performance initially improves before declining. The optimal rate falls somewhere in between. In LoRA FT, the model performance fluctuates, showing two cycles of improvement and decline, with the optimal rate located at one of the peaks.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_4"><p>We adopt a dense passage retriever(Karpukhin et al.,  2020, DPR)  trained on each knowledge source.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="7" xml:id="foot_5"><p>Most passages selected by this way have a recall score of 0 and only ∼ 2% of them have recall scores &gt; 0.5, so we can consider they are almost distracting information.</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Ethics Statement</head><p>Our work's sole aim is to study the implicit retrieval robustness of retrieval-augmented large language models. We expect minimal social risks to be associated with our efforts. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Prompts used for LLMs</head></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">Josh</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Adler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lama</forename><surname>Ahmad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilge</forename><surname>Akkaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florencia</forename><surname>Leoni Aleman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Janko</forename><surname>Altenschmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Altman</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.08774</idno>
+		<title level="m">Shyamal Anadkat, et al. 2023. Gpt-4 technical report</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Evaluating correctness and faithfulness of instructionfollowing models for question answering</title>
+		<author>
+			<persName><forename type="first">Parishad</forename><surname>Vaibhav Adlakha</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Behnamghader</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Han</forename><surname>Xing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siva</forename><surname>Meade</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Reddy</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.16877</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Topiocqa: Open-domain conversational question answering with topic switching</title>
+		<author>
+			<persName><forename type="first">Shehzaad</forename><surname>Vaibhav Adlakha</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Dhuliawala</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="page" from="468" to="483" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note>Kaheer Suleman, Harm de Vries, and Siva Reddy</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Focusqa: Opendomain question answering with a context in focus</title>
+		<author>
+			<persName><forename type="first">Gianni</forename><surname>Barlacchi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ivano</forename><surname>Lauriola</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alessandro</forename><surname>Moschitti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Del Tredici</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thuy</forename><surname>Vu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bill</forename><surname>Byrne</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adrià</forename><surname>De</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gispert</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2022</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="5195" to="5208" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">Canyu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Shu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.05656</idno>
+		<title level="m">Combating misinformation in the age of llms: Opportunities and challenges</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Vicuna: An opensource chatbot impressing gpt-4</title>
+		<author>
+			<persName><forename type="first">Wei-Lin</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuohan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zi</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhanghao</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghao</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ion</forename><surname>Stoica</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><forename type="middle">P</forename><surname>Xing</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>with 90%* chatgpt quality</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Palm: Scaling language modeling with pathways</title>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gaurav</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Barham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyung</forename><forename type="middle">Won</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Gehrmann</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">24</biblScope>
+			<biblScope unit="issue">240</biblScope>
+			<biblScope unit="page" from="1" to="113" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">Antonia</forename><surname>Creswell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Murray</forename><surname>Shanahan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2208.14271</idno>
+		<title level="m">Faithful reasoning using large language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Question rewriting for open-domain conversational qa: Best practices and limitations</title>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Del Tredici</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianni</forename><surname>Barlacchi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weiwei</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adrià</forename><surname>De</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gispert</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th ACM International Conference on Information &amp; Knowledge Management</title>
+		<meeting>the 30th ACM International Conference on Information &amp; Knowledge Management</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="2974" to="2978" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Del Tredici</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianni</forename><surname>Barlacchi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bill</forename><surname>Byrne</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adrià</forename><surname>De</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gispert</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:2204.03930</idno>
+		<title level="m">From rewriting to remembering: Common ground for conversational qa models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Time-aware language models as temporal knowledge bases</title>
+		<author>
+			<persName><forename type="first">Bhuwan</forename><surname>Dhingra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeremy</forename><forename type="middle">R</forename><surname>Cole</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julian</forename><surname>Martin Eisenschlos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Gillick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Eisenstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><forename type="middle">W</forename><surname>Cohen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="page" from="257" to="273" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Ragged edges: The doubleedged sword of retrieval-augmented chatbots</title>
+		<author>
+			<persName><forename type="first">Philip</forename><surname>Feldman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><forename type="middle">R</forename><surname>Foulds</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shimei</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Osbert</forename><surname>Bastani</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.01193</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yunfan</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yun</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyu</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kangxiang</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinliu</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxi</forename><surname>Bi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiawei</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haofen</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2312.10997</idno>
+		<title level="m">Retrieval-augmented generation for large language models: A survey</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<author>
+			<persName><forename type="first">Amelia</forename><surname>Glaese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nat</forename><surname>Mcaleese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maja</forename><surname>Trębacz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Aslanides</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vlad</forename><surname>Firoiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Ewalds</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maribeth</forename><surname>Rauh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laura</forename><surname>Weidinger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Chadwick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phoebe</forename><surname>Thacker</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2209.14375</idno>
+		<title level="m">Improving alignment of dialogue agents via targeted human judgements</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Retrieval augmented language model pre-training</title>
+		<author>
+			<persName><forename type="first">Kelvin</forename><surname>Guu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zora</forename><surname>Tung</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International conference on machine learning</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="3929" to="3938" />
+		</imprint>
+	</monogr>
+	<note>Panupong Pasupat, and Mingwei Chang</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Few-shot learning with retrieval augmented language models</title>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maria</forename><surname>Lomeli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucas</forename><surname>Hosseini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Schick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jane</forename><surname>Dwivedi-Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Armand</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Riedel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edouard</forename><surname>Grave</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2208.03299</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<author>
+			<persName><forename type="first">Soyeong</forename><surname>Jeong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinheon</forename><surname>Baek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sukmin</forename><surname>Cho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sung</forename><forename type="middle">Ju</forename><surname>Hwang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jongc</forename><surname>Park</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.14403</idno>
+		<title level="m">Adaptive-rag: Learning to adapt retrieval-augmented large language models through question complexity</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Large language models struggle to learn long-tail knowledge</title>
+		<author>
+			<persName><forename type="first">Nikhil</forename><surname>Kandpal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haikang</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Wallace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="15696" to="15707" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Dense passage retrieval for opendomain question answering</title>
+		<author>
+			<persName><forename type="first">Vladimir</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barlas</forename><surname>Oguz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sewon</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ledell</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergey</forename><surname>Edunov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danqi</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen-Tau</forename><surname>Yih</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="6769" to="6781" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">A global model for concept-to-text generation</title>
+		<author>
+			<persName><forename type="first">Ioannis</forename><surname>Konstas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mirella</forename><surname>Lapata</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Artificial Intelligence Research</title>
+		<imprint>
+			<biblScope unit="volume">48</biblScope>
+			<biblScope unit="page" from="305" to="346" />
+			<date type="published" when="2013">2013</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Natural questions: a benchmark for question answering research</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Kwiatkowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jennimaria</forename><surname>Palomaki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olivia</forename><surname>Redfield</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Collins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ankur</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Alberti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danielle</forename><surname>Epstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="page" from="453" to="466" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Retrieval-augmented generation for knowledge-intensive nlp tasks</title>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ethan</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aleksandra</forename><surname>Piktus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vladimir</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heinrich</forename><surname>Küttler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen-Tau</forename><surname>Yih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tim</forename><surname>Rocktäschel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="9459" to="9474" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<author>
+			<persName><forename type="first">Daliang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ankit</forename><surname>Singh Rawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manzil</forename><surname>Zaheer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michal</forename><surname>Lukasik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andreas</forename><surname>Veit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felix</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sanjiv</forename><surname>Kumar</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2211.05110</idno>
+		<title level="m">Large language models with controllable working memory</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<author>
+			<persName><forename type="first">Shuo</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sangdon</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Insup</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Osbert</forename><surname>Bastani</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.04642</idno>
+		<title level="m">Trac: Trustworthy retrieval augmented chatbot</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hongyin</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yung-Sung</forename><surname>Chuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>Gong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianhua</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoon</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xixin</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danny</forename><surname>Fox</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.15225</idno>
+		<title level="m">Helen Meng, and James Glass. 2023. Sail: Searchaugmented instruction learning</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">Retrieval helps or hurts? a deeper dive into the efficacy of retrieval augmentation to language models</title>
+		<author>
+			<persName><forename type="first">Seiji</forename><surname>Maekawa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hayate</forename><surname>Iso</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sairam</forename><surname>Gurajada</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikita</forename><surname>Bhutani</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.13492</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Ambigqa: Answering ambiguous open-domain questions</title>
+		<author>
+			<persName><forename type="first">Sewon</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julian</forename><surname>Michael</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannaneh</forename><surname>Hajishirzi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="5783" to="5797" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Step-by-step: Separating planning from realization in neural data-to-text generation</title>
+		<author>
+			<persName><forename type="first">Amit</forename><surname>Moryossef</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Goldberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ido</forename><surname>Dagan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<title level="s">Long and Short Papers</title>
+		<meeting>the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="2267" to="2277" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">Check your facts and try again: Improving large language models with external knowledge and automated feedback</title>
+		<author>
+			<persName><forename type="first">Baolin</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michel</forename><surname>Galley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengcheng</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yujia</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiuyuan</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lars</forename><surname>Liden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhou</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhu</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.12813</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yifu</forename><surname>Qiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yftah</forename><surname>Ziser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anna</forename><surname>Korhonen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Edoardo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shay</forename><forename type="middle">B</forename><surname>Ponti</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Cohen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.08398</idno>
+		<title level="m">Are large language models temporally grounded? arXiv preprint</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ori</forename><surname>Ram</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Levine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Itay</forename><surname>Dalmedigos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dor</forename><surname>Muhlgay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amnon</forename><surname>Shashua</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Leyton-Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Shoham</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.00083</idno>
+		<title level="m">-context retrieval-augmented language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">Investigating the factual knowledge boundary of large language models with retrieval augmentation</title>
+		<author>
+			<persName><forename type="first">Ruiyang</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuhao</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yingqi</forename><surname>Qu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wayne</forename><forename type="middle">Xin</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hua</forename><surname>Hao Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ji-Rong</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haifeng</forename><surname>Wen</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.11019</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Bill Byrne, and Adrià de Gispert. 2022a. Product answer generation from heterogeneous sources: A new benchmark and best practices</title>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianni</forename><surname>Barlacchi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Del Tredici</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weiwei</forename><surname>Cheng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Fifth Workshop on e-Commerce and NLP (ECNLP 5)</title>
+		<meeting>the Fifth Workshop on e-Commerce and NLP (ECNLP 5)</meeting>
+		<imprint>
+			<biblScope unit="page" from="99" to="110" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">2022b. semipqa: A study on product question answering over semistructured data</title>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianni</forename><surname>Barlacchi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Del Tredici</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weiwei</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adrià</forename><surname>De</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gispert</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Fifth Workshop on e-Commerce and NLP (ECNLP 5)</title>
+		<meeting>the Fifth Workshop on e-Commerce and NLP (ECNLP 5)</meeting>
+		<imprint>
+			<biblScope unit="page" from="111" to="120" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">Neural data-to-text generation via jointly learning the segmentation and correspondence</title>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ernie</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hui</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cheng</forename><surname>Niu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dietrich</forename><surname>Klakow</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="7155" to="7165" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<title level="m" type="main">Bill Byrne, and Adrià de Gispert. 2022c. Low-resource dense retrieval for opendomain question answering: A comprehensive survey</title>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Svitlana</forename><surname>Vakulenko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Del Tredici</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianni</forename><surname>Barlacchi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2208.03197</idno>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<author>
+			<persName><forename type="first">Weijia</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sewon</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michihiro</forename><surname>Yasunaga</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Minjoon</forename><surname>Seo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rich</forename><surname>James</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen-Tau</forename><surname>Yih</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.12652</idno>
+		<title level="m">Replug: Retrievalaugmented black-box language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<monogr>
+		<title level="m" type="main">Blenderbot 3: a deployed conversational agent that continually learns to responsibly engage</title>
+		<author>
+			<persName><forename type="first">Kurt</forename><surname>Shuster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mojtaba</forename><surname>Komeili</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Da</forename><surname>Ju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><forename type="middle">Michael</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Roller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Megan</forename><surname>Ung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Moya</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kushal</forename><surname>Arora</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joshua</forename><surname>Lane</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2208.03188</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">Rocbert: Robust chinese bert with multimodal contrastive pretraining</title>
+		<author>
+			<persName><forename type="first">Hui</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weiwei</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhou</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tuo</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiarui</forename><surname>Fang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="921" to="931" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hui</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Houjin</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuwen</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zilin</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2209.10372</idno>
+		<title level="m">Welm: A well-read pre-trained language model for chinese</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amjad</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolay</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prajjwal</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shruti</forename><surname>Bhosale</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Open foundation and fine-tuned chat models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">2</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Musique: Multihop questions via single-hop question composition</title>
+		<author>
+			<persName><forename type="first">Harsh</forename><surname>Trivedi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niranjan</forename><surname>Balasubramanian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tushar</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Sabharwal</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="page" from="539" to="554" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<monogr>
+		<author>
+			<persName><forename type="first">Cunxiang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoze</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuanhao</forename><surname>Yue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangru</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianhang</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cheng</forename><surname>Jiayang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunzhi</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenyang</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuming</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zehan</forename><surname>Qi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.07521</idno>
+		<title level="m">Survey on factuality in large language models: Knowledge, retrieval and domain-specificity</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<monogr>
+		<title level="m" type="main">Self-dc: When to retrieve and when to generate? self divide-andconquer for compositional unknown questions</title>
+		<author>
+			<persName><forename type="first">Hongru</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boyang</forename><surname>Xue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baohang</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianhua</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cunxiang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guanhua</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huimin</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kam-Fai</forename><surname>Wong</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.13514</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Crowdsourcing multiple choice science questions</title>
+		<author>
+			<persName><forename type="first">Johannes</forename><surname>Welbl</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nelson</forename><forename type="middle">F</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matt</forename><surname>Gardner</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 3rd Workshop on Noisy Usergenerated Text</title>
+		<meeting>the 3rd Workshop on Noisy Usergenerated Text</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="94" to="106" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">A critical evaluation of evaluations for long-form question answering</title>
+		<author>
+			<persName><forename type="first">Fangyuan</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yixiao</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohit</forename><surname>Iyyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eunsol</forename><surname>Choi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="3225" to="3245" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<monogr>
+		<title level="m" type="main">List-aware reranking-truncation joint model for search and retrieval-augmented generation</title>
+		<author>
+			<persName><forename type="first">Shicheng</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liang</forename><surname>Pang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huawei</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xueqi</forename><surname>Cheng</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.02764</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">HotpotQA: A dataset for diverse, explainable multi-hop question answering</title>
+		<author>
+			<persName><forename type="first">Zhilin</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Qi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saizheng</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoshua</forename><surname>Bengio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Cohen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruslan</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D18-1259</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Brussels, Belgium</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="2369" to="2380" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<monogr>
+		<title level="m" type="main">Making retrieval-augmented language models robust to irrelevant context. ICLR</title>
+		<author>
+			<persName><forename type="first">Tomer</forename><surname>Ori Yoran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ori</forename><surname>Wolfson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Ram</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Berant</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">2023a. Generate rather than retrieve: Large language models are strong context generators</title>
+		<author>
+			<persName><forename type="first">Wenhao</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Iter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuohang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yichong</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mingxuan</forename><surname>Ju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Sanyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenguang</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meng</forename><surname>Jiang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<monogr>
+		<author>
+			<persName><forename type="first">Wenhao</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongming</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoman</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kaixin</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongwei</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dong</forename><surname>Yu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.09210</idno>
+		<title level="m">Chain-ofnote: Enhancing robustness in retrieval-augmented language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<monogr>
+		<author>
+			<persName><forename type="first">Tianjun</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Shishir</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Patil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matei</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ion</forename><surname>Zaharia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">E</forename><surname>Stoica</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Gonzalez</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.10131</idno>
+		<title level="m">Raft: Adapting language model to domain specific ra</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<analytic>
+		<title level="a" type="main">Lima: Less is more for alignment</title>
+		<author>
+			<persName><forename type="first">Chunting</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengfei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Puxin</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Srinivasan</forename><surname>Iyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiao</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuning</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhe</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Avia</forename><surname>Efrat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ping</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lili</forename><surname>Yu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page">36</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

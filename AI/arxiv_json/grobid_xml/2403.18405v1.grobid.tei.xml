@@ -1,0 +1,952 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Leveraging Large Language Models for Relevance Judgments in Legal Case Retrieval</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-03-27">27 Mar 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Shengjie</forename><surname>Ma</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Chong</forename><surname>Chen</surname></persName>
+							<email>chenchong55@huawei.com</email>
+						</author>
+						<author>
+							<persName><forename type="first">Qi</forename><surname>Chu</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Jiaxin</forename><surname>Mao</surname></persName>
+							<email>maojiaxin@gmail.com</email>
+						</author>
+						<author>
+							<persName><surname>Leveraging Large</surname></persName>
+						</author>
+						<author>
+							<affiliation key="aff0">
+								<orgName type="department">Gaoling School of Artificial Intelligence</orgName>
+								<orgName type="institution">Renmin University of China Beijing</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff1">
+								<orgName type="institution">Huawei Cloud BU Beijing</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff2">
+								<orgName type="department">Gaoling School of Artificial Intelligence</orgName>
+								<orgName type="institution">Beijing Normal University Beijing</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff3">
+								<orgName type="department">Conference acronym &apos;XX</orgName>
+								<orgName type="institution">Renmin University of China Beijing</orgName>
+								<address>
+									<postCode>03-05 2018</postCode>
+									<settlement>June</settlement>
+									<region>Woodstock NY</region>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Leveraging Large Language Models for Relevance Judgments in Legal Case Retrieval</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-03-27">27 Mar 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">106F2A5AA798252DB33827A5557D649C</idno>
+					<idno type="arXiv">arXiv:2403.18405v1[cs.AI]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:36+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Large Language Models</term>
+					<term>Data Annotation</term>
+					<term>Legal Case Retrieval</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Collecting relevant judgments for legal case retrieval is a challenging and time-consuming task. Accurately judging the relevance between two legal cases requires a considerable effort to read the lengthy text and a high level of domain expertise to extract Legal Facts and make juridical judgments. With the advent of advanced large language models, some recent studies have suggested that it is promising to use LLMs for relevance judgment. Nonetheless, the method of employing a general large language model for reliable relevance judgments in legal case retrieval is yet to be thoroughly explored. To fill this research gap, we devise a novel few-shot workflow tailored to the relevant judgment of legal cases. The proposed workflow breaks down the annotation process into a series of stages, imitating the process employed by human annotators and enabling a flexible integration of expert reasoning to enhance the accuracy of relevance judgments. By comparing the relevance judgments of LLMs and human experts, we empirically show that we can obtain reliable relevance judgments with the proposed workflow. Furthermore, we demonstrate the capacity to augment existing legal case retrieval models through the synthesis of data generated by the large language model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>CCS CONCEPTS</head><p>• Information systems → Specialized information retrieval.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">INTRODUCTION</head><p>Legal case retrieval (LCR) is a critical component of modern legal systems, for ensuring fairness and justice. It enables legal professionals to find relevant cases related to their current cases. According to "Guiding Opinions of the Supreme People's Court of China on Unified Legal Application and Strengthening Case Retrieval": the term "similar cases" refers to cases that share similarities in basic facts, points of dispute, issues of legal application, and other aspects with the pending case; when the pending case lacks clear judicial rules or has not yet formed unified judicial rules, case retrieval for similar cases should be conducted.</p><p>Many practitioners still rely on keyword-based retrieval systems when searching for similar cases. However, this approach is cumbersome, has a steep learning curve, and offers low efficiency and accuracy. The researchers have made extensive attempts at the LCR task. BERT-PLI <ref type="bibr" target="#b17">[18]</ref> models the relevance by aggregating paragraph-level interactions of case pairs. SAILER <ref type="bibr" target="#b7">[8]</ref> aims to maximize the utilization of information in annotated data. Specifically, it utilizes an encoder-decoder architecture for pre-training, which encodes the facts into vectors and uses a decoder to re-construct the vectors to the original decisions and reasoning. In addition, Wei et al. <ref type="bibr" target="#b24">[25]</ref> propose IOT-Match, which learns to find rationales from paired legal cases based on semantics and legal elements of sentences, with the assistance of numerous expert-annotated interpretable relevance labels. Despite the promising results of these models on specific test sets, they still rely heavily on extensively high-quality annotated data. Owing to the scarcity of annotated data, a notable concern arises regarding the limited generalizability of these models across diverse data.</p><p>These concerns highlight the role of a more reliable and valid method to collect the legal relevance annotations, which is vital not only for the evaluation of models but also for the training of more sophisticated models. However, to judge relevance, one necessitates "Minor Assault" vs "Minor Injury" "轻伤" vs "轻微伤"</p><p>Minor Assault: During a dispute at the workplace, Zhang Wei pushed Li Ming forcefully. Li Ming fell and broke his arm, requiring hospitalization and several weeks of recovery. The medical examination confirmed the injury as a minor injury.</p><p>Minor Injury: During a company teambuilding exercise, Wang Jie and Li Xin got into a verbal altercation that turned physical.</p><p>Wang Jie pushed Li Xin, who fell and sustained a sprained ankle and minor bruises. The hospital classified Li Xin's injuries as slight injuries.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>轻伤</head><p>: 在⼯作场所的⼀次争执中，张伟猛推李 明，导致李明跌倒，⼿臂⻣折，需要住院治 疗，恢复数周。医学鉴定确认该伤害为中国 刑法标准下的轻伤。 轻微伤: 在公司团建活动中，王杰与李欣发⽣ ⼝⻆，随后演变成肢体冲突。王杰推搡李 欣，导致李欣踝关节扭伤和轻微擦伤。医院 将李欣的伤害分类为轻微伤，仅需基本医疗 处理和数⽇休息</p><p>"Minor Assault" vs "Slight Assault" "轻伤" vs "轻微伤" Despite the words "轻微" and "轻" are synonyms that both denote a low degree, when combined with "伤" (which represents injury or harm in Chinese), into terminologies "轻微伤" and "轻伤", they carry distinct legal meanings and consequences. This distinction is particularly pronounced in languages of an isolating grammatical structure like Chinese.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Slight Assault</head><p>Figure <ref type="figure">1</ref>: An example of a challenge of legal relevance annotation.</p><p>substantial domain expertise and a significant effort to comprehend lengthy texts <ref type="bibr" target="#b18">[19]</ref>. This means that manual annotations require much more complex preliminary instructions for annotators, leading to higher learning effort, greater demands on their abilities, and difficulties in expanding the scale of annotated data. In particular, the major challenges in legal cases relevance annotation are threefold: 1. Expertise-intensive: The requirement for high-level domain knowledge for accurate annotation, including the intrinsic connection between the factual scenario and the corresponding judicial interpretation, and the interplay of objective conduct and subjective attitudes in shaping the ultimate legal conclusion. 2.</p><p>Lengthy-text: The query and candidates often contain thousands of words. 3. Nuance-sensitive: As shown in Figure <ref type="figure">1</ref>, besides a comprehensive understanding of the overall context, sensitivity to nuances in context and terms is equally important. Because such minor distinctions can significantly impact judicial interpretations and decisions. E.g., "homicide" vs "manslaughter", "minor injury" vs "minor assault", and "robbery" and "Theft". (Please refer to Section 3.1 Relevance part for further details of legal relevance).</p><p>Existing work <ref type="bibr" target="#b4">[5,</ref><ref type="bibr" target="#b20">21]</ref> has shown that the annotation capabilities of large language models (LLMs) in general NLP tasks can rival those of crowd workers. Most efforts often involved general relevance or direct relevance signals, like question-answering, and text classification <ref type="bibr" target="#b5">[6,</ref><ref type="bibr" target="#b19">20]</ref>. Since relevance labels in legal cases are far more complicated as mentioned earlier, our major research question is whether LLM can perform relevance annotation in the legal field. Although researchers have attempted to build legal domain-specific LLMs such as Chatlaw <ref type="bibr" target="#b2">[3]</ref> and LawGPT <ref type="bibr" target="#b9">[10]</ref>, they are primarily finetuned for general legal Q&amp;A tasks; moreover, due to limitations in parameters and training data volume, their understanding and reasoning capabilities are inferior to general LLMs like GPT-3.5, making it hard to employ them for processing long-text content such as legal case annotation.</p><p>In this work, we will focus on developing an automatic relevance annotation method for legal case retrieval. Instead of utilizing or building specialized LLMs, which carry many serious constraints in cost and capabilities (Please refer to the next section for details), we employ one of the most powerful general LLMs, GPT-3.5, for domain annotation. To take advantage of the understanding and reasoning capabilities of the general LLM, we instruct it step-by-step <ref type="bibr" target="#b24">[25]</ref> with minimal expert guidance. As a result, our approach can activate domain-specific knowledge within the LLM and then it can annotate relevance to align with the criteria used by experts when making judgments. Specifically, we address the challenge of Lengthy-text by decomposing the annotation process into sub-progresses, including distinct views in facts extractions and relevance annotations. In each sub-process, we elaborate expert's reasoning process as instructions to ease the Expertise-Intensive challenge and mitigate the Nuance-Sensitivity issue. In addition, we employ adaptive retrieval of effective demonstrations to further tackle the challenge of Expertise-Intensive. Given a group of unlabeled legal cases, we also designed a strategy for efficiently collecting possible positive case pairs. Through empirical experiments, our method demonstrates a high level of consistency with human labels. Furthermore, when applying the generated synthetic data for downstream model fine-tuning, we observed a significant improvement in performance on case retrieval tasks, indirectly validating the effectiveness of our approach.</p><p>We summarize the major contributions of the paper as follows:</p><p>• We design an automatic workflow to leverage a general LLM to make relevance judgments for legal cases. To the best of our knowledge, this is the first attempt at automated legal case relevance annotation. • We evaluate and analyze the quality of automatic relevance annotations by comparing them with expert annotations. Empirical experiments demonstrate that our approach can achieve high consistency with expert annotations. • We use the proposed method to generate a synthetic dataset, which can be used to further fine-tune legal case retrieval models, resulting in a significant performance improvement.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">RELATED WORKS 2.1 Pre-trained Language Models (PLMs) in Legal case retrieval</head><p>Pre-trained Language Models (PLMs) like BERT <ref type="bibr" target="#b3">[4]</ref>, GPT-2 <ref type="bibr" target="#b6">[7]</ref>, and RoBERTa <ref type="bibr" target="#b8">[9]</ref> have set new standards in a variety of NLP tasks. These models are trained on vast corpora to learn linguistic patterns and can be fine-tuned on specific tasks. The strength of PLMs lies in their ability to understand context, making them effective for tasks ranging from sentiment analysis to machine translation. However, in the legal domain such as legal case retrieval, general PLMs still struggle with the complex nuances and intensive background domain knowledge of legal jargon and may produce biased or asymmetric predictions. Additionally, legal documents typically consist of thousands of tokens, far exceeding the length that mainstream PLMs can handle <ref type="bibr" target="#b25">[26]</ref>. Researchers are dedicated to designing specialized models <ref type="bibr" target="#b1">[2,</ref><ref type="bibr" target="#b7">8,</ref><ref type="bibr" target="#b17">18,</ref><ref type="bibr" target="#b25">26]</ref> tailored to legal case matching, underscoring the limitations of generic PLMs in accurately interpreting and classifying extensive legal content. Large-scale Language Models (LLMs) are an extension of the PLM concept but on a much grander scale, such as GPT4 <ref type="bibr" target="#b13">[14]</ref> and LLaMa <ref type="bibr" target="#b21">[22]</ref>. With billions or even trillions of parameters, LLMs are designed to understand and generate human-like text with little to no fine-tuning required for specific tasks, showing significant potential in various fields, including law.</p><p>Although researchers have attempted to train domain-specific LLMs for the legal field, such as Chatlaw <ref type="bibr" target="#b2">[3]</ref>, LawGPT <ref type="bibr" target="#b9">[10]</ref>, and others, there are still several drawbacks in directly training a dedicated large language model for this domain: 1. The process requires a substantial amount of high-quality data and expensive computational resources. Legal texts can be vast and diverse, necessitating extensive training data to ensure the model's proficiency in understanding the nuances of legal language and reasoning. 2. The legal domain encompasses numerous downstream tasks, each with its own specific requirements and nuances. As a result, domain-specific large-scale language models lack generalizability and reliability across various downstream tasks. Adapting these models to each specific task requires fine-tuning with task-specific data, leading to considerable efforts for collecting specialized training data for each task. 3. Compared to general large models like GPT-3.5, these domain-specific large models suffer from insufficient training scale and data volume, leading to weaker model memorization, comprehension, and reasoning capabilities. Additionally, most of these domain-specific models have mainly undergone fine-tuning for legal question-answering tasks.</p><p>In this article, we present a lightweight approach that enables general large-scale language models for legal relevance annotation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Prompt Engineering in Data Augmentation</head><p>Prompt-based data augmentation is a promising avenue, especially for tasks where data collection is challenging. The "PromDA" model, introduced by <ref type="bibr" target="#b23">[24]</ref>, leverages soft prompts in pre-trained language models to generate high-quality synthetic data for low-resource natural language understanding tasks. Similarly, <ref type="bibr" target="#b22">[23]</ref> proposed a method that combines semantic data augmentation with distance metric learning for domain generalization. <ref type="bibr" target="#b12">[13]</ref> explored the feasibility of GPT-3 generated synthetic data for training conversational AI classifiers, revealing that while synthetic data offers advantages, it doesn't surpass real user data in performance. In addition, <ref type="bibr" target="#b16">[17]</ref> develop a method for using large language models (LLMs) to generate large numbers of synthetic queries cheaply, which generates a small number of synthetic queries using an expensive LLM and then uses a much less expensive one to create large numbers of synthetic queries that are used to fine-tune re-rankers. These studies underscore the growing importance and potential of prompt-based data augmentation in enhancing model performance, especially in scenarios with limited data resources. While it offers a novel way to leverage the capabilities of large-scale language models, care must be taken to ensure that the generated data aligns well with real-world scenarios and doesn't introduce biases or errors. As with any data augmentation technique, it's crucial to validate its effectiveness empirically on the target task. Therefore, in this work, we will evaluate our automatic annotation approach from two levels: the consistency with human labeling and the empirical effectiveness of data-augmented models on the LCR task.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">METHODOLOGY</head><p>In this section, we will first provide a brief overview of the background knowledge, including an introduction to the forms of Chinese legal cases and the factors that experts consider when determining the relevance of legal cases. Then, we will provide a detailed explanation of each step in the proposed automated annotation workflow. Subsequently, we address some questions that readers may be concerned about. Finally, we introduce an application of the proposed annotation method: the construction of a synthetic dataset for training LCR models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Preliminary</head><p>Legal case documents diverge significantly from the general domain content. Their distinctive feature lies in their structured composition, providing both clarity and complexity. This structure is pivotal for the legal profession, as it captures the essence and progression of a case, from presenting the parties involved to the court's final decision, which basically includes five parts: Procedure: This is the foundational section of any legal case document. It introduces essential information about the parties involved and outlines the procedural posture. Fact: Beyond mere introductions, this section delves into the core contentions of the parties. Here, one finds descriptions of arguments, evidence presented, and pivotal events forming the crux of the legal dispute. This is the only information that a pending (query) case has. Judgment process: It explains the selection of specific rules and their application to the case facts. Verdict: This section offers the court's final conclusive response to the case.</p><p>We will evaluate our annotation method on LeCaRD <ref type="bibr" target="#b11">[12]</ref>, the Chinese legal case retrieval dataset, of which the data format is shown in Figure <ref type="figure" target="#fig_3">3</ref>.</p><p>Relevance: According to LeCaRD, the determination of case relevance primarily depends on the key facts of the case, which are composed of "Material Facts (MF)" and "Legal Facts (LF)". Legal Facts are the legal evaluations of Material Facts. For example, in a hypothetical case:</p><p>Fact: A had persistent conflicts with B. Consequently, A found a pretext to provoke B and then assaulted him. B's injuries were classified as 'Level 2 minor injury.</p><p>Legal Facts: Arbitrary assault on others; causing minor injuries to others; acts that disrupt social order.</p><p>Material Facts: Occasional conflicts, seeking trouble under pretense, unprovoked assault; "Level 2 minor injury. "</p><p>To determine whether different cases are related, one should deep into the Material Facts and the Legal Facts. The Material Facts of a case include the identity of multiple factors such as the defendant and the victim, the cause, process, outcome, time, and location of the crime committed by the defendant. Judging the relevance of MF involves a "factual level" assessment of the relatedness of different cases, focusing on whether there is "identity" between multiple factors. Judging the relevance of LF includes the subjective motive of the defendant, whether the victim is at fault, and whether there is a causal relationship between the criminal act and the damage caused. This involves an adaptive "legal level" assessment of in different legal aspects, focusing on whether there is "homogeneity" between two cases. In practice, the judgment should follow the order of "Material Facts first, Legal Facts second. " Both are necessary and sufficient conditions for the assessment of case-relevance.</p><p>Problem Formulation: The legal case retrieval task is defined as finding cases related to a given query case from a set of candidate cases. Specifically, given a query case 𝑞 and a set of candidate cases</p><p>FE Demo Set Relevant FE Demos MF LF MF LF BM25 MF MF MF MF LF LF MF LF MF LF LF LF Relevant FA Demos MF MF LF LF BM25 BM25 MF LF MF Score LF Score Relevance Score Query-related Candidate -related LLM ** Demos Case Case with outputs FA Demo Set Expertise demo set Relevance score Adaptive Demo-Matching (FE) Fact Extraction Adaptive Demo-Matching(FA) Fact Annotation Candidate Case Query Case Input Concatenation MF MF Q&amp;C related texts Despite the words "轻微" and "轻" are synonyms that both denote a low degree, when co "伤" (which represents injury or harm in Chinese), into terminologies "轻微伤" and "轻伤 distinct legal meanings and consequences. This distinction is particularly pronounced in lan isolating grammatical structure like Chinese. 𝐷, the objective is to retrieve the top-𝑘 relevant cases from a vast candidate pool, denoted as 𝐷 𝑞 = 𝑑 1 , 𝑑 2 , . . . , 𝑑 𝑘 .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Slight Assault</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Automated Relevance Annotation for Legal Cases</head><p>We have meticulously designed a prompt workflow for legal case retrieval, which can be segmented into four steps: 1) Preliminary factual analysis by legal professionals, 2) Adaptive Demo-Matching (ADM), 3) Fact Extraction (FE), and 4) Fact Annotation (FA). Figure <ref type="figure" target="#fig_2">2</ref> shows the overall annotation workflow. In the subsequent sections, we will delve into each of these components in detail.</p><p>Preliminary factual analysis by legal professionals: While the relevance annotations of the original data were made based on the criteria mentioned in Section 3.1, the annotated data only contain relevance scores without explicit matching labels, preventing the understanding of the exact facts that determine the similarity between two cases. Accurate and direct indications of what the 'Material Fact' in the current case is, its connection to the details in the text, followed by additional legal knowledge and reasoning logic used for identifying such connections, can trigger LLMs to utilize their inherent knowledge and comprehension abilities to mimic human experts' cognitive processes. Such an approach is deemed necessary because we observed that without detailed relevance indications, the model's judgment could deviate. For instance, if case 1 involves person A stealing a car and case 2 involves person B stealing a wallet, the LLM sometimes perceives a car and a wallet as dissimilar items, focusing on trivial facts, thereby simply judging the two cases as irrelevant. Thus We consider such legal reasoning order as a logical chain, prompting the LLM to make judgments consistent with those of the professionals. Figure <ref type="figure" target="#fig_4">4</ref> and Figure <ref type="figure" target="#fig_5">5</ref> shows examples of experts' demonstrations for extractions of MF and LF. It's worth mentioning that, as stated in section 3.1, in practice, the judgment should follow the order of 'Material Facts first, Legal Facts second'. The extraction of Legal Facts, therefore, involves a multi-dimensional analysis built upon Material Facts, encompassing considerations of the defendant's subjective motive, the potential fault of the victim, and the existence of a causal relationship between the criminal act and the resulting harm. Then during the annotation phase, it is crucial to perform adaptive relevance assessments tailored to different case pairs, based on the</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Case Details:</head><p>The details of the case are as follows:</p><p>• In August 2013, defendant Chen Jianjun met and started dating Zhou, and also became acquainted with Zhou's younger sister, Liu. • On the evening of October 21, 2014, Liu invited Zhou to sing at a KTV in Jiangyin City. Chen, Liu's husband Li, and friends Cai and Wang joined them for drinks and singing until about 11 PM. • Afterwards, Chen, Cai, Wang, and others went to a barbecue restaurant in Jiangyin City for more drinks. A dispute arose when Cai hugged Zhou, but it was resolved and they were taken outside the restaurant. • When Cai and Wang were leaving, they encountered Chen again, leading to an argument and physical fight. • Chen then stabbed Cai and Wang with a folding knife he carried, causing multiple injuries.</p><p>• Victim Cai suffered injuries to the chin, abdomen, right hand, and other areas, requiring several surgeries, classified as second-degree serious injuries. • Victim Wang sustained injuries to the left armpit chest area, left scapula, and right groin, including a bladder rupture, treated with bladder repair surgery and symptomatic treatment, also classified as second-degree serious injuries. • After the incident, the police confiscated a folding knife from Chen.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Material Fact Extraction Process and Results:</head><p>• Extraction Process: Relationships involve defendant Chen Jianjun and the victims Zhou and Liu. The major cause of event is the initial altercation involving Cai and Zhou, followed by the subsequent argument and physical fight. The major circumstance is Chen Jianjun's use of a folding knife to stab Cai and Wang, causing severe injuries of two vitims, which refers violent act.</p><p>• Results: [Involved Parties:The defendant, Chen Jianjun, had a relationship with the victims, Zhou Mou and Liu Moujia. Chen Jianjun was in a relationship with Zhou Mou and was acquainted with Zhou Mou's sister, Liu Moujia.] [Course of Events: Gatherings at the KTV and barbecue restaurant, the initial altercation involving Cai and Zhou, followed by the subsequent argument and physical fight.] [Violent Act: Chen Jianjun's use of a folding knife to stab Cai and Wang.] [Victims' Injuries: Severe injuries sustained by Cai and Wang.] [Weapon Used: The folding knife confiscated from Chen Jianjun.] Case Details:</p><p>The main materials of the case are as follows:</p><p>• Involved Parties:The defendant, Chen Jianjun, had a relationship with the victims, Zhou Mou and Liu Moujia. Chen Jianjun was in a relationship with Zhou Mou and was acquainted with Zhou Mou's sister, Liu Moujia.</p><p>• Course of Events: Gatherings at the KTV and barbecue restaurant, the initial altercation involving Cai and Zhou, followed by the subsequent argument and physical fight. • Violent Act: Chen Jianjun's use of a folding knife to stab Cai and Wang.</p><p>• Victims' Injuries: Severe injuries sustained by Cai and Wang.</p><p>• Weapon Used: The folding knife confiscated from Chen Jianjun.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Legal Fact Extraction Process and Results:</head><p>• Extraction Process: Nature of Crime: Chen Jianjun deliberately used a knife to inflict bodily harm on others. According to "Article 234 and other relevant provisions of the Criminal Law of the People's Republic of China", it constitutes an act of intentionally harming the physical health of others.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Severity of Harm:</head><p>The injuries sustained by Cai and Wang were classified as second-degree serious injuries, indicating that the consequences of the harm were very severe. Intent: Chen Jianjun's actions appear premeditated, considering he carried a folding knife and used it after the altercation. Legal Liability: According to the provisions of Article 234 (Intentional Injury) and Article 235 (Definition of Serious Injury) of the Criminal Law, Chen Jianjun's actions constitute intentional injury and involve serious circumstances. He may be liable for full legal responsibility and severe penalties.</p><p>• Results:</p><p>[Deliberately causing grievous bodily harm to another person.] connection between Material Facts (MF) and Legal Facts (LF). We incorporate carefully designed expert reasoning logic of analyzing relevance to instruct the LLm in adhering to the criterion of experts. Figure <ref type="figure" target="#fig_6">6</ref> shows an example of demonstrations for the fact annotation.</p><p>Adaptive Demo-Matching (ADM): When applying few-shot prompting to LLMs, we adaptively fit appropriate demonstrations for input cases by retrieval in each prompting step from the smallscale pre-built expertise demonstration set. By doing so, as opposed</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Material Facts in Case A:</head><p>• Involved Parties:The defendant, Chen Jianjun, had a relationship with the victims, Zhou Mou and Liu Moujia. Chen Jianjun was in a relationship with Zhou Mou and was acquainted with Zhou Mou's sister, Liu Moujia.</p><p>• Course of Events: Gatherings at the KTV and barbecue restaurant, the initial altercation involving Cai and Zhou, followed by the subsequent argument and physical fight. • Violent Act: Chen Jianjun's use of a folding knife to stab Cai and Wang.</p><p>• Victims' Injuries: Severe injuries sustained by Cai and Wang.</p><p>• Weapon Used: The folding knife confiscated from Chen Jianjun. Material Facts in Case B:</p><p>• Involved Parties: The defendant, He Shunjia, was driving a black Panther truck when he encountered the victim, Hu Moujia, and Fu Mou, who were riding electric bicycles.</p><p>• Course of Events: A dispute arose between He Shunjia, Hu Moujia, and Fu Mou due to issues related to the movement of their vehicles while He Shunjia was attempting to make a U-turn. Subsequently, a physical altercation ensued. • Violent Act: During the altercation, He Shunjia stabbed Hu Moujia in the arm and abdomen with a knife, and he also stabbed Fu Mou in the abdomen. • Victims' Injuries: Hu Moujia suffered a ruptured liver and extensive bleeding, resulting in death. Fu Mou sustained penetrating abdominal injuries and intestinal rupture, causing severe injuries.</p><p>• Weapon Used: The knife.</p><p>• Post-offense Conduct: He Shunjia called the police "110" at the scene of the incident and remained there.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Analysis Process:</head><p>Although both cases involve the act of intentional harm, considering that the purpose of relevance annotation is to assist in achieving consistency in judgments, it is essential to focus on the relevance of the material facts determining the judgment measurement. In these two cases, the decisive material facts, including the result and post-offense conduct, significantly differ. In terms of result facts, one resulted in severe injury, while the other resulted in death. Regarding postoffense conduct, one case does not mention self-surrender, while the other involves a selfsurrender circumstance. Therefore, the relevance of the material facts in both cases is: [0: irrelevant] Label: [0: irrelevant] Case A: Material facts:</p><p>• Involved Parties:The defendant, Chen Jianjun, had a relationship with the victims, Zhou Mou and Liu Moujia. Chen Jianjun was in a relationship with Zhou Mou and was acquainted with Zhou Mou's sister, Liu Moujia.</p><p>• Course of Events: Gatherings at the KTV and barbecue restaurant, the initial altercation involving Cai and Zhou, followed by the subsequent argument and physical fight. • Violent Act: Chen Jianjun's use of a folding knife to stab Cai and Wang.</p><p>• Victims' Injuries: Severe injuries sustained by Cai and Wang.</p><p>• Weapon Used: The folding knife confiscated from Chen Jianjun.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Legal facts:</head><p>• Deliberately causing grievous bodily harm to another person.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Case B: Material Facts:</head><p>• Involved Parties: The defendant, He Shunjia, was driving a black Panther truck when he encountered the victim, Hu Moujia, and Fu Mou, who were riding electric bicycles.</p><p>• Course of Events: A dispute arose between He Shunjia, Hu Moujia, and Fu Mou due to issues related to the movement of their vehicles while He Shunjia was attempting to make a U-turn. Subsequently, a physical altercation ensued. • Violent Act: During the altercation, He Shunjia stabbed Hu Moujia in the arm and abdomen with a knife, and he also stabbed Fu Mou in the abdomen. • Victims' Injuries: Hu Moujia suffered a ruptured liver and extensive bleeding, resulting in death. Fu Mou sustained penetrating abdominal injuries and intestinal rupture, causing severe injuries. • Weapon Used: The knife.</p><p>• Post-offense Conduct: He Shunjia called the police "110" at the scene of the incident and remained there.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Legal facts:</head><p>• Deliberately causing one fatality and one severe injury Analysis process: Both cases involve defendants who have intentionally caused severe consequences to others. They fall under the legal definition of Article 234 of the Criminal Law of the People's Republic of China, which prosecutes criminal liability for the crime of intentional injury. Therefore, the relevance of legal facts between two cases is: [1: relevant] Label: <ref type="bibr">[1: relevant]</ref> The exper�se demo for MF annota�on</p><p>The exper�se demo for LF annota�on to random selection, we can minimize the disparity between the demonstration and the input cases, facilitating the LLM to better follow legal experts. In this work, we employ a simple but effective method, BM25 <ref type="bibr" target="#b15">[16]</ref>, to rapidly retrieve demonstrations, which could be improved by more sophisticated models in the future.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Fact extraction (FE):</head><p>As illustrated in Figure <ref type="figure" target="#fig_7">7</ref>, we present an framework of FE prompting. Following the order of 'Material Facts first, Legal Facts second', we separately extract MF and LF sequentially. In the prompt, we provide the task description, definitions of Material Facts or Legal Facts, and the top 2 demos collected by ADM. Finally, the target case is input into the prompt. Specifically, for the MF extraction, the input is the case details, and for the LF extraction is the extracted MF. Few-shot annotation (FA): As illustrated in Figure <ref type="figure" target="#fig_8">8</ref>, we present an framework of FA prompting. Similarly, we separately annotate MF and LF sequentially. Given as input the facts of a pair of cases to be labeled, the prompt contains relevant as well as irrelevant demonstrations. Ultimately, the LLMs are instructed to assess the relevance of the current input pair, drawing upon the expert's rationale. The calculation of the final relevance score follows the method of LeCaRD: score 1 for MF relevance, and score 2 for LF relevance, with the total relevance score calculated as the sum of MF and LF relevance scores.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Objective:</head><p>The objective of your task is to assess the relevance of the given {Name of fact} Facts between a pair of legal cases. The provided Definition and Demonstrations are reference materials helping for your reasoning. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Other Statements</head><p>Our work is currently focused on Chinese law due to the easy access to Chinese legal experts, who can help us build a small yet high-quality set of expert demonstrations. Additionally, given the scarcity of annotated legal data (the very issue we aim to address), we conduct research on LeCaRD, the sole case retrieval dataset in the Chinese legal domain. To apply our approach to other countries' legal cases, the same process can be utilized. The only necessary change is to refine the content under the framework of our demonstrations, with the help of domain experts in the corresponding legal field and languages.</p><p>Apart from that, the data of Chinese legal documents includes more than just the "basic case information", but we only utilize this part for relevance annotation. There are two main reasons for this:</p><p>• Fact-Driven: In practical scenarios for judges and lawyers, it is necessary to retrieve similar cases based on the details of new cases that only contain case facts. It's the same in the query cases of the Lecard dataset, which only contain case facts. The goal of legal case retrieval is to ensure similar cases receive fair and consistent adjudication, which is why the analysis starts from the case itself, rather than basing it on the outcomes of judgments. Our approach is thus in line with practical requirements. • Consistency with Dataset Standards: By focusing on case facts, our approach aligns with the Lecard dataset's method of annotation, which is based on key facts (MF and LF) within case details. This ensures that our method aligns with the dataset's standards for relevance annotation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">Application of annotated data</head><p>An application of our method is data augmentation: to construct a synthetic dataset from unlabeled legal cases for model training. Take LeCaRD as an example, where there are a total of 10,700 candidate cases. By randomly selecting two candidate cases each time for relevance annotation, theoretically, we can generate over 50 million pairs of data. This could significantly scale the annotated dataset. We tried this on a small scale: We first randomly generated 200k candidate case pairs. Our goal is to produce more high-quality positive examples. Considering that the case pairs randomly extracted have a high probability of being irrelevant, the 200k case pairs were pre-sorted by a BERT model fine-tuned on the original dataset (see the Experiment section for implementation details) and we performed relevance annotation on the top 50k data. After obtaining these annotations, we constructed two augmented datasets intended for fine-tuning the retrieval models: the first, a 20k dataset with a distribution that closely mirrors the label distribution of the original dataset; and the second, a 40k dataset selected randomly from the 50k annotations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">EXPERIMENT</head><p>In this section, we conduct various empirical experiments to answer the following research questions (RQs): RQ 1 How reliable are the relevance judgments obtained with the proposed workflow?</p><p>RQ 2 How do the LLM-based relevance judgments align with the judgments from human annotators?</p><p>RQ 3How can we leverage the LLM-based relevance judgments to augment existing legal case retrieval models? </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Datasets and Evaluation Metrics</head><p>We carried out our experiments using the LeCaRD (Chinese Legal Case Retrieval Dataset) <ref type="bibr" target="#b11">[12]</ref>. This dataset comprises more than 43,000 candidate cases and 107 query cases. All the queries and results are sourced from criminal cases made public by the Supreme People's Court of China. Notably, while only the fact paragraph is present in the LeCaRD queries, the candidate documents encompass the full case. For every query, there is a set of 100 corresponding candidate cases. In legal case retrieval, relevance is categorized with multi-level labels (0 to 3). For a pair of cases: 0 indicates no relevance, 1 indicates that the Material Facts are relevant but the Legal Facts are not, 2 indicates that the Legal Facts are relevant but the Material Facts are not, and 3 indicates relevance to both kinds of facts. The detail of this dataset is shown in Figure <ref type="figure">1</ref> and Figure <ref type="figure" target="#fig_2">2</ref>.</p><p>To the best of our knowledge, our method is the first automatic Chinese legal case annotation approach, therefore, to evaluate our method, we compare the annotation consistency with the humanannotated labels by Cohen's Kappa. In addition, we choose normalized discounted cumulative gain (NDCG) for evaluating the performance of legal case retrievers before and after training on the augmented data, to indirectly illustrate the effectiveness of our method.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Evaluation of Annotations.</head><p>Separately based on two aspects MF and LF, we assess the reliability of the proposed annotation method by calculating Cohen's Kappa for multiple annotations conducted at a certain temperature. Following that, we evaluate the automated annotation consistency to the human labels by calculating Kappa values with the golden labels. Finally, we draw heatmaps to visualize the consistency between the proposed method and human labeling, to demonstrate the validity.</p><p>For the reliability shown in Fiture 9, as the temperature increases, there is a moderate change in the Kappa values among our multiple relevance annotations, indicating good reliability and that our carefully designed expert instruction can effectively orient the output of LLM. For the validity shown in Fiture 10, it can be observed that the consistency between Legal Facts and human labels is highly significant, while Material Facts exhibit relative significance when compared to human labels. One primary reason for this is that each case involves one or more defendants; when comparing the facts related to the defendants between two cases, there are one-to-many and many-to-many comparative relationships, which could involve more subjective judgment. During our research, we do identify a significant degree of subjective judgment in the human annotation of Material Facts under such comparisons. This is attributed to the fact that human labels do not originate from a single individual, and there is inevitably some bias among different individuals' judgments. Moreover, this bias is more likely to manifest in Material Fact, due to the arbitrary forms of writing it. However, according to the labeling standard, the relevance of legal facts (score=2) is more critical than that of material facts (score=1). Therefore, the quality of annotations for Legal Facts still predominantly influences the final annotation results. This indicates that our proposed automatic annotation method can closely approximate human labeling. Interestingly, in all temperature settings, the avg. kappa values remain relatively stable. This illustrates the reliability of aligning with human labels again.</p><p>The heatmap in Figure <ref type="figure" target="#fig_11">11</ref> and Figure <ref type="figure" target="#fig_12">12</ref> shows the high consistency of our automated annotation approach with human labeling, especially in cases of non-relevance and full relevance. This further demonstrates the validity of the annotation results.  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Baselines for Data Augmentation Experiments</head><p>To further validate the annotation quality, we examine the improvements achieved when using annotated synthetic data for training different retrievers in LCR tasks. This will further explore the effectiveness of this automatic annotation method, which will be detailed in subsequent chapters. Here, we select only two basic deep models but not more complicated models like <ref type="bibr" target="#b7">[8]</ref>. Since our goal is to compare the relative differences in model performance before and after using the proposed annotation for data augmentation, to validate whether downstream models can be effectively augmented, rather than pursuing a state-of-the-art model for the LCR task.</p><p>• BM25 <ref type="bibr" target="#b15">[16]</ref> is a simple but effective baseline for LCR.</p><p>• BERT <ref type="bibr" target="#b3">[4]</ref> is built on the Transformer architecture, which employs self-attention mechanisms to weigh input tokens differently, allowing for a more nuanced representation of context. • Longformer <ref type="bibr" target="#b0">[1]</ref> is an adaptation of the Transformer architecture designed to process exceptionally long sequences efficiently. It achieves this by combining local attention with a limited number of global attention mechanisms, reducing the computational complexity from quadratic to linear for most tokens. This design enables direct processing of tasks involving extensive documents without the need for chunking or hierarchical methods.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Implementation Details</head><p>All experiments are conducted on the LeCaRD dataset. The size of the demonstration set we built is 40 groups. Each group consists of a query case and four candidate cases with different relevance levels, which are evaluated in both FE and FA. For the annotation evaluation, we compare the annotation of the proposed method  with the golden labels of the top 30 candidate cases in every query case. In the heatmap experiment, we randomly sample 100 humanlabeled pairs for each relevance, from 0 to 3, 400 in total. For the data augmentation experiments, we split LeCaRD in a ratio of 8:1:1 for training, validation, and testing. The augmented data pairs are sampled from the candidate case corpus from the training set. We use PyTorch <ref type="bibr" target="#b14">[15]</ref> to implement our method. We use Nvidia 3090 with 24G GPU memory. We use the Chinese tokenizer Jieba<ref type="foot" target="#foot_0">foot_0</ref> in data pre-processing and use AdamW <ref type="bibr" target="#b10">[11]</ref> optimizer in fine-tuning procedure. All hyper-parameters are tuned based on the performance of the validation set. Specifically, when using the BERT baseline model, We adopted a segmentation method similar to BERT-PLI, splitting long texts into chunks of length 256 with overlapping window sizes of 128. The [CLS] token serves as the embedding for each block, and during relevance computation, we cross-calculate the dot product of the query and candidate block vectors. Furthermore, the LeCaRD is in Chinese, so we use the Chinese version of Longformer, longformer-chinese. For large language models, we opted for the robust GPT-3.5-turbo 2 . Table <ref type="table" target="#tab_3">3</ref> illustrates the performance of several baseline models on the task of legal case retrieval. We compared the performance changes of Bert and Longformer before and after fine-tuning on synthetic data, with BM25 retrieval results only used as a performance reference here. According to the results, we have some observations as follows: We pre-trained the BERT-based case retrieval model on three different scales of synthetic datasets. The 2k and the 20k datasets have a similar positive-to-negative ratio based on the distribution of the training set. The 40k dataset is randomly collected from all generated data. It can be observed that both BERT and Longformer, when trained on the 2k synthetic dataset of the same scale as the training set, already achieve significant improvements. The performance further significantly improves when trained on the larger 20k synthetic dataset. This demonstrates the data augmented by our method has effectively simulated real data. Intriguingly, even with twice the data expansion, the performance on the 40k dataset was notably worse than on the 20k dataset. There might be two explanations for this: A training dataset closer to the testing dataset in distribution benefits the model more significantly. Random sampling without selection or filtering retains fewer positives and more unnecessary negatives. An excessive number of negative examples will not necessarily bring more value to the model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5">Results of Data Augmentation Experiments</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.6">Ablation Study</head><p>In this section, we aim to explore the impact of each stage in our proposed data annotation workflow on the final quality of the generated data. The ablation study is conducted for both annotation and augmentation.</p><p>According to Table <ref type="table" target="#tab_4">4</ref>, removing ADM impacts the annotation of MF notably. This indicates that the extraction and relevance assessment of Material Facts relies on more pertinent expert guidance. This may be due to the variable nature of Material Facts. Meanwhile, Legal Facts remain unaffected due to their normative formats. This also highlights that the understanding of Legal Facts in the case benefits more from the FE and FA modules. When FE is removed, the Kappa scores for both types of facts significantly decrease, and the effect is similar when both FE and FA are removed. This demonstrates that the fact extraction step we designed is the most crucial part of the entire annotation process. Based on this observation, it can be inferred that LLM faces difficulty in accurately identifying key legal elements. Removing FA has little impact on LF annotation, but it does negatively affect MF. This indirectly confirms that extracting MF from case pairs and assessing their relevance is a challenging aspect of judging legal case relevance, and our method addresses this challenge through a series of carefully designed processes.</p><p>For the augmentation ablation shown in Table <ref type="table" target="#tab_5">5</ref>, when not using ADM, the randomly selected demo might differ significantly from the current query case in content. This weakens the guiding role of expert knowledge for the LLM during information extraction and annotation, leading to a noticeable impact on the performance of the downstream task model. Also, by eliminating the expert knowledge guidance in the FA phase, the performance of the downstream model is similarly weakened. We speculate that the criteria for similarity judgment in the last step are clearer with expert guidance. The performance of the downstream model is greatly affected when FE is removed, even worse than when no synthetic data is applied. We believe this is because, when identifying the two Legal Facts that have a decisive impact on case similarity, the LLM struggles to independently recognize and judge key legal elements and their interconnections. Our few-prompt method inspires the LLM to mimic experts.</p><p>Every stage within the prompt workflow contributes significantly to enhancing the quality of domain data annotation. Both Adaptive Demo-Matching (ADM) and Few-shot Annotation (FA) moderately influence the quality of annotations, with the impact of ADM being more pronounced. ADM validates that relevant demonstrations indeed provide LLMs with a more robust basis for reasoning. On the other hand, FA introduces clearer constraint conditions for relevance annotations. Notably, the most pivotal process is FE, involving the most specialized knowledge Furthermore. It also suggests that our FE method can effectively leverage minimal expert instructions to inspire and guide LLMs in capturing subtle but vital nuances within professional data.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">CONCLUSIONS AND FUTURE WORKS</head><p>In this paper, we proposed an automated relevance annotation method for legal cases. Through empirical experiments, we demonstrate its good reliability and high consistency to human labeling. With minimal expert knowledge adaption, he proposed workflow could be applied to other legal areas such as civil law, contract law, and the law of other countries. Hopefully, it can also be used as a supplement in other legal tasks in the future, such as automated judgment and defense. These are promising and meaningful directions we can explore.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 :"</head><label>2</label><figDesc>Figure 2: The proposed workflow of data annotation for legal case retrieval task.</figDesc><graphic coords="4,375.98,94.39,74.76,136.28" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: An example of data format in LeCaRD. Note that the original language is Chinese and the English texts are translations.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: The demonstration of extractions of MF for fewshot prompting. (Translation of Chinese texts.)</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: The demonstration of extractions of LF for few-shot prompting. (Translation of Chinese texts.)</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 6 :</head><label>6</label><figDesc>Figure 6: The demonstrations of MF and LF annotation for few-shot prompting. (Translation of Chinese texts.)</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Task Description:Figure 7 :</head><label>7</label><figDesc>Figure 7: The example of fact extraction FE. (Translation of Chinese texts.)</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><head>Figure 8 :</head><label>8</label><figDesc>Figure 8: The example of few-shot annotation FA. (Translation of Chinese texts.)</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_9"><head>Figure 9 :</head><label>9</label><figDesc>Figure 9: The Cohen's Kappa between multiple times of MF&amp;LF annotation results over different temperature settings: The x-axis represents the temperature, while the y-axis indicates Cohen's Kappa value. The Kappa value of multiple generated results indicates the reliability of the method's output.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_10"><head>Figure 10 :</head><label>10</label><figDesc>Figure 10: The Cohen's Kappa between the MF&amp;LF and the golden labels over different temperature settings: The x-axis represents the temperature, while the y-axis indicates Cohen's Kappa value. 'Avg.' represents the average of Kappa values between multiple annotation results and the golden labels, measuring the consistency of our annotations with golden labels, which indicates the validity of our approach.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_11"><head>Figure 11 :</head><label>11</label><figDesc>Figure 11: The heatmap of the annotated four-level relevance vs golden labels.</figDesc><graphic coords="8,341.83,96.48,168.50,168.50" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_12"><head>Figure 12 :</head><label>12</label><figDesc>Figure 12: The heatmap of the annotated MF&amp;LF relevance vs golden labels.</figDesc><graphic coords="8,325.90,330.72,104.11,104.11" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>The detail of the dataset.</figDesc><table><row><cell>Description</cell><cell>Value</cell></row><row><cell>DATASETS</cell><cell>LeCaRD</cell></row><row><cell>Language</cell><cell>Chinese</cell></row><row><cell># Train query case</cell><cell>-</cell></row><row><cell># Train candidate cases/query</cell><cell>-</cell></row><row><cell># Test query case</cell><cell>107</cell></row><row><cell># Test candidate cases/query</cell><cell>100</cell></row><row><cell cols="2">Avg. length per case document 8,275</cell></row><row><cell cols="2"># Avg. relevant cases per query 10.33</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 2 :</head><label>2</label><figDesc>Statistics for the golden labels. In the dataset, each query has 100 candidates, with only the top 30 candidates having a golden label of relevance, while the remaining 70 candidates are irrelevant.</figDesc><table><row><cell cols="5">Label Mean (Percentage) Median Max Min</cell></row><row><cell>0</cell><cell>3.94 (13.15%)</cell><cell>2.0</cell><cell>28</cell><cell>0</cell></row><row><cell>1</cell><cell>5.96 (19.88%)</cell><cell>4.0</cell><cell>29</cell><cell>0</cell></row><row><cell>2</cell><cell>9.87 (32.90%)</cell><cell>9.0</cell><cell>30</cell><cell>0</cell></row><row><cell>3</cell><cell>10.39 (34.64%)</cell><cell>8.0</cell><cell>30</cell><cell>1</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 3 :</head><label>3</label><figDesc>The performance of different baselines after pretraining on generative data of various sizes in the case retrieval task. The numbers following the models represent the size of the generated dataset used for pre-training.</figDesc><table><row><cell cols="2">MODEL&amp;DATA NDCG@30</cell></row><row><cell>BM25</cell><cell>0.8532</cell></row><row><cell>BERT</cell><cell>0.8816</cell></row><row><cell>BERT+2k</cell><cell>0.8979</cell></row><row><cell>BERT+20k</cell><cell>0.9305</cell></row><row><cell>BERT+40k</cell><cell>0.9156</cell></row><row><cell>Longformer</cell><cell>0.9019</cell></row><row><cell>Longformer+20k</cell><cell>0.9458</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 4 :</head><label>4</label><figDesc>The impact of different components for annotation quality: Original indicates the proposed approach. w/o ADM indicates the method of selecting examples from the demo library using random sampling; w/o FE means letting the LLM extract the two types of facts directly in the prompting workflow without prompt guidance and demo examples; w/o FA indicates that after extracting the two types of facts from each case, the similarity is directly labeled without the guidance of positive and negative demos in the original FA progress.</figDesc><table><row><cell cols="3">Annotation methods MF Kappa LF Kappa</cell></row><row><cell>Original</cell><cell>0.34</cell><cell>0.53</cell></row><row><cell>w/o ADM</cell><cell>0.23</cell><cell>0.54</cell></row><row><cell>w/o FE</cell><cell>0.09</cell><cell>0.21</cell></row><row><cell>w/o FA</cell><cell>0.19</cell><cell>0.50</cell></row><row><cell>w/o FE&amp;FA</cell><cell>0.13</cell><cell>0.17</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 5 :</head><label>5</label><figDesc>The impact of different components for augmentation effectiveness.</figDesc><table><row><cell>Model</cell><cell>NDCG@30</cell></row><row><cell>BERT2K</cell><cell>0.8979</cell></row><row><cell>BERT2K w/o ADM</cell><cell>0.8874</cell></row><row><cell>BERT2K w/o FE</cell><cell>0.8548</cell></row><row><cell>BERT2K w/o FA</cell><cell>0.8812</cell></row><row><cell>BERT2K w/o FA&amp;FA</cell><cell>0.8501</cell></row></table><note><p>2 https://platform.openai.com/docs/models/gpt-3-5</p></note></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://github.com/fxsjy/jieba</p></note>
+		</body>
+		<back>
+
+			<div type="funding">
+<div><p><rs type="person">Language Models</rs> for Relevance Judgments in Legal Case Retrieval. In Proceedings of Make sure to enter the correct conference title from your rights confirmation emai (Conference acronym 'XX). <rs type="institution">ACM, New York, NY, USA</rs>, 10 pages. <ref type="url" target="https://doi.org/XXXXXXX.XXXXXXX">https://doi.org/XXXXXXX.XXXXXXX</ref> </p></div>
+			</div>			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Longformer: The longdocument transformer</title>
+		<author>
+			<persName><forename type="first">Iz</forename><surname>Beltagy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><forename type="middle">E</forename><surname>Peters</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arman</forename><surname>Cohan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2004.05150</idno>
+		<imprint>
+			<date type="published" when="2020">2020. 2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Prodromos Malakasiotis, Nikolaos Aletras, and Ion Androutsopoulos</title>
+		<author>
+			<persName><forename type="first">Ilias</forename><surname>Chalkidis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manos</forename><surname>Fergadiotis</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2010.02559</idno>
+	</analytic>
+	<monogr>
+		<title level="m">LEGAL-BERT: The muppets straight out of law school</title>
+		<imprint>
+			<date type="published" when="2020">2020. 2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Chatlaw: Opensource legal large language model with integrated external knowledge bases</title>
+		<author>
+			<persName><forename type="first">Jiaxi</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zongjian</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bohua</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Yuan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.16092</idno>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Bert: Pre-training of deep bidirectional transformers for language understanding</title>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1810.04805</idno>
+		<imprint>
+			<date type="published" when="2018">2018. 2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Perspectives on Large Language Models for Relevance Judgment</title>
+		<author>
+			<persName><forename type="first">Guglielmo</forename><surname>Faggioli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laura</forename><surname>Dietz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">A</forename><surname>Charles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianluca</forename><surname>Clarke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Demartini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claudia</forename><surname>Hagen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noriko</forename><surname>Hauff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Evangelos</forename><surname>Kando</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Kanoulas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benno</forename><surname>Potthast</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henning</forename><surname>Stein</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wachsmuth</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3578337.3605136</idno>
+		<ptr target="https://doi.org/10.1145/3578337.3605136" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2023 ACM SIGIR International Conference on Theory of Information Retrieval (ICTIR &apos;23)</title>
+		<meeting>the 2023 ACM SIGIR International Conference on Theory of Information Retrieval (ICTIR &apos;23)</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Chatgpt outperforms crowd-workers for text-annotation tasks</title>
+		<author>
+			<persName><forename type="first">Fabrizio</forename><surname>Gilardi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meysam</forename><surname>Alizadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maël</forename><surname>Kubli</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.15056</idno>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Empirical slant delay model for radio space geodetic techniques</title>
+		<author>
+			<persName><forename type="first">Klemens</forename><surname>Lagler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Schindelegger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johannes</forename><surname>Böhm</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hana</forename><surname>Krásná</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tobias</forename><surname>Nilsson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Geophysical research letters</title>
+		<imprint>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="1069" to="1073" />
+			<date type="published" when="2013">2013. 2013</date>
+		</imprint>
+	</monogr>
+	<note>GPT</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">Haitao</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingyao</forename><surname>Ai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jia</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qian</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yueyue</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiqun</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qi</forename><surname>Tian</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.11370</idno>
+		<title level="m">SAILER: Structure-aware Pre-trained Language Model for Legal Case Retrieval</title>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yinhan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Myle</forename><surname>Ott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingfei</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mandar</forename><surname>Joshi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danqi</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omer</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Veselin</forename><surname>Stoyanov</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1907.11692</idno>
+		<title level="m">Roberta: A robustly optimized bert pretraining approach</title>
+		<imprint>
+			<date type="published" when="2019">2019. 2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">LawGPT: 中文法律对话语言模型</title>
+		<author>
+			<persName><forename type="first">Meng</forename><surname>Yutong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liu</forename><surname>Hongcheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liao</forename><surname>Yusheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wang</forename><surname>Yuhao</surname></persName>
+		</author>
+		<ptr target="https://github.com/LiuHC0428/LAW_GPT" />
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Decoupled Weight Decay Regularization</title>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Loshchilov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Frank</forename><surname>Hutter</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=Bkg6RiCqY" />
+	</analytic>
+	<monogr>
+		<title level="m">7th International Conference on Learning Representations</title>
+		<meeting><address><addrLine>New Orleans, LA, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2019-05-06">2019. 2019. May 6-9, 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">LeCaRD: a legal case retrieval dataset for Chinese law system</title>
+		<author>
+			<persName><forename type="first">Yixiao</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunqiu</forename><surname>Shao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yueyue</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiqun</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruizhe</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Min</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaoping</forename><surname>Ma</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 44th international ACM SIGIR conference on research and development in information retrieval</title>
+		<meeting>the 44th international ACM SIGIR conference on research and development in information retrieval</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="2342" to="2348" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Do we still need human assessors? prompt-based gpt-3 user simulation in conversational ai</title>
+		<author>
+			<persName><forename type="first">Selina</forename><surname>Meyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Elsweiler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bernd</forename><surname>Ludwig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marcos</forename><surname>Fernandez-Pichel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><forename type="middle">E</forename><surname>Losada</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 4th Conference on Conversational User Interfaces</title>
+		<meeting>the 4th Conference on Conversational User Interfaces</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="1" to="6" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.08774[cs.CL]</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">GPT-4 Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Pytorch: An imperative style, high-performance deep learning library</title>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Paszke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Gross</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Francisco</forename><surname>Massa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Lerer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Bradbury</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gregory</forename><surname>Chanan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Trevor</forename><surname>Killeen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zeming</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Natalia</forename><surname>Gimelshein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luca</forename><surname>Antiga</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">32</biblScope>
+			<date type="published" when="2019">2019. 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Some simple effective approximations to the 2-poisson model for probabilistic weighted retrieval</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Stephen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steve</forename><surname>Robertson</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Walker</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">SIGIR&apos;94</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="1994">1994</date>
+			<biblScope unit="page" from="232" to="241" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jon</forename><surname>Saad-Falcon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omar</forename><surname>Khattab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keshav</forename><surname>Santhanam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Radu</forename><surname>Florian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Franz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Salim</forename><surname>Roukos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Avirup</forename><surname>Sil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Md</forename><surname>Arafat Sultan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Potts</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.00807</idno>
+		<title level="m">UDAPDR: Unsupervised Domain Adaptation via LLM Prompting and Distillation of Rerankers</title>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">BERT-PLI: Modeling Paragraph-Level Interactions for Legal Case Retrieval</title>
+		<author>
+			<persName><forename type="first">Yunqiu</forename><surname>Shao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaxin</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiqun</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhi</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ken</forename><surname>Satoh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Min</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaoping</forename><surname>Ma</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IJCAI</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="3501" to="3507" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Understanding Relevance Judgments in Legal Case Retrieval</title>
+		<author>
+			<persName><forename type="first">Yunqiu</forename><surname>Shao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yueyue</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiqun</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaxin</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaoping</forename><surname>Ma</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Transactions on Information Systems</title>
+		<imprint>
+			<biblScope unit="volume">41</biblScope>
+			<biblScope unit="page" from="1" to="32" />
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<author>
+			<persName><forename type="first">Rosamond</forename><surname>Thalken</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edward</forename><forename type="middle">H</forename><surname>Stiglitz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Mimno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Wilkens</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.18440[cs.CL]</idno>
+		<title level="m">Modeling Legal Reasoning: LM Annotation at the Edge of Human Agreement</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Large language models can accurately predict searcher preferences</title>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Thomas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Seth</forename><surname>Spielman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Craswell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bhaskar</forename><surname>Mitra</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.10621[cs.IR]</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Edouard Grave, and Guillaume Lample</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Faisal</forename><surname>Azhar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aurelien</forename><surname>Rodriguez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Armand</forename><surname>Joulin</surname></persName>
+		</author>
+		<idno>arxiv:2302.13971</idno>
+		<ptr target="http://arxiv.org/abs/2302.13971" />
+	</analytic>
+	<monogr>
+		<title level="m">LLaMA: Open and Efficient Foundation Language Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Semantic data augmentation based distance metric learning for domain generalization</title>
+		<author>
+			<persName><forename type="first">Mengzhu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianlong</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qi</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhibin</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Li</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th ACM International Conference on Multimedia</title>
+		<meeting>the 30th ACM International Conference on Multimedia</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="3214" to="3223" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yufei</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Can</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingfeng</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huang</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chongyang</forename><surname>Tao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiubo</forename><surname>Geng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daxin</forename><surname>Jiang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2202.12499</idno>
+		<title level="m">Promda: Prompt-based data augmentation for low-resource nlu tasks</title>
+		<imprint>
+			<date type="published" when="2022">2022. 2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="24824" to="24837" />
+			<date type="published" when="2022">2022. 2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Lawformer: A pre-trained language model for chinese legal long documents</title>
+		<author>
+			<persName><forename type="first">Chaojun</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xueyu</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiyuan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cunchao</forename><surname>Tu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maosong</forename><surname>Sun</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">AI Open</title>
+		<imprint>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="79" to="84" />
+			<date type="published" when="2021">2021. 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

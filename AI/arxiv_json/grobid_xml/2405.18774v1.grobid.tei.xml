@@ -1,0 +1,1570 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">LLaMA-Reg: Using LLaMA 2 for Unsupervised Medical Image Registration</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-05-29">29 May 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Mingrui</forename><surname>Ma</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">Faculty of Information Science Engineering and Automation</orgName>
+								<orgName type="institution">Kunming University of Science and Technology</orgName>
+								<address>
+									<settlement>Kunming</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yu</forename><surname>Yang</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="department">Department of Orthopaedics</orgName>
+								<orgName type="institution">Taizhou Hospital of Zhejiang Province Affiliated with Wenzhou Medical University</orgName>
+								<address>
+									<settlement>Wenzhou</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+							<affiliation key="aff2">
+								<orgName type="department" key="dep1">Department of Orthopaedics</orgName>
+								<orgName type="department" key="dep2">Taizhou Enze Medical Centre (Group)</orgName>
+								<orgName type="institution">Enze Hospital</orgName>
+								<address>
+									<settlement>Taizhou</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+							<affiliation key="aff3">
+								<orgName type="department">Department of Orthopaedics</orgName>
+								<orgName type="institution">The Second Affiliated Hospital of Dalian Medical University</orgName>
+								<address>
+									<settlement>Dalian</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">LLaMA-Reg: Using LLaMA 2 for Unsupervised Medical Image Registration</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-05-29">29 May 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">705B70460434CE5DC6105E486F07FDF2</idno>
+					<idno type="arXiv">arXiv:2405.18774v1[cs.CV]</idno>
+					<note type="submission">Preprint submitted to XXXX May 30, 2024</note>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:23+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Medical image registration</term>
+					<term>Large language model</term>
+					<term>LLaMA</term>
+					<term>Adapter</term>
+					<term>Deep learning</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Medical image registration is an essential topic in medical image analysis.</p><p>In this paper, we propose a method for medical image registration using a pretrained large language model. We find that using the pretrained large language model to encode deep features of the medical images in the registration model can effectively improve image registration accuracy, indicating the great potential of the large language model in medical image registration tasks. We use dual encoders to perform deep feature extraction on image pairs and then input the features into the pretrained large language model.</p><p>To adapt the large language model to our registration task, the weights of the large language model are frozen in the registration model, and an adapter is utilized to fine-tune the large language model, which aims at (a) mapping the * Corresponding author.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Introduction</head><p>Medical image registration plays a crucial role in the field of medical image analysis by seeking to establish a meaningful connection between the voxels within two images. This process has found extensive applications in various domains, including but not limited to muscle segmentation <ref type="bibr" target="#b0">[1]</ref>, intraoperative localization <ref type="bibr" target="#b1">[2]</ref>, and quantified ablation margins and local disease progression after thermal ablation of colorectal liver metastases <ref type="bibr" target="#b2">[3]</ref>. By focusing on the alignment of images, medical image registration enables the exploration of changes in anatomical structures over time, providing valuable insights into patterns of variation and development.</p><p>Over the past decade, Convolutional Neural Networks (CNNs) have made significant strides in computer vision (CV), marked by their notable successes in diverse tasks <ref type="bibr" target="#b3">[4,</ref><ref type="bibr" target="#b4">5]</ref>. Building on this progress and the rapid evolution of CNNs, there has been a distinct shift towards CNN-based approaches in medical image analysis <ref type="bibr" target="#b5">[6,</ref><ref type="bibr" target="#b6">7]</ref>. The emergence of U-Net and its variants in 2015 underscored its ability to effectively integrate both low-level and high-level semantic information while maintaining a constrained parameter count, leading to widespread adoption in various medical image analysis tasks <ref type="bibr" target="#b7">[8,</ref><ref type="bibr" target="#b8">9]</ref>. It is also employed as the backbone of the registration models, which predict the deformation fields. Driven by the long-range modeling capabilities of Vision Transformers (ViTs), recent registration researches <ref type="bibr" target="#b9">[10,</ref><ref type="bibr" target="#b10">11,</ref><ref type="bibr" target="#b11">12]</ref> have employed ViT blocks to leverage the modeling power. Besides using powerful modeling blocks, some methods, such as <ref type="bibr" target="#b12">[13,</ref><ref type="bibr" target="#b13">14]</ref>, have applied the multi-scale architecture and predicted the deformation fields at different scale stages, where the previously predicted deformation fields control the subsequent generation of the deformation fields. Unlike the multi-scale framework, the cascaded registration approaches <ref type="bibr" target="#b14">[15,</ref><ref type="bibr" target="#b15">16]</ref> have utilized a progressive manner in which a registration sub-model predicts the deformation fields based on the previous sub-model at the same resolution stage.</p><p>With the recent emergence of ChatGPT, large models have attracted widespread attention. Large Language Models (LLMs), such as LLaMA 2 <ref type="bibr" target="#b16">[17]</ref>, Pythia <ref type="bibr" target="#b17">[18]</ref>, and GPT-3 <ref type="bibr" target="#b18">[19]</ref> etc., which had the vast number of parameters, were trained on large-scale corpus data, aiming to understand complex linguistic content to enhance the capabilities of generating appropriate text and chatting to assist people. Recent studies <ref type="bibr" target="#b19">[20,</ref><ref type="bibr" target="#b20">21,</ref><ref type="bibr" target="#b21">22]</ref> have demonstrated that pretrained LLMs are important for the cross-model (i.e., vision-language) task. The idea of the adapter appeared in the field of domain adaptation <ref type="bibr" target="#b22">[23]</ref>. In order to use the powerful modeling capabilities of the pretrained model in downstream tasks, <ref type="bibr" target="#b23">[24]</ref> first proposed using adapters to fine-tune and apply BERT <ref type="bibr" target="#b24">[25]</ref> in various text classification tasks. The current LLMs are employed as sub-models in visual-language tasks to generate specific text content. Generally, to align the features from the image and language domains for downstream tasks, some methods <ref type="bibr" target="#b25">[26,</ref><ref type="bibr" target="#b26">27]</ref> utilized linear projections, i.e., adapters, to achieve the alignment of features in these two domains. In this paper, we propose a non-U-shaped image registration method, dubbed LLaMA-Reg, which integrates LLaMA 2 as the deep encoder for feature extraction. Our method extracts the deep features of an image pair using a two-stream CNN encoder. These features are split into feature tokens and then sent to the LLaMA encoder. The pretrained LLaMA model and its adapters are shown in Fig. <ref type="figure" target="#fig_0">1</ref>. The LLaMA encoder of our method is frozen, which aims to boost the registration performance by using the projected features in the language domain. Before the LLaMA encoder, an adapter is utilized to project the deep features of two images to the language domain for the pretrained LLaMA encoding, as some other adapters are utilized to project the features in the language domain to the visual domain. • We propose a scheme for adapters in the registration task to align the language and visual domain features.</p><p>• We propose a non-U-shaped multi-scale and cascaded registration model to utilize LLaMA 2 for registration.</p><p>• The experimental results of our LLaMA-Reg on the 3D knee and brain MRI datasets demonstrate state-of-the-art performance. Ablation stud-ies demonstrate our effectiveness in this work.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Related Work</head><p>Traditional image registration methods, such as <ref type="bibr" target="#b27">[28]</ref>, <ref type="bibr" target="#b28">[29]</ref>, and <ref type="bibr" target="#b29">[30]</ref>, used iterative optimization to find the best deformation between a pair of images. However, the problem with traditional methods is that they occupy many computing resources and are time-consuming for inference. Methods based on deep learning utilize similarity loss functions to train their weights, which can calculate the deformation field between a pair of images in a very short time after training. Unsupervised deep learning-based registration approaches have been brought to the fore since they do not require ground-truth deformation fields to train. Currently, registration methods based on deep learning that have been widely studied can be divided into two major categories: CNN-based and ViT-based.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.">Convolutional Neural Networks-based Approaches</head><p>Since the development of CNN-based registration methods, many approaches have emerged. Balakrishnan et al. first introduced VoxelMorph <ref type="bibr" target="#b30">[31]</ref>, a U-shaped structure registration model for an input pair of images that predicted full-scale displacement fields. In order to ensure the diffeomorphism characteristics of the deformation field between a pair of images and make the deformation smooth, Dalca et al. developed a diffeomorphic registration model <ref type="bibr" target="#b31">[32]</ref>. To guarantee some other properties of deformation in registration, Mok et al. proposed SYMNet <ref type="bibr" target="#b32">[33]</ref> to predict the bidirectional diffeomorphic deformation field. Kim et al. <ref type="bibr" target="#b33">[34]</ref> introduced the cycle consistency registration model to enhance performance and preserve topology.</p><p>To further improve the performance of the registration model, Mok et al.</p><p>proposed a multi-scale registration model <ref type="bibr" target="#b13">[14]</ref> based on the Laplacian pyramid network. The multi-scale model performed a coarse-to-fine registration based on the deformation field predicted by the previous scale model. <ref type="bibr" target="#b34">[35]</ref> presented a single-pass model that integrated the multi-scale scheme in the decoder to perform coarse-to-fine registration. Cascaded models, such as <ref type="bibr" target="#b14">[15]</ref>, employed several models to warp moving images gradually.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.">Vision Transformers-based Approaches</head><p>Since the advent of ViT, where Transformer was applied in computer vision, it has attracted the attention of many scholars in the field of medical image analysis. Chen et al. <ref type="bibr" target="#b35">[36]</ref> integrated ViT into V-Net at the bottom of their model to perform image registration. Zhang et al. <ref type="bibr" target="#b36">[37]</ref> introduced a dual ViT-based network to enhance the feature modeling capability. Ma et al. <ref type="bibr" target="#b10">[11]</ref> presented a symmetric variant ViT-based U-Net to improve the registration performance. Chen et al. <ref type="bibr" target="#b9">[10]</ref> developed TransMorph, consisting of a Swin transformer-based encoder and a CNN-based decoder. Zhu et al. <ref type="bibr" target="#b37">[38]</ref> designed a symmetric Swin transformer-based architecture that maintains invertibility and topology preservation. In order to solve the problem that the transformation of image features to image matching relationships is implicit, TranMatch <ref type="bibr" target="#b38">[39]</ref>, a dual stream feature matching registration model, was proposed based on the Swin Transformer. All these ViT-based approaches mentioned above indicated performance improvement benefiting from the strong modeling power of ViTs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Methods</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.">Image Registration</head><p>Learning-based deformable image registration minimizes a similarity energy function to establish a dense spatial correspondence between an image pair. Given an image pair {I m , I f } defined on a 3D domain Ω⊂R 3 denoting moving and fixed images. Optimization aims to find an optimal deformation field that can be formulated as</p><formula xml:id="formula_0">φ = arg min ϕ (L sim (I m •ϕ, I f ) + λL reg (ϕ)),<label>(1)</label></formula><p>where the I m and I f denote the moving and fixed image, I m •ϕ is the warped moving image transformed via a deformation field ϕ. L sim is the similarity matrix to estimate the similarity between I m •ϕ and I f . L reg (ϕ) is the regularization, which enforces the smoothness of the deformation field by the spatial gradient, and λ is a hyperparameter used to balance contribution in the learning of similarity and smoothness. Hence, the optimal deformation field φ is obtained.</p><p>In this work, we follow Eq. 1 to train our deformable image registration model unsupervised. Mean squared error (MSE) is utilized as the similarity metric to evaluate the similarity between an image pair, i.e.,</p><formula xml:id="formula_1">L sim = MSE(I m •ϕ, I f ).</formula><p>• is the spatial transform network (STN) <ref type="bibr" target="#b39">[40]</ref>, and I m •ϕ represents I m warped via a deformation field ϕ. STN can warp an image with a deformation field in an interpolation manner. We utilize the diffusion regularizer <ref type="bibr" target="#b40">[41]</ref> on the spatial gradients of a deformation field ϕ. The regularizer is denoted as L reg = Diff(ϕ). Hence, the loss function in this work</p><formula xml:id="formula_2">is L(I m , I f , ϕ) = MSE(I m •ϕ, I f ) + λDiff(ϕ)</formula><p>, where λ is the hyperparameter that determines the trade-off between similarity and regularity. We optimize the parameters of LLaMA-Reg by minimizing this loss function. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.">Adapters for Cross-Domain Projection</head><p>For the fine-tuning methods, adapter tuning is an efficient manner to fine-tune the pretrained model with few parameters gained. In our work, we borrow the idea of adapter-tuning and use adapters composed of linear projections outside LLaMA so that the visual features obtained before LLaMA can be fitted to the parameter space (i.e., language domain) of LLaMA.</p><p>More specifically, the extracted deep features of I m and I f are flattened to feature tokens. Adapter 0 is the first to project the C dimensional features tokens in the visual domain to the language domain. It consists of two linear projections that gradually project the flattened feature tokens to the 4096 dimensions that the LLaMA block requires. The other Adapter i (i ∈ 1, 2,</p><p>employs single linear projection to project the encoded feature tokens in the language domain to the visual domain. Each Adapter i (i ∈ 1, 2, 3, 4) project C dimensional features tokens from LLaMA block to 2 2(i+1) C dimensions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3.">LLaMA Block</head><p>LLaMA 2 is trained on the large-scale corpus dataset, which is an openaccess LLM based on the transformer. According to the number of LLaMA 2 parameters, its pretrained weights can be divided into 7B,13B, etc. We select the 7B pretrained weight for our work. Methods for fine-tuning language models include adapter <ref type="bibr" target="#b23">[24]</ref>, LoRA <ref type="bibr" target="#b41">[42]</ref>, etc. Adopting these technologies, the pretrained model can be applied to downstream tasks with only a small increase in the number of parameters. Inspired by <ref type="bibr" target="#b22">[23]</ref>, we use adapters to embed LLaMA 2 into our registration model. Then, we design a novel LLaMA block for our registration approach. As shown in Fig. <ref type="figure" target="#fig_2">2</ref>, the LLaMA block consists of two pretrained LLaMA 2 that are connected by an Inner Adapter.</p><p>Inner Adapter is a Multi-Layer Perceptron (MLP), a module composed of multi-layer fully connected operations that scales features in the hidden layer.</p><p>The feature dimensions of the pretrained LLaMA 2 7B input and output are both 4096. The previous LLaMA 2 encodes the projected visual features, and the output features are transformed into the hidden states using the Inner Adapter, then fed to the successive block. Therefore, by combining with the initial Adapter 0 , the features in the visual domain can be converted into features in the language domain, and thus, the pretrained LLaMA2 can be applied for encoding. This projection and encoding can be formulated as</p><formula xml:id="formula_4">A 0 (x)→x ′ , F 1 L (x ′ )→x ′ , A IN (x ′ )→x ′ , F 2 L (x ′ )→y,<label>(2)</label></formula><p>where x is the concatenated deep features in visual domain of I m and I f , A 0 is Adapter 0 shown in Fig. <ref type="figure" target="#fig_2">2</ref>, A IN is the Inner Adapter, and F L is the pretrained LLaMA 2. According to the process of Eq. 2, we can finally obtain feature y in the language domain modeled by the LLaMA block. It is worth noting that before this block, a learnable position embedding is added to make the LLaMA block compute the visual features with its position information.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4.">Registration Model with Pretrained LLaMA 2</head><p>The proposed LLaMA-Reg and the proposed LLaMA block are shown in </p><formula xml:id="formula_5">F m i ∈ {F m 1 , F m 2 , ..., F m L } and F f i ∈ {F f 1 , F f 2 , ..., F f L },</formula><p>where L represents the number of the resolution levels in the dual encoding stage. Furthermore, the upsampling operation scales the fused feature to the next stage shape. It is worth noting that in S 3 and S 4 , the deformation field and warped image obtained by composition in the previous stage are added to the feature fusion. In summary, based on the computation mentioned above, the calculation of the fusion of the features and previous information in each S i can be formulated as follows:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4.1.">Multi-Scale Registration Framework</head><formula xml:id="formula_6">S 1 : F 4 = Conv(F 4 m , F 4 f , F 4 t ), F 4 ′ = Up(F 4 ),<label>(3)</label></formula><formula xml:id="formula_7">S 2 : F 3 = Conv(F 3 m , F 3 f , F 4 ′ , F 3 t ), F 3 ′ = Up(F 3 ),<label>(4)</label></formula><formula xml:id="formula_8">S 3 : F 2 = Conv( φ1 , Î1 m , F 2 m , F 2 f , F 3 ′ , F 2 t ), F 2 ′ = Up(F 2 ),<label>(5)</label></formula><formula xml:id="formula_9">S 4 : F 1 = Conv( φ2 , Î2 m , F 1 m , F 1 f , F 2 ′ , F 1 t )<label>(6)</label></formula><p>In the multi-scale registration branch, deformation fields are represented by φi . The warped moving image at resolution stage S i can be obtained by</p><formula xml:id="formula_10">Îi-1 m = I i-1 m • φi-1 starting from S 2</formula><p>, where I i-1 m is the downsampled image at the corresponding stage, and • is the warping function (i.e., STN). At S 4 , the full resolution stage, ϕ is computed by a convolution block, and the final warped image is Îm = I m • φ.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4.2.">Cascaded Registration Decoder</head><p>The first model in our cascaded approach is shown in Fig. <ref type="figure" target="#fig_2">2</ref> is the adapter at ith resolution stage of step n. The feature used to generate the deformation field at each resolution stage is represented as F (5-i) n . In the cascaded method we propose, the feature F (5-i) n generated in the previous step n participates in the feature fusion process of the n + 1 step. Based on this, the feature F (5-i) n+1 generated in the next step can be obtained. Besides the feature fusion between features at different steps, we also added the fusion of deformation fields at different steps. Specifically, the deformation field predicted in the previous step directly affects the deformation field generated in the next step. Thus, we can obtain the final deformation field in the last step by fusing these features and superposing the deformation field.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">Experiments</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.">Dataset Preparation</head><p>To validate the proposed method, LLaMA-Reg, we performed subjectto-subject registration tasks using two publicly available datasets: the OAI dataset<ref type="foot" target="#foot_0">foot_0</ref> for knee MR image registration and the OASIS dataset <ref type="bibr" target="#b43">[44]</ref> for brain MR image registration.</p><p>Knee Subject-to-Subject Registration. For the knee subject-to-subject registration case, we employed the OAI dataset. This data repository provides images from an eleven-year longitudinal cohort study of knee osteoarthritis. Corresponding segmentation maps of knee MR images, obtained from <ref type="bibr" target="#b44">[45]</ref>, were utilized to estimate registration performance. The segmentation maps include femoral bone, tibial bone, femoral cartilage, and tibial cartilage. ANTs <ref type="bibr" target="#b45">[46]</ref> was used to apply affine transformation to align each scan and then resample them to a size of 160 × 160 × 96. The first 200 MR scans were used as the training set, and 90 MR scans were randomly selected from the remaining data (40 scans as fixed and 50 as moving images) to form a test set with a total of 2000 image pairs. For the test set, we invited a professional doctor to annotate the patella for each scan. Thus, the training set consists of 39000 image pairs, and the test set consists of 2000 image pairs, both with five labels, to train and evaluate registration performance.</p><p>Brain Subject-to-Subject Registration. To further demonstrate the performance of LLaMA-Reg, we conducted brain subject-to-subject registration on the OASIS <ref type="bibr" target="#b43">[44]</ref> dataset, which is widely used in deep learning-based regis-tration research. The OASIS data was obtained from Learn2Reg <ref type="bibr" target="#b46">[47]</ref>. Each image has 35 anatomical segmentation maps in OASIS. We resampled the MRI scans into the shape of 112 × 160 × 128. We followed the partitioning of OASIS in Learn2Reg to train the baseline and our models. Since the test set of OASIS in Learn2Reg is not public, we used the validation set to measure the subject-to-subject registration performance. A total of 380 image pairs can be generated through the validation set.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2.">Baseline Methods</head><p>We compared LLaMA-Reg with four deep learning-based methods: Vox-elMorph <ref type="bibr" target="#b30">[31]</ref>, LapIRN <ref type="bibr" target="#b13">[14]</ref>, TransMorph <ref type="bibr" target="#b9">[10]</ref>, and TransMatch <ref type="bibr" target="#b38">[39]</ref>. TransMatch also uses a multi-scale registration framework.</p><p>All baseline methods were trained for 300K iterations on the knee dataset and 400K iterations on the brain dataset. Using the MSE loss function, we set the coefficient to 0.04 for the OAI dataset and 0.02 for the OASIS dataset to better fit each dataset.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3.">Implementation Details</head><p>We conducted experiments on a computing platform of Ubuntu server 23 with an NVIDIA RTX 3090 GPU. Our code was implemented using PyTorch 2.0. All baseline methods were trained using the Adam optimizer, with the learning rate set to 0.0001. Our method applied the similarity loss function MSE and the spatial gradient loss regularization term to train. When the hyperparameter of the spatial regularization term was set to 0.04 and 0.02 for knee and brain image registration, LLaMA-Reg performed better. The cascaded steps of LLaMA-Reg were set to 3. LLaMA-Reg was trained in 130K, 130K, and 30K iterations on the knee dataset for each cascaded step, respectively. For the brain image registration task, each step was set to 40K, 20K, and 20K, respectively. The pretrained LLaMA 2 was obtained from the Meta website<ref type="foot" target="#foot_1">foot_1</ref> , as the LLaMA-Reg deep feature encoder, which requires the number of input and output dimensions are both 4096. It is worth noting that our model and the ablations were trained using PyTorch's automatic mixed precision strategy. Our code is publicly available at GitHub.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4.">Evaluation Metrics</head><p>We utilized the Dice metric to measure the registration accuracy of the proposed and baseline models. The Dice metric is calculated using the overlap of the corresponding segmentation labels of two images, with values ranging from 0 to 1. A higher Dice score indicates better registration accuracy.</p><p>The non-positive Jacobian determinant is used to measure folds in a deformation. If the Jacobian determinant of the deformation field is non-positive, it indicates that the area will be folded during deformation. Time consumption is calculated as the inference time required to perform registration on the GPU for each pair of images.   VoxelMorph, the proposed LLaMA-Reg, which has three cascaded decoders, showed performance improvements of 5.53%, 6.29%, 6.62%, and 9.92%, respectively. By applying the cascaded decoders, which are based on multiple adapters, LLaMA-Reg showed a significant improvement, with the Dice metric increasing from 68.98% to 71.55% for knee scans and from 77.80% to 78.40% for brain scans. We presented the statistical results of all labels in Fig. <ref type="figure" target="#fig_9">5</ref>. Except for the Dice results of LapIRN on the patella, which were higher than our method, ours both achieved superior registration accuracy. The experimental results on the OAI dataset showed that using the multi-scale model combined with adapters and pretrained LLaMA 2 to map the features of an image pair into the language domain could more accurately predict a deformation field.</p><p>The results of |J ϕ | ≤ 0(%) indicated that the results of all methods are on the same order of magnitude, but the results of LapIRN were smoother. In the column of time consumption, we found that CNN-based methods had less inference time consumption than ViT-based methods. Since the more complex architectures of our methods, there was an increase in inference time.</p><p>We presented the statistical results for all labels in Fig. <ref type="figure" target="#fig_9">5</ref>. Except for the Dice results of LapIRN on the patella, which were higher than our method, our methods both achieved superior registration accuracy. The experimental results on the OAI dataset showed that using the multi-scale model combined with adapters and the pretrained LLaMA 2 to map the features of an image pair into the language domain could more accurately predict a deformation field. The results of |J ϕ | ≤ 0(%) indicated that the results of all methods are of the same order of magnitude, but the results of LapIRN were smoother. In terms of time consumption, we found that CNN-based methods had less inference time than ViT-based methods. Due to the more complex architectures of our methods, there was an increase in inference time.</p><p>The quantitative results are shown in Fig. <ref type="figure" target="#fig_10">6</ref>. From the color bars of deformations, we noted that our method predicted the largest displacement among these methods, indicating that our method established the correspondence between more distant voxels. Through the warped images, it can be seen that among all methods, our method produced the most similar warped slice to the fixed image, especially the comparison of the bone structure represented by the labels.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5.2.">Additional Experimental Results on OASIS</head><p>We additionally tested our methods on the OASIS dataset. As shown in Table <ref type="table" target="#tab_0">1</ref>, our methods also achieved the best registration accuracy. In this experiment, the result of LapIRN on the |J ϕ | ≤ 0(%) metric was optimal, and the results of other methods were similar. The result of LLaMA-Reg-C1 was better than VoxelMorph, TransMorph, LapIRN, and TransMatch by 1.38%, 0.27%, 0.41%, and 1.13%, respectively. The registration performance of the cascaded LLaMA-Reg further improved on the brain dataset. Compared with these methods, the performance improved by 1.98%, 0.97%, 1.01%, and 1.73%, respectively. By applying cascaded decoders, LLaMA-Reg had an enhancement of 0.6%. We averaged the Dice scores of symmetric structures in OASIS, combining the Dice metrics of 36 labels into 19. The box plot of the statistical results on the brain is shown in Fig. <ref type="figure" target="#fig_11">7</ref>. These results illustrated that our methods performed best on most segmentation maps.    <ref type="table" target="#tab_0">1</ref>, showed that compared with the scheme using LLaMA Transformer blocks and pretrained LLaMA 2, the performance declined, but it still outperformed baseline methods. This demonstrated that our registration framework with a non-U-shaped structure could achieve higher registration accuracy, proving that the proposed non-U-shaped architecture is more suitable for registration tasks.</p><p>Imapct of Inner settings for Performance When we tested the impact of the MLP mapping scale on the modeling performance of LLaMA 2, we found that although expanding the mapping scale can improve performance, the degree of improvement was limited. Therefore, we chose a mapping multiple of 2 in this work.</p><p>In the standard ViT, when using linear projection to model image features, the spatial information of these features should be modeled simultane-ously. Therefore, when using transformers to solve visual problems, learnable positional encodings are added to express the spatial information of image tokens. We believe that positional embeddings need to be added when calculating image features because adapters, which consist of linear projections, need to learn spatial information. In Ablation 2, we removed the standard positional embedding in LLaMA-Reg-C1. It was observed that without positional embedding, the accuracy of registration dropped significantly. This shows that when using pretrained LLaMA 2 to calculate visual features, positional encoding is also necessary to record the positional information of the image.</p><p>Step </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Overview of the utilization of LLaMA in our work. The fire icon represents the trainable block, and the snow icon indicates the frozen LLaMA block with the pretrained weights.</figDesc><graphic coords="4,149.71,260.04,310.85,174.90" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>The projected features in the visual domain are split into several branches representing different registration stages. We apply the multi-scale framework in each registration stage to achieve coarse-to-fine registration. It is worth noting that the LLaMA block in this figure is an overview. The detail of the designed LLaMA module can be seen in Sec. 3.3. To evaluate the performance of LLaMA-Reg, we conducted registration tasks on two anatomical image datasets: knee MR image and brain MR image. The quantitative and qualitative comparison results demonstrate the superior performance of LLaMA-Reg over state-of-the-art methods. The summary contributions of our LLaMA-Reg are as follows: • We propose an architecture for unsupervised image registration, LLaMA-Reg, which introduces pretrained LLaMA to the registration task and employs a proposed LLaMA block to boost image registration performance.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: The overview of our proposed LLaMA-Reg. LLaMA-Reg employs a dual encoding block to extract the deep features of I m and I f . Adapters are utilized to project visual features to the language domain or language features to the visual domain. S 1 , S 2 , S 3 , and S 4 represent layers at different resolution stages from 1/8 to full resolution scale. Our model performs image registration at these stages to achieve a multi-scale registration manner. The LLaMA block is shown in the light blue box, and we offer its details in the lower right.</figDesc><graphic coords="9,110.85,175.70,388.54,320.12" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Fig. 2 .</head><label>2</label><figDesc>Fig.2. In this work, we follow<ref type="bibr" target="#b42">[43,</ref><ref type="bibr" target="#b34">35]</ref> to construct a dual-stream encoder to extract the deep features separately, which captures the semantic correspondence of two volumes independently. In the dual encoding stage, the pyramid dual encoder extracts features of I m and I f . Specifically, each branch of the dual encoder has the same architecture. Both convolution blocks have a kernel size of 3. The convolution blocks with different strides of 1 or 2 are</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Two multi-scale decoding manners of Single-pass. a. is the normal decoding method, b. is the decoding method of LLaMA-Reg. LB is the LLaMA block.</figDesc><graphic coords="12,207.99,252.75,194.28,143.93" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Overview of our proposed cascaded LLaMA-Reg. The registration procedure is split into n steps. The dotted arrows indicate the omission of some intermediate calculation processes.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><figDesc>VoxelMorph is a CNN-based registration model. It was the first to use a U-shaped structure to predict the full-resolution deformation field and applies the STN to warp the image through the deformation field to achieve image registration. LapIRN is a coarse-to-fine registration model that learns multi-scale deformations. It is divided into three sub-models, predicting the deformation field from 1/4 to full resolution stages. Each sub-model is trained based on the previous model to achieve a coarse-to-fine registration process, generating large deformations. TransMorph employs transformers to capture long-range correspondences between voxels of an image pair. It is a hybrid model consisting of CNN and Swin transformer components, demonstrating superior performance over single-scale registration methods based on CNNs. TransMatch utilizes a dual-stream framework to encode moving and fixed images and includes a local window cross-attention module to achieve explicit feature matching. This design leverages image feature matching information to enhance inter-image matching, further improving image registration.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>1 .</head><label>1</label><figDesc>Experimental Results on OAIWe replicated the baseline methods and retrained all methods using the same dataset partition, then compared their performance on the same test set. The quantitative experimental results are shown in Table??. Among these methods, the registration accuracy of the early CNN-based singlescale registration model, VoxelMorph, was lower than other recent registration methods. Among these methods, the registration accuracy of the early CNN-based single-scale registration model, VoxelMorph, was lower than that of more recent registration methods. Although LapIRN is also based on CNN, its accuracy was better than VoxelMorph and TransMoprh due to its multi-scale structure, which can effectively predict larger deformations. Using the powerful modeling capabilities of Transformers, TransMorph and TransMatch could construct distant voxel relationships, resulting in better registration performance than VoxelMorph. TransMatch introduced a</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><figDesc>multi-layer feature matching method in the transformer, which allowed it to capture deformation information at different feature levels, thereby predicting a more accurate deformation field than other baseline methods. Our method, LLaMA-Reg-C1, which is the proposed model without cascaded decoders, achieved better registration accuracy on the knee dataset. Compared with baseline methods on the Dice metric, LLaMA-Reg-C1 outperformed TransMatch by 2.96%, LapIRN by 3.72%, TransMorph by 4.05%, and Vox-elMorph by 7.35%. Compared with TransMatch, TransMorph, LapIRN, and</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_9"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Box plot of registration results for all methods on each label. TC and FC represent tibia cartilage and femur cartilage, respectively.</figDesc><graphic coords="21,169.14,170.31,271.98,141.25" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_10"><head>Figure 6 :</head><label>6</label><figDesc>Figure 6: Visualization of experimental results on knee MRI. Deformation represents the displacement direction and magnitude of pixels in 3D MR; the warped grid reflects the changes in the current slice. In the warped images, the patella, femur, femoral cartilage, and tibia are represented in blue, yellow, light blue, and purple, respectively.</figDesc><graphic coords="23,110.85,125.80,388.55,343.52" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_11"><head>Figure 7 :</head><label>7</label><figDesc>Figure 7: Box plot of registration results for all methods on OASIS.</figDesc><graphic coords="24,110.85,125.80,388.54,137.12" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_12"><head>4. 6 .</head><label>6</label><figDesc>Ablation StudiesTo verify the impact of the various proposed schemes on registration performance and their effectiveness from multiple aspects, we conducted several ablation experiments of LLaMA-Reg-C1 utilizing the OAI dataset. Ablation results are shown in 2.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_13"><figDesc>-by-step training and joint training for the cascaded decoder. We trained the cascaded decoder in two ways: step-by-step training and joint training. In step-by-step training, the previously trained network is frozen while training the next network. For joint training, the weights of the dual encoding branches were frozen, and all decoding branches were trained together. The different results of the two training manners are shown in Ablation 3. We reported the maximum GPU memory usage during stepby-step training (i.e., the 3rd cascaded step). When the number of cascaded decoding steps was set to 3, the step-by-step trained model outperformed the jointly trained model. The step-by-step trained model only needed to train the decoding part of the current step in each training stage, which occupied less GPU memory and generated more accurate deformations.5. ConclusionIn this work, we propose to use the large language model LLaMA2 as the deep feature calculation component of the registration model and propose an unsupervised medical image registration model with a non-U-shaped structure. In order to use the features calculated by LLaMA2, an adapter is used to convert visual features and language features into each other in order to transfer the calculated features to each scale stage for multi-scale registration. Experimental results on knee and brain data show that our method achieves optimal results. Through ablation experiments, we demonstrate the effectiveness of our proposed non-U-shaped registration framework and the use of pre-trained LLaMA2.6. AcknowledgementsWe would like to express our special gratitude to Dr. Yu Yang from the Department of Orthopedics at Taizhou Hospital for his invaluable contributions to this work, particularly in areas involving medical knowledge and medical imaging. Dr. Yang professionally annotated the test sets used for numerous experiments in the knee MRI registration task, enabling us to test all methods rigorously. Additionally, understanding the changes in bones and joints in knee imaging is crucial for analyzing and diagnosing diseases related to bones and joints. This work lays the foundation for our future research on diseases involving morphological changes in knee bones. This study was funded by the Zhejiang Province Medical Science and Technology Program of China (No. 2020PY088), the Scientific Research of Enze Medical Center (Group) (No. 24EZA01), the Scientific Research of Enze Medical Center (Group) (No. 24EZJX02), the Scientific Research of Enze Medical Center (Group) (No. 24EZCG03)</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="15,110.85,125.80,388.54,222.48" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Comparison results of subject-to-subject knee image registration task. Higher Dice (%) results indicate higher registration accuracy. |J ϕ | ≤ 0 (%) indicates the percentage of folding voxels in a deformation. Time represents the registration seconds consumption using a trained method. Affine Only is the initial alignment result without registration.</figDesc><table><row><cell></cell><cell></cell><cell>Knee</cell><cell></cell><cell cols="2">Brain</cell></row><row><cell>Method</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell cols="3">Dice |J ϕ | ≤ 0 Time</cell><cell cols="2">Dice |J ϕ | ≤ 0</cell></row><row><cell>Affine Only</cell><cell>32.10</cell><cell>-</cell><cell>-</cell><cell>49.92</cell><cell>-</cell></row><row><cell>VoxelMorph</cell><cell>61.63</cell><cell>0.22</cell><cell cols="2">35.19 76.42</cell><cell>0.17</cell></row><row><cell>TransMorph</cell><cell>64.93</cell><cell>0.29</cell><cell cols="2">65.63 77.53</cell><cell>0.17</cell></row><row><cell>LapIRN</cell><cell>65.26</cell><cell>0.10</cell><cell cols="2">46.79 77.39</cell><cell>0.10</cell></row><row><cell>TransMatch</cell><cell>66.02</cell><cell>0.19</cell><cell cols="2">82.03 76.67</cell><cell>0.19</cell></row><row><cell cols="2">LLaMA-Reg-C1 (Ours) 68.98</cell><cell>0.17</cell><cell cols="2">138.81 77.80</cell><cell>0.18</cell></row><row><cell>LLaMA-Reg (Ours)</cell><cell>71.55</cell><cell>0.26</cell><cell cols="2">241.53 78.40</cell><cell>0.17</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 :</head><label>2</label><figDesc>Three ablation studies of LLaMA-Reg-C1. Our ablation experiments report the registration accuracy and the GPU memory occupation during training.</figDesc><table><row><cell></cell><cell>Model</cell><cell>Dice</cell><cell>Memory (MB)</cell></row><row><cell></cell><cell>LLaMA 2</cell><cell>67.39</cell><cell>10474</cell></row><row><cell>Ablation 1</cell><cell>Pretrained LLaMA 2</cell><cell>68.98</cell><cell>7632</cell></row><row><cell></cell><cell>Standard ViT</cell><cell>67.51</cell><cell>22520</cell></row><row><cell></cell><cell>w/o Pos. Emb</cell><cell>59.37</cell><cell>7208</cell></row><row><cell>Ablation 2</cell><cell>Dim (4096 × 4)</cell><cell>69.08</cell><cell>7750</cell></row><row><cell></cell><cell cols="2">Dim (4096 × 2) &amp; w/ Pos. Emb 68.98</cell><cell>7632</cell></row><row><cell></cell><cell>Joint training</cell><cell>71.36</cell><cell>14712</cell></row><row><cell>Ablation 3</cell><cell>Step-by-step</cell><cell cols="2">71.55 8384 (3rd Decoder)</cell></row><row><cell cols="4">Verify the performance improvement of pretrained LLaMA 2</cell></row></table><note><p>Furthermore, to investigate whether the scheme of our architecture had a performance advantage, we replaced LLaMA 2 blocks with standard ViT blocks. The configuration of ViT blocks used for replacement were: number of channels 4096, number of heads 4, number of depth 2. The registration accuracy in Table</p></note></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_0"><p>https://nda.nih.gov/oai/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>https://ai.meta.com/resources/models-and-libraries/</p></note>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Semi-automatic muscle segmentation in mr images using deep registration-based label propagation</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Decaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P.-H</forename><surname>Conze</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ropars</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">T</forename><surname>Sheehan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Pons</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">B</forename><surname>Salem</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Brochard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Rousseau</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Pattern Recognition</title>
+		<imprint>
+			<biblScope unit="volume">140</biblScope>
+			<biblScope unit="page">109529</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">A hybrid, image-based and biomechanics-based registration approach to markerless intraoperative nodule localization during videoassisted thoracoscopic surgery</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Alvarez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Rouzé</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">I</forename><surname>Miga</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Payan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-L</forename><surname>Dillenseger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chabanas</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Medical image analysis</title>
+		<imprint>
+			<biblScope unit="volume">69</biblScope>
+			<biblScope unit="page">101983</biblScope>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Ablative margins of colorectal liver metastases using deformable ct image registration and autosegmentation</title>
+		<author>
+			<persName><forename type="first">Y.-M</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Paolucci</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">S</forename><surname>O'connor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">M</forename><surname>Anderson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Rigaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">M</forename><surname>Fellman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">A</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">K</forename><surname>Brock</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">C</forename><surname>Odisio</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Radiology</title>
+		<imprint>
+			<biblScope unit="volume">307</biblScope>
+			<biblScope unit="page">221373</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">I-gcn: Incremental graph convolution network for conversation emotion detection</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Nie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Liu</surname></persName>
+		</author>
+		<idno type="DOI">10.1109/TMM.2021.3118881</idno>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Multimedia</title>
+		<imprint>
+			<biblScope unit="volume">24</biblScope>
+			<biblScope unit="page" from="4471" to="4481" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Deep-attention network for 3d shape recognition</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Nie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename></persName>
+		</author>
+		<idno type="DOI">10.1109/TIP.2021.3071687</idno>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Image Processing</title>
+		<imprint>
+			<biblScope unit="volume">30</biblScope>
+			<biblScope unit="page" from="4371" to="4383" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">nnunet: a self-configuring method for deep learning-based biomedical image segmentation</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Isensee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">F</forename><surname>Jaeger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">A</forename><surname>Kohl</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Petersen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">H</forename><surname>Maier-Hein</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Nature methods</title>
+		<imprint>
+			<biblScope unit="volume">18</biblScope>
+			<biblScope unit="page" from="203" to="211" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Knowledge distillation with ensembles of convolutional neural networks for medical image segmentation</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">M</forename><surname>Noothout</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Lessmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">C</forename><surname>Van Eede</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">D</forename><surname>Van Harten</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Sogancioglu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">G</forename><surname>Heslinga</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Veta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Van Ginneken</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Išgum</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Medical Imaging</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="page" from="52407" to="052407" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">U-net: Convolutional networks for biomedical image segmentation</title>
+		<author>
+			<persName><forename type="first">O</forename><surname>Ronneberger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Fischer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brox</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Medical Image Computing and Computer-Assisted Intervention -MICCAI</title>
+		<editor>
+			<persName><forename type="first">N</forename><surname>Navab</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">J</forename><surname>Hornegger</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">W</forename><forename type="middle">M</forename><surname>Wells</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">A</forename><forename type="middle">F</forename><surname>Frangi</surname></persName>
+		</editor>
+		<imprint>
+			<biblScope unit="page" from="234" to="241" />
+			<date type="published" when="2015">2015. 2015</date>
+			<publisher>Springer International Publishing</publisher>
+			<pubPlace>Cham</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Unet++: Redesigning skip connections to exploit multiscale features in image segmentation</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">M R</forename><surname>Siddiquee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Tajbakhsh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE transactions on medical imaging</title>
+		<imprint>
+			<biblScope unit="volume">39</biblScope>
+			<biblScope unit="page" from="1856" to="1867" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Transformer for unsupervised medical image registration</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">C</forename><surname>Frey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">P</forename><surname>Segars</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Transmorph</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Medical Image Analysis</title>
+		<imprint>
+			<biblScope unit="volume">82</biblScope>
+			<biblScope unit="page">102615</biblScope>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Symmetric transformer-based network for unsupervised image registration</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Liu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<publisher>Knowledge-Based Systems</publisher>
+			<biblScope unit="page">109959</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Xmorpher: Full transformer for deformable medical image registration via cross attention</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Kong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-L</forename><surname>Coatrieux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Shu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Li</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Medical Image Computing and Computer-Assisted Intervention</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="217" to="226" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Staring, Nonrigid image registration using multi-scale 3d convolutional neural networks</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Sokooti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">De</forename><surname>Vos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Berendsen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">P</forename><surname>Lelieveldt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Išgum</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Medical Image Computing and Computer Assisted Intervention-MICCAI 2017: 20th International Conference</title>
+		<meeting><address><addrLine>Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2017">September 11-13, 2017. 2017</date>
+			<biblScope unit="page" from="232" to="239" />
+		</imprint>
+	</monogr>
+	<note>QC Proceedings, Part I 20</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Large deformation diffeomorphic image registration with laplacian pyramid networks</title>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">C</forename><surname>Mok</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">C</forename><surname>Chung</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Medical Image Computing and Computer Assisted Intervention-MICCAI 2020: 23rd International Conference</title>
+		<meeting><address><addrLine>Lima, Peru</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2020">October 4-8, 2020. 2020</date>
+			<biblScope unit="page" from="211" to="221" />
+		</imprint>
+	</monogr>
+	<note>Proceedings, Part III 23</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Recursive cascaded networks for unsupervised medical image registration</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">I</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">-C</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)</title>
+		<meeting>the IEEE/CVF International Conference on Computer Vision (ICCV)</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Unsupervised 3d endto-end medical image registration with volume tweening network</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Eric</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE journal of biomedical and health informatics</title>
+		<imprint>
+			<biblScope unit="volume">24</biblScope>
+			<biblScope unit="page" from="1394" to="1404" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<author>
+			<persName><forename type="first">H</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bhosale</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Open foundation and fine-tuned chat models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">2</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Pythia: A suite for analyzing large language models across training and scaling</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Schoelkopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">G</forename><surname>Anthony</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Bradley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>O'brien</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Hallahan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">A</forename><surname>Khan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Purohit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">U</forename><forename type="middle">S</forename><surname>Prashanth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Raff</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="2397" to="2430" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Blip-2: Bootstrapping language-image pre-training with frozen image encoders and large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Savarese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Hoi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.12597</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Learning to prompt for visionlanguage models</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">C</forename><surname>Loy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">International Journal of Computer Vision</title>
+		<imprint>
+			<biblScope unit="volume">130</biblScope>
+			<biblScope unit="page" from="2337" to="2348" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Learning to prompt for visionlanguage models</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">C</forename><surname>Loy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">International Journal of Computer Vision</title>
+		<imprint>
+			<biblScope unit="volume">130</biblScope>
+			<biblScope unit="page" from="2337" to="2348" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Learning multiple visual domains with residual adapters, Advances in neural information processing systems</title>
+		<author>
+			<persName><forename type="first">S.-A</forename><surname>Rebuffi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Bilen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vedaldi</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Parameter-efficient transfer learning for nlp</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Houlsby</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Giurgiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jastrzebski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Morrone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>De Laroussilhe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gesmundo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Attariyan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gelly</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="2790" to="2799" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-W</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Toutanova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bert</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:1810.04805</idno>
+		<title level="m">Pre-training of deep bidirectional transformers for language understanding</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Learning to prompt for visionlanguage models</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">C</forename><surname>Loy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">International Journal of Computer Vision</title>
+		<imprint>
+			<biblScope unit="volume">130</biblScope>
+			<biblScope unit="page" from="2337" to="2348" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Linear spaces of meanings: compositional structures in vision-language models</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Trager</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Perera</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zancato</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Achille</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Bhatia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Soatto</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF International Conference on Computer Vision</title>
+		<meeting>the IEEE/CVF International Conference on Computer Vision</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="15395" to="15404" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain</title>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">B</forename><surname>Avants</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">L</forename><surname>Epstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Grossman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">C</forename><surname>Gee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Medical Image Analysis</title>
+		<imprint>
+			<biblScope unit="volume">12</biblScope>
+			<biblScope unit="page" from="26" to="41" />
+			<date type="published" when="2008">2008</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Mrf-based deformable registration and ventilation estimation of lung ct</title>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">P</forename><surname>Heinrich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Jenkinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Brady</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">A</forename><surname>Schnabel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Medical Imaging</title>
+		<imprint>
+			<biblScope unit="volume">32</biblScope>
+			<biblScope unit="page" from="1239" to="1248" />
+			<date type="published" when="2013">2013</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Arbitrary order total variation for deformable image registration</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Duan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Bartlett</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Qiu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Pattern Recognition</title>
+		<imprint>
+			<biblScope unit="page">109318</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Voxelmorph: a learning framework for deformable medical image registration</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Balakrishnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">R</forename><surname>Sabuncu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Guttag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">V</forename><surname>Dalca</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE transactions on medical imaging</title>
+		<imprint>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="page" from="1788" to="1800" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Unsupervised learning of probabilistic diffeomorphic registration for images and surfaces</title>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">V</forename><surname>Dalca</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Balakrishnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Guttag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">R</forename><surname>Sabuncu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Medical image analysis</title>
+		<imprint>
+			<biblScope unit="volume">57</biblScope>
+			<biblScope unit="page" from="226" to="236" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Fast symmetric diffeomorphic image registration with convolutional neural networks</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Mok</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chung</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)</title>
+		<imprint>
+			<date type="published" when="2020">2020. 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Cyclemorph: Cycle consistent unsupervised deformable image registration</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">K</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">H</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">C</forename><surname>Ye</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Medical Image Analysis</title>
+		<imprint>
+			<biblScope unit="volume">71</biblScope>
+			<biblScope unit="page">102036</biblScope>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Non-iterative coarse-to-fine registration based on single-pass deep cumulative learning</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Bi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kim</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Medical Image Computing and Computer-Assisted Intervention</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="88" to="97" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">Vit-v-net: Vision transformer for unsupervised volumetric medical image registration</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Frey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Du</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Medical Imaging with Deep Learning</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Learning dual transformer network for diffeomorphic registration</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Pei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zha</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Medical Image Computing and Computer-Assisted Intervention</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="129" to="138" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Swin-voxelmorph: A symmetric unsupervised learning model for deformable medical image registration using swin transformer</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Lu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Medical Image Computing and Computer Assisted Intervention -MICCAI 2022</title>
+		<editor>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Q</forename><surname>Dou</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">P</forename><forename type="middle">T</forename><surname>Fletcher</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Speidel</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Li</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Cham</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer Nature Switzerland</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="78" to="87" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Transmatch: A transformer-based multilevel dual-stream feature matching network for unsupervised deformable image registration</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">C</forename><surname>Gee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Medical Imaging</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">Spatial transformer networks</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Jaderberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Simonyan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zisserman</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">28</biblScope>
+			<biblScope unit="page" from="2017" to="2025" />
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">An unsupervised learning model for deformable medical image registration</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Balakrishnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">R</forename><surname>Sabuncu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Guttag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">V</forename><surname>Dalca</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<imprint>
+			<date type="published" when="2018">2018. 2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Low-rank adaptation of large language models</title>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">J</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<meeting><address><addrLine>Lora</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Dual-stream pyramid registration network</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Kang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">R</forename><surname>Scott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Reyes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Medical image analysis</title>
+		<imprint>
+			<biblScope unit="volume">78</biblScope>
+			<biblScope unit="page">102379</biblScope>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">Open access series of imaging studies (oasis): crosssectional mri data in young, middle aged, nondemented, and demented older adults</title>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">S</forename><surname>Marcus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">H</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Parker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">G</forename><surname>Csernansky</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">C</forename><surname>Morris</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">L</forename><surname>Buckner</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of cognitive neuroscience</title>
+		<imprint>
+			<biblScope unit="volume">19</biblScope>
+			<biblScope unit="page" from="1498" to="1507" />
+			<date type="published" when="2007">2007</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<analytic>
+		<title level="a" type="main">Automated segmentation of knee bone and cartilage combining statistical shape knowledge and convolutional neural networks: Data from the osteoarthritis initiative</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Ambellan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Tack</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ehlke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zachow</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Medical image analysis</title>
+		<imprint>
+			<biblScope unit="volume">52</biblScope>
+			<biblScope unit="page" from="109" to="118" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">A reproducible evaluation of ants similarity metric performance in brain image registration</title>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">B</forename><surname>Avants</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">J</forename><surname>Tustison</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">A</forename><surname>Cook</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Klein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">C</forename><surname>Gee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Neuroimage</title>
+		<imprint>
+			<biblScope unit="volume">54</biblScope>
+			<biblScope unit="page" from="2033" to="2044" />
+			<date type="published" when="2011">2011</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">Learn2reg: comprehensive multi-task medical image registration challenge, dataset and evaluation in the era of deep learning</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Hering</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Hansen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">C</forename><surname>Mok</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">C</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Siebert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Häger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Lange</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kuckertz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Heldmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Shao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Medical Imaging</title>
+		<imprint>
+			<biblScope unit="volume">42</biblScope>
+			<biblScope unit="page" from="697" to="712" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

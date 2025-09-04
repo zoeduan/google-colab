@@ -1,0 +1,1209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">BEYOND SEGMENTATION: ROAD NETWORK GENERATION WITH MULTI-MODAL LLMS *</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-10-15">15 Oct 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Sumedh</forename><surname>Rasal</surname></persName>
+							<email>srasal3@gatech.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">HERE North America LLC Georgia Institute Of Technology</orgName>
+								<orgName type="institution" key="instit2">HERE North America LLC</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Sanjay</forename><surname>Kumar Boddhu</surname></persName>
+							<email>sanjaykumar.boddhu@here.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">HERE North America LLC Georgia Institute Of Technology</orgName>
+								<orgName type="institution" key="instit2">HERE North America LLC</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">BEYOND SEGMENTATION: ROAD NETWORK GENERATION WITH MULTI-MODAL LLMS *</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-10-15">15 Oct 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">D77185BF1956BB4D551381B86769BBDA</idno>
+					<idno type="arXiv">arXiv:2310.09755v1[cs.CV]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:31+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Multi-Modal Language Models</term>
+					<term>Road Network Generation</term>
+					<term>Autonomous Navigation</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>This paper introduces an innovative approach to road network generation through the utilization of a multi-modal Large Language Model (LLM). Our model is specifically designed to process aerial images of road layouts and produce detailed, navigable road networks within the input images. The core innovation of our system lies in the unique training methodology employed for the large language model to generate road networks as its output. This approach draws inspiration from the BLIP-2 architecture [1], leveraging pre-trained frozen image encoders and large language models to create a versatile multi-modal LLM. Our work also offers an alternative to the reasoning segmentation method proposed in the LISA paper <ref type="bibr" target="#b1">[2]</ref>. By training the large language model with our approach, the necessity for generating binary segmentation masks, as suggested in the LISA paper <ref type="bibr" target="#b1">[2]</ref>, is effectively eliminated. Experimental results underscore the efficacy of our multi-modal LLM in providing precise and valuable navigational guidance. This research represents a significant stride in bolstering autonomous navigation systems, especially in road network scenarios, where accurate guidance is of paramount importance.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>In recent years, the field of large language models (LLMs) has witnessed a remarkable transformation, transitioning from text-based generation to the generation of diverse modalities, including text, images, audio, and video, all through a single LLM. This evolution, from ChatGPT-4 <ref type="bibr" target="#b2">[3]</ref> to a myriad of multi-modal LLMs, has significantly advanced the capabilities of AI systems to process and understand various forms of data. These multi-modal LLMs are designed to emulate the holistic perceptual abilities of humans, enabling them to process and generate content in more versatile ways. Unlike previous models, such as ChatGPT-4 <ref type="bibr" target="#b2">[3]</ref>, MiniGPT-4 <ref type="bibr" target="#b3">[4]</ref>, LISA <ref type="bibr" target="#b1">[2]</ref>, and others <ref type="bibr" target="#b4">[5]</ref>, which aimed to be general-purpose multi-modal models <ref type="bibr" target="#b5">[6]</ref>  <ref type="bibr" target="#b6">[7]</ref>, our work introduces a novel approach that tailors the training of such models to address a specific challenge: generating navigable road networks from aerial images.</p><p>In the groundbreaking LISA paper <ref type="bibr" target="#b1">[2]</ref>, the authors introduced a novel concept of utilizing both text and images within a large language model, pioneering the use of segmentation masks. While innovative, this concept prompted us to question whether segmentation masks are indispensable for this task. Could we achieve similar outcomes by training a large language model differently, while adhering to the general multi-modal architecture principles highlighted in models like , NextGPT <ref type="bibr" target="#b7">[8]</ref>, BLIP-2 <ref type="bibr" target="#b0">[1]</ref>, and others? Our model, known as NavGPT, is built upon the architecture of MiniGPT-4, harnessing Vicuna's visual component, as introduced in BLIP-2 <ref type="bibr" target="#b0">[1]</ref>. NavGPT reuses the crucial modification of a new projection layer that aligns encoded visual features with Vicuna's language model <ref type="bibr" target="#b8">[9]</ref> while keeping all other vision and language components frozen <ref type="bibr" target="#b9">[10]</ref> [11] <ref type="bibr" target="#b11">[12]</ref>, introduced in MiniGPT-4's <ref type="bibr" target="#b3">[4]</ref> architecture. During training, we provide the model with a JSON file listing the image name and the precise coordinates of all road networks found in the image. The Q-Former module is trained to bridge its output with the frozen large language model (Vicuna). This innovative training approach not only allows researchers to address unique problems using open-sourced pre-trained large language models but also serves as a testament to the versatility of large language models. In this paper, we highlight one such use case. As we transition this system into production, we aim to share insights into the challenges we've encountered, thereby demonstrating the validity of our novel training technique for mastering a wide array of tasks using an LLM. Training our model required just one A100 GPU for approximately 26 hours, highlighting the cost-effectiveness of retraining such models to cater to personalized use cases. Our objective is to showcase that large language models offer a novel solution to addressing the challenges of map-making, potentially paving the way for achieving an autonomous navigable world.</p><p>In essence, our paper makes the following pivotal contributions:</p><p>• Reconstructing Perception: Leveraging the potential of large language models, we propose a novel imageinstruction pair that includes the image's identifier and precise coordinates of the road network(s). This pairing empowers the large language model to develop an intrinsic comprehension of road network identification when confronted with aerial view images.</p><p>• Segmentation Simplified: Our unique training approach obviates the need for segmentation masks in large language models. By dispensing with the step of generating training data for region-of-interest segmentation and architecturally eschewing the production of segmented masks as model outputs, we streamline the training process and enhance efficiency.</p><p>• Our model builds upon the robust architecture of MiniGPT-4 <ref type="bibr" target="#b3">[4]</ref>. However, it distinguishes itself by requiring a mere 10,000 image-instruction pairs for training. Remarkably, even in a zero-shot setting, our model demonstrates commendable performance, underscoring its efficiency in relation to the retraining effort. This demonstrates that upcoming multi-modal large language models can effectively address a wide array of challenges, many of which may not be solely text-based.</p><p>In summary, our research builds upon the recent advancements in multi-modal LLMs</p><formula xml:id="formula_0">[2] [13] [1] [8] [14] [4] [15],</formula><p>providing a focused and innovative solution to the task of generating navigable road networks from aerial images. By leveraging a tailored training approach, NavGPT aims to empower autonomous navigation systems, particularly in scenarios where precise navigational guidance is essential.</p><p>2 Related Works</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Evolution of Large Language Models</head><p>The quest for progress in Artificial General Intelligence (AGI) has been an enduring aspiration within the research community, with numerous tools and methodologies explored <ref type="bibr">[16] [17]</ref>. However, a true breakthrough remained elusive.</p><p>Everything changed with the introduction of GPT-3, particularly the emergence of ChatGPT <ref type="bibr" target="#b17">[18]</ref>, which harnessed the power of GPT-3. The journey of GPT-based models has been a remarkable evolution, marked by continuous advancements. The most recent stride, embodied in ChatGPT powered by GPT-4 <ref type="bibr" target="#b2">[3]</ref>, has redefined the landscape of general artificial intelligence.</p><p>Yet, the inner workings of GPT-4 <ref type="bibr" target="#b2">[3]</ref> remained shrouded in mystery for the broader research community. This enigma persisted until the advent of open-sourced models such as Vicuna <ref type="bibr" target="#b8">[9]</ref> and LLaMa <ref type="bibr" target="#b18">[19]</ref> [20] <ref type="bibr" target="#b20">[21]</ref>. Each of these models brought noteworthy enhancements in terms of retraining possibilities and the quality of inferred model outputs. Notably, Meta's recent release of LLaMa-2 <ref type="bibr" target="#b21">[22]</ref> designed for commercial applications, represents a significant development. This newfound accessibility is expected to foster innovation across various domains.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Foundational Multi-Modal Large Language Models</head><p>As Large Language Models (LLMs) <ref type="bibr" target="#b8">[9]</ref> [23] [21] [19] [22] [17] [24] [25] [26] [27] [28] [29] [30] [31] [32] began to conquer text generation challenges, a world of new possibilities unfurled. Notably, they exhibited an improved grasp of contextual nuances, leading to more coherent text-to-text conversations. Extensive efforts were dedicated to incorporating human-in-the-loop feedback, refining the conversational finesse of LLMs. However, it was inevitable that the research landscape would expand beyond text-to-text generation alone. Soon enough, the research community shifted its focus to text-and-image conversations as inputs for LLMs, heralding the era of Multi-Modal Large Language Models. The fundamental idea driving this approach involved training the models to comprehend images by processing visual features through dedicated encoders. These features were then seamlessly integrated into LLMs as input. This methodology greatly facilitated the LLMs' capacity to interpret images, harnessing the valuable information embedded in image-caption pairs during the training phase.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3">Advancing Multi-Modal Large Language Models</head><p>In recent times, the latest iterations of multi-modal large language models <ref type="bibr" target="#b1">[2]</ref> [13] [1] [14] [8] <ref type="bibr" target="#b3">[4]</ref> have embraced versatility, accommodating an array of input formats. These formats encompass text, images, videos, and audio, reflecting the dynamic nature of contemporary data sources <ref type="bibr" target="#b14">[15]</ref>. Correspondingly, these models exhibit a harmonious synergy between inputs and outputs. For each distinct format, a dedicated encoder and decoder are seamlessly integrated. This structural architecture empowers advanced systems like ChatGPT-4 <ref type="bibr" target="#b2">[3]</ref> to seamlessly process input data and generate corresponding outputs.</p><p>Nevertheless, even these advanced systems are not immune to imperfections, particularly within their encoders and decoders. These systems may encounter challenges related to information loss during data transformation, leading to instances where the broader contextual understanding is compromised. This paper introduces novel solutions to address a few of these challenges.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Method</head><p>While multi-modal large language models offer numerous advantages, a significant hurdle lies in the generation of training data. Our model is rooted in the architectural framework of MiniGPT-4 <ref type="bibr" target="#b3">[4]</ref>, designed to establish synergy between visual data from a pre-trained vision encoder and a sophisticated large language model (LLM). We leverage Vicuna <ref type="bibr" target="#b8">[9]</ref> as the language decoder, introducing a pioneering training method for road network identification within images.</p><p>In terms of visual perception, we adopt a similar approach to the visual encoder employed in BLIP-2 <ref type="bibr" target="#b0">[1]</ref>, harnessing a Vision Transformer <ref type="bibr" target="#b32">[33]</ref> backbone in conjunction with their pre-trained Q-Former <ref type="bibr" target="#b0">[1]</ref>. To facilitate seamless communication between the visual encoder and the LLM, we introduce a novel training procedure, augmenting the MiniGPT-4 <ref type="bibr" target="#b3">[4]</ref> projection layer. This innovative approach bridges the gap, enabling effective collaboration between the two components.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Data Collection and Preprocessing</head><p>Automating road navigation presents a formidable challenge, primarily due to the labor-intensive nature of data collection. However, our work benefits from operating within the spatial domain, where obtaining a portion of the required training data is relatively straightforward. We are privileged to have access to satellite imagery for specific global regions. In this study, we focus on training the model using imagery sourced from the Western European region.</p><p>To infuse a higher level of naturalness into the generated language and elevate the model's overall utility, we advocate for the importance of road navigation segment training. Unfortunately, datasets suitable for the vision-language domain, especially in the context of road navigation, are virtually non-existent. To overcome this gap, we painstakingly assembled a meticulously detailed image description dataset. This dataset has been meticulously crafted with the sole purpose of facilitating the alignment of vision and language. During the alignment phase of our NavGPT model, this dataset is deployed to fine-tune the model for enhanced performance.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Novel Training Approach</head><p>NavGPT, our innovative approach, deviates from the reliance on segmentation masks suggested by LISA <ref type="bibr" target="#b1">[2]</ref>. Our model draws inspiration from MiniGPT-4 <ref type="bibr" target="#b3">[4]</ref>, which is itself influenced by BLIP-2 <ref type="bibr" target="#b12">[13]</ref> [1]. The pivotal component, the projection layer coupled with the Q-Transformer <ref type="bibr" target="#b0">[1]</ref>, empowers our model to assess the presence or absence of a road network in a given image.</p><p>This accomplishment is realized through training the model with an image-instruction pair file that explicitly indicates whether a given image contains a road network. Here is a snippet of the JSON file contents, which sheds light on our training data.</p><p>{ "image_id": "54534_33840", "caption": "Found a road" }, { "image_id": "54537_33868", "caption": "No roads found" } We conducted model training for 5,000 steps and observed promising results in a zero-shot setting. This initial success ignited our curiosity about the model's potential. What if, in addition to recognizing the presence of a road network within an image, we could train it to pinpoint the image coordinates of the road network? To explore this hypothesis, we required a substantial dataset.</p><p>Fortunately, we had access to various road geometries in the Western European region. Leveraging HERE's internal aerial imagery service, we initiated image queries in regions where road network geometry overlapped. The images had dimensions of 1280 by 1280 pixels. These overlapping regions corresponded to areas with well-defined road networks. A Python function was employed to perform these queries and extract the image coordinates of the road network (in the form of a line string) for 10,000 such scenarios.</p><p>Notably, approximately 40% of the images did not contain overlapping road network geometry. However, these images were still included in the original set of 10,000 instructions. This inclusion served the dual purpose of enabling the model to discern the presence or absence of a road network and, if present, to provide accurate image coordinates.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>{</head><p>"image_id": "54537_33867", "caption": Found 1 road. Image coordinates are as follows:</p><p>[[(219, 114), (283, 271)]]" }, { "image_id": "54537_33879", "caption": "Found 2 roads. Image coordinates are as follows:</p><p>[[(0, 775), (0, 731), (644, 28)], [(365, 0), (629, 3), (644, 28)]]" }  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Experiment</head><p>In this section, we embark on a journey to unravel the diverse and emerging capabilities of our NavGPT model. Through a series of qualitative experiments, we shed light on NavGPT's remarkable proficiency in a spectrum of navigation-based tasks, showcasing its advanced abilities compared to traditional vision-language models. Refer figures 2 3</p><p>To assess our model, we implemented a straightforward method to compare its output with the ground truth data acquired during the training phase. We reserved a set of 100 image-instruction pairs for the testing phase.</p><p>Table <ref type="table" target="#tab_1">1</ref> 1 presents the model's accuracy in discerning the presence or absence of a road network in an image, with a score of 0.69.</p><p>In Table <ref type="table" target="#tab_2">2</ref> 2, we focus on the model's ability to identify the number of roads within a given image, achieving an accuracy score of 0.37. We believe that further refinement can be achieved by extending the model's training to 2,000 -5,000 additional steps.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Road Navigation Interpretation</head><p>NavGPT's exceptional capability lies in its proficiency to offer detailed and contextually relevant road networks based on the input image.  The model exhibits a reasonable performance, although it does encounter some limitations. In our forthcoming research within this domain, we intend to expand the range of scenarios presented in the model and undertake retraining to enhance its overall accuracy.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>In conclusion, NavGPT presents a novel way to train the multi-modal large language models. By diverging from traditional segmentation masks and leveraging the architecture of MiniGPT-4 <ref type="bibr" target="#b3">[4]</ref> influenced by BLIP-2 <ref type="bibr" target="#b12">[13]</ref> [1], NavGPT empowers itself to discern and describe road networks in images. Our approach, founded on the projection layer and the Q-Transformer <ref type="bibr" target="#b0">[1]</ref>, offers a nuanced understanding of visual content, surpassing the capabilities of its predecessors.</p><p>Through extensive training with image-instruction pairs, NavGPT has demonstrated impressive abilities in identifying and describing road networks within images. The model's success, even in zero-shot settings, has inspired further exploration. By introducing image coordinates into the training process, we aim to unlock even greater potential.</p><p>Our work showcases the advancements in multi-modal large language models and addresses a real-world problem under the right context. NavGPT's contribution extends beyond the scientific community, offering practical applications for developing autonomous navigation systems.</p><p>In summary, NavGPT represents a remarkable leap in multi-modal AI, heralding a new era in understanding and generating diverse modalities from text and images, with the potential to transform the field of AI in ways we are only beginning to fathom.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: NavGPT architecture based on MiniGPT-4 Source: [4].</figDesc><graphic coords="3,95.40,72.00,421.20,229.57" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Experiment 1: Identify road network</figDesc><graphic coords="5,95.40,72.00,421.19,158.77" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Experiment 2: Identify road network</figDesc><graphic coords="6,95.40,72.00,421.18,150.66" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>Qualitative Evaluation 1: Confusion Matrix</figDesc><table><row><cell></cell><cell>NavGPT</cell><cell></cell></row><row><cell></cell><cell cols="2">Road Found Road Not Found</cell></row><row><cell cols="2">Ground Truth Road Found 61</cell><cell>13</cell></row><row><cell>GT Road Not Found</cell><cell>18</cell><cell>8</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 2 :</head><label>2</label><figDesc>To exemplify this, we conducted a performance comparison between NavGPT and MiniGPT-4<ref type="bibr" target="#b3">[4]</ref>, the foundational model upon which NavGPT is built. Through two distinct examples, we unveil NavGPT's multifaceted descriptive abilities. One example from our evaluation highlights NavGPT's adeptness at recognizing multiple road networks within an image. In sharp contrast, MiniGPT-4<ref type="bibr" target="#b3">[4]</ref> lacks the training to discern road networks, underscoring the evident advantage of NavGPT's nuanced comprehension of visual content. Unlike previous iterations of multi-modal Qualitative Evaluation 2</figDesc><table><row><cell></cell><cell>NavGPT</cell><cell></cell></row><row><cell></cell><cell cols="2">Roads with 1 Road Roads with 2+ Roads</cell></row><row><cell>GT 1 Road Found</cell><cell>12</cell><cell>3</cell></row><row><cell cols="2">GT 2+ Roads Found 19</cell><cell>1</cell></row></table></figure>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgments</head><p>We extend our gratitude to <rs type="institution">HERE North America LLC</rs> for generously providing the hardware necessary for model training and conducting our experiments. We also appreciate HERE for granting us access to their aerial imagery service and the road network line strings that were instrumental in NavGPT's training.</p></div>
+			</div>			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Blip-2: Bootstrapping language-image pre-training with frozen image encoders and large language models</title>
+		<author>
+			<persName><forename type="first">Junnan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dongxu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Silvio</forename><surname>Savarese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Hoi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.12597</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Lai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuotao</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yukang</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanwei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuhui</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shu</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaya</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lisa</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.00692</idno>
+		<title level="m">Reasoning segmentation via large language model</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title/>
+	</analytic>
+	<monogr>
+		<title level="j">OpenAI. Gpt-4 technical report. Open AI</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Minigpt-4: Enhancing vision-language understanding with advanced large language models</title>
+		<author>
+			<persName><forename type="first">Deyao</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoqian</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohamed</forename><surname>Elhoseiny</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.10592</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Learning transferable visual models from natural language supervision</title>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jong</forename><forename type="middle">Wook</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Hallacy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriel</forename><surname>Goh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Clark</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International conference on machine learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="8748" to="8763" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Scaling instruction-finetuned language models</title>
+		<author>
+			<persName><forename type="first">Chung</forename><surname>Hyung Won</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shayne</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostafa</forename><surname>Dehghani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siddhartha</forename><surname>Brahma</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.11416</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Enabling multimodal generation on clip via vision-language knowledge distillation</title>
+		<author>
+			<persName><forename type="first">Wenliang</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lu</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lifeng</forename><surname>Shang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qun</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pascale</forename><surname>Fung</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.06386</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">Shengqiong</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Fei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leigang</forename><surname>Qu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tat-Seng</forename><surname>Chua</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.05519</idno>
+		<title level="m">Next-gpt: Any-to-any multimodal llm</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Vicuna: An open-source chatbot impressing gpt-4 with 90%* chatgpt quality</title>
+		<author>
+			<persName><forename type="first">Wei-Lin</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuohan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zi</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhanghao</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghao</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<ptr target="https://vicuna.lmsys.org" />
+		<imprint>
+			<date type="published" when="2023-04">April 2023</date>
+			<biblScope unit="volume">14</biblScope>
+			<biblScope unit="page">2023</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Opt: Open pre-trained transformer language models</title>
+		<author>
+			<persName><forename type="first">Susan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Roller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikel</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Moya</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuohui</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Dewan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mona</forename><surname>Diab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xian</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xi</forename><surname>Victoria Lin</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2205.01068</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><forename type="first">Pengchuan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiujun</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaowei</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianwei</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lijuan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianfeng</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Vinvl</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2101.00529</idno>
+		<title level="m">Making visual representations matter in vision-language models</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page">8</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Lit: Zero-shot transfer with locked-image text tuning</title>
+		<author>
+			<persName><forename type="first">Xiaohua</forename><surname>Zhai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Basil</forename><surname>Mustafa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andreas</forename><surname>Steiner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Keysers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Kolesnikov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucas</forename><surname>Beyer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="18123" to="18133" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Blip: Bootstrapping language-image pre-training for unified vision-language understanding and generation</title>
+		<author>
+			<persName><forename type="first">Junnan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dongxu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caiming</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Hoi</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="12888" to="12900" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Multimodal few-shot learning with frozen language models</title>
+		<author>
+			<persName><forename type="first">Maria</forename><surname>Tsimpoukelli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><forename type="middle">L</forename><surname>Menick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Serkan</forename><surname>Cabi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oriol</forename><surname>Eslami</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felix</forename><surname>Vinyals</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hill</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="200" to="212" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Generating images with multimodal language models</title>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Yu Koh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Fried</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruslan</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.17216</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Unified language model pre-training for natural language understanding and generation</title>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenhui</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Furu</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianfeng</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hsiao-Wuen</forename><surname>Hon</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page">32</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Chatgpt asks, blip-2 answers: Automatic questioning towards enriched visual descriptions</title>
+		<author>
+			<persName><forename type="first">Deyao</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kilichbek</forename><surname>Haydarov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoqian</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenxuan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohamed</forename><surname>Elhoseiny</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.06594</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title/>
+		<ptr target="https://openai.com/blog/chatgpt" />
+	</analytic>
+	<monogr>
+		<title level="j">OpenAI. Introducing chatgpt</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Faisal</forename><surname>Azhar</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<title level="m">Open and efficient foundation language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishi</forename><surname>Bommasani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dani</forename><surname>Yogatama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Donald</forename><surname>Metzler</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2206.07682</idno>
+		<title level="m">Emergent abilities of large language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<author>
+			<persName><forename type="first">Rohan</forename><surname>Taori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ishaan</forename><surname>Gulrajani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yann</forename><surname>Dubois</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuechen</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carlos</forename><surname>Guestrin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tatsunori B</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<title level="m">Stanford alpaca: An instruction-following llama model</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Llama 2: Open foundation and fine-tuned chat models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amjad</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolay</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prajjwal</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shruti</forename><surname>Bhosale</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bert</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1810.04805</idno>
+		<title level="m">Pre-training of deep bidirectional transformers for language understanding</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Exploring the limits of masked visual representation learning at scale</title>
+		<author>
+			<persName><forename type="first">Yuxin</forename><surname>Fang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Binhui</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quan</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ledell</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinggang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tiejun</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinlong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yue</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Eva</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="19358" to="19369" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Making the v in vqa matter: Elevating the role of image understanding in visual question answering</title>
+		<author>
+			<persName><forename type="first">Yash</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tejas</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Douglas</forename><surname>Summers-Stay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devi</forename><surname>Parikh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE conference on computer vision and pattern recognition</title>
+		<meeting>the IEEE conference on computer vision and pattern recognition</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="6904" to="6913" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jiaxian</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junnan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dongxu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anthony</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huat</forename><surname>Tiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boyang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dacheng</forename><surname>Tao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven Ch</forename><surname>Hoi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.10846</idno>
+		<title level="m">From images to textual prompts: Zero-shot vqa with frozen large language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Unifying vision-and-language tasks via text generation</title>
+		<author>
+			<persName><forename type="first">Jaemin</forename><surname>Cho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Lei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohit</forename><surname>Bansal</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="1931" to="1942" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">Xi</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soravit</forename><surname>Changpinyo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Piotr</forename><surname>Piergiovanni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Padlewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Salz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Goodman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Basil</forename><surname>Grycner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucas</forename><surname>Mustafa</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Beyer</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2209.06794</idno>
+		<title level="m">A jointly-scaled multilingual language-image model</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<author>
+			<persName><forename type="first">Zhengyuan</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linjie</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianfeng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ehsan</forename><surname>Azarnasab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Faisal</forename><surname>Ahmed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zicheng</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ce</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lijuan</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.11381</idno>
+		<title level="m">Mm-react: Prompting chatgpt for multimodal reasoning and action</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Zero-shot video question answering via frozen bidirectional language models</title>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Miech</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Josef</forename><surname>Sivic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ivan</forename><surname>Laptev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cordelia</forename><surname>Schmid</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="124" to="141" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<author>
+			<persName><forename type="first">Danny</forename><surname>Driess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">M</forename><surname>Mehdi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Corey</forename><surname>Sajjadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Lynch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ayzaan</forename><surname>Ichter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Wahid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quan</forename><surname>Tompson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianhe</forename><surname>Vuong</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Yu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.03378</idno>
+		<title level="m">Palm-e: An embodied multimodal language model</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title level="m" type="main">Language is not all you need: Aligning perception with language models</title>
+		<author>
+			<persName><forename type="first">Shaohan</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenhui</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yaru</forename><surname>Hao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saksham</forename><surname>Singhal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuming</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tengchao</forename><surname>Lv</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Owais</forename><surname>Khan Mohammed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiang</forename><surname>Liu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.14045</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">An image is worth 16x16 words: Transformers for image recognition at scale</title>
+		<author>
+			<persName><forename type="first">Alexey</forename><surname>Dosovitskiy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucas</forename><surname>Beyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Kolesnikov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dirk</forename><surname>Weissenborn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaohua</forename><surname>Zhai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Unterthiner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostafa</forename><surname>Dehghani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Minderer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Georg</forename><surname>Heigold</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sylvain</forename><surname>Gelly</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2010.11929</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

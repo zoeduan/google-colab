@@ -1,0 +1,2219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">TabLLM: Few-shot Classification of Tabular Data with Large Language Models</title>
+				<funder>
+					<orgName type="full">Independence Blue Cross</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">German Academic Exchange Service</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">Takeda Fellowship</orgName>
+				</funder>
+				<funder ref="#_k8PjsvH">
+					<orgName type="full">National Science Foundation</orgName>
+					<orgName type="abbreviated">NSF</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-03-17">17 Mar 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Stefan</forename><surname>Hegselmann</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">MIT CSAIL</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="institution">University of Münster</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Alejandro</forename><surname>Buendia</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">MIT CSAIL</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Hunter</forename><surname>Lang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">MIT CSAIL</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Monica</forename><surname>Agrawal</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">MIT CSAIL</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xiaoyi</forename><surname>Jiang</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="institution">University of Münster</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">David</forename><surname>Sontag</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">MIT CSAIL</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">TabLLM: Few-shot Classification of Tabular Data with Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-03-17">17 Mar 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">6BB22CA4594B8CD326237563256D9C52</idno>
+					<idno type="arXiv">arXiv:2210.10723v2[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:26+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>We study the application of large language models to zero-shot and few-shot classification of tabular data. We prompt the large language model with a serialization of the tabular data to a natural-language string, together with a short description of the classification problem. In the few-shot setting, we fine-tune the large language model using some labeled examples. We evaluate several serialization methods including templates, table-to-text models, and large language models. Despite its simplicity, we find that this technique outperforms prior deep-learning-based tabular classification methods on several benchmark datasets. In most cases, even zero-shot classification obtains non-trivial performance, illustrating the method's ability to exploit prior knowledge encoded in large language models. Unlike many deep learning methods for tabular datasets, this approach is also competitive with strong traditional baselines like gradient-boosted trees, especially in the very-few-shot setting.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">INTRODUCTION</head><p>Many real world applications generate tabular data as a natural byproduct of relational databases <ref type="bibr">(Shwartz-Ziv and Armon, 2022)</ref>. It is ubiquitous in domains ranging from healthcare to climate and finance <ref type="bibr" target="#b30">(Sahakyan et al., 2021)</ref>. Obtaining enough labeled data to train supervised learning algorithms for classification can be difficult. For example, in healthcare, there are 10,000 rare diseases <ref type="bibr">(Haendel et al., 2020)</ref> affecting very few patients, which hampers the development of risk stratification models. Thus, we seek to develop methods that can exploit prior knowledge (e.g., from medical articles) to improve predictive performance in settings with a small number of training examples, i.e. the few-shot setting.</p><p>While deep learning has led to breakthroughs in computer vision and natural language processing, this success has not yet been extended to the tabular domain. For example, selfsupervised deep learning methods have been introduced for tabular data <ref type="bibr">(Yin et al., 2020;</ref><ref type="bibr" target="#b1">Arik and Pfister, 2021)</ref>, but <ref type="bibr" target="#b40">Grinsztajn et al. (2022)</ref> showed that these deep techniques still underperform ensembles of gradient boosted trees in the fully supervised setting. This disparity in performance can be attributed to the differences between tabular data and text or images; tabular data lacks locality, contains mixed data types, and the number of columns is usually fairly small compared to the number of features in text or image data <ref type="bibr" target="#b6">(Borisov et al., 2022a)</ref>.</p><p>Recently, large language models (LLMs) such as GPT-3, which are pre-trained on enormous corpora of text, have shown incredible performance on few-shot text classification and generation tasks <ref type="bibr">(Brown et al., 2020;</ref><ref type="bibr">Sanh et al., 2022;</ref><ref type="bibr">Ouyang et al., 2022)</ref>. These LLMs perform well on a variety of tasks and domains, including fact retrieval <ref type="bibr" target="#b23">(Liu et al., 2021)</ref>, mathematical reasoning <ref type="bibr">(Wei et al., 2022)</ref>, medical information extraction <ref type="bibr">(Agrawal et al., 2022)</ref>, and tabular data cleaning tasks <ref type="bibr" target="#b25">(Narayan et al., 2022)</ref>. Most importantly, because of all the knowledge encoded in their parameters, LLMs require little or no labeled training data to obtain this good performance.</p><p>In this work we introduce TabLLM, which is a general framework to leverage LLMs for few-shot classification of tabular data. We prompt the LLM with a serialization of a row to a natural-language representation and a short description of the classification problem. For risk stratification, for instance, this serialization could list relevant patient attributes and combine it with, "Will this patient be hospitalized?". We experiment with nine different serializations and the T0 language model of different sizes <ref type="bibr">(Sanh et al., 2022)</ref>. We use the parameter-efficient fine-tuning method T-Few <ref type="bibr" target="#b22">(Liu et al., 2022)</ref> to update the LLM's parameters using some labeled examples. We also evaluate GPT-3 in the zero-shot setting <ref type="bibr">(Brown et al., 2020)</ref>. To the best of our knowledge, this is one of the widest evaluations of LLMs for zero-and few-shot tabular classification.</p><p>Figure <ref type="figure">1</ref>: Overview of TabLLM. We first serialize the feature names and values into a natural language string. We evaluate different strategies. This string is then combined with a task-specific prompt. To get predictions, we obtain output probabilities from the LLM for each of a pre-specified set of verbalizer tokens (e.g., "Yes", "No"), which map to class labels (e.g., 1, -1). If 𝑘 &gt; 0, we use the 𝑘 labeled examples to fine-tune the large language model using T-Few <ref type="bibr" target="#b22">(Liu et al., 2022)</ref>. Finally, we use the (possibly tuned) large language model to obtain predictions on unlabeled examples.</p><p>Despite its simplicity, we find that TabLLM outperforms prior deep-learning-based tabular classification methods on several benchmark datasets. By using information from the natural-language column names and feature values, it often enables effective zero-shot classification of tabular data. Unlike many deep learning methods on tabular data, this approach is also competitive with gradient-boosted tree baselines and outperforms them or is on par until 256 shots. In the very-few-shot setting it outperforms them by a considerable margin. The main contributions of this work are:</p><p>• We introduce TabLLM, a novel framework leveraging LLMs for data-efficient tabular classification</p><p>• We study nine serialization techniques and explore their performance across ten different datasets</p><p>• We show that TabLLM instantiated with a simple text serialization and the T0 LLM can outperform state-ofthe-art neural models and tree ensembles in the zeroand few-shot setting</p><p>• We investigate the application of TabLLM to a large real-world healthcare claims dataset and introduce serialization methods that deal with many input features 2 RELATED WORK</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Machine Learning on Tabular Data</head><p>Due to the success of deep learning in other domains, there have been many recent attempts at representation learning for tabular data. Self-supervised objectives have largely revolved around the prediction of masked cells, the identification or correction of corrupted cells, and contrastive losses over augmentations <ref type="bibr" target="#b4">(Bahri et al., 2022;</ref><ref type="bibr">Somepalli et al., 2021;</ref><ref type="bibr">Yoon et al., 2020;</ref><ref type="bibr" target="#b1">Arik and Pfister, 2021;</ref><ref type="bibr" target="#b13">Huang et al., 2020)</ref>. Additional efforts have included differentiable trees, which combine advantages of tree ensembles with gradient based optimization of neural networks <ref type="bibr" target="#b18">(Kontschieder et al., 2015;</ref><ref type="bibr" target="#b28">Popov et al., 2020)</ref>. However, several recent comprehensive reviews (Shwartz-Ziv and Armon, 2022; <ref type="bibr" target="#b6">Borisov et al., 2022a;</ref><ref type="bibr" target="#b40">Grinsztajn et al., 2022)</ref> found that gradient-boosted tree ensembles like XG-Boost <ref type="bibr" target="#b9">(Chen and Guestrin, 2016)</ref> and LightGBM <ref type="bibr" target="#b16">(Ke et al., 2017)</ref> systematically outperform these novel deep learning architectures, even with proper fine-tuning and regularization <ref type="bibr">(Kadra et al., 2021)</ref>. <ref type="bibr" target="#b20">Levin et al. (2022)</ref> found utility in transfer learning in the semi-supervised setting, but required a set of additional supervised tasks on the same table, which can be a nontrivial limitation. They investigate few-shot classification for medical diagnosis using 4 to 200 labeled examples, but do not exploit the power of large pre-trained models, as we do in this work. <ref type="bibr" target="#b11">Hollmann et al. (2022)</ref> recently introduced TabPFN, a Bayesian neural network pre-trained on synthetic tabular data, outperforming gradient boosted trees in a comprehensive evaluation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Large Language Models for Tabular Data</head><p>Another approach has been to leverage the natural language capabilities of language models. Yin et al. ( <ref type="formula">2020</ref>) use a language model for semantic parsing of natural language queries over tabular data. <ref type="bibr" target="#b21">Li et al. (2020)</ref> investigate the ability of language models to perform entity matching on tabular data, i.e. determining if two rows refer to the same object. <ref type="bibr" target="#b10">Harari and Katz (2022)</ref> study data enrichment by linking each table row with additional unstructured text (e.g., from Wikipedia) from which they generated addi-tional features using a language model. However, this setup requires named entities (e.g., celebrities, universities, etc.), which is quite limiting. <ref type="bibr" target="#b5">Bertsimas et al. (2022)</ref> studied two healthcare datasets and used a language model to generate feature embeddings, which they fed into classifiers like gradient boosted trees. All these studies use a BERT-style language model <ref type="bibr">(Devlin et al., 2019)</ref>. <ref type="bibr" target="#b25">Narayan et al. (2022)</ref> recently assessed in-context learning with the autoregressive language model GPT-3 for tabular data cleaning tasks. They found that it often outperforms state-of-the-art approaches with ten labeled examples. <ref type="bibr" target="#b7">Borisov et al. (2022b)</ref> introduced an LLM-agnostic method to generate realistic tabular data and found that it achieved better results than existing approaches. In contrast, here we study classification tasks of tabular data and investigate parameter-efficient fine-tuning of LLMs.</p><p>To use an LLM for tabular data, the table must be serialized into a natural text representation. All aforementioned works relied on simple list or sentence serializations; Yin et al. ( <ref type="formula">2020</ref>) also included the column data type in the serialized string. Only <ref type="bibr" target="#b5">Bertsimas et al. (2022)</ref> studied different serialization variants, but this was in a different context of deriving feature embeddings from BERT-style language models. The LIFT method introduced by Dinh et al. ( <ref type="formula">2022</ref>) comes closest to our work. The authors evaluated the capabilities of fine-tuned GPT-3 and GPT-J models for regression and classification on synthetic, tabular, and vision data. They also studied the sample efficiency and considered different static serialization templates assessing the effect of including column names in the input. In this work, we focus on the publicly available T0 model and perform a broader analysis of nine serialization techniques including automatic approaches and ablations evaluating the importance of feature values. Particularly, we are interested in leveraging prior knowledge encoded in LLMs and we do a more fine-grained analysis of the sample efficiency including zero-shot experiments on ten different datasets.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">METHODS</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">TabLLM for Tabular Data Classification</head><p>Problem Formalization. Suppose we have a tabular dataset with 𝑛 rows and 𝑑 columns or features. We can formalize this as 𝐷 = {(x 𝑖 , 𝑦 𝑖 )} 𝑛 𝑖=1 , where each x 𝑖 is a 𝑑dimensional feature vector. Since we consider classification, 𝑦 𝑖 ∈ 𝐶 for a set of classes 𝐶. We define the column names or feature names as 𝐹 = { 𝑓 1 , ..., 𝑓 𝑑 }. We assume the 𝑓 𝑖 's are natural-language strings such as "age" or "education" (see Figure <ref type="figure">1</ref>). For our 𝑘-shot classification experiments, we only use a subset 𝐷 𝑘 of size 𝑘-sampled from 𝐷 with replacement-for fine-tuning or training.</p><p>Serialization of Tabular Data. To use an LLM for tabular data, the table must be transformed into a natural text representation. Typically, when prompting an LLM, there is a template used to both serialize the inputs into one natural-language string, and to provide the prompt itself (e.g., the string "Does this person make more than 50,000 dollars? Yes or no?"), which is usually located after the serialized input. In this work, we break these pieces up into a serialization and a prompt. We define a function serialize(𝐹, x) that takes the column names 𝐹 and feature values x for a row as inputs and creates a textual representation of the input. Combining this serialization with a task-specific prompt 𝑝 will then form the LLM input (serialize(𝐹, x), 𝑝). This is illustrated in Figure <ref type="figure">1</ref>. We primarily study the serialization, since that is the biggest difference compared to existing applications of prompting.</p><p>Previous work has usually considered a simple concatenation of feature names and values as a serialization of tabular data <ref type="bibr" target="#b21">(Li et al., 2020;</ref><ref type="bibr" target="#b25">Narayan et al., 2022)</ref>. In our work, this function can be arbitrarily complex. For instance, we explore serializations that include (i) incorporating another LLM and (ii) employing feature selection as a substep.</p><p>Large Language Models For Classification TabLLM can be used with different LLMs that generate text based on a natural-language input. Let LLM be an LLM with vocabulary 𝑉. Then, LLM((serialize(𝐹, x), 𝑝)) ∈ 𝑉 * is the prompted output of the LLM. In our few-shot setting, {(serialize(𝐹, x), 𝑝) | (x, 𝑦) ∈ 𝐷 𝑘 } can be used as training examples for fine-tuning the LLM. The LLM generates text in the vocabulary space 𝑉 * that has to be mapped to a valid class in 𝐶. Several approaches already exist for this problem. For example, the verbalizer <ref type="bibr" target="#b32">(Schick and Schütze, 2021)</ref> defines a mapping between LLM output tokens and the discrete label space. Verbalizers can be manually specified or automatically learned; see <ref type="bibr">Cui et al. (2022)</ref> for an overview of different verbalizer-learning approaches. In this work, we assume for simplicity that the verbalizer mapping is manually specified (see answer choices in the templates in Sec. 8 in the Supplement).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Our Instantiation of TabLLM</head><p>Serialization Approaches for TabLLM. The performance of LLMs is very sensitive to the precise details of the natural-language input <ref type="bibr">(Zhao et al., 2021;</ref><ref type="bibr">Webson and Pavlick, 2022)</ref>. In this work, we focus on the serialization of the tabular data. For the prompt, we use a simple description of the classification task and perform no further prompt engineering. We study nine different serialization formats varying in complexity. All serialization methods require minimal human effort to apply to new classification tasks. We evaluate several methods that generate natural text to create inputs that are closer to the training distribution of the LLM, thereby improving zero and very-few-shot performance. Additional details and examples for the serializations are given in Sec. 1.2.1 and 9 in the Supplement.</p><p>• List Template: A list of column names and feature values. We fixed an arbitrary ordering of the columns.</p><p>• Text Template: An textual enumeration of all features as "The column name is value." (see Figure <ref type="figure">1</ref>).</p><p>•</p><p>Table-To-Text: We use an LLM fine-tuned on a table-to-text generation task from HuggingFace (Narrativaai/bloom-560m-finetuned-totto -table-to-text).</p><p>To ensure that the serialization includes all data we hand each column-value tuple to the model separately and concatenate the outputs.</p><p>• Text T0: We use the LLM T0 with 11B parameters (bigscience/T0pp) <ref type="bibr">(Sanh et al., 2022)</ref>. We split up a row into pairs of two column-value tuples. We send them to LLM separately with the prompt "Write this information as a sentence:" and combine the outputs.</p><p>• Text GPT-3: We use GPT-3 (engine text-davinci-002) accessible through an API <ref type="bibr">(Ouyang et al., 2022)</ref>. GPT-3 was able to serialize all features at once, so we use a list of all features with the prompt "Rewrite all list items in the input as a natural text." as input. We guide the output with "The {person, car, patient} is".</p><p>We consider the following serializations as ablations:</p><p>• List Only Values: List Template for feature values only. We want to evaluate whether column names aid the classification performance.</p><p>• List Permuted Names: List Template with permuted column names. Hence, the wrong column name is associated with each feature value. The permutation is the same across all examples. We perform this ablation to study the relevance of the correct association between column names and feature values.</p><p>• List Permuted Values: List Template with consistently permuted values across all examples. We generate one permutation for each column and apply this mapping to all column values. For continuous values, we use ten uniform bins. This tests whether the LLM uses the fine-grained information encoded by the feature values for zero-shot and few-shot classification.</p><p>• List Short: List Template with at most ten features. We only consider this for the healthcare dataset where the number of features exceeds the input limit of the LLM. We want to study the effect of less information.</p><p>Large Language Models for TabLLM Another crucial component of TabLLM is the LLM. TabLLM is both agnostic to the LLM and the specific fine-tuning method that is used. We only consider a single LLM for most of our experiments. We employ the T0 encoder-decoder model with 11 billion parameters as the LLM for TabLLM <ref type="bibr">(Sanh et al., 2022)</ref>. It was trained on a large variety of task-specific prompts, making it a suitable candidate for our experiments <ref type="bibr">(Sanh et al., 2022)</ref>. This model has a token limit of 1024, which roughly corresponds to 400 words. We also evaluate the effect of a smaller version of the T0 model (T0 3B). We fine-tuned on the few-shot data D 𝑘 using the recent T-Few recipe, which outperforms other parameter-efficient tuning methods such as soft prompt tuning <ref type="bibr" target="#b22">(Liu et al., 2022)</ref>. In addition, we perform zero-shot experiments with the LLM GPT-3 (engine text-davinci-002) <ref type="bibr">(Ouyang et al., 2022)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">EXPERIMENTAL SETUP</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Datasets</head><p>We studied TabLLM in two experimental settings. First, we considered nine medium-sized tabular datasets for binary and multi-class classification. We systematically identified datasets from <ref type="bibr">Kadra et al. (2021)</ref>, <ref type="bibr" target="#b40">Grinsztajn et al. (2022), and</ref><ref type="bibr" target="#b6">Borisov et al. (2022a)</ref>. We included datasets with at most 50,000 rows to keep the fine-tuning costs manageable and at most 30 columns to stay within T0's token limit. We also required textual feature names to make the serializations more meaningful and we excluded datasets with derived feature values (e.g., mean pixel values). This lead to inclusion of Bank (45,211 rows, 16 feats), Blood (748, 4), California (20,640, 8), Car (1,728, 8), Creditg (1,000, 20), <ref type="bibr">Income (48,</ref><ref type="bibr">842,</ref><ref type="bibr">14),</ref><ref type="bibr">and Jungle (44,</ref><ref type="bibr">819,</ref><ref type="bibr">6)</ref>. We added two additional datasets from Kaggle that fulfilled our inclusion criteria: Diabetes (768, 8) and <ref type="bibr">Heart (918,</ref><ref type="bibr">11)</ref>. Second, we evaluated TabLLM for risk stratification on three binary classification tasks, following prior work by <ref type="bibr" target="#b17">Kodialam et al. (2021)</ref> and similarly using a deidentified health claims dataset from a U.S. health insurer.</p><p>We predicted the end-of-life (EoL) of all patients older than 70 years, which can be used to inform care in a palliative setting <ref type="bibr">(Avati et al., 2018)</ref>. We also considered the need for any surgical procedure (Surgery) and the likelihood of hospitalization (LoH), which can help with determining health care needs and estimating future costs. Additional details on all datasets can be found in Sec. 1 in the Supplement. We release the code for our experiments on Github.<ref type="foot" target="#foot_0">foot_0</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">LLM and Fine-tuning</head><p>We used the HuggingFace implementation of the T0 model (bigscience/{T0pp,T0 3B}). Prompts for the LLM were designed following <ref type="bibr">Sanh et al. (2022)</ref> using the PromptSource framework <ref type="bibr" target="#b3">(Bach et al., 2022)</ref>. Each class in our classification tasks was manually encoded in a textual response, e.g., "Yes" and "No" for true and false <ref type="bibr">(Sanh et al., 2022)</ref>. The prediction probability for each class corresponds to the probability of the LLM generating its token sequence normalized across all classes. All templates used in this work are given in Sec. 8 in the Supplement.</p><p>For fine-tuning, we adopted the default hyperparameters of the T-Few method without any additional parameter tuning <ref type="bibr" target="#b22">(Liu et al., 2022)</ref>. The authors used a setup of 𝑘 = 32 shots and 1,000 training steps for most of their experiments, which corresponds to 31.25 epochs. Hence, we fixed 30 training epochs for all few-shot experiments on the public tabular datasets. We used 20% of the data as a test set. For the large healthcare claims dataset, we used 10 epochs for up to 256 shots and 3 epochs for 1,024, 4,096 and 16,384 to reduce the runtime and prevent overfitting for many training examples. We used a test set of 10,000 examples for the three healthcare tasks. All experiments were evaluated with the area under the receiver operating characteristic curve (AUC). We used macro-AUC one-versus-rest for the multiclass setting. Estimates for the runtime are given in Sec. 2 in the Supplement.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Baseline Models</head><p>We compared TabLLM to several baselines. For the simplest baseline, we used a logistic regression (LR) model. Since previous work showed the superiority of gradient boosted tree ensembles <ref type="bibr" target="#b6">(Borisov et al., 2022a)</ref>, we included the most common models XGBoost <ref type="bibr" target="#b9">(Chen and Guestrin, 2016)</ref> and LightGBM <ref type="bibr" target="#b16">(Ke et al., 2017)</ref>. We also evaluated several state-of-the-art deep learning baselines. TabNet is a widely used neural model for tabular data that uses attention over columns <ref type="bibr" target="#b1">(Arik and Pfister, 2021)</ref>. SAINT is a more recent approach that uses attention over rows and columns <ref type="bibr">(Somepalli et al., 2021)</ref>. SAINT performed best in a comprehensive review on tabular data <ref type="bibr" target="#b6">(Borisov et al., 2022a)</ref>. NODE is a differentiable tree ensemble method that performed best in the evaluation of Shwartz-Ziv and Armon (2022). Lastly, we include TabPFN, a Bayesian neural network that was pre-trained on synthetic tabular data <ref type="bibr" target="#b11">(Hollmann et al., 2022)</ref>. In contrast to TabLLM, we performed hyperparameter tuning for all baselines except TabPFN (see Sec. 3 in the Supplement), which requires no tuning by design. We adopted the parameter ranges from previous reviews <ref type="bibr" target="#b6">(Borisov et al., 2022a;</ref><ref type="bibr" target="#b40">Grinsztajn et al., 2022)</ref>. Since no validation set exists in the few-shot setting, we used 4-fold cross validation on the 𝑘-shots. In particular, we did not use a large validation set for hyperparameter tuning, unlike some few-shot learning works as highlighted by <ref type="bibr" target="#b27">Perez et al. (2021)</ref>. We encoded categorical values as one-hot vectors. We also tested ordinal encoding for LR, XGBoost, LightGBM, and TabPFN, but it showed worse results (see Table <ref type="table" target="#tab_18">12</ref>, 13, and 14 in the Supplement). In addition, we give results for GPT-3 (text-davinci-002) without fine-tuning, i.e. in the zero-shot setting using the Text Template serialization.</p><p>For the three health claims tasks, we used the same experimental setup for the baselines. However, we only included LR and LightGBM due to runtime limitations. Following <ref type="bibr" target="#b17">Kodialam et al. (2021)</ref>, each patient's input was a one-hot encoded vector. For each medical concept, there were three indicator variables of whether that concept occurred within 30 days, 1 year, and anytime before prediction time.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Serializations</head><p>For the public datasets, some column names and feature values were manually mapped to human-readable forms, based on the provided documentation. For instance, for the Income dataset, the feature name hours per week was mapped to work hours per week and the feature value private for working class was mapped to private sector employee. Numerical values were not changed.</p><p>Serialization was more complex for the healthcare claims data. Each patient record is a time series of visits, with each visit consisting of a list of medical conditions and procedures. We only considered the manual serializations List Template and Text Template. We tried to mimic the style of a medical professional to tap potential prior knowledge of the LLM.</p><p>To this end, the serialization starts with an intro sentence containing the patient's gender, age, and race. It then describes each visit, stating its date, the type of doctor the patient saw (e.g., dermatology) if an outpatient visit or length of hospitalization if an inpatient visit, the primary complaint of the associated visit, and procedures performed. Since there are no feature values in this dataset, we omit List Only Values and List Permuted Values. We also performed experiments for concept selection and different names for the medical concepts. Details for these additional experiments and examples of the serializations are given in Sec. 1.2.2, 1.2.3, and 9 in the Supplement.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">RESULTS</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">Effects of serialization</head><p>Figure <ref type="figure" target="#fig_1">2</ref> shows the performance of different serialization methods for TabLLM averaged over the nine public datasets.</p><p>The Text Template serialization performed very well across all experiments. In the zero-shot setting, the Text Template showed improvements over List Template, indicating the benefit of a serialization that is closer to the training distribution of T0. However, these differences already vanished for 8 training examples. Hence, very few training examples might already suffice to adjust for different templates. This suggests that sophisticated serializations might be unnecessary when some training data exists. Using LLMs for serialization showed mixed results. The ordering is according to the complexity of the LLM used for serialization. GPT-3 has 175B, T0 11B, and the BLOOM table-to-text model 0.56B parameters. Different reasons might be responsible for the worse performance overall. The models tended to hallucinate information for some examples, leading to biased predictions of TabLLM. 0 4 8 16 32 64 128 256 512 Number of labeled training examples (shots) 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 Average AUC (SD) across tabular datasets List Template Text Template Table-To-Text Text T0 Text GPT-3 List Only Values List Perm. Names List Perm. Values For instance, GPT-3 added "this car is a good choice" or added entirely new data to some examples (see Sec. 9 in the Supplement). Also, the LLMs are not completely faithful at including all features, even though we tried to enforce it in our experiments. This could explain that none of the LLM serializations reaches the same performance as the template serializations, even for many training examples.</p><p>Using only feature values had a poor performance for zero and very few shots, but the performance equalized with more training examples. The same applies to the list serialization with permuted feature names. This indicates that if enough training examples are available, the serialization approach does not matter, but that TabLLM relies on information from the feature names in the zero-shot and few-shot regime, and also relies on the association of the names with the correct values. The discrepancy for zero and very few shots was even stronger for List Permuted Values, which suggests that TabLLM relies more on the correct values than feature names. Again, the performance equalized for more examples showing the ability of TabLLM to learn new associations if enough training data is available. Using the smaller T0 3B model showed a slightly decreased performance (see Table <ref type="table" target="#tab_18">12</ref>, 13, and 14 in the Supplement).</p><p>For the healthcare claims dataset, we found that the List Template slightly outperformed the Text Template serialization (see Table <ref type="table" target="#tab_9">15</ref> in the Supplement). This was consistent across tasks. The List Short serialization only performed slightly worse. The evaluation of different concept selection strategies showed that choosing the most frequent conditions per patient performed best. We found no considerable performance difference for different concept names.</p><p>From here onwards, we show results for TabLLM using the Text Template serialization for the public datasets. For the healthcare claims dataset, we use the List Template seri-</p><p>0 4 8 16 32 64 128 256 512 Number of labeled training examples (shots) 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 Average AUC (SD) across tabular datasets Log. Reg. LightGBM XGBoost SAINT TabNet NODE TabPFN GPT-3 TabLLM alization and select the most frequent conditions. Results for all (dataset, serialization) combinations <ref type="bibr">(Table 12,</ref><ref type="bibr">13,</ref><ref type="bibr">and 14</ref>) and the additional experiments on the healthcare dataset (Table <ref type="table" target="#tab_9">5</ref> and <ref type="table" target="#tab_11">7</ref>) can be found in the Supplement.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Public Tabular Datasets</head><p>Figure <ref type="figure" target="#fig_2">3</ref> shows the averaged results for TabLLM using the best serialization (Text Template) versus all baseline models. Table <ref type="table" target="#tab_4">1</ref> contains the detailed results for TabLLM, TabPFN, and XGBoost. TabLLM showed a similar behavior across datasets. It achieved nontrivial zero-shot performance for all tasks except on Credit-g and Heart. For Heart this might be due to the dataset's inclusion criteria requiring eligibility for a heart procedure biasing the prediction. In all cases, TabLLM's performance improved with a higher number of shots. In the zero-shot setting, TabLLM was on par with GPT-3 even though GPT-3 is a much larger model than T0 (175B vs. 11B parameters). TabPFN consistently outperformed the other baseline models across all numbers of training examples. TabPFN reached TabLLM's performance with 4 to 256 (Income) training examples. LR was the second-best baseline often beating the tree models, which might be due to our extensive parameter tuning (see Sec. 4 in the Supplement). TabLLM outperformed or was on par with the tree ensemble baselines until 256 training examples for all datasets except Calhousing and Jungle. For fewer shots, it often outperformed them by a large margin. XGBoost performed relatively poorly for few shots, which was probably due to overfitting on the small training and validation sets (as described in the previous section, we do not use large validation sets for hyperparameter tuning to ensure the results are truly few-shot). TabLLM outperformed the neural baselines SAINT, NODE, and TabNet in many settings. It also Table 2: Five highest and lowest weighted features for zero-shot TabLLM and logistic regression (LR) trained on all data for Income. Both models show very similar trends for important features. Feature TabLLM LR rank weight rank weight capital gain 1 5.310 2 2.393 education Masters 2 4.623 6 1.455 education Doctorate 3 3.410 4 2.066 education Bachelors 4 2.995 7 1.135 education Prof-school 5 2.949 5 1.900 occupation Priv-house-serv 102 -2.840 105 -1.909 education 12th 103 -3.178 79 -0.480 education Preschool 104 -3.520 106 -2.385 occupation Farming-fishing 105 -3.853 98 -0.982 workclass Without-pay 106 -4.423 69 -0.174</p><p>was on par or very close to the best baseline models on the full datasets, indicating that there is little performance lost due to the serialization and the choice of model family.</p><p>Introspecting TabLLM-What Prior Knowledge Does it Use? Given the strong zero-shot performance of TabLLM on the Income dataset, we next sought to understand which features it based its predictions on in order to shed light on the prior knowledge used by the LLM. To determine the feature importance for TabLLM, we fit a LR model to the zero-shot prediction using the original features as covariates as described in Sec. 6 in the Supplement. Highly weighted features (see Table <ref type="table">2</ref>) for zero-shot TabLLM include the individual's occupation (with e.g., 'Farming-fishing' having a large negative weight), highest education level ('Masters' and 'Doctorate' have positive weights; 'Preschool' grade has a negative weight), and workclass ('Without-pay' has a negative weight). TabLLM also seems to be able to correctly interpret the numerically encoded capital gain value. For comparison, we also show the feature weights for a LR model trained on all data. We see a strong concordance between both models; TabLLM's top five features are all among the top seven of the LR model. However, TabLLM scores the highest education  degrees in the opposite order. Table <ref type="table" target="#tab_22">16</ref> in the Supplement shows the importance of all 106 features.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3">Large Healthcare Claims Dataset</head><p>Table <ref type="table" target="#tab_6">3</ref> shows the results for TabLLM with the List Template serialization on EoL, Surgery, and LoH, the three prediction tasks for the healthcare claims dataset. TabLLM showed very considerable zero-shot performance, ranging from 0.67 AUC for Surgery to 0.71 for LoH. The performance improves with higher number of training examples. However, the performance jumps happen at different steps and to a different extent. TabLLM outperformed LR for up to 16 (Surgery and LoH) to 64 (EoL) training examples and LightGBM for up to 64 (LoH) and 256 (EoL) examples. For more examples, LR and LightGBM performed slightly better. This could suggest that the information lost from our concept selection procedure, needed because of the token limits of the LLM, eventually starts costing TabLLM performance. We also evaluated TabLLM and LR in an unbalanced setting (see Table <ref type="table" target="#tab_9">15</ref> in the Supplement). In this case, TabLLM outperforms LR up to 64 training examples on all datasets emphasizing its utility in a real world setting with limited access to labeled data.</p><p>Introspecting TabLLM-What Prior Knowledge Does it Use? We also performed a feature analysis to study the strong zero-shot performance on EoL. However, we did not compare to a LR model trained on all data due to the vast amount of features and potential colinearites in the data. Instead, we compared to the relative risk (RR) with a 95% confidence interval (CI). Table <ref type="table" target="#tab_7">4</ref> shows the five highest and lowest weighted features of zero-shot TabLLM and their relative risk for EoL. All top five features have a significantly increased relative risk demonstrating the capabilities of TabLLM to identify relevant features even without any training examples. For the five lowest weighted features, only 'sex female' has a significantly decreased risk. A list of 100 features is given in Table <ref type="table" target="#tab_11">17</ref> in the Supplement.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">DISCUSSION</head><p>For all datasets except Credit-g and Heart, the List Template and Text Template serializations showed nontrivial zero-shot performance, indicating that TabLLM is able to effectively utilize prior knowledge in the LLM for classification. Serializations with LLMs proved suboptimal due to their noisy outputs suggesting that simple templates are preferable for TabLLM. The performance drops observed when we removed or permuted the column names indicate that the LLM actually makes use of feature names and their relationships to the correct values, especially in the fewshot setting. These findings are partly consistent with Dinh et al. ( <ref type="formula">2022</ref>) who used GPT-3 and tested serializations with removed or permuted column names. When using all training examples, they showed that using the correct column names led to the best performance on four classification tasks. In contrast to our results, however, they could not confirm these findings when using only a fraction (0.2, 0.4, 0.6, 0.8) of the training data. A reason for this could be that we tested much fewer number of training examples. In addition to that, we found a very strong drop in performance for permuted values showing that the LLM relies more on the correct values than feature names. Surprisingly, how-ever, all serializations with less information came close to the best serialization for 256 (tabular datasets) to 1024 training examples (insurance dataset). Hence, when hundreds of training examples are available, the input format proved less relevant, and the LLM was able to adapt <ref type="bibr" target="#b14">(Jin et al., 2022)</ref>. Like our results, <ref type="bibr" target="#b5">Bertsimas et al. (2022)</ref> found that natural language representation of healthcare data gave little-to-no improvement (in their different setup) compared to a more straightforward serialization in the medium-shot setting. Our findings also support prior work showing that irrelevant and even misleading inputs can lead to similar few-shot performance <ref type="bibr" target="#b24">(Min et al., 2022;</ref><ref type="bibr">Webson and Pavlick, 2022;</ref><ref type="bibr" target="#b29">Reynolds and McDonell, 2021)</ref>. For instance, permuting the column names only showed a difference for up to <ref type="bibr">16</ref> training examples (see Figure <ref type="figure" target="#fig_1">2</ref>).</p><p>We found clear performance improvements for TabLLM when using additional training examples. It often outperformed strong baseline models in the very-few-shot setting. This emphasizes the value of leveraging LLMs when only little labeled data is available. Surprisingly, Dinh et al. ( <ref type="formula">2022</ref>) could not confirm these findings for GPT-3. On two binary classification tasks a fine-tuned GPT-3 model performed worse than LR for up to 250 training examples. Our results indicate that the sample efficiency of TabLLM is highly task-dependent. The performance on Blood, Credit-g, Diabetes, and Heart is worse than the performance on Income and Car. Most features of the latter datasets have semantically meaningful textual values likely boosting TabLLM's performance. However, TabLLM also achieved reasonable results on numerical datasets (Blood, California, Diabetes, and Jungle). In addition, Diabetes and Heart have somewhat specialized feature names and values, such as "ventricular hypertrophy" and "Plasma glucose concentration," whereas Income and Car are more general-domain knowledge. This indicates that T0, the language model we used in TabLLM, seems to have less prior knowledge about medicine than about general-domain concepts. Indeed, the training tasks for T0 do not contain any tasks with medical data <ref type="bibr">(Sanh et al., 2022)</ref>.</p><p>Our findings on the three insurance claims datasets partly reinforce this hypothesis. Zero-shot performance depends on the concept selection strategy and the LLM seems to have little knowledge about medical procedures. Prior work has shown that medical-domain-specific language models, such as PubMedBERT, and general-domain models with medical data in their training sets, such as GPT-3, perform well at downstream prediction tasks on medical data even with fairly few samples <ref type="bibr">(Gu et al., 2021;</ref><ref type="bibr">Agrawal et al., 2022)</ref>. Substituting T0 with one of these models in TabLLM to study medical predictions tasks is an interesting direction for future work.</p><p>Our results on the public Blood, Diabetes, and Heart datasets are very similar to our results for EoL, Surgery, and LoH, which are practically relevant but rely on pri-vate data. Except for the zero-shot and very few-shot regime, other baselines tend to outperform TabLLM on these datasets. This suggests that Blood, Diabetes, and Heart datasets could be good proxies for the community to further study medical-domain tabular classification with LLMs without needing access to large private datasets.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">LIMITATIONS AND CONCLUSION</head><p>TabLLM has a much larger computational footprint compared to traditional algorithms. It still requires fairly large GPUs to fine-tune the LLM, and inference with T0 requires far more FLOPs than inference with XGBoost or LR. Our results indicate that TabLLM trades off this computational efficiency for improved sample efficiency. Further, as we saw with the three healthcare claims tasks, performance may suffer if the dense feature set for a given row cannot fit within the token limit for a given LLM. Since the gains from TabLLM stem from its ability to use existing domain knowledge, the semantics of the column names and feature values need to have been observed during the LLM's original pre-training. For example, if the columns represent genes, we may not expect a vanilla LLM to have strong representations for gene names. Finally, due to dataset shift, the pre-training data for a given LLM may not necessarily reflect the settings under which a given table was aggregated, e.g., due to inflation and a changing value of money (see Sec. 5 in the Supplement). Despite these limitations, our empirical results show that TabLLM enjoys strong performance at tabular classification, outperforming state-of-the-art baseline algorithms like XGBoost and SAINT by over 5 AUC points in the very-few-shot regime, all while staying competitive with these methods when a large number of samples is available. Currently, TabLLM does not use any unlabeled data; a fruitful direction could involve leveraging unlabeled data, e.g., using the techniques from <ref type="bibr" target="#b19">Lang et al. (2022)</ref> to combine the few-shot performance of TabLLM with the ultimate performance of tree-based baselines by co-training the models together. Other improvements could include more faithful LLM serializations as well as numericspecific encoding methods <ref type="bibr">(Gorishniy et al., 2022)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">SOCIETAL IMPACT</head><p>Similar to other ML systems that were trained on historic data, LLMs are prone to replicate existing biases and stereotypes. Hence, when applying TabLLM for sensitive tasks such as income or a health trajectory, predictions should be considered with great care and further analyses (e.g., for subgroups) are mandatory. In addition, LLMs require a lot of computing resources. This bears the risk of creating an exclusive research environment. Also, the environmental impact of LLMs can be significant. Cui, G., Hu, S., Ding, N., <ref type="bibr">Huang, L., and Liu, Z. (2022)</ref>. Prototypical verbalizer for prompt-based few-shot tuning. In Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pages 7014-7024, Dublin, Ireland. Association for Computational Linguistics. Devlin, J., Chang, M.-W., Lee, K., and Toutanova, K. (2019). BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding. In Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers), pages 4171-4186, Minneapolis, Minnesota. Association for Computational Linguistics. Dinh, T., Zeng, Y., Zhang, R., Lin, Z., Gira, M., Rajput, S., yong Sohn, J., Papailiopoulos, D., and Lee, K. (2022). LIFT: Language-interfaced fine-tuning for non-language machine learning tasks. In Oh, A. H., Agarwal, A., Belgrave, D., and Cho, K., editors, Advances in Neural Information Processing Systems. Gorishniy, Y., Rubachev, I., and Babenko, A. (2022). On embeddings for numerical features in tabular deep learning. arXiv preprint arXiv:2203.05556. Grinsztajn, L., Oyallon, E., and Varoquaux, G. (2022). Why do tree-based models still outperform deep learning on typical tabular data? In Thirty-sixth Conference on Neural Information Processing Systems Datasets and Benchmarks Track. Gu, Y., Tinn, R., Cheng, H., Lucas, M., Usuyama, N., Liu, X., Naumann, T., Gao, J., and Poon, H. (2021). Domainspecific language model pretraining for biomedical natural language processing. ACM Transactions on Computing for Healthcare (HEALTH), 3(1):1-23. Haendel, M., Vasilevsky, N., Unni, D., Bologa, C., Harris, N., Rehm, H., Hamosh, A., Baynam, G., Groza, T., McMurry, J., et al. (2020). How many rare diseases are there? Nature Reviews Drug Discovery, 19(2):77-78. Shwartz-Ziv, R. and Armon, A. (2022). Tabular data: Deep learning is not all you need. Information Fusion, 81. Somepalli, G., Goldblum, M., Schwarzschild, A., Bruss, C. B., and Goldstein, T. (2021). SAINT: Improved Neural Networks for Tabular Data via Row Attention and Contrastive Pre-Training. Technical Report arXiv:2106.01342, arXiv. Webson, A. and Pavlick, E. (2022). Do Prompt-Based Models Really Understand the Meaning of Their Prompts? In Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, pages 2300-2344, Seattle, United States. Association for Computational Linguistics. Wei, J., Wang, X., Schuurmans, D., Bosma, M., Chi, E., Le, Q., and Zhou, D. (2022). Chain of Thought Prompting Elicits Reasoning in Large Language Models. arXiv:2201.11903 [cs]. arXiv: 2201.11903. Yin, P., Neubig, G., Yih, W.-t., and Riedel, S. (2020). TaBERT: Pretraining for Joint Understanding of Textual and Tabular Data. In Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, pages 8413-8426, Online. Association for Computational Linguistics. Yoon, J., Zhang, Y., Jordon, J., and van der Schaar, M. (2020). VIME: Extending the Success of Self-and Semisupervised Learning to Tabular Domain. In Advances in Neural Information Processing Systems, volume 33, pages 11033-11043. Curran Associates, Inc. Zhao, Z., Wallace, E., Feng, S., Klein, D., and Singh, S. (2021). Calibrate Before Use: Improving Few-shot Performance of Language Models. In Proceedings of the 38th International Conference on Machine Learning, pages 12697-12706. PMLR. ISSN: 2640-3498. Supplementary Materials: TabLLM: Few-shot Classification of Tabular Data with Large Language Models 1 ADDITIONAL DATASET DETAILS 1.1 Public Tabular Datasets We systematically identified datasets for classification from Kadra et al. (2021), Grinsztajn et al. (2022), Borisov et al. (2022a), and from Kaggle. Each dataset was separated into 80/20 train-test splits. The 𝑘 labeled examples D 𝑘 were sampled in a class-balanced manner from the training set. We performed experiments for different numbers of trainings examples (shots) ranging from 0 to 512 and the entire dataset (all).</p><p>To characterize the sensitivity of models to the choice of 𝑘 labeled examples, we repeated the dataset splitting and sampling procedures for five different seeds and report the mean AUC and standard deviation (SD) across seeds. No hyperparameter tuning was conducted for TabLLM; for baselines, internal cross validation was conducted to choose optimal hyperparameters, and the model was then retrained on all data. We analyzed the following datasets:</p><p>• Bank <ref type="bibr">(Kadra et al., 2021)</ref> contains information of a direct marketing campaign from a Portugese banking institution <ref type="bibr" target="#b45">(Moro et al., 2014)</ref>. The goal is to predict whether a customer subscribed to a term deposit or not. It consists of 45,211 rows and 16 features; 5,289 labels are positive.</p><p>• Blood <ref type="bibr">(Kadra et al., 2021)</ref> consists of data of a blood transfusion service from Taiwan <ref type="bibr">(Yeh et al., 2009)</ref>. It contains 4 attributes of 748 donors and the label is representing whether they returned for another donation (178 positive).</p><p>• California <ref type="bibr" target="#b40">(Grinsztajn et al., 2022)</ref> contains eight attributes of 20,640 districts in California and the goal is to predict the median house value in each district <ref type="bibr" target="#b48">(Pace and Barry, 1997)</ref>. Analogously to <ref type="bibr" target="#b40">Grinsztajn et al. (2022)</ref>, we created a balanced classification task by predicting whether the house value is below or above the median (10,317 positive).</p><p>• Car <ref type="bibr">(Kadra et al., 2021)</ref> has entries for different cars that are characterized by six attributes; the task is a multiclass classification problem evaluating the state of each car. The dataset contains 1,728 rows, and the four classes have a distribution of 1210, 384, 65, and 69 examples.</p><p>• Credit-g <ref type="bibr">(Kadra et al., 2021)</ref> describes 1,000 people from Germany that want to receive a credit using 20 attributes.</p><p>The label is to predict whether they have good or bad risk; 700 are classified as good.</p><p>• Diabetes (from Kaggle<ref type="foot" target="#foot_1">foot_1</ref> ) was collected by the National Institute of Diabetes and Digestive and Kidney Diseases <ref type="bibr">(Smith et al., 1988)</ref> and contains 768 rows, each corresponding to women of Pima Indian heritage with eight clinical variables. The task is binary classification of whether a person has diabetes; 268 cases are positive.</p><p>• Heart (from Kaggle<ref type="foot" target="#foot_2">foot_2</ref> ) contains data of four different hospitals <ref type="bibr" target="#b38">(Detrano et al., 1989)</ref>. Each row contains 11 clinical variables of a patient. The task is binary classification of coronary artery disease. Of the 918 patients, 508 are positive.</p><p>• Income <ref type="bibr">(Kadra et al., 2021;</ref><ref type="bibr" target="#b6">Borisov et al., 2022a</ref>) also called Adult contains rows for 48,842 individuals with twelve attributes collected in the 1994 U.S. Census <ref type="bibr" target="#b44">(Kohavi et al., 1996;</ref><ref type="bibr" target="#b39">Dua and Graff, 2017)</ref>. The task is to predict whether each person has an annual income over $50,000. The dataset has 11,687 positive labels.</p><p>• Jungle <ref type="bibr">(Kadra et al., 2021)</ref> is a collection of 44,819 end game positions of Jungle Chess (van Rijn and Vis, 2014). Each game is described with 6 attributes and the goal is to predict whether the white player will win (23,062 positive). </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.2">Large Healthcare Claims Dataset</head><p>The de-identified health claims data set was provided by a large U.S. health insurer. The data is stored in the Observational Medical Outcomes Partnership (OMOP) Common Data Model version 6.0 <ref type="bibr" target="#b42">(Hripcsak et al., 2015)</ref>. It contains an entry for every encounter a patient has with the health system. Each entry is associated with a date, a visit type (5 total), a medical specialty (216 total), present conditions (14,095 total), and performed procedures (21,184 total). We additionally used the static concepts age, sex, and race at time of prediction.</p><p>We studied three different tasks on this dataset with distinct cohorts. For all tasks, we used a six month outcome period and a gap of three months between time of prediction and the outcome window to prevent data leakage. We required patients to have at least one medical visit and to have been actively enrolled in an insurance plan for at least 95% of the last year and the six month outcome window. We used 10% of the data as a holdout set and sampled the 𝑘 balanced shots with replacement from the remaining data. We chose larger shot sizes, as the tasks are more complex. We only ran the experiments for a single seed due to runtime limitations. We considered the following tasks:</p><p>• End of Life (EoL): We predicted the mortality of all patients older than 70 years. This is often used as a surrogate task. For instance, it can improve initiation of palliative care <ref type="bibr">(Avati et al., 2018)</ref> and can help to inform close relatives to reduce family distress <ref type="bibr" target="#b37">(Curtis et al., 2016)</ref>. The final cohort contained 94,972 individuals; 2,424 were positive.</p><p>• Surgical Procedure (Surgery): We predicted the need for any surgical procedure. The task is important in determining health care needs and estimating costs. The cohort included 620,382 people of which 243,349 were positive.</p><p>• Likelihood of Hospitalization (LoH): We also predicted the likelihood of being hospitalized. Again, this information can help identify needs and estimate costs. The cohort included 612,656 individuals; 22,427 were positive.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.2.1">More Details on the Serialization</head><p>Each serialization begins with the patient's age, sex, and race. For each concept entry that we included, we also added information of the associated visit. This included its date, the type of doctor the patient saw (e.g., dermatology), if an outpatient visit or length of hospitalization if an inpatient visit, and the primary complaint of the associated visit. If a visit was already added to the serialization, we just added the concept to the existing visit entry. For the List Template and Text Template serializations approximately 40 medical concepts could be added until the token limit of T0 was reached.</p><p>To explore the effect of fewer information in the input, we also tested the List Short serializations were we added only 10 medical concepts to the serialization. Hence, not the entire token limit of the LLM was used. Examples of the List Template, Text Template and List Permuted Names serializations illustrating this structure are given in Sec. 9.1 at the end of the Supplement.  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.2.2">Concept Selection</head><p>For the healthcare claims dataset, the number of recorded medical concepts per patients usually exceeded T0's token limit. Hence, we had to determine which concepts of a patient should be included during the serialization. We evaluated four different concept selection strategies in the zero-shot setting for the List Template serialization. Choosing the least frequent, most frequent, oldest, or most recent concepts per patient. We tested these for all concepts (conditions and procedures), only conditions, or only procedures. For each patient, we ranked all concepts according to one of the above methods and added concepts until the token limit of the LLM was reached. For least frequent and most frequent, we used the earliest visits associated with the selected medical concepts. We used a simple serialization that only contained the patient's age, sex, and race as a baseline for our experiments. We also tested concept selection based on the lasso path of a logistic regression model determined on 256 and 4,096 shots. This violates the few-shot assumption, but we considered it an interesting comparison with the other strategies that select concepts per patient.</p><p>The results are given in Table <ref type="table" target="#tab_9">5</ref>. Using the most frequent conditions per patient consistently outperformed all other selection strategies. Frequent conditions might be useful since they reveal the most relevant condition of a patient. Also, they are usually more common allowing more prior knowledge of the LLM. Across all strategies conditions were usually more useful than procedures. This suggests more prior knowledge of conditions. Interestingly, selecting the most frequent conditions is even better than using the concept weights of a LR model trained on 256 or 4,096 shots.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.2.3">Alternative Concept Names</head><p>The healthcare claims dataset used SNOMED concept names for conditions and SNOMED, Healthcare Common Procedure Coding System (HCPCS), International Classification of Diseases (ICD), and Current Procedural Terminology (CPT) concept names for procedures. We tested different concept names to assess their effect on the performance. We used a zero- shot setting with the List Template serialization and the most frequent conditions per patient as the best selection strategy determined as described above. Since the selection method only considered conditions, we only used different condition names. We considered three alternative vocabularies in the Unified Medical Language System (UMLS) that covered at least 20% of the condition concepts and offered different names. ICD is a very common medical terminology offering alternative names for conditions. MEDCIN and the Consumer Health Vocabulary (CHV) offer concept names specifically targeted at clinicians or consumers. We mapped the concept via their UMLS identifier. For ICD we were able to map 7,372, for MEDCIN 9,370 and for CHV 3,700 of the 14,095 condition concepts. Alternatively, we explored concept names generated by GPT-3 <ref type="bibr">(Brown et al., 2020)</ref>. To do so, we used the publicly accessible GPT-3 API (engine text-davinci-002) <ref type="bibr">(Ouyang et al., 2022)</ref>. We considered shortened names for concepts with more than sixty character ("Rewrite this medical condition with at most six words."), simplified concept names ("Write this medical condition in a short form in lay language.") and medical jargon ("Write this medical condition in medical jargon."). For the simplified names and the medical jargon, we provided GPT-3 with a single example for in-context learning. Examples for all alternative concept names except the shortening are given in Table <ref type="table" target="#tab_10">6</ref>.</p><p>The results of this experiment are given in Table <ref type="table" target="#tab_11">7</ref>. We used the most frequent concept as a concept selection methods.</p><p>Based on the best concept selection, we performed additional experiments for alternative concept names. We found no consistent performance difference even though there were considerable differences in the concept names (see Table <ref type="table" target="#tab_10">6</ref>). Surprisingly, TabLLM performs better for EoL and Surgery using medical jargon to encode concepts.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">RUNTIME ESTIMATES FOR TABLLM</head><p>The TabLLM training time on the Income dataset for 64 training examples and 30 epochs with a batch size of 8 was less than 3 minutes. The average inference time for the test set of 10,000 examples with a batch size of 16 was 2 minutes, around 12 ms per example. The training and inference times for the other public datasets were comparable. Due to the larger size of the healthcare claims dataset, it took nearly 4 minutes to train for 64 examples and 10 epochs for EoL and was similar for the other two tasks. Inference took approximately 14 minutes for 10,000 examples with a batch size of 16, i.e. around 84 ms per example. The training times scaled linearly in the shot size.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">PARAMETER TUNING FOR BASELINES</head><p>We used the scikit-learn framework to perform cross-validation and parameter tuning for the LR and the tree-based models <ref type="bibr" target="#b49">(Pedregosa et al., 2011)</ref>. For LR we tried common parameters for the penalty term and regularization strength (see Table <ref type="table" target="#tab_12">8</ref>). We used the same LR parameters for the public tabular datasets and the healthcare claims dataset. For the tree-based models we adopted the hyperparameter ranges from Borisov et al. (2022a) and <ref type="bibr" target="#b40">Grinsztajn et al. (2022)</ref>. We discretized the parameter ranges and performed a complete grid search (see Tables <ref type="table" target="#tab_13">9</ref> and <ref type="table" target="#tab_14">10</ref>).</p><p>For the neural baselines SAINT, TabNet, and NODE, we used the setup and suggested hyperparameter ranges in <ref type="bibr" target="#b6">Borisov et al. (2022a)</ref>. We modified the open-source implementation of these methods<ref type="foot" target="#foot_3">foot_3</ref> to support ingestion of the nine public tabular datasets. We used the hyperparameter-tuning framework Optuna<ref type="foot" target="#foot_4">foot_4</ref> and selected parameters that maximize AUC-ROC across folds. Note that for the 4-shot setting of the Car dataset, AUC may not be defined if the selected validation set includes only one label; in this case we used accuracy as our validation metric but report AUC-ROC on the holdout test set. Each neural baseline model was run for 20 trials with Optuna and trained for 100 epochs per hyperparameter settings.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">COMPARING BASELINE RESULTS TO THE LITERATURE</head><p>To assess whether our baseline results match results reported in the literature, we report studies that used the same models.</p><p>Bank Dataset.</p><p>Kadra et al. (2021) trained a XGBoost, TabNet, and NODE baseline on this dataset and achieved a balanced accuracy of 72.7, 70.6, and 74.6. Our experiments for a set of 512 balanced training examples (512 shots) show a better performance for XGBoost than NODE. Blood Dataset. The XGBoost, TabNet, and NODE baselines trained in Kadra et al. (2021) achieved a balanced accuracy of 62.3, 64.3, 50. Our results for a set of 512 balanced training examples (512 shots) also show a better performance for TabNet than XGBoost. However, in our experiments NODE performs better than XGBoost and not worse. California Dataset. Borisov et al. (2022a) trained a Linear Model, XGBoost, LightGBM, TabNet, NODE, and SAINT baseline on a regression version of the dataset. They achieved a mean squared error of 0.53, 0.21, 0.20, 0.35, 0.28, and 0.23. Our experiments for a set of 512 balanced training examples (512 shots) show a better performance for XGBoost than LightGBM and the same performance for TabNet and NODE. Also, our linear model performs much better which is probably due to more extensive hyperparameter tuning. Car Dataset. The XGBoost, TabNet, and NODE models in Kadra et al. (2021) showed a balanced accuracy of 92.4, 98.7, and 46.1. In our experiments, XGBoost and TabNet performed very similar for many training examples and NODE was only slightly inferior. Credit-g Dataset. The XGBoost, TabNet, and NODE baselines trained in Kadra et al. (2021) achieved a balanced accuracy of 68.9, 61.2, and 73.1. Our AUC results cannot easily be compared but our experiments for 512 balanced training examples (512 shots) follow the same trend. Diabetes Dataset. Hasan et al. (2020) reported an AUC of 0.828 (0.030) for XGBoost on the diabetes dataset, which matches our findings. With additional feature selection and preprocessing methods they reached an AUC of 0.946 (0.020) with XGBoost, but this was out of the scope of our work. XGBoost was the most performant model that they included in their experiments. Heart Dataset. Muhammad et al. (2020) used only the 303 instances from the Cleveland cohort, while we combined all four sub-cohorts. They achieved an AUC of 0.923 with LR, which is close to our results on all sub-cohorts. They also tested several models that outperformed LR. Income Dataset. Many studies used the Income or Adult dataset. The review Borisov et al. (2022a) included several of our baselines. They reported an AUC of 0.854 (0.002) for a linear model, 0.928 (0.001) for XGBoost, 0.928 (0.001) for LightGBM, 0.916 (0.002) for SAINT, 0.911 (0.001) for TabNet, and 0.911 (0.002) for NODE. These are in accordance with our results. We reckon the better performance of our LR model is due to more extensive parameter tuning. Jungle Dataset. The XGBoost and TabNet baselines trained in Kadra et al. (2021) achieved a balanced accuracy of 87.3 and 73.4. They did not train a NODE moel for this dataset. The results follows the same trend as our experiments for a set of 512 balanced training examples (512 shots). </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">ADJUSTING INCOME DATASET FOR INFLATION</head><p>We wanted to investigate how a distribution shift caused by inflation affects the zero-shot performance of TabLLM. The Income dataset was collected in 1994, and the label and two features (capital gain/loss in last year) contain dollar values. T0 was trained in 2021 <ref type="bibr">(Sanh et al., 2022)</ref>, and we assumed that the training data is much more recent than the Income dataset. The inflation rate from 1994 to 2021 is 1.79<ref type="foot" target="#foot_5">foot_5</ref> . Without inflation correction the zero-shot results were 0.80 (0.01).</p><p>Correcting the two features, correcting only the prompt, and correcting both all yielded the same performance as the uncorrected one. The accuracy values also remained the same with the inflation correction.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">FEATURE IMPORTANCE ANALYSIS OF TABLLM</head><p>We wanted to understand which features were most important for the zero-shot performance of TabLLM on Income and EoL. To this end, we used zero-shot TabLLM with the List Template serialization to predict the label probability of all examples in the dataset. We then used 4-fold cross validation to fit a L2-regularized LR model to the predicted label using the features in the serialization as covariates. For EoL, we used age, sex, race, and the conditions as inputs, which summed up to 14,105 features.</p><p>For Income we compared these approximated importance scores to the feature coefficients of a LR model trained on all data for a single seed (Table <ref type="table" target="#tab_22">16</ref>). We used the same setup for the LR model as for our main experiments. We did 4-fold cross validation on an 80% training split to choose hyperparameters, and then refit the model using all training data. The best parameters of the LR model for Income were a 'l1' penalty and a regularization constant of 1. For EoL, we decided that the LR model coefficients did not provide a good estimate of the ground truth due to the vast amount of features and possible collinearities in the data. Instead, we provide the relative risk (RR) with 95% confidence intervals (CI) treating the occurrence of a feature as an intervention. We report the 50 most and least important features of TabLLM in Table <ref type="table" target="#tab_11">17</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">EFFECT OF USING DIFFERENT PROMPTS</head><p>To evaluate the effect of using a different prompt we considered the zero-shot setting, since even few training examples mostly cancel the effect. For all datasets we constructed five different prompts that contained the same question, e.g., "Does this person earn a lot of money?" instead of "Does this person earn more than 50000 dollars per year?" for the Income dataset. The results are summarized in Table <ref type="table" target="#tab_17">11</ref>. The effects were relative small ranging from a standard deviation of 0.00 for Jungle to 0.04 for Heart across the five prompts. This suggests that TabLLM is not very sensitive to using different prompts.  Table 15: Full results on healthcare claims dataset. The best concept selection method (most frequent concepts) and concept names (original concept names) were used as determined in prior zero-shot experiments. A fix number of 10 epochs was used for up to 256 shots and 3 epochs for more shots to decrease the runtime and prevent overfitting.  <ref type="table" target="#tab_11">17</ref>: Feature importance of zero-shot TabLLM and relative risk (RR) with 95% confidence interval (CI) for EoL task on the healthcare claims dataset. For TabLLM we fit a separate LR model to the predictions using the original feature values as covariates. We determine the relative risk treating the respective feature as an intervention, i.e. the ratio of the label in the group that has a concept divided by the ratio in the group without it. We selected 50 features with the highest and the lowest importance.</p><p>Bank Dataset:</p><p>answer choices: 'No ||| Yes' jinja: '{{serialization}} Does this client subscribe to a term deposit? Yes or no? Answer: ||| {{ answer choices[label] }}' Blood Dataset: answer choices: 'No ||| Yes' jinja: '{{serialization}} Did the person donate blood? Yes or no? Answer: ||| {{ answer choices[label] }}' California Dataset: answer choices: 'No ||| Yes' jinja: '{{serialization}} Is this house block valuable? Yes or no? Answer: ||| {{ answer choices[label] }}' Car Dataset: answer choices: 'Unacceptable ||| Acceptable ||| Good ||| Very good' jinja: '{{serialization}} How would you rate the decision to buy this car? Unacceptable, acceptable, good or very good? Answer: ||| {{ answer choices[label] }}' Credit-g Dataset: answer choices: 'No ||| Yes' jinja: '{{serialization}} Does this person receive a credit? Yes or no? Answer: ||| {{ answer choices[label] }}' Diabetes Dataset: answer choices: 'No ||| Yes' jinja: '{{serialization}} Does this patient have diabetes? Yes or no? Answer: ||| {{ answer choices[label] }}' Heart Dataset: answer choices: 'No ||| Yes' jinja: '{{serialization}} Does the coronary angiography of this patient show a heart disease? Yes or no? Answer: ||| {{ answer choices[label] }}' Income Dataset: answer choices: 'No ||| Yes' jinja: '{{serialization}} Does this person earn more than 50000 dollars per year? Yes or no? Answer: ||| {{ answer choices[label] }}' Jungle Dataset: answer choices: 'No ||| Yes' jinja: '{{serialization}} Does the white player win this two pieces endgame of Jungle Chess? Yes or no? Answer: ||| {{ answer choices[label] }}' End Of Life Task: answer choices: 'No ||| Yes' jinja: '{{serialization}} Does this patient die in the next nine months? Yes or no? Answer: ||| {{ answer choices[label] }}' Surgical Procedure Task: answer choices: 'No ||| Yes' jinja: '{{serialization}} Does this patient need a surgery in the next nine months? Yes or no? Answer: ||| {{ answer choices[label] }}' Likelihood of Hospitalization Task: answer choices: 'No ||| Yes' jinja: '{{serialization}} Is this patient admitted to the hospital in the next nine months? Yes or no? Answer: ||| {{ answer choices[label] }}' Bank Dataset (List Template): -age: 69 -type of job: retired -marital status: single -education: tertiary -has credit in default?: no -average yearly balance, in euros: 2144 -has housing loan?: no -has personal loan?: no -contact communication type: cellular -last contact day of the month: 29 -last contact month of year: jul -last contact duration, in seconds: 417 -number of contacts performed during this campaign and for this client: -number of days that passed by after the client was last contacted from a previous campaign: 184 -number of contacts performed before this campaign and for this client: 4 -outcome of the previous marketing campaign: success Bank Dataset (Text Template):</p><p>The age is 69. The type of job is retired. The marital status is single. The education is tertiary. The has credit in default? is no. The average yearly balance, in euros is 2144. The has housing loan? is no. The has personal loan? is no. The contact communication type is cellular. The last contact day of the month is 29. The last contact month of year is jul. The last contact duration, in seconds is 417. The number of contacts performed during this campaign and for this client is. The number of days that passed by after the client was last contacted from a previous campaign is 184. The number of contacts performed before this campaign and for this client is 4. The outcome of the previous marketing campaign is success.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Bank Dataset (Table-To-Text):</head><p>the age of 69 was 69 years. the retired retired. the marital status is single with the single name. the school has a school of four students. the has a credit of $500,000. The average yearly balance in euros is 2144. the has a total of 2,000+ housing units. the has an official loan of $500 million. the standard definition has been updated to the standard definition. the current record of the month is 29. the first contact month was on December 20, 2005, and then on March 22, 2006, the next month was on March 22, 2006. the first contact duration was 417 seconds. the DVB has a selection of DVB. The year, in which the client was first contacted by a former airline operator, was by a former airline operator, and by a former airline operator, he was the first to enter the post of the office. the 4 is a 4-purpose cycle. the first of the first 20 MB of the history history to use the 20 MB.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Bank Dataset (Text T0):</head><p>a retired soldier shows off his tattoos. a city is a city with a population of singles and tertiary education. no, the average yearly balance is 2144 euros. no he has no personal loan or housing loan a man is contacting a woman on her cell phone on the 29th day of the month. last contact month of year was july, last contact duration was 417 seconds. 184 days after the client was last contacted from a previous campaign. a previous marketing campaign for this client resulted in success with 4 contacts Bank Dataset (Text GPT-3):</p><p>The person is 69 years old, retired, single, and has a tertiary education. They have no credit in default, and their average yearly balance is 2144 euros. They have no housing loan or personal loan. The contact communication type is cellular, and the last contact was on the 29th day of the month and lasted 417 seconds. They have been contacted 4 times before this campaign, and the outcome of the previous marketing campaign was success.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Blood Dataset (List Template):</head><p>-Recency -months since last donation: 23 -Frequency -total number of donation: 1 -Monetary -total blood donated in c.c.: 250 -Time -months since first donation:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Blood Dataset (Text Template):</head><p>The Recency -months since last donation is 23. The Frequency -total number of donation is 1. The Monetary -total blood donated in c.c. is 250. The Time -months since first donation is 23.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Blood Dataset (Table-To-Text):</head><p>the number of the public can be from the number of the public. The 1.2 has a maximum speed of 1.2. The first set of the first set was in 1742 and was in 1742.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Blood Dataset (Text T0):</head><p>The donor has made 1 donation in the last 23 months. monetary -total blood donated in c.c. : 250, time -months since first donation : 23</p><p>Blood Dataset (Text GPT-3):</p><p>The blood donor is a 23-year-old male who has donated blood once, 250 c.c. of blood, 23 months ago.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>California Dataset (List Template):</head><p>-median income: 3.2377 -median age: 32 -total rooms: 6597 -total bedrooms: 1579 -population: 3689 -households: 1459 -latitude: 34.15 -longitude: -118.01</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>California Dataset (Text Template):</head><p>The median income is 3.2377. The median age is 32. The total rooms is 6597. The total bedrooms is 1579. The population is 3689. The households is 1459. The latitude is 34.15. The longitude is -118.01.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>California Dataset (Table-To-Text):</head><p>there were 3.2377 people residing in the city. the total rooms have 6597 rooms. the total has a total of 1579. The population was 3689 at the time of the census. The households 1459 is a standard households. The value 34.15 is a value that has a value of 34.15. The longitude has a distance of 1.5 km and is approximately 1.5 km.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>California Dataset (Text T0):</head><p>median age of 32 years old the hotel has a total of 6597 rooms and 1579 bedrooms. a city has a population of 3689 and households of 1459. a city is located in the southwestern part of the country at latitude 34.15 and longitude -118.01.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>California Dataset (Text GPT-3):</head><p>The house block is located in the city of Los Angeles, in the state of California. The median income in the area is $3,237, the median age is 32 years old, the total number of rooms is 6,597, the total number of bedrooms is 1,579, the population is 3,689, and the number of households is 1,459. The latitude is 34.15, and the longitude is -118.01.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Car Dataset (List Template):</head><p>-Buying price: low -Doors: three -Maintenance costs: low -Persons: more than four -Safety score: medium -Trunk size: medium Car Dataset (Text Template):</p><p>The Buying price is low. The Doors is three. The Maintenance costs is low. The Persons is more than four. The Safety score is medium. The Trunk size is medium.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Car Dataset (Table-To-Text):</head><p>The price of the price is C1,000. the three Doors were three. The total number of people in the city is more than four. the Safety score was 17.5. the Trunk size is 20.5-inch.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Car Dataset (Text T0):</head><p>The refrigerator has three doors and is very cheap. The maintenance costs are low for a family of more than four. The car has a medium safety score and a medium trunk size.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Car Dataset (Text GPT-3):</head><p>This car a good choice for those who are looking for a low-priced vehicle with low maintenance costs. It is also a good choice for families or groups of friends who need a car with a bit more space than a smaller car. The safety score is medium, so it is not the best choice for those who are looking for a car with the highest safety rating.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Credit-g Dataset (List Template):</head><p>-Status of existing checking account: 0 &lt;= ... &lt; 200 DM -Duration in month: 11 -Credit history : existing credits paid back duly till now -Purpose: furniture/equipment -Credit amount: 1577 -Savings account/bonds: ... &gt;= 1000 DM -Present employment since: &lt;1 -Installment rate in percentage of disposable income: 4 -Personal status and sex: female : divorced/separated/married -Other debtors / guarantors: none -Present residence since: 1 -Property: real estate -Age in years: 20 -Other installment plans: none -Housing: own -Number of existing credits at this bank: 1 -Job: skilled employee / official -Number of people being liable to provide maintenance for: 1.0 -Telephone: none -foreign worker: yes Credit-g Dataset (Text Template): The Status of existing checking account is 0 &lt;= ... &lt; 200 DM. The Duration in month is 11. The Credit history is existing credits paid back duly till now. The Purpose is furniture/equipment. The Credit amount is 1577. The Savings account/bonds is ... &gt;= 1000 DM. The Present employment since is &lt;1. The Installment rate in percentage of disposable income is 4. The Personal status and sex is female : divorced/separated/married. The Other debtors / guarantors is none. The Present residence since is 1. The Property is real estate. The Age in years is 20. The Other installment plans is none. The Housing is own. The Number of existing credits at this bank is 1. The Job is skilled employee / official. The Number of people being liable to provide maintenance for is 1.0. The Telephone is none. The foreign worker is yes.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Credit-g Dataset (Table-To-Text):</head><p>the 0.2 (0.2) is a type of 00.2. The average annual precipitation is 11.5 millimetres (4.5 in). the Credit history has been paid back to a few years. the standard cell is a standard cell. the amount was 1577. the Savings account/bonds were from the Savings account/bonds to the Savings account/bonds. there were 1,000 employees. there were 4,000 people in the city. The male has a male score of the female. the debt was $12.5 million ($9.5 million in 2013). the current residence has a 1,000 feet (460 m) long. the standard estate is a standard estate. It has a age of 20 years. the first installment was the first installment in the year 2005. The Housing is a public transport system that is a network of the public. the company has a number of existing and existing works, and has a number of existing and existing works. the company's job is job with the job name as "Success". the network has a network of over 800 MT/s. the foreign worker has no foreign worker.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Credit-g Dataset (Text T0):</head><p>The checking account has a balance of 0 DM. A man is paying for furniture and equipment with a credit card. The credit amount is 1577, the savings account/bonds are &gt;= 1000 DM. The present employee has been in this job for a year, and the installment rate is 4. % of disposable income. A female who is divorced/separated/married is requesting a loan. The property is located in a gated community and has been on the market since. The man is 20 years old and has no other installment plans. The number of existing credits at this bank is 1. A skilled employee is liable to provide maintenance for 1.0. A foreign worker is without a telephone.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Credit-g Dataset (Text GPT-3):</head><p>The person is a 20-year-old female with a checking account status of 0-200 DM. She has been employed for less than a year and her installment rate is 4% of her disposable income. She is divorced/separated/married and has no other debtors or guarantors. She has been living in her current residence for 1 year and owns real estate. She has 1 credit at this bank and is a skilled employee/official. She is liable for maintenance for 1 person. She has no telephone. She is a foreign worker.</p><p>Diabetes Dataset (List Template): </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Diabetes Dataset (Table-To-Text):</head><p>The age was 30 years, and was the youngest ever to enter the age. the number of children is 1. The Diastolic blood pressure is 64. the Triceps can run up to 32. the 2 hours of the glucose is 122. the 2-hour cycle peaked to 156. The mass index was 35.1. The 0.692 is a fast and pathos.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Diabetes Dataset (Text T0):</head><p>The woman is 30 years old and has been pregnant once. The doctor checks the blood pressure and triceps skin fold thickness of the patient. The glucose concentration at 2 hours in an oral glucose tolerance test (GTT) was 122 and the 2-hour serum insulin was 156. The pedigree function of this family is 0.692.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Diabetes Dataset (Text GPT-3):</head><p>This patient 30 years old, has been pregnant once, has a diastolic blood pressure of 64 mmHg, and has a triceps skin fold thickness of 32 mm. The patient's plasma glucose concentration at 2 hours in an oral glucose tolerance test (GTT) is 122 mg/dl, and the patient's 2-hour serum insulin is 156 µU/ml. The patient's body mass index is 35.1, and the patient's diabetes pedigree function is 0.692.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Heart Dataset (List Template):</head><p>-Age of the patient: 43 years -Sex of the patient: male -Chest pain type: asymptomatic -Resting blood pressure: 132 -Serum cholesterol: 247 -Fasting blood sugar &gt; 120 mg/dl: yes -Resting electrocardiogram results: probable or definite left ventricular hypertrophy -Maximum heart rate achieved: 143 -Exercise-induced angina: yes -ST depression induced by exercise relative to rest: 0.1 -Slope of the peak exercise ST segment: flat Heart Dataset (Text Template):</p><p>The Age of the patient is 43. The Sex of the patient is male. The Chest pain type is asymptomatic. The Resting blood pressure is 132. The Serum cholesterol is 247. The Fasting blood sugar &gt; 120 mg/dl is yes. The Resting electrocardiogram results is probable or definite left ventricular hypertrophy. The Maximum heart rate achieved is 143. The Exercise-induced angina is yes. The ST depression induced by exercise relative to rest is 0.1. The Slope of the peak exercise ST segment is flat.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Heart Dataset (Table-To-Text):</head><p>The male patient was the 43rd of the Age of the patient. The male is a male of the same class. The blood pressure was 132. The Serum cave has a cave of 247. the sugar has a low of 120 mg/dl. the type of the group is the type of the group that has a group of the group. The highest heart rate achieved is 143. the Exercise angina has a yes value. The ST depression has ranged from 0.1 to 0.1. the first segment was a flat of the ST.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Heart Dataset (Text T0):</head><p>The patient is a 43-year-old male. The chest pain is asymptomatic and resting blood pressure is 132. The doctor checks the fasting blood sugar and finds it is above 120 mg/dl. The resting ECG results showed probable or definite left ventricular hypertrophy, with maximum heart rate of 143 beats per minute. The patient had exercise-induced angina, with ST depression induced by exercise relative to rest of 0.1. The slope of the peak exercise segment is flat.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Heart Dataset (Text GPT-3):</head><p>This patient a 43-year-old male with asymptomatic chest pain. His resting blood pressure is 132 mmHg and his serum cholesterol is 247 mm/dl. He has fasting blood sugar &gt; 120 mg/dl and his resting electrocardiogram results are probable or definite left ventricular hypertrophy. His maximum heart rate achieved is 143 and he has exercise-induced angina. His ST depression induced by exercise relative to rest is 0.1 and his slope of the peak exercise ST segment is flat.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Income Dataset (List Template):</head><p>-Age: 30 -Race: Asian-Pac-Islander -Sex: Female -Marital status: never married -Rel. to head of the household: Own -Native country: Taiwan -Occupation: execution and management -Work class: private sector employee -Capital gain last year: 0 -Capital loss last year: 0 -Education: bachelor's degree -Work hours per week: 52</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Income Dataset (Text Template):</head><p>The Age is 30. The Race is Asian-Pac-Islander. The Sex is Female. The Marital status is never married. The Relation to head of the household is Own-child. The Native country is Taiwan. The Occupation is execution and management. The Work class is private sector employee. The Capital gain last year is 0. The Capital loss last year is 0. The Education is bachelor's degree. The Work hours per week is 52.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Income Dataset (Table-To-Text):</head><p>The age was 30 years, and was the youngest ever to enter the age. The race was held in the Asian-Pac-Islander, and was won by the race. The sex of the village was Female. The first female to be married is Marital status never reported. the family has the head of the household. The Chinese: native region of Taiwan. He was the executioners of the execution and management of the city of New York City. the private sector employee is a private sector employee. The capital was Capital of the State of India. The capital loss of the state was 0.5%. The bachelor's degree in Education was bachelor's degree. the week 52 was the 52-hour week.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Income Dataset (Text T0):</head><p>Kim is a 30-year-old Asian-Pacific Islander. She is never married and has never had children. The man is the owner of the house and he is the only child. A woman is executing a contract as a private sector employee. The company had a capital loss of $ 0 last year. The man has a bachelor's degree and works 52 hours a week.</p><p>Income Dataset (Text GPT-3):</p><p>The person is 30 years old, Asian-Pac-Islander, female, never married, and an own-child relation to the head of the household. The person is from Taiwan and is an execution and management occupation in the private sector employee work class. The person has 0 dollars in capital gain and 0 dollars in capital loss from the previous year. The person has a bachelor's degree and works 52 hours per week.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Jungle Dataset (List Template):</head><p>-white piece strength: 6 -white piece file: 4 -white piece rank: 7 -black piece strength: 0 -black piece file: 5 -black piece rank: 2 Jungle Dataset (Text Template):</p><p>The white piece strength is 6. The white piece file is 4. The white piece rank is 7. The black piece strength is 0. The black piece file is 5. The black piece rank is 2.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Jungle Dataset (Table-To-Text):</head><p>the piece has a value of 6. the 4 file file has a 4-polytopic file. the piece has a cross point of the right side. the black piece strength is 0. The black piece file has a 5.0.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Jungle Dataset (Text T0):</head><p>The white piece has a strength of 6 and a file of 4. The white piece is ranked 7, the black piece is ranked 0. The black piece is ranked number two.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Jungle Dataset (Text GPT-3):</head><p>The white piece is stronger than the black piece. The white piece is on file 4 and rank 7. The black piece is on file 5 and rank 2.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><figDesc>Proceedings of the 26 th International Conference on Artificial Intelligence and Statistics (AISTATS) 2023, Valencia, Spain. PMLR: Volume 206. Copyright 2023 by the author(s).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Average AUC and SD of different serializations across nine public datasets. Text Template performs best for zero and few training examples. For many examples, the performance of different serializations converges.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Average AUC and SD of TabLLM versus all baseline models across nine public datasets. TabLLM outperforms all baselines for zero and very few training examples. TabPFN is the strongest baseline.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>-</head><figDesc>Age: 30 years -Number of times pregnant: 1 -Diastolic blood pressure: 64 mmHg -Triceps skin fold thickness: 32 mm -Plasma glucose concentration at 2 hours in an oral glucose tolerance test (GTT): 122 mg/dl -2-hour serum insulin: 156 µU/ml -Body mass index: 35.1 -Diabetes pedigree function: 0.692 Diabetes Dataset (Text Template): The Age is 30. The Number of times pregnant is 1. The Diastolic blood pressure is 64. The Triceps skin fold thickness is 32. The Plasma glucose concentration at 2 hours in an oral glucose tolerance test (GTT) is 122. The 2-hour serum insulin is 156. The Body mass index is 35.1. The Diabetes pedigree function is 0.692.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 1 :</head><label>1</label><figDesc>Test AUC performance of TabLLM, the best tree ensemble model (XGBoost), and the best baseline (TabPFN) on the public tabular datasets. Each column reports the performance for 𝑘 training examples. TabLLM (T0 + Text Template) outperforms XGBoost and TabPFN in the very-few-shot regime. Standard deviations are given across five random seeds.</figDesc><table><row><cell>Number of Shots</cell></row></table><note><p>† These experiments were only performed for a single run due to runtime limitations of TabLLM on the full dataset.</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_6"><head>Table 3 :</head><label>3</label><figDesc>Test AUC on the healthcare claims dataset. TabLLM outperforms logistic regression (LR) for up to 64 and LightGBM for up 256 training examples on End of Life (EoL). Standard deviations are given across five random seeds.These experiments were only performed for a single run due to runtime limitations on the full dataset.</figDesc><table><row><cell>Number of Shots</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_7"><head>Table 4 :</head><label>4</label><figDesc>Five highest and lowest weighted features for zero-shot TabLLM for EoL and their relative risk (RR) with confidence intervals (CI). The top five features show a significant increase of the relative risk.</figDesc><table><row><cell>Feature</cell><cell cols="2">TabLLM RR (95% CI)</cell></row><row><cell>atrial fibrillation</cell><cell>0.633</cell><cell>2.72 (2.51-2.95)</cell></row><row><cell>atherosclerosis of coronary art...</cell><cell>0.530</cell><cell>2.10 (1.94-2.27)</cell></row><row><cell>atherosclerosis of aorta</cell><cell>0.473</cell><cell>1.99 (1.81-2.19)</cell></row><row><cell>exudative age-related macular d...</cell><cell>0.452</cell><cell>2.38 (2.06-2.75)</cell></row><row><cell>sex male</cell><cell>0.442</cell><cell>1.23 (1.14-1.33)</cell></row><row><cell>open angle with borderline intr...</cell><cell cols="2">-0.338 1.20 (1.03-1.40)</cell></row><row><cell>primary localized osteoarthrosi...</cell><cell cols="2">-0.366 1.08 (0.82-1.43)</cell></row><row><cell>localized, primary osteoarthritis</cell><cell cols="2">-0.393 1.23 (1.07-1.40)</cell></row><row><cell>sex female</cell><cell cols="2">-0.441 0.81 (0.75-0.88)</cell></row><row><cell cols="3">open-angle glaucoma -borderline -0.495 0.97 (0.85-1.10)</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_9"><head>Table 5 :</head><label>5</label><figDesc>Evaluation of different concept selection methods for the healthcare claims dataset in the zero-shot setting. The last two rows show the performance when concepts where selected based on the lasso path of logistic regression weights, which violates the zero-shot assumption (*).</figDesc><table><row><cell>Method</cell><cell cols="3">EoL Surgery LoH</cell></row><row><cell>Age, sex, and race</cell><cell>0.59</cell><cell>0.57</cell><cell>0.65</cell></row><row><cell>Least frequent conditions</cell><cell>0.57</cell><cell>0.64</cell><cell>0.67</cell></row><row><cell>Least frequent procedures</cell><cell>0.59</cell><cell>0.59</cell><cell>0.65</cell></row><row><cell>Least frequent concepts (cond. + proc.)</cell><cell>0.55</cell><cell>0.55</cell><cell>0.66</cell></row><row><cell>Most frequent conditions</cell><cell>0.67</cell><cell>0.66</cell><cell>0.69</cell></row><row><cell>Most frequent procedures</cell><cell>0.59</cell><cell>0.58</cell><cell>0.65</cell></row><row><cell>Most frequent concepts (cond. + proc.)</cell><cell>0.62</cell><cell>0.61</cell><cell>0.65</cell></row><row><cell>Oldest conditions</cell><cell>0.65</cell><cell>0.66</cell><cell>0.69</cell></row><row><cell>Oldest procedures</cell><cell>0.59</cell><cell>0.58</cell><cell>0.65</cell></row><row><cell>Oldest concepts (cond. + proc.)</cell><cell>0.60</cell><cell>0.60</cell><cell>0.67</cell></row><row><cell>Most recent conditions</cell><cell>0.65</cell><cell>0.66</cell><cell>0.69</cell></row><row><cell>Most recent procedures</cell><cell>0.55</cell><cell>0.59</cell><cell>0.65</cell></row><row><cell>Most recent concepts (cond. + proc.)</cell><cell>0.59</cell><cell>0.60</cell><cell>0.66</cell></row><row><cell>Most relevant concepts based on 256 shots*</cell><cell>0.60</cell><cell>0.58</cell><cell>0.69</cell></row><row><cell cols="2">Most relevant concepts based on 4096 shots* 0.65</cell><cell>0.57</cell><cell>0.68</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_10"><head>Table 6 :</head><label>6</label><figDesc>Five examples of different concept names for conditions. The first column shows the original name in the healthcare claims dataset using SNOMED codes. A dash illustrates that no mapping was available.</figDesc><table><row><cell>Original name</cell><cell>ICD</cell><cell>MEDCIN</cell><cell>CHV</cell><cell>Simplify (GPT-3)</cell><cell>Jargon (GPT-3)</cell></row><row><cell>Seasonal allergic</cell><cell>Allergic rhinitis due</cell><cell>hay fever</cell><cell>hay fever</cell><cell>Allergies</cell><cell>Seasonal allergic</cell></row><row><cell>rhinitis</cell><cell>to pollen</cell><cell></cell><cell></cell><cell></cell><cell>rhinitis</cell></row><row><cell>Disturbance in</cell><cell>Unspecified speech</cell><cell>speech difficulties</cell><cell cols="2">speech impairment Speech problems</cell><cell>Dysarthria</cell></row><row><cell>speech</cell><cell>disturbances</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Congenital</cell><cell>-</cell><cell>-</cell><cell>double cervix</cell><cell>Double cervix</cell><cell>Congenital</cell></row><row><cell>duplication of</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell>duplication of the</cell></row><row><cell>cervix</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell>cervix</cell></row><row><cell>Hypertensive</cell><cell>Hypertensive</cell><cell>hypertensive</cell><cell>hypertensive</cell><cell>High blood pressure</cell><cell>Retinopathy h-tensa</cell></row><row><cell>retinopathy</cell><cell>retinopathy</cell><cell>retinopathy</cell><cell>retinopathy</cell><cell>affecting the retina</cell><cell></cell></row><row><cell>Malignant</cell><cell>Malignant</cell><cell>malignant neoplasm</cell><cell>liver cancer</cell><cell>Liver cancer</cell><cell>Hepato-ca</cell></row><row><cell>neoplasm of liver</cell><cell>neoplasm of liver,</cell><cell>of liver</cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>unspecified</cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_11"><head>Table 7 :</head><label>7</label><figDesc>Evaluation of alternative condition concepts names. International Classification of Diseases (ICD), MEDCIN and the Consumer Health Vocabulary (CHV) are alternative medical terminologies. We also tested shortening, simplifying, and rewriting concepts as medical jargon via GPT-3. None of the alternative concept names showed consistent performance improvement.</figDesc><table><row><cell>Method</cell><cell cols="3">EoL Surgery LoH</cell></row><row><cell cols="2">Original concept names (SNOMED) 0.67</cell><cell>0.66</cell><cell>0.69</cell></row><row><cell>Map to ICD concept names</cell><cell>0.67</cell><cell>0.67</cell><cell>0.68</cell></row><row><cell>Map to MEDCIN concept names</cell><cell>0.67</cell><cell>0.66</cell><cell>0.69</cell></row><row><cell>Map to CHV concept names</cell><cell>0.66</cell><cell>0.66</cell><cell>0.69</cell></row><row><cell>Shorten longs concepts with GPT-3</cell><cell>0.67</cell><cell>0.66</cell><cell>0.69</cell></row><row><cell>Simplify concepts with GPT-3</cell><cell>0.67</cell><cell>0.66</cell><cell>0.70</cell></row><row><cell>Medical jargon with GPT-3</cell><cell>0.68</cell><cell>0.67</cell><cell>0.70</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_12"><head>Table 8 :</head><label>8</label><figDesc>Hyperparameters for LR model.</figDesc><table><row><cell cols="2">Parameter Values</cell></row><row><cell>penalty</cell><cell>'l1', 'l2'</cell></row><row><cell>C</cell><cell>100, 10, 1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_13"><head>Table 9 :</head><label>9</label><figDesc>Hyperparameters for LightGBM model.</figDesc><table><row><cell>Parameter</cell><cell>Values</cell></row><row><cell>num leaves</cell><cell>2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096</cell></row><row><cell>lambda l1</cell><cell>1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1., 10.</cell></row><row><cell>lambda l2</cell><cell>1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1., 10.</cell></row><row><cell cols="2">learning rate 0.01, 0.03, 0.1, 0.3</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_14"><head>Table 10 :</head><label>10</label><figDesc>Hyperparameters for XGBoost model.</figDesc><table><row><cell cols="2">Parameter Values</cell></row><row><cell>max depth</cell><cell>2, 4, 6, 8, 10, 12</cell></row><row><cell>lambda l1</cell><cell>1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.</cell></row><row><cell>lambda l2</cell><cell>1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.</cell></row><row><cell>eta</cell><cell>0.01, 0.03, 0.1, 0.3</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_17"><head>Table 11 :</head><label>11</label><figDesc>The mean performance for one prompt (ours, SD over five seed omitted) and the mean performance and SD across five different prompts (each again over five seeds).</figDesc><table><row><cell>Dataset</cell><cell>Bank</cell><cell cols="2">Blood California</cell><cell>Car</cell><cell cols="5">Credit-g Diabetes Heart Income Jungle</cell></row><row><cell cols="2">TabLLM 0-shot: 1 prompt (ours) 0.63</cell><cell>0.61</cell><cell>0.61</cell><cell>0.81</cell><cell>0.53</cell><cell>0.68</cell><cell>0.54</cell><cell>0.84</cell><cell>0.60</cell></row><row><cell cols="3">TabLLM 0-shot: avg. 5 prompts 0.64 .01 0.60 .02</cell><cell>0.59 .01</cell><cell>0.80 .01</cell><cell>0.52 .01</cell><cell>0.67 .01</cell><cell cols="3">0.55 .04 0.84 .01 0.60 .00</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_18"><head>Table 12 :</head><label>12</label><figDesc>Test AUC performance of competing methods on public tabular datasets. Each column reports the 𝑘-shot performance for different values of 𝑘. Standard deviations across five random seeds are shown as subscripts.</figDesc><table><row><cell>Number of Shots</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_19"><head>Table 13 :</head><label>13</label><figDesc>Test AUC performance of competing methods on public tabular datasets. Each column reports the 𝑘-shot performance for different values of 𝑘. Standard deviations across five random seeds are shown as subscripts.</figDesc><table><row><cell>Number of Shots</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_20"><head>Table 14 :</head><label>14</label><figDesc>Test AUC performance of competing methods on public tabular datasets. Each column reports the 𝑘-shot performance for different values of 𝑘. Standard deviations across five random seeds are shown as subscripts.</figDesc><table><row><cell>Number of Shots</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_22"><head>Table 16 :</head><label>16</label><figDesc>Feature importance of zero-shot TabLLM and LR on all data for the Income dataset. To determine the feature importance of TabLLM, we fit a separate LR model to the predictions using the original feature values as covariates. For LR we simply use the feature coefficients. The features are ranked by their TabLLM importance score.</figDesc><table><row><cell>Feature</cell><cell>TabLLM</cell><cell>LR</cell><cell>Feature</cell><cell>TabLLM</cell><cell>LR</cell></row><row><cell></cell><cell cols="2">rank weight rank weight</cell><cell></cell><cell cols="2">rank weight rank weight</cell></row><row><cell>capital gain</cell><cell>1 5.310</cell><cell>2 2.393</cell><cell></cell><cell></cell><cell></cell></row><row><cell>education Masters</cell><cell>2 4.623</cell><cell>6 1.455</cell><cell></cell><cell></cell><cell></cell></row><row><cell>education Doctorate</cell><cell>3 3.410</cell><cell>4 2.066</cell><cell></cell><cell></cell><cell></cell></row><row><cell>education Bachelors</cell><cell>4 2.995</cell><cell>7 1.135</cell><cell></cell><cell></cell><cell></cell></row><row><cell>education Prof-school</cell><cell>5 2.949</cell><cell>5 1.900</cell><cell></cell><cell></cell><cell></cell></row><row><cell>occupation Machine-op-insp.</cell><cell>6 2.589</cell><cell>75 -0.325</cell><cell></cell><cell></cell><cell></cell></row><row><cell>workclass Private</cell><cell>7 2.275</cell><cell>37 0.102</cell><cell></cell><cell></cell><cell></cell></row><row><cell>relationship Wife</cell><cell>8 2.109</cell><cell>8 0.955</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country China</cell><cell>9 2.086</cell><cell>94 -0.839</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country United-States</cell><cell>10 2.045</cell><cell>38 0.087</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Taiwan</cell><cell>11 1.965</cell><cell>54 0.000</cell><cell></cell><cell></cell><cell></cell></row><row><cell>workclass Federal-gov</cell><cell>12 1.784</cell><cell>14 0.574</cell><cell></cell><cell></cell><cell></cell></row><row><cell>race White</cell><cell>13 1.685</cell><cell>61 0.000</cell><cell></cell><cell></cell><cell></cell></row><row><cell>education Assoc-acdm</cell><cell>14 1.621</cell><cell>13 0.574</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country nan</cell><cell>15 1.565</cell><cell>63 -0.056</cell><cell></cell><cell></cell><cell></cell></row><row><cell>marital status Married-civ-sp.</cell><cell>16 1.487</cell><cell>3 2.214</cell><cell></cell><cell></cell><cell></cell></row><row><cell>occupation Protective-serv</cell><cell>17 1.434</cell><cell>17 0.535</cell><cell></cell><cell></cell><cell></cell></row><row><cell>sex Male</cell><cell>18 1.335</cell><cell>42 0.000</cell><cell></cell><cell></cell><cell></cell></row><row><cell>occupation Armed-Forces</cell><cell>19 1.290</cell><cell>60 0.000</cell><cell></cell><cell></cell><cell></cell></row><row><cell>occupation Adm-clerical</cell><cell>20 1.245</cell><cell>52 0.000</cell><cell></cell><cell></cell><cell></cell></row><row><cell>hours per week</cell><cell>21 1.240</cell><cell>20 0.424</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Hong</cell><cell>22 1.227</cell><cell>86 -0.749</cell><cell></cell><cell></cell><cell></cell></row><row><cell>occupation Tech-support</cell><cell>23 1.164</cell><cell>18 0.526</cell><cell></cell><cell></cell><cell></cell></row><row><cell>relationship Husband</cell><cell>24 1.087</cell><cell>72 -0.212</cell><cell></cell><cell></cell><cell></cell></row><row><cell>occupation Sales</cell><cell>25 0.857</cell><cell>28 0.298</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Vietnam</cell><cell>26 0.803</cell><cell>95 -0.898</cell><cell></cell><cell></cell><cell></cell></row><row><cell>marital status Married-AF-sp.</cell><cell>27 0.792</cell><cell>1 2.571</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Philippines</cell><cell>28 0.711</cell><cell>40 0.011</cell><cell></cell><cell></cell><cell></cell></row><row><cell>age</cell><cell>29 0.710</cell><cell>22 0.411</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Poland</cell><cell>30 0.698</cell><cell>53 0.000</cell><cell></cell><cell></cell><cell></cell></row><row><cell>occupation Prof-specialty</cell><cell>31 0.684</cell><cell>12 0.620</cell><cell></cell><cell></cell><cell></cell></row><row><cell>race Asian-Pac-Islander</cell><cell>32 0.651</cell><cell>32 0.254</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Outlying-US</cell><cell>33 0.591</cell><cell>92 -0.836</cell><cell></cell><cell></cell><cell></cell></row><row><cell>workclass Self-emp-not-inc</cell><cell>34 0.582</cell><cell>76 -0.344</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Italy</cell><cell>35 0.534</cell><cell>24 0.400</cell><cell></cell><cell></cell><cell></cell></row><row><cell>marital status Separated</cell><cell>36 0.523</cell><cell>70 -0.181</cell><cell></cell><cell></cell><cell></cell></row><row><cell>workclass nan</cell><cell>37 0.515</cell><cell>59 0.000</cell><cell></cell><cell></cell><cell></cell></row><row><cell>occupation Exec-managerial</cell><cell>38 0.503</cell><cell>10 0.773</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Scotland</cell><cell>39 0.491</cell><cell>81 -0.626</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Laos</cell><cell>40 0.475</cell><cell>44 0.000</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Cambodia</cell><cell>41 0.328</cell><cell>11 0.642</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Guatemala</cell><cell>42 0.276</cell><cell>55 0.000</cell><cell></cell><cell></cell><cell></cell></row><row><cell>workclass State-gov</cell><cell>43 0.267</cell><cell>73 -0.223</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Germany</cell><cell>44 0.262</cell><cell>39 0.043</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Puerto-Rico</cell><cell>45 0.241</cell><cell>67 -0.128</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Hungary</cell><cell>46 0.177</cell><cell>34 0.191</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Mexico</cell><cell>47 0.123</cell><cell>80 -0.579</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Ireland</cell><cell>48 0.116</cell><cell>9 0.954</cell><cell></cell><cell></cell><cell></cell></row><row><cell>education HS-grad</cell><cell>49 0.092</cell><cell>43 0.000</cell><cell></cell><cell></cell><cell></cell></row><row><cell>occupation Transport-moving</cell><cell>50 0.090</cell><cell>62 -0.048</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country El-Salvador</cell><cell>51 0.027</cell><cell>90 -0.803</cell><cell></cell><cell></cell><cell></cell></row><row><cell>native country Canada</cell><cell>52 0.027</cell><cell>23 0.407</cell><cell></cell><cell></cell><cell></cell></row><row><cell>workclass Self-emp-inc</cell><cell>53 0.001</cell><cell>30 0.255</cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://github.com/clinicalml/TabLLM</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database (06/28/2022)</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>https://www.kaggle.com/fedesoriano/heart-failure-prediction(06/28/2022)</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>https://github.com/kathrinse/TabSurvey</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_4"><p>https://github.com/optuna/optuna</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_5"><p>U.S. Bureau of Labor Statistics, CPI Inflation Calculator: https://www.bls.gov/data/inflation calculator.htm</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" xml:id="foot_6"><p>* Result omitted due to runtime limitations of TabLLM on the full dataset. † Only a single run performed due to runtime limitations of TabLLM on the full dataset.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" xml:id="foot_7"><p>* Result omitted due to runtime limitations of TabLLM on the full dataset. † Result omitted due to TabNet package not supporting unseen labels in validation set during cross validation.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" xml:id="foot_8"><p>* Result omitted due to runtime limitations of TabLLM on the full dataset. † These experiments were only performed for a single run due to runtime limitations of TabLLM on the full dataset.</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head n="9">ACKNOWLEDGEMENTS</head><p>SH was supported by the <rs type="funder">German Academic Exchange Service</rs>, HL by <rs type="funder">NSF</rs> <rs type="grantName">AiTF award</rs> <rs type="grantNumber">CCF-1723344</rs>, MA by a <rs type="funder">Takeda Fellowship</rs>, and DS, HL, AB, and SH in part by <rs type="funder">Independence Blue Cross</rs>. Thanks to <rs type="person">Dr. Steven Horng</rs> for generously donating GPU-time on the <rs type="institution" subtype="infrastructure">BIDMC computing cluster</rs> <ref type="bibr" target="#b12">(Horng, 2022)</ref> and to <rs type="institution">NVIDIA Corporation</rs> for their donation of two NVIDIA A100 GPUs used in this work.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_k8PjsvH">
+					<idno type="grant-number">CCF-1723344</idno>
+					<orgName type="grant-name">AiTF award</orgName>
+				</org>
+			</listOrg>
+
+			<listOrg type="infrastructure">
+				<org type="infrastructure">					<orgName type="extracted">BIDMC computing cluster</orgName>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>End Of Life Task anonymized (Text Template):</p><p>Summary: The patient is a 73 year old hispanic or latino man.</p><p>On May 30, 2014 the patient saw a doctor for dermatology with a primary complaint of chronic cholecystitis. He was also treated for aplastic anemia due to drugs.</p><p>On April 21, 2017 the patient visited the hospital for 12 days with a primary complaint of chronic cholecystitis.</p><p>[...]</p><p>End Of Life Task anonymized (List Permuted Names):</p><p>Summary: The patient is a 73 year old hispanic or latino man. </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Large Language Models are Zero-Shot Clinical Information Extractors</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>References Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Hegselmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Sontag</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2205.12689</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Tabnet: Attentive interpretable tabular learning</title>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">Ö</forename><surname>Arik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Pfister</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="6679" to="6687" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Improving palliative care with deep learning</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Avati</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Jung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Harman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Downing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">H</forename><surname>Shah</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">BMC medical informatics and decision making</title>
+		<imprint>
+			<biblScope unit="volume">18</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="55" to="64" />
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">PromptSource: An integrated development environment and repository for natural language prompts</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bach</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Sanh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><forename type="middle">X</forename><surname>Yong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">V</forename><surname>Nayak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">S</forename><surname>Bari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Fevry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Alyafeai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Dey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Santilli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bendavid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Chhablani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Fries</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Al-Shaibani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">U</forename><surname>Thakker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Almubarak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Radev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">T</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>.-J</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rush</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics: System Demonstrations</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics: System Demonstrations<address><addrLine>Dublin, Ireland</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="93" to="104" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Scarf: Self-supervised contrastive learning using random feature corruption</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Bahri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Metzler</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Tabtext: a systematic approach to aggregate knowledge across tabular data structures</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Bertsimas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">V</forename><surname>Carballo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Na</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Boussioux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">R</forename><surname>Soenksen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Fuentes</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2206.10381</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Deep Neural Networks and Tabular Data: A Survey</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Borisov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Leemann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Seßler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Haug</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pawelczyk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Kasneci</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2110.01889</idno>
+		<imprint>
+			<date type="published" when="2022">2022a</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">V</forename><surname>Borisov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Seßler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Leemann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pawelczyk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Kasneci</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.06280</idno>
+		<title level="m">Language models are realistic tabular data generators</title>
+		<imprint>
+			<date type="published" when="2022">2022b</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Larochelle</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Ranzato</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Hadsell</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Balcan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Lin</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">XGBoost: A Scalable Tree Boosting System</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Guestrin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, KDD &apos;16</title>
+		<meeting>the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, KDD &apos;16<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="page" from="785" to="794" />
+		</imprint>
+	</monogr>
+	<note>Association for Computing Machinery</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Few-shot tabular data enrichment using fine-tuned transformer architectures</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Harari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Katz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1577" to="1591" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Tabpfn: A transformer that solves small tabular classification problems in a second</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Hollmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Müller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Eggensperger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Hutter</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2207.01848</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Horng</surname></persName>
+		</author>
+		<title level="m">Machine Learning Core</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">TabTransformer: Tabular Data Modeling Using Contextual Embeddings</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Khetan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Cvitkovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Karnin</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2012.06678</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">A good prompt is worth millions of parameters? low-resource prompt-based learning for vision-language models</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Ren</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">ACL 2022</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Well-tuned simple nets excel on tabular datasets</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Kadra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lindauer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Hutter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Grabocka</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="23928" to="23941" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">LightGBM: A Highly Efficient Gradient Boosting Decision Tree</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Ke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Finley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T.-Y</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Deep contextual clinical prediction with reverse distillation</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Kodialam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Boiarsky</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Dixit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Sontag</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="249" to="258" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Deep Neural Decision Forests</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Kontschieder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Fiterau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Criminisi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">R</forename><surname>Bulo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2015 IEEE International Conference on Computer Vision (ICCV)</title>
+		<meeting><address><addrLine>Santiago, Chile</addrLine></address></meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="page" from="1467" to="1475" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Co-training improves prompt-based learning for large language models</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">N</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Sontag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Chaudhuri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jegelka</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Szepesvari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Niu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Sabato</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 39th International Conference on Machine Learning</title>
+		<meeting>the 39th International Conference on Machine Learning</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">162</biblScope>
+			<biblScope unit="page" from="11985" to="12003" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Transfer Learning with Deep Tabular Models</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Levin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Cherepanova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Schwarzschild</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Bansal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">B</forename><surname>Bruss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Goldstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">G</forename><surname>Wilson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Goldblum</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2206.15306</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Deep entity matching with pre-trained language models</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Suhara</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Doan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-C</forename><surname>Tan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proc. VLDB Endow</title>
+		<meeting>VLDB Endow</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">14</biblScope>
+			<biblScope unit="page" from="50" to="60" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Few-Shot Parameter-Efficient Fine-Tuning is Better and Cheaper than In-Context Learning</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Tam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Muqeeth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Mohta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bansal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Raffel</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2205.05638[cs].arXiv:2205.05638</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2103.10385</idno>
+		<title level="m">GPT Understands, Too</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Lyu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Hajishirzi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2202.12837</idno>
+		<title level="m">Rethinking the role of demonstrations: What makes in-context learning work? arXiv preprint</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">Can Foundation Models Wrangle Your Data?</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Narayan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Chami</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Orr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Ré</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2205.09911</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">L</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Schulman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Kelton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Miller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Simens</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Welinder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Christiano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Lowe</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.02155</idno>
+		<idno>arXiv: 2203.02155</idno>
+		<title level="m">Training language models to follow instructions with human feedback</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">True few-shot learning with language models</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kiela</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Cho</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="11054" to="11070" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Neural oblivious decision ensembles for deep learning on tabular data</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Popov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Morozov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Babenko</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Prompt programming for large language models: Beyond the few-shot paradigm</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Reynolds</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Mcdonell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Extended Abstracts of the 2021 CHI Conference on Human Factors in Computing Systems</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="1" to="7" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Explainable artificial intelligence for tabular data: A survey</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Sahakyan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Aung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Rahwan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Access</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="page" from="135392" to="135422" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Multitask prompted training enables zero-shot task generalization</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Sanh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bach</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Sutawika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Alyafeai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chaffin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Stiegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Raja</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Dey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">S</forename><surname>Bari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">U</forename><surname>Thakker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">S</forename><surname>Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Szczechla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Chhablani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Nayak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Datta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">T</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">-J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Manica</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><forename type="middle">X</forename><surname>Pandey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Bawden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Neeraj</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Rozen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Santilli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fevry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Fries</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">A</forename><surname>Teehan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">L</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wolf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Rush</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Exploiting Cloze-Questions for Few-Shot Text Classification and Natural Language Inference</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Schick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Schütze</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 16th Conference of the European Chapter</title>
+		<meeting>the 16th Conference of the European Chapter</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="255" to="269" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<title level="m" type="main">) benign essential hypertension 14095 -0.245 1.86 (1.72-2.01) finding of frequency of urination 14096 -0.255 1.48 (1.34-1.64) benign essential microscopic he</title>
+		<idno>14101 -0.338 1.20 (1.03-1.40) primary localized osteoarthrosi... 14102 -0.366 1.08 (0.82-1.43) localized, primary osteoarthritis 14103 -0.393 1.23 (1.07-1.40) sex female 14104 -0.441 0.81 (0.75-0.88) open-angle glaucoma -borderline 14105 -0.495 0.97 (0.85-1</idno>
+		<imprint/>
+	</monogr>
+	<note>localized swelling, mass and lu ) benign neoplasm of skin of trunk ) localized swelling, mass and lu ) open angle with borderline intr</note>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Improving palliative care with deep learning</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Avati</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Jung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Harman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Downing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">H</forename><surname>Shah</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">BMC medical informatics and decision making</title>
+		<imprint>
+			<biblScope unit="volume">18</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="55" to="64" />
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title level="m" type="main">Deep Neural Networks and Tabular Data: A Survey</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Borisov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Leemann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Seßler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Haug</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pawelczyk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Kasneci</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2110.01889</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Larochelle</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Ranzato</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Hadsell</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Balcan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Lin</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Randomized trial of communication facilitators to reduce family distress and intensity of end-of-life care</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Curtis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">D</forename><surname>Treece</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">L</forename><surname>Nielsen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gold</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">S</forename><surname>Ciechanowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">E</forename><surname>Shannon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Khandelwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">P</forename><surname>Young</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">A</forename><surname>Engelberg</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">American journal of respiratory and critical care medicine</title>
+		<imprint>
+			<biblScope unit="volume">193</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="154" to="162" />
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">International application of a new probability algorithm for the diagnosis of coronary artery disease</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Detrano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Janosi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Steinbrunn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pfisterer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-J</forename><surname>Schmid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Sandhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">H</forename><surname>Guppy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Froelicher</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">The American journal of cardiology</title>
+		<imprint>
+			<biblScope unit="volume">64</biblScope>
+			<biblScope unit="issue">5</biblScope>
+			<biblScope unit="page" from="304" to="310" />
+			<date type="published" when="1989">1989</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<monogr>
+		<title level="m" type="main">UCI machine learning repository</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dua</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Graff</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">Why do tree-based models still outperform deep learning on typical tabular data?</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Grinsztajn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Oyallon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Varoquaux</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-sixth Conference on Neural Information Processing Systems Datasets and Benchmarks Track</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Diabetes Prediction Using Ensembling of Different Machine Learning Classifiers</title>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">K</forename><surname>Hasan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">A</forename><surname>Alam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Hossain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Hasan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Access</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="page" from="76516" to="76531" />
+			<date type="published" when="2020">2020</date>
+			<publisher>IEEE Access</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<author>
+			<persName><forename type="first">G</forename><surname>Hripcsak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">D</forename><surname>Duke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">H</forename><surname>Shah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">G</forename><surname>Reich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Huser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">J</forename><surname>Schuemie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">A</forename><surname>Suchard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">W</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><forename type="middle">C K</forename><surname>Wong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">R</forename><surname>Rijnbeek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Van Der Lei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Pratt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">N</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y.-C</forename><surname>Stang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">E</forename><surname>Madigan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Ryan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">B</forename></persName>
+		</author>
+		<idno>#233</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Observational Health Data Sciences and Informatics (OHDSI): Opportunities for Observational Researchers</title>
+		<imprint>
+			<publisher>Publisher: IOS Press</publisher>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="volume">2015</biblScope>
+			<biblScope unit="page" from="574" to="578" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">Well-tuned simple nets excel on tabular datasets</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Kadra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lindauer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Hutter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Grabocka</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="23928" to="23941" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<analytic>
+		<title level="a" type="main">Scaling up the accuracy of naive-bayes classifiers: A decision-tree hybrid</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Kohavi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Kdd</title>
+		<imprint>
+			<date type="published" when="1996">1996</date>
+			<biblScope unit="volume">96</biblScope>
+			<biblScope unit="page" from="202" to="207" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">A data-driven approach to predict the success of bank telemarketing</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Moro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Cortez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rita</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Decision Support Systems</title>
+		<imprint>
+			<biblScope unit="volume">62</biblScope>
+			<biblScope unit="page" from="22" to="31" />
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">Early and accurate detection and diagnosis of heart disease using intelligent computational model</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Muhammad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Tahir</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Hayat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">T</forename><surname>Chong</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Scientific Reports</title>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page">19747</biblScope>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<monogr>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">L</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Schulman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Kelton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Miller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Simens</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Welinder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Christiano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Lowe</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.02155[cs].arXiv:2203.02155</idno>
+		<title level="m">Training language models to follow instructions with human feedback</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">K</forename><surname>Pace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Barry</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Sparse spatial autoregressions</title>
+		<imprint>
+			<date type="published" when="1997">1997</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="291" to="297" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<analytic>
+		<title level="a" type="main">Scikitlearn: Machine learning in Python</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Pedregosa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Varoquaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gramfort</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Michel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Thirion</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Grisel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Blondel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Prettenhofer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Weiss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Dubourg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Vanderplas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Passos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Cournapeau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Brucher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Perrot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Duchesnay</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">12</biblScope>
+			<biblScope unit="page" from="2825" to="2830" />
+			<date type="published" when="2011">2011</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">Multitask prompted training enables zero-shot task generalization</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Sanh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bach</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Sutawika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Alyafeai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chaffin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Stiegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Raja</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Dey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">S</forename><surname>Bari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">U</forename><surname>Thakker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">S</forename><surname>Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Szczechla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Chhablani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Nayak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Datta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">T</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">-J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Manica</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><forename type="middle">X</forename><surname>Pandey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Bawden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Neeraj</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Rozen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Santilli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fevry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Fries</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">A</forename><surname>Teehan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">L</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wolf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Rush</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

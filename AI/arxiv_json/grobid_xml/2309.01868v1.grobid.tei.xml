@@ -1,0 +1,1006 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">On the Planning, Search, and Memorization Capabilities of Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Yunhao</forename><surname>Yang</surname></persName>
+							<email>yunhaoyang234@utexas.edu</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">University of Texas at Austin Austin</orgName>
+								<address>
+									<postCode>78705</postCode>
+									<region>TX</region>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Anshul</forename><surname>Tomar</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">University of Texas at Austin Austin</orgName>
+								<address>
+									<postCode>78705</postCode>
+									<region>TX</region>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">On the Planning, Search, and Memorization Capabilities of Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">E11695D8FA76AA78D5AC832BFEB9C20E</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:26+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>The rapid advancement of large language models, such as the Generative Pretrained Transformer (GPT) series, has had significant implications across various disciplines. In this study, we investigate the potential of the state-of-the-art large language model (GPT-4) for planning tasks. We explore its effectiveness in multiple planning subfields, highlighting both its strengths and limitations. Through a comprehensive examination, we identify areas where large language models excel in solving planning problems and reveal the constraints that limit their applicability. Our empirical analysis focuses on GPT-4's performance in planning domain extraction, graph search path planning, and adversarial planning. We then propose a way of fine-tuning a domain-specific large language model to improve its Chain of Thought (CoT) capabilities for the above-mentioned tasks. The results provide valuable insights into the potential applications of large language models in the planning domain and pave the way for future research to overcome their limitations and expand their capabilities.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>The fast growth of large language models, such as the Generative Pretrained Transformer (GPT) series, significantly impacts various disciplines, from natural language processing and artificial intelligence to healthcare <ref type="bibr" target="#b1">[Chintagunta et al., 2021</ref><ref type="bibr" target="#b8">, Nori et al., 2023</ref><ref type="bibr" target="#b16">, Thirunavukarasu et al., 2023]</ref>, finance <ref type="bibr" target="#b6">[Leippold, 2023</ref><ref type="bibr">, Wu et al., 2023]</ref>, and beyond <ref type="bibr" target="#b13">[Shin et al., 2020]</ref>. These models have revolutionized tasks such as machine translation, sentiment analysis, text summarization, and question-answering, enhancing human-computer interactions and enabling more efficient and accurate information retrieval. In addition, the vast amounts of data these models are trained on allow them to generate human-like responses and perform tasks that were once considered exclusive to human intelligence.</p><p>We examine the capability of the current state-of-the-art language model-GPT-4-on planning and search <ref type="bibr">[OpenAI, 2023]</ref>. Despite its impressive performance in natural language processing tasks and its ability to generate human-like text, GPT-4 is not explicitly designed for executing planning or search algorithms. However, it can provide valuable insights and guidance on various planning and search techniques and domain-specific knowledge for constructing heuristics or evaluating different approaches. GPT-4's vast knowledge base allows users to ask questions and explore diverse aspects of planning and search.</p><p>We indicate the fields in planning that can be solved by large language models and the limitations of language models. The introduction of large language models significantly impacts many fields, such as natural language processing; hence we want to examine its impact on the field of planning.</p><p>This version is a project report from CS 395T Planning Search and Reasoning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>arXiv:2309.01868v1 [cs.CL] 5 Sep 2023</head><p>Existing works <ref type="bibr" target="#b17">[Valmeekam et al., 2022</ref><ref type="bibr">, Huang et al., 2022b</ref><ref type="bibr" target="#b14">, Singh et al., 2023</ref><ref type="bibr">, Lin et al., 2023]</ref> demonstrating the capability of language models on planning are heavily focused on plan generation but lack the exploration of path search, memorization in planning, and planning in adversarial settings.</p><p>We provide a comprehensive examination of the capability of GPT-4 in the field of planning and indicate its limitations for future research. Additionally, we attempt to improve the performance of an LLM by fine-tuning it on tasks like planning domain, graph search, and adversarial search to see if we are able to improve the predictions of these models for these aforementioned tasks. These models are capable of addressing various planning tasks, such as providing general information on planning algorithms, generating heuristics, and discussing different planning techniques. However, they are not specifically designed to perform planning tasks directly, as their primary function is to understand and generate text. Language models have limitations in handling real-time interactive scenarios and lack the ability to learn and adapt beyond their training data. Consequently, while large language models can provide valuable insights and guidance in the realm of planning, their utility is constrained by these limitations, and they cannot fully replace specialized planning algorithms or tools designed to address specific planning problems.</p><p>We provide an empirical analysis of how GPT-4 performs on planning domain extraction, graph search path planning, and adversarial planning. We found that GPT-4 is effective at extracting key components of planning domains from textual descriptions, allowing for the generation of structured representations suitable for use in automated planning systems. In graph search, GPT-4 exhibits the capability to understand the searching algorithm and find an optimal path based on the algorithm. However, such capability is limited once the graph becomes complicated. Moreover, we show its capability to generate heuristics for adversarial planning and its limitation in performing adversarial search algorithms. The lack of memorization during planning is a main factor that limits the large language model to planning in adversarial settings.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related Work</head><p>Several works have used large language models for zero-shot planning; however, their planning either assumes the planning domain is acquired, or the outcomes are static. Some works <ref type="bibr">[Yang et al., 2022</ref><ref type="bibr">, Ichter et al., 2022]</ref> only generate static outcomes, while LLM-Planner <ref type="bibr">[Song et al., 2022]</ref> and LM-Nav <ref type="bibr" target="#b11">[Shah et al., 2022]</ref> require prior knowledge of specific fields to define the planning domain. Existing works <ref type="bibr">[Huang et al., 2022a</ref><ref type="bibr">, Yang et al., 2022]</ref> have demonstrated the capability of these models. Large language models are sources with a wide range of knowledge, including domain-specific knowledge. However, existing works have not dived into the planning and searching capabilities of these models, especially in complex problem or adversarial settings.</p><p>In this work, we explore the capabilities of large language models on planning domain generation, graph search, planning state memorization, and adversarial planning. The work reveals some limitations of large language models, which lead to potential future directions for improving these models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Preliminaries</head><p>Large Language Models (LLMs). LLMs are machine learning models designed to process and understand natural language, such as human speech and text. These models are typically large-scale neural networks, trained using massive amounts of data, often on the scale of billions of words or more, to learn patterns and structures in language.</p><p>LLMs are capable of a wide range of natural language processing tasks, such as language translation, sentiment analysis, text classification, and speech recognition. They can generate new text based on the input prompt they received and create original content such as news articles, essays, or even poetry.</p><p>One example of a large language model is OpenAI's GPT (short for "Generative Pre-trained Transformer") series <ref type="bibr" target="#b0">[Brown et al., 2020</ref><ref type="bibr">, OpenAI, 2023]</ref>, with GPT-4 being the most current iteration. Compared to existing LLMs, GPT-4 is also able to understand image inputs and perform better on logic reasoning. These models have demonstrated remarkable performance across a wide range of NLP tasks, revolutionizing the field of AI and enabling new applications in various domains.</p><p>Planning Domain. A planning domain refers to a formal description of a specific problem space or environment <ref type="bibr" target="#b2">[Haslum et al., 2019]</ref>. It consists of the rules, constraints, and actions that define the structure of the problem and the ways in which it can be solved. The goal of automated planning is to find a sequence of actions that can transform the initial state of the domain into a desired goal state.</p><p>A planning domain generally consists of the following components:</p><p>• Objects: The entities or items that exist within the domain, such as people, locations, or resources.</p><p>• States: A description of the various conditions or configurations of the objects in the domain.</p><p>• Actions: The operations or steps that can be taken to modify the state of the domain. Actions usually have preconditions that must be satisfied before they can be executed and effects that describe how the state changes when the action is performed.</p><p>• Initial state: The starting configuration of the domain from which the planning process begins.</p><p>• Goal state: The desired configuration or set of conditions that the planning process aims to achieve.</p><p>Planning Domain Definition Language (PDDL) is a formal language used to describe planning problems and domains in the field of automated planning. PDDL separates the description of a planning problem into two parts: the domain and the problem. The domain defines the general structure of the problem, including the available actions and their effects, while the problem specifies the initial state and the goal state for a particular instance of the problem.</p><p>In addition to the components of general planning domains, PDDL consists of a set of predicates, which is a set of properties or relations that describe the state of the objects in the domain.</p><p>Graph Search. Graph search is a type of algorithm used to explore and navigate graphs, which are mathematical structures consisting of nodes (also called vertices) connected by edges. In graph search, the algorithm starts at a given node and systematically explores the graph by visiting its neighboring nodes in a specific order until it reaches a target node or a goal state.</p><p>The goal of graph search is to find the shortest or most efficient path between two nodes in a graph.</p><p>There are several different types of graph search algorithms, including:</p><p>• Breadth-first search (BFS): This algorithm explores all the neighbors of a node before moving on to the next level of nodes. BFS is guaranteed to find the shortest path between two nodes in an unweighted graph.</p><p>• Depth-first search (DFS): This algorithm explores one branch of the graph as far as possible before backtracking and exploring another branch. DFS can be used to find all paths between two nodes in a graph, but it may not find the shortest path.</p><p>• Dijkstra's algorithm: This algorithm is used to find the shortest path between two nodes in a weighted graph. It works by assigning a tentative distance to each node and updating the distance as it explores the graph.</p><p>• A* search: This algorithm is similar to Dijkstra's algorithm but uses a heuristic function to guide the search toward the goal node. A* search is often used in pathfinding in video games.</p><p>Graph search algorithms can be used to solve a wide range of problems, but the choice of algorithm depends on the specific problem and the characteristics of the graph being searched.</p><p>Adversarial Planning. Adversarial planning is a type of planning problem where the planner is required to generate a plan that can anticipate and react to the actions of an adversarial agent. In this type of problem, the planner must take into account the actions of the adversary and try to find a plan that maximizes the chances of success while minimizing the impact of the adversary's actions.</p><p>Adversarial planning is commonly used in game theory, where it is used to model the strategies and actions of two or more players engaged in a game. In this context, the planner must anticipate the actions of the opponent and develop a strategy that maximizes the chances of winning.</p><p>There are several approaches to adversarial planning, including mini-max, in which the goal of the agents is to maximize their own rewards or utility while minimizing the rewards or utility of their opponents, and Monte Carlo Tree Search (MCTS), which uses a search algorithm to simulate the possible outcomes of the planner's actions and the adversary's responses.</p><p>Adversarial planning is a challenging problem because it requires the planner to consider not only their own objectives but also the objectives and capabilities of the adversary agents. As a result, it often involves complex decision-making and requires sophisticated algorithms and techniques.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Planning Domain Generation</head><p>In this section, we formulate an approach to generating planning domains using the large language model. To generate the planning domain, we apply the following procedure: querying a brief description of a task to GPT and transforming the responses into PDDL. If we have prior task knowledge, we can send it to GPT and ask it to generate PDDL from the knowledge. This approach enables the task designers to obtain task knowledge in a formal representation, regardless of the prior information the task designers have. Moreover, after generating the planning domains, the task designer can obtain a task plan by performing a simple path search. We also show the capability of GPT-4 on path search in the later sections.</p><p>We start the experiment with a daily-life task-cross the road-to examine the planning domain generation ability. We send the following input prompt to GPT-4:</p><p>Define a problem and actions for a task " cross the road at traffic light " in PDDL .</p><p>The PDDL outputs generated by GPT-4 is presented in Listing 1.</p><p>Listing 1: Define a problem and actions for a task "cross the road at traffic light" in PDDL Then, we query GPT-4 to find a plan by searching through the planning domain:</p><p>Solve the problem for " cross the road at the traffic light " in PDDL with the actions defined .</p><p>1. wait -for -green side1</p><p>2. cross side1 side2</p><p>The result indicates that the generated planning domain is self-contained, and we can obtain a formal representation of the plan, which solves a zero-shot planning problem.</p><p>In addition to daily-life tasks, we can ask GPT-4 to generate the planning domain for some wellknown games, such as Tic-Tac-Toe in Listing 2 and chess in Listing 3. However, once the complexity of the game increases, the success rate of generating self-contained planning domains from GPT-4 decreases. A failure example is the chess game in Listing 2, which defines the wrong goal state.</p><p>Listing 2: Define a problem and a set of actions for tic-tac-toe in PDDL. ( and ( cell-filled c3 x ) ( cell-filled c5 x ) ( cell-filled c7 x ) )</p><p>) ) )</p><p>Listing 3: Define a problem and a set of actions for the chess game in PDDL. ) ( :goal ( and ( at wp1 a7 ) ) ) )</p><p>For more empirical results, we select 100 tasks with different complexities. The tasks are ranged from board games to daily tasks to domain-specific tasks. Then, we query GPT-4 to generate planning domains for those tasks and check the correctness of the generated domains. We show the results in Table <ref type="table">1</ref>: Results on Planning Domain Generation using GPT-4. A correct plan means the planning domain is self-contained and matches human knowledge. A wrong plan means the planning domain is self-contained but does not match human knowledge (e.g., chess game in Listing 3). A failed plan means the planning domain is not self-contained due to the inconsistency of predicates. Table 1. As we can see, GPT-4 can always generate self-contained planning domains but occasionally generate planning domains that do not match human knowledge.</p><p>Additionally, we further query GPT-4 to solve the planning problem given those generated domains. Since all the planning domains are self-contained, we also run fast-downward planner to find a plan and compare it with the plan generated from GPT-4. The results in Table <ref type="table" target="#tab_0">2</ref> indicate that GPT-4 can find plans for simple tasks, but once the task requires more steps, GPT-4 may generate plans with missing disordered actions.</p><p>In conclusion, large language models like GPT-4 are useful in planning domain generation. Due to the rich knowledge encoded in these models, we can use them as a knowledge source, with a notice that they are not always reliable for complex tasks. In the path search aspect, GPT-4 can solve very simple path search problems from given planning domains. However, there is no significant advantage to using GPT-4 compared to using a traditional planner.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Graph Search</head><p>In this section, we examine the capability of large language models, such as GPT-4, on graph searches. The examination consists of two aspects: first, whether GPT-4 understands the well-known graph search algorithms, and second, whether GPT-4 can follow the algorithms to find the desired path. Note that we compare the outputs of GPT-4 to the outputs of the graph search algorithms. The outputs are not necessarily the optimal path. We consider GPT-4 to be accurate as long as it can generate paths following the graph search algorithms.</p><p>We collect direct weighted graphs from 5 nodes to 95 nodes with a gap of <ref type="bibr">10 (5, 15, 25, ..., 85, 95 nodes)</ref>. For each number of nodes, we collect 20 different graphs. An example is presented in Figure <ref type="figure" target="#fig_4">1</ref>. For each graph, we query GPT-4 to perform three graph search algorithms, depth-first search, breath-first search, and Dijkstra's algorithm, respectively, to generate paths. For the example in Figure <ref type="figure" target="#fig_4">1</ref>, we query:</p><p>1</p><p>Run BFS to find the shortest path from A to E .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>2</head><p>Here ' s the BFS traversal on the directed graph :  Run Dijkstra ' s algorithm to find the shortest path from A to E .</p><p>Here ' s the DFS traversal on the directed graph : ...... The DFS traversal visits nodes in the following order : A -&gt; B -&gt; D -&gt; C -&gt; E . Putting it all together , we get a path from A to E : A --&gt; C --&gt; E .</p><p>Run DFS to find the shortest path from A to E . Putting it all together , we get a path from A to E : A --&gt; C --&gt; E .</p><p>As we indicate in this example, GPT-4 is sufficient to generate accurate paths under all three algorithms. However, as the graphs become more complicated, the accuracy of GPT-4 decreases. In Figure <ref type="figure" target="#fig_5">2</ref>, we present how the accuracies of GPT-4 on three algorithms decrease as the number of graph nodes increases. Therefore, we conclude that GPT-4 is only capable of simple graph search. But it provides the possibility of decomposing a complex graph into simple graphs and performing graph search.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Adversarial Planning</head><p>In this section, we explore the capability of the large language model, specifically GPT-4, on adversarial planning. The experiment consists of two components: defining heuristics and applying adversarial search.</p><p>First, we choose the simple game Tic-Tac-Toe as an example and query GPT-4 for a proper heuristic:</p><p>Design a heuristic for adversarial planning in tic -tac -toe .</p><p>Here ' s a simple heuristic for Tic -Tac -Toe : 1. Assign a value of +1 for each row , column , or diagonal with only the maximizing player ' s symbols ( and no opponent ' s symbols ) . 2. Assign a value of -1 for each row , column , or diagonal with only the minimizing player ' s symbols ( and no opponent ' s symbols ) . 3. Assign a value of 0 for rows , columns , or diagonals that have both the maximizing and minimizing player ' s symbols , since these lines are not possible to win . 4. Sum up the values from steps 1 -3 to calculate the total score for the board state .</p><p>The language model successfully generates a heuristic for adversarial planning in Tic-Tac-Toe. We then manually implement this heuristic and perform the Mini-max algorithm. It turns out that the output of GPT-4 is a workable heuristic.</p><p>Second, we examine the performance of GPT-4 on adversarial planning. We query GPT-4 for playing the game with the heuristic defined above:</p><p>Play tic -tac -toe with me using the Mini -max algorithm with the heuristic defined above .</p><p>Please provide the current state of your Tic -Tac -Toe board , and let me know whether the next move is for 'X ' ( maximizing player ) or 'O ' ( minimizing player ) . Then , I ' ll help you determine the best move according to the heuristic .</p><p>Board : -----X ---Here are the heuristic scores for each possible move :</p><formula xml:id="formula_0">O1 : O -- O2 : -O - O3 : --O O4 : -O - O5 : --O --X --X --X -OX -XO --- --- --- --- --- O6 : --O O7 : --- O8 : --- O9 : --- O -X O -X -OX -XO --- -O - --O --O O4</formula><p>, O5 : 1 ( Blocks 'X ' from potentially winning in the next move ) Others : 0 ( No immediate advantage or disadvantage ) According to the heuristic , the best moves for O are O4 and O5 .</p><p>In this example, GPT-4 fails to identify possible moves and memorizes the sequence of previous states, i.e., the existing pieces on the board. Moreover, even with the misidentified moves, it fails to compute the heuristics. From this observation, we can also claim that GPT-4 is unable to understand the heuristics. Therefore, it has limited capability of graph search algorithms like A* as well.</p><p>Due to the failure of adversarial planning in Tic-Tac-Toe, we stopped examining its capability on more complicated tasks and derived our conclusion.</p><p>In conclusion, LLMs are capable of generating reasonable heuristics for the adversarial planning of simple games. We examine this capability in the tic-tac-toe example, where the AI-driven heuristic allows for evaluating board positions based on the presence of a player's symbols in rows, columns, and diagonals. LLMs encode rich knowledge and can provide reasonable heuristics for some given tasks.</p><p>This simple yet heuristic demonstrates the potential of using AI-generated heuristics to guide and enhance decision-making in various problem domains. In conjunction with adversarial search algorithms such as Minimax or Alpha-Beta pruning, these heuristics enable the creation of AI opponents that can effectively compete against human players in simple games like Tic-Tac-Toe. However, LLMs cannot perform adversarial searching algorithms like Mini-max or Monte-Carlo Tree Search. Due to the fact that GPTs are a series of language models for next-word prediction, they can neither understand the state of the game nor search over all the possibilities (as we addressed the graph search limitation in the last section). Additionally, the language model cannot memorize the sequence of previous states correctly. These factors raise a limitation of LLMs and could potentially be a direction of improvement.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Fine-tuning LLM for Logical Reasoning</head><p>Given the subpar performance of LLM on logical reasoning tasks like adversarial planning, we can fine-tune our own language model to check if we could improve its performance on logistic reasoning tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.1">Dataset</head><p>The dataset collected comprised three parts which were planning domain generation (7 different tasks), graph search (20 different tasks), and adversarial planning (4 different tasks). For example, for planning domain generation, we queried GPT-4 using seven different problem definitions. Each problem definition generated 10-100 different goal state configurations depending on the problem, resulting in a total of 540 queries. Given each query (only those queries were selected, which we thought would give correct results when passed through LLM), we ran GPT-4 inference on them to get the soft labels for fine-tuning our own LLM. We collected around 1300 queries (appended with the name of the part, e.g., planning domain queries were appended by planning domain : and so on) and soft label pairs across all tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.2">Model Selection and Fine-tuning</head><p>To select the correct model to fine-tune, we chose a model small enough that could be easily fine-tuned using the resources available to us and also large enough such that it could infer logically. We chose the Flan T5 base model <ref type="bibr">[Shen et al., 2023]</ref> released by Google since it meets this criterion. One of the reasons we chose this model was because this model's checkpoints were readily available at HuggingFace, and had a reasonable size of 240M parameters. Also, as shown in <ref type="bibr">[Shen et al., 2023]</ref>, the model shows the SOTA performance in the CoT dataset <ref type="bibr" target="#b10">[Qingyi Si, 2023]</ref>, which contains a chain of thought data points like arithmetic reasoning, explanation generation, etc., for the number of parameters it had. For fine-tuning the model, we froze the weights of the original model. We only changed the final layer's weights. Updating the weights of the entire model could have led to catastrophic forgetting, or it would have been fine-tuned properly since our dataset size was too small.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.3">Results</head><p>We fine-tuned our LLM model on approximately 1000 data points and evaluated it on the remaining 200 data points. We used the remaining 100 data points as the validation set and used it to stop training the model when we started to see an increase in the validation loss. Given the rapid advances in LLM models, we observed that the outputs of GPT-4 were much better than the Flan models, which were more or less incorrect for every data point we had. In Table <ref type="table">3</ref>, we compare the outputs of Flan, fine-tuned Flan, and GPT-4 for a specific case of graph search and planning domain generation. As for adversarial search, the flan models are unable to come up with a coherent heuristic, and hence we skip their evaluations. Also, we could not compare the output of the LLM and the ground truth values after planning since all the planning domains provided by the Flan were incorrect. In conclusion, we were able to see minor improvements due to fine-tuning because the original model might have never seen prompts like these but was unable to process the outputs of the fine-tuned models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">Conclusion</head><p>Large language models can play critical roles in planning due to their large knowledge domain. The up-to-date large language models encode rich real-world knowledge and can make logical inferences to a certain extent. We provide examples to demonstrate that these models can generate self-consistent planning domains of given tasks without any prior information provided. This capability enables language models to do zero-shot planning. Moreover, the language models can perform graph searches on small-scaled graphs, indicating their great potential in searching. However, the current models have limited abilities to memorize the sequence of previous states during planning and to solve search problems in complicated environments (graphs). Both limitations lead the large language models incapable of adversarial planning. Overall, large language models can play significant roles in planning, especially few-shot planning, and their significance can be improved over time.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><figDesc>at ? s -side ) ( traffic-light ? s -side ) ( safe-to-cross ? s -side ) ) ( :action w ait-fo r-gree n :parameters (? s -side ) :precondition ( and ( pedestrian-at ? s ) ( traffic-light ? s ) ) :effect ( safe-to-cross ? s ) ) ( :action cross :parameters (? s1 -side ? s2 -side ):precondition ( and ( pedestrian-at ? s1 ) ( safe-to-cross ? s1 ) ):effect ( and ( not ( pedestrian-at ? s1 ) ) ( pedestrian-at ? s2 ) ( not ( safe-to-cross ? s1 ) )</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>empty ? c ) ( c urrent -playe r ? p ) ) :effect ( and ( not ( cell-empty ? c ) ) ( cell-filled ? c ? p ) ( forall (? other -player ) ( when ( not (= ? other ? p ) ) ( cu rrent-player ? other ) ) ) cell-filled c1 x ) ( cell-filled c2 x ) ( cell-filled c3 x ) ) ... ; Check for vertical wins ( and ( cell-filled c1 x ) ( cell-filled c4 x ) ( cell-filled c7 x ) ) ... ; Check for diagonal wins ( and ( cell-filled c1 x ) ( cell-filled c5 x ) ( cell-filled c9 x ) )</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><figDesc>a2 ) ( at wp2 b2 ) ( at wp3 c2 ) ...... ( clear a3 ) ( clear a4 ) ( clear a5 ) ......</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: A randomly generated direct weighted graph for examining the graph search capability of large language models.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: The accuracy of graph searching results generated by GPT-4 on graphs with different nodes.</figDesc><graphic coords="7,207.00,72.00,198.00,158.89" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><figDesc>Here ' s how Dijkstra ' s algorithm proceeds : 1. Distances : A = 0 , B = 999 , C = 999 , D = 999 , E = 999. Unvisited : A , B , C , D , E 2. Visit node A . Update B ' s distance and set its predecessor as A . Update C ' s distance and set its predecessor as A . Distances : A = 0 , B = 3 , C = 2 , D = 999 , E = 999. Unvisited : B , C , D , E 3. Visit node C ( smallest unvisited distance ) . Update E ' s distance and set its predecessor as C . Distances : A = 0 , B = 3 , C = 2 , D = 999 , E = 8. Unvisited : B , D , E 4. Visit node B ( smallest unvisited distance ) . Update D ' s distance and set its predecessor as B . Distances : A = 0 , B = 3 , C = 2 , D = 7 , E = 8. Unvisited : D , E 5. Visit node D ( smallest unvisited distance ) . No updates . Unvisited : E 6. Visit node E ( smallest unvisited distance ) . No unvisited neighbors .</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 2 :</head><label>2</label><figDesc>Results on path search using GPT-4. Length indicates the length of the plan generated by fast-downward using the planning domains from GPT-4. The number of tasks indicates how many tasks can be completed in this range of steps. A plan is considered correct if the plan generated by GPT-4 is identical to the plan from fast-downward.</figDesc><table><row><cell cols="6">Total Tasks Correct Plan Wrong Plan Failed</cell></row><row><cell>100</cell><cell>73</cell><cell></cell><cell>27</cell><cell>0</cell></row><row><cell>Length</cell><cell></cell><cell cols="4">≤ 3 4-6 6-8 ≥ 8</cell></row><row><cell>Number of Tasks</cell><cell></cell><cell>68</cell><cell>10</cell><cell>7</cell><cell>15</cell></row><row><cell cols="2">Number of Correct Plans</cell><cell>68</cell><cell>8</cell><cell>4</cell><cell>3</cell></row></table></figure>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Planning domain</head><p>Graph Search Input query Q. Define a problem and actions for the task "tic-tac-toe" in PDDL?</p><p>Answer the following yes/no question by reasoning step-by-step. Given a graph with vertices A, B, C, D, E where the connections are given as A-B, B-C, C-D, C-E. Run BFS to find the shortest path from A to E. Flan Tic-tac-toe is a word that means "to engage in a classic three-in-a-row game typically played on a grid by two players taking turns to place their respective marks, either X or O, in an attempt to achieve a winning combination."</p><p>BFS is a program that calculates the distance between A and E.</p><p>Flan </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Appendix</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.1 Planning Domain Examples</head><p>Listing 4: Define a problem and a set of actions for the chess game in PDDL. ( not ( at ? p ? from ) ) ( at ? p ? to ) ( clear ? from ) ( not ( clear ? to ) )</p><p>) ) ( :action capture :parameters (? p1 -piece ? p2 -piece ? from -square ? to -square ) :precondition ( and ( at ? p1 ? from ) ( at ? p2 ? to ) ) :effect ( <ref type="formula">and</ref>( not ( at ? p1 ? from ) ) ( at ? p1 ? to ) ( not ( at ? p2 ? to ) ) ( captured ? p2 ) ( clear ? from ) )</p><p>) )</p><p>( define ( problem chess-problem ) ( :domain chess ) ( :objects wp1 wp2 wp3 wp4 wp5 wp6 wp7 wp8 -piece bp1 bp2 bp3 bp4 bp5 bp6 bp7 bp8 -piece a1 a2 a3 a4 a5 a6 a7 a8 ... h1 h2 h3 h4 h5 h6 h7 h8 -square ) ( :init ( at wp1 a2 ) ( at wp2 b2 ) ( at wp3 c2 ) ( at wp4 d2 ) ( at wp5 e2 ) ( at wp6 f2 ) ( at wp7 g2 ) ( at wp8 h2 ) ( at bp1 a7 ) ( at bp2 b7 ) ( at bp3 c7 ) ( at bp4 d7 ) ( at bp5 e7 ) ( at bp6 f7 ) ( at bp7 g7 ) ( at bp8 h7 ) </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">M</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateusz</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Amodei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Medically aware gpt-3 as a data generator for medical dialogue summarization</title>
+		<author>
+			<persName><forename type="first">Bharath</forename><surname>Chintagunta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Namit</forename><surname>Katariya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Amatriain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anitha</forename><surname>Kannan</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Machine Learning for Healthcare Conference</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="354" to="372" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">An introduction to the planning domain definition language</title>
+		<author>
+			<persName><forename type="first">Patrik</forename><surname>Haslum</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nir</forename><surname>Lipovetzky</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniele</forename><surname>Magazzeni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Muise</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Synthesis Lectures on Artificial Intelligence and Machine Learning</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Language models as zeroshot planners: Extracting actionable knowledge for embodied agents</title>
+		<author>
+			<persName><forename type="first">Wenlong</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pieter</forename><surname>Abbeel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Deepak</forename><surname>Pathak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Igor</forename><surname>Mordatch</surname></persName>
+		</author>
+		<ptr target="https://proceedings.mlr.press/v162/huang22a.html" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<editor>
+			<persName><forename type="first">Kamalika</forename><surname>Chaudhuri</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Stefanie</forename><surname>Jegelka</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Le</forename><surname>Song</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Csaba</forename><surname>Szepesvári</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Gang</forename><surname>Niu</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Sivan</forename><surname>Sabato</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Baltimore, Maryland, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022-07-23">17-23 July 2022. 2022</date>
+			<biblScope unit="volume">2022</biblScope>
+			<biblScope unit="page" from="9118" to="9147" />
+		</imprint>
+	</monogr>
+	<note>ICML PMLR</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Inner monologue: Embodied reasoning through planning with language models</title>
+		<author>
+			<persName><forename type="first">Wenlong</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ted</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harris</forename><surname>Chan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacky</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pete</forename><surname>Florence</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Tompson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Igor</forename><surname>Mordatch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yevgen</forename><surname>Chebotar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><surname>Sermanet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tomas</forename><surname>Jackson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linda</forename><surname>Luu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergey</forename><surname>Levine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karol</forename><surname>Hausman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Ichter</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">205</biblScope>
+			<biblScope unit="page" from="1769" to="1782" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Do as I can, not as I say: Grounding language in robotic affordances</title>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Ichter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anthony</forename><surname>Brohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yevgen</forename><surname>Chebotar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chelsea</forename><surname>Finn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karol</forename><surname>Hausman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Herzog</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Ho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julian</forename><surname>Ibarz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Irpan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Jang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Julian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dmitry</forename><surname>Kalashnikov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergey</forename><surname>Levine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yao</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carolina</forename><surname>Parada</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kanishka</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><surname>Sermanet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Toshev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vincent</forename><surname>Vanhoucke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ted</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mengyuan</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Ahn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omar</forename><surname>Cortes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicolas</forename><surname>Sievers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clayton</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sichun</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diego</forename><surname>Reyes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jarek</forename><surname>Rettinghouse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jornell</forename><surname>Quiambao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Pastor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linda</forename><surname>Luu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kuang-Huei</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuheng</forename><surname>Kuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sally</forename><surname>Jesmonth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Nikhil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyle</forename><surname>Joshi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rosario</forename><surname>Jeffrey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jasmine</forename><surname>Jauregui Ruano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keerthana</forename><surname>Hsu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Byron</forename><surname>Gopalakrishnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>David</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chuyuan</forename><forename type="middle">Kelly</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Fu</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+		<ptr target="https://proceedings.mlr.press/v205/ichter23a.html" />
+	</analytic>
+	<monogr>
+		<title level="m">Conference on Robot Learning</title>
+		<editor>
+			<persName><forename type="first">Karen</forename><surname>Liu</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Dana</forename><surname>Kulic</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jeffrey</forename><surname>Ichnowski</surname></persName>
+		</editor>
+		<meeting><address><addrLine>CoRL; Auckland, New Zealand</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022-12-18">2022, 14-18 December 2022. 2022</date>
+			<biblScope unit="volume">205</biblScope>
+			<biblScope unit="page" from="287" to="318" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Thus spoke gpt-3: Interviewing a large-language model on climate finance</title>
+		<author>
+			<persName><forename type="first">Markus</forename><surname>Leippold</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Finance Research Letters</title>
+		<imprint>
+			<biblScope unit="volume">53</biblScope>
+			<biblScope unit="page">103617</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">On grounded planning for embodied tasks with language models</title>
+		<author>
+			<persName><forename type="first">Chengsong</forename><surname>Bill Yuchen Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qian</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenda</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Sommerer</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ren</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">AAAI Conference on Artificial Intelligence</title>
+		<editor>
+			<persName><forename type="first">Brian</forename><surname>Williams</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Yiling</forename><surname>Chen</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jennifer</forename><surname>Neville</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Washington, DC, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>AAAI Press</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="13192" to="13200" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Capabilities of gpt-4 on medical challenge problems</title>
+		<author>
+			<persName><forename type="first">Harsha</forename><surname>Nori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicholas</forename><surname>King</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><forename type="middle">Mayer</forename><surname>Mckinney</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dean</forename><surname>Carignan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Horvitz</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.13375</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">GPT-4 technical report</title>
+		<idno type="DOI">10.48550/arXiv.2303.08774</idno>
+		<ptr target="https://doi.org/10.48550/arXiv.2303.08774" />
+		<imprint>
+			<date type="published" when="2023">CoRR, abs/2303.08774, 2023</date>
+		</imprint>
+		<respStmt>
+			<orgName>OpenAI</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Alpaca-cot: An instruction fine-tuning platform with instruction data collection and unified large language models interface</title>
+		<author>
+			<persName><forename type="first">Zheng</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingyi</forename><surname>Si</surname></persName>
+		</author>
+		<ptr target="https://github.com/PhoebusSi/alpaca-CoT" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Lm-nav: Robotic navigation with large pre-trained models of language, vision, and action</title>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Shah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Blazej</forename><surname>Osinski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Ichter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergey</forename><surname>Levine</surname></persName>
+		</author>
+		<ptr target="https://proceedings.mlr.press/v205/shah23b.html" />
+	</analytic>
+	<monogr>
+		<title level="m">Conference on Robot Learning</title>
+		<editor>
+			<persName><forename type="first">Karen</forename><surname>Liu</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Dana</forename><surname>Kulic</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jeffrey</forename><surname>Ichnowski</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Auckland, New Zealand</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022-12-18">CoRL 2022, 14-18 December 2022. 2022</date>
+			<biblScope unit="volume">205</biblScope>
+			<biblScope unit="page" from="492" to="504" />
+		</imprint>
+	</monogr>
+	<note>PMLR</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Flan-moe: Scaling instruction-finetuned language models with sparse mixture of experts</title>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanqi</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shayne</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyung</forename><forename type="middle">Won</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyun</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tu</forename><surname>Vu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuexin</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wuyang</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunxuan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vincent</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongkun</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kurt</forename><surname>Keutzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Trevor</forename><surname>Darrell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2305.14705</idno>
+		<ptr target="https://doi.org/10.48550/arXiv.2305.14705" />
+		<imprint>
+			<biblScope unit="page">2023</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Biomegatron: Larger biomedical domain language model</title>
+		<author>
+			<persName><forename type="first">Hoo-Chang</forename><surname>Shin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Evelina</forename><surname>Bakhturina</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raul</forename><surname>Puri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostofa</forename><surname>Patwary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Shoeybi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raghav</forename><surname>Mani</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.emnlp-main.379</idno>
+		<ptr target="https://doi.org/10.18653/v1/2020.emnlp-main.379" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing</title>
+		<editor>
+			<persName><forename type="first">Bonnie</forename><surname>Webber</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Trevor</forename><surname>Cohn</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Yulan</forename><surname>He</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Yang</forename><surname>Liu</surname></persName>
+		</editor>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Online</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020-11-16">2020. November 16-20, 2020. 2020</date>
+			<biblScope unit="page" from="4700" to="4706" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Progprompt: Generating situated robot task plans using large language models</title>
+		<author>
+			<persName><forename type="first">Ishika</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Valts</forename><surname>Blukis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arsalan</forename><surname>Mousavian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ankit</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danfei</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Tremblay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dieter</forename><surname>Fox</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jesse</forename><surname>Thomason</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Animesh</forename><surname>Garg</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE International Conference on Robotics and Automation</title>
+		<meeting><address><addrLine>London, UK</addrLine></address></meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2023-06-02">May 29 -June 2, 2023. 2023</date>
+			<biblScope unit="volume">2023</biblScope>
+			<biblScope unit="page" from="11523" to="11530" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<title level="m" type="main">Llmplanner: Few-shot grounded planning for embodied agents with large language models</title>
+		<author>
+			<persName><forename type="first">Hee</forename><surname>Chan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaman</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clayton</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><forename type="middle">M</forename><surname>Washington</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Lun</forename><surname>Sadler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Chao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Su</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2212.04088</idno>
+		<ptr target="https://doi.org/10.48550/arXiv.2212.04088" />
+		<imprint>
+			<biblScope unit="page">2022</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Large language models in medicine</title>
+		<author>
+			<persName><forename type="first">Arun</forename><surname>James Thirunavukarasu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Darren</forename><surname>Shu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeng</forename><surname>Ting</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kabilan</forename><surname>Elangovan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laura</forename><surname>Gutierrez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ting</forename><surname>Fang Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Shu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Ting</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Nature Medicine</title>
+		<imprint>
+			<biblScope unit="page" from="1" to="11" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Large language models still can&apos;t plan (a benchmark for llms on planning and reasoning about change)</title>
+		<author>
+			<persName><forename type="first">Karthik</forename><surname>Valmeekam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alberto</forename><surname>Olmo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sarath</forename><surname>Sreedharan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Subbarao</forename><surname>Kambhampati</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2206.10498</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title level="m" type="main">Bloomberggpt: A large language model for finance</title>
+		<author>
+			<persName><forename type="first">Shijie</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ozan</forename><surname>Irsoy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vadim</forename><surname>Dabravolski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Dredze</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prabhanjan</forename><surname>Kambadur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><forename type="middle">S</forename><surname>Rosenberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gideon</forename><surname>Mann</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2303.17564</idno>
+		<ptr target="https://doi.org/10.48550/arXiv.2303.17564" />
+		<imprint>
+			<biblScope unit="page">2023</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Automaton-based representations of task knowledge from generative language models</title>
+		<author>
+			<persName><forename type="first">Yunhao</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jean-Raphaël</forename><surname>Gaglione</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cyrus</forename><surname>Neary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ufuk</forename><surname>Topcu</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2212.01944</idno>
+		<ptr target="https://doi.org/10.48550/arXiv.2212.01944" />
+		<imprint>
+			<biblScope unit="page">2022</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

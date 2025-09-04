@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Garbage in, garbage out: Zero-shot detection of crime using Large Language Models</title>
+				<funder ref="#_vqUkqEA">
+					<orgName type="full">unknown</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Anj</forename><surname>Simmons</surname></persName>
+							<email>a.simmons@deakin.edu.au</email>
+							<affiliation key="aff0">
+								<orgName type="department">Applied Artificial Intelligence Institute</orgName>
+								<orgName type="institution">Deakin University</orgName>
+								<address>
+									<settlement>Geelong</settlement>
+									<country key="AU">Australia</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Rajesh</forename><surname>Vasa</surname></persName>
+							<email>rajesh.vasa@deakin.edu.au</email>
+							<affiliation key="aff0">
+								<orgName type="department">Applied Artificial Intelligence Institute</orgName>
+								<orgName type="institution">Deakin University</orgName>
+								<address>
+									<settlement>Geelong</settlement>
+									<country key="AU">Australia</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Garbage in, garbage out: Zero-shot detection of crime using Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">D477C3B0A0F17C1190345313796DEA12</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:23+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>This paper proposes exploiting the common sense knowledge learned by large language models to perform zero-shot reasoning about crimes given textual descriptions of surveillance videos. We show that when video is (manually) converted to high quality textual descriptions, large language models are capable of detecting and classifying crimes with state-of-the-art performance using only zero-shot reasoning. However, existing automated video-to-text approaches are unable to generate video descriptions of sufficient quality to support reasoning (garbage video descriptions into the large language model, garbage out).</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>I. INTRODUCTION</head><p>Intelligence and law enforcement agencies are tasked with detecting threats and preventing crime. Such agencies have access to increasing volumes of data; however, as the amount of information available greatly exceeds the capacity of humans available to monitor it, it is impossible to fully monitor this deluge of information and respond in a timely manner. Therefore, there is a need for more sophisticated techniques to ingest information and surface up just the cases that indicate a potential crime of a category relevant to the agency.</p><p>Automatically detecting crime poses a challenge, as while there are known categories of crime (abuse, arson, assault, burglary, stealing, vandalism, etc.) the ways in which each category of crime can be committed are diverse. Furthermore, the losses caused by crime follow a power law distribution <ref type="bibr" target="#b0">[1]</ref> in which rare events (e.g., terrorist incidents) cause disproportionate losses. Contrast this to the assumption of supervised learning approaches, which perform well on categories with sufficient training data, but perform poorly on categories with limited training data. Although supervised learning approaches may still have a role to play in extracting specific features relevant to crime, e.g., the presence of a weapon, it is necessary to consider the broader context of the scenario to determine if a crime is occurring, which has traditionally required a human.</p><p>In this paper, we propose exploiting the zero-shot reasoning capabilities <ref type="bibr" target="#b1">[2]</ref> of Large Language Models (LLMs) for the task of detecting and reasoning about crime. Zero-shot reasoning allows prompting the LLM to reason about whether a description of events suggests evidence of a crime, without the need to provide training examples (other than the corpus the LLM has been pre-trained on). LLMs capture common sense knowledge (albeit at a surface level) <ref type="bibr" target="#b2">[3]</ref> which is important to support this reasoning process and avoid false positives, for example, it is not a crime to take an item from a shop if Most likely category: "Normal" Fig. <ref type="figure" target="#fig_1">1</ref>. Example application of proposed method for zero-shot detection of crime: 1) Video is converted to a prompt consisting of a textual description of the video along with a fixed task description. The surveillance video description in this example was written by a human, but we also explore approaches to automate this step. 2) GPT-4 is used to reason (i.e., produce a Chain-of-Thought) about possible explanations and determine the most likely category.</p><p>one pays for it before leaving. An example of the proposed approach is shown in Figure <ref type="figure" target="#fig_1">1</ref>.</p><p>To test the approach, we evaluate the ability of a stateof-the-art LLM (GPT-4 <ref type="bibr" target="#b3">[4]</ref>) to detect crimes given textual descriptions of events in real-world surveillance videos. For the purposes of this paper, we manually created descriptions of 168 surveillance videos. We also explored approaches for automatically generating descriptions from video, which would allow for a fully automated approach to detecting crime in surveillance video, but found that the quality of the automatically generated descriptions was insufficient for the LLM to accurately detect and reason about crimes (garbage in, garbage out).</p><p>The key contributions of this paper are: 1) A dataset of textual descriptions derived from real-world surveillance videos which can be used to benchmark the ability of LLMs to reason about crime, and 2) Identification of obstacles in existing video-to-text approaches that prevent a fully-automated approach. Data and code for this paper are publicly available online 1 .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>II. BACKGROUND AND RELATED WORK</head><p>Previous work has considered the task of activity recognition in videos. However, this requires large training datasets, which are not available in the case of rare types of crime. Previous work has also considered training multimodal models to support zero-shot reasoning about images and other input modalities. However, such models have limited transparency about which information in the images are used to inform the decision, which is essential to know and control in the case of crime detection.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Activity Recognition</head><p>Large-scale datasets have been collected for the task of describing activities in video, such as VATEX <ref type="bibr" target="#b4">[5]</ref> (consisting of 41,250 videos with annotations). For the task of crime detection, the UCF-Crime dataset <ref type="bibr" target="#b5">[6]</ref> consists of 128 hours of surveillance video obtained from YouTube and LiveLeak. However, existing activity recognition methods perform poorly on the UCF-Crime dataset, only achieving 28.4% classification accuracy <ref type="bibr" target="#b5">[6]</ref>. Furthermore, rare crime categories such as terrorism are not included. In contrast to previous crime detection approaches, this paper explores a zero-shot approach to circumvent the need for large training datasets.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Multimodal Models</head><p>Multimodal models are trained on two or more input modalities, such as both text and images. Such models can accept image inputs directly, allowing reasoning about content in images without the need for an intermediate step to first convert video to text. Prior work has also explored integrating LLMs with pre-trained image encoders to allow reasoning about the content of images <ref type="bibr" target="#b6">[7]</ref>.</p><p>There are three reasons why we focus on reasoning about textual descriptions of videos in this paper rather than training a multimodal model to operate on the video directly. Firstly, using textual descriptions allows the use of existing state of the art LLMs, such as GPT-4 and derivatives of LLaMA, without the need to retrain or fine-tune them to accept new input modalities. Although the GPT-4 model itself is multimodal <ref type="bibr" target="#b3">[4]</ref>, OpenAI do not yet provide a way for the public to input images to GPT-4 via the API. Secondly, we may wish to incorporate information other than images in future, for example, descriptions of sounds detected or new 1 <ref type="url" target="https://github.com/anjsimmo/zero-shot-crime-detection">https://github.com/anjsimmo/zero-shot-crime-detection</ref> Fig. <ref type="figure">2</ref>. We provide descriptions of people/objects and interactions within the UCF-Crime dataset, then evaluate the ability of GPT-4 chain-of-thought reasoning to infer the category of crime. kinds of sensors. When all information sources are represented in textual form, it is trivial to integrate new information. Thirdly, textual descriptions provide a way to restrict which information the LLM has access to by censoring details the LLM should not use in its decision, such as race and gender. Inspecting the chain-of-thought produced by the LLM for bias is insufficient, as LLMs may produce unfaithful explanations that do not reveal the underlying factors that influenced the decision <ref type="bibr" target="#b7">[8]</ref>. Censoring these details is more difficult when the input includes images/videos.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>III. METHOD</head><p>This section explains the method by which we converted surveillance videos into textual descriptions and evaluated the ability of GPT-4 to detect and reason about crime. An overview of the process is shown in Figure <ref type="figure">2</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Dataset</head><p>We test our approach on the UCF-Crime dataset of surveillance videos <ref type="bibr" target="#b5">[6]</ref>. The authors of the UCF-Crime <ref type="bibr" target="#b5">[6]</ref> propose two tasks. The first task is detection of anomalous events in surveillance videos, on which the original paper scores 75.41 AUC, and current state of the art scores 86.98 AUC 2 . However, this first task only involves identifying which frames relate to an anomalous event, not reasoning about the type of anomalous event. The second task is anomalous activity recognition. This involves determining the category of crime (if any) that occurs in a surveillance video. The authors of the UCF-Crime dataset explain that state of the art activity recognition methods perform poorly, only achieving 28.4% accuracy. This second task is the focus of this paper.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Human Captions</head><p>The first author manually wrote descriptions of people, objects, and their interactions in a sample of 12 surveillance videos from 14 categories (13 crime categories + normal), resulting in a dataset of 168 surveillance video descriptions. While the author was aware of the ground truth crime category for videos in the UCF-Crime dataset, the descriptions were written to be as objective as possible rather than suggesting a particular interpretation of the events taking place. The manually written descriptions do not include race or gender.</p><p>An example of a manually created description is: "A white car approaches a silver car. Two people come out. One of them goes near the front wheel of the car. The other then opens the bonnet. After 30 seconds, the two people return to the white car."</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. GPT-4 Prompt</head><p>We prompt GPT-4, a state of the art LLM, to reason about the most likely category of crime given the textual description of the surveillance video. We include the phrase "let's think step by step" in the prompt to trigger zero-shot reasoning <ref type="bibr" target="#b1">[2]</ref>. The full prompt is: SURVEILLANCE VIDEO DESCRIPTION: A white car approaches a silver car ...</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>TASK:</head><p>List possible explanations, and categorise them as one of [Abuse, Arrest, Arson, Assault, Burglary, Explosion, Fighting, Road Accident, Robbery, Shooting, Shoplifting, Stealing, Vandalism, Normal]. Then determine which category is most likely. Let's think step by step. Finally, output one line containing a single category in quotes. Do not include anything other than the category on the final line. GPT-4 reasons about possible explanations for the observed events, followed by what it determines to be the most likely category. An example response from GPT-4 is: We evaluate how accurately GPT-4 is able to recover the ground truth label for the video.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D. Automated Captions</head><p>We also explore the accuracy with which GPT-4 can recover the ground truth on automatically generated captions of videos. To automatically generate a description of the video, we sample a frame every 10 seconds, pass it through a imageto-text model, then concatenate the results along with time stamps. The choice to sample a frame every 10 seconds was to balance the need to capture key changes in the video while avoiding long and repetitive descriptions that may exceed the input token limit of GPT-4. The method for converting these descriptions to prompts and evaluating the classification accuracy is identical to the process for human captions.</p><p>1) GIT Captions: To generate image captions, we used a pre-trained Generative Image-to-text Transformer (GIT) <ref type="bibr" target="#b8">[9]</ref>, specifically, git-large-coco<ref type="foot" target="#foot_1">foot_1</ref> which has been fine-tuned by Microsoft on the COCO dataset.</p><p>An example of the final description generated for a video by this process is: "10 sec: a car is seen parked on the street. 20 sec: a car is seen parked on the street. 30 sec: a car is seen passing another car. 40 sec: a man is sitting on the ground next to a car. 50 sec: a car is parked on the street and another car is parked behind it. 60 sec: a man is opening the trunk of a car. 70 sec: a man is trying to get a car out of the back of a car. 80 sec: a car is parked in front of a house. 90 sec: a car is parked on the street. 100 sec: a car is parked on the street. 110 sec: the car is parked on the street. 120 sec: a car is seen driving down a street."</p><p>2) LLaVA Descriptions: Large Language and Vision Assistant (LLaVA) <ref type="bibr" target="#b6">[7]</ref> is a visual instruction tuned version of LLaMa. Specifically, we use the 13 billion parameter version, 13b-v0, which was the largest and most recent release of the LLaVA model at the time of conducting the experiment. To generate descriptions, we prompt LLaVA with an image from the video and the question "What is it?" An example of the final description generated for a video by this process is: "10 sec: In the image, there is a black car parked on a street next to a building. The car appears to be parked in a parking space, and there are potted plants nearby. The car is facing a house with a fence and a gate. There is also a person standing on the sidewalk, possibly observing the car or the surrounding area. To assist the user further, more context or specific questions about the scene would be needed. 20 sec: In the image, there is a gray car parked on the side of the street, and a white van is driving down the street. The scene takes place on a residential street with a fence and a house in the background. To assist you better, I would need more information about the situation or a specific question related to the image. 30 sec: ..."</p><p>3) YOLO-v8 + ByteTrack: We make use of a YOLObased object tracking library <ref type="foot" target="#foot_2">4</ref> to track people and objects</p><p>TABLE I CLASSIFICATION ACCURACY Method Accuracy Random Baseline 7.1% TCNN Baseline (Sultani et al.) 28.4% GPT-4 + Human Captions 58.7% GPT-4 + GIT Captions 11.4% GPT-4 + LLaVA Descriptions 10.2% GPT-4 + YOLO-v8 + ByteTrack 7.1%</p><p>in surveillance videos. Specifically, we use yolov8x<ref type="foot" target="#foot_3">foot_3</ref> (the largest and most accurate version of the model) combined with the ByteTrack <ref type="bibr" target="#b9">[10]</ref> tracking method.</p><p>The tracks are updated every frame (30 frames per second) to support keeping track of identities; however, we only output the current state every 10 seconds. To convert this to text, for each tracked object, we state the object class (person, car, etc.), identity of the tracked object (e.g. "car 2") and position (e.g. "bottom-left").</p><p>An example of the final description generated for a video by this process is: "0 sec: car 1 is at the bottom-left of the image. 10 sec: car 1 is at the bottom-left of the image. car 2 is at the top-middle of the image. 20 sec: car 1 is at the bottom-left of the image. car 2 is at the middle of the image. 30 sec: car 1 is at the bottom-left of the image. car 2 is at the middle of the image. person 3 is at the bottom-middle of the image. person 5 is at the middle of the image. 40 sec: car 1 is at the bottom-left of the image. car 2 is at the middle of the image. person 5 is at the middle of the image. person 6 is at the bottom-middle of the image. 50 sec: ..."</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>IV. RESULTS</head><p>We tested each method on 12 videos from 14 categories (168 videos total) and report the classification accuracy in Table <ref type="table">I</ref>. For comparison, we also include a random baseline (1/14), and the Tube Convolutional Neural Network (TCNN) baseline reported by Sultani et al. <ref type="bibr" target="#b5">[6]</ref> in the UCF-Crime paper.</p><p>In cases where GPT-4 was unable to process the input (e.g. exceeded token length) or did not output a valid response (i.e. the final line of output was not a valid category in the expected format) we exclude these from the accuracy calculation. There was 1 case of invalid output for GPT-4 + Human captions, 1 case of invalid output for GPT-4 + GIT Captions, and 2 cases of input that could not be processed due to exceeding token length for GPT-4 + LLaVA Captions. There were no cases of invalid input or output for GPT-4 + YOLO-v8 + ByteTrack.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>V. DISCUSSION</head><p>Our results show that while GPT-4 was able to determine the crime category with state of the art performance when provided a human generated caption of the video, it performed poorly when provided with automatically generated captions. In the rest of this section, we elaboration on the limitations of automatic caption generation approaches that need to be Fig. <ref type="figure">3</ref>. GIT Caption: "a man is sitting on the ground next to a car." Fig. <ref type="figure">4</ref>. LLaVA Description: "In the image, a group of young men is playing pool together in a room. There are at least seven people present, with some standing and others sitting around the pool table. The players are engaged in a game of pool, with the cue ball visible on the table. The room appears to be a casual gathering space, as there are chairs and a bench placed around the area. Additionally, there is a microwave in the room, suggesting that it might be a part of a larger living space, such as a dormitory or a recreational area. The overall atmosphere seems to be one of enjoyment and camaraderie among the players." overcome to support a fully automated approach to crime detection.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Image captions lack detail</head><p>Reasoning about crime requires details of who did what. However, image captioning models only describe the scene at a high level. For example, consider the caption generated for Figure <ref type="figure">3</ref>. The image captioning model correctly identifies that the image contains a man sitting on the ground next to a car. However, it provides no details about which man and which car. Without this detail, there is insufficient information to reason about whether the man is sitting on the ground to repair their own car, or is sitting on the ground to steal something from someone else's car.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. LLM based vision models hallucinate</head><p>In contrast to image captioning models, LLM based vision models are capable of generating detailed descriptions of images, but may hallucinate about objects present and actions being performed. Furthermore, the descriptions they generate are biased towards a particular interpretation of the scenario, an example of which is shown in Figure <ref type="figure">4</ref>. Reasoning about crime requires objective descriptions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Object tracking algorithms cannot maintain identity of objects over long time periods</head><p>Reasoning about crime requires linking the identity of actors across time. For example, it is not a crime for an actor to take an item from a store if they pay for it before leaving.</p><p>However, in our experiments, we observed that object tracking was unable to maintain a constant identity for people and objects over long time periods. For example, in a video where there were only two people, the description generated by applying object tracking refers to "person 3", "person 5", "person 6" and "person 8", making it difficult to link the actions of people across time.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D. Curated object detection datasets do not include weapons</head><p>Large benchmark datasets for object detection, such as COCO, do not include weapons. While it is understandable that technology companies that curate datasets for training machine learning algorithms may want to distance themselves from undesirable uses of AI, if we wish for AI systems to be able to help prevent violence, then it is important for datasets curators to include depictions of weapons and violence.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>VI. THREATS TO VALIDITY</head><p>GPT-4 may have already have seen images from UCF-Crime videos in its training data. However, we test on textual descriptions of the videos rather than the videos themselves, and these textual descriptions have not been released before. As such, it is unlikely that the performance of GPT-4 reported in this paper is a result of overfitting to training data.</p><p>The author was aware of the ground-truth category when creating the human captions for videos, which may have biased the descriptions. Furthermore, in busy scenes, it was not practical to describe every action taking place, hence the descriptions may be biased towards just describing the actions of relevance to the crime. As such, the performance of GPT-4 on human captions should be taken only as an indicator of what is possible, and may not be possible to fully automate even if the obstacles raised in this paper can be overcome.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>VII. CONCLUSION</head><p>This paper demonstrated that with high quality textual descriptions, large language models are capable of detecting and classifying crimes with state-of-the-art performance using only zero-shot reasoning. Unfortunately, existing automated videoto-text approaches were unable to generate video descriptions of sufficient quality to support reasoning, thus fully automated detection of crime is not yet possible. The failure of these approaches to generate descriptions suitable for reasoning about crime indicates that such models are not as general purpose as widely perceived, and that these models require domain adaptation for downstream tasks. Future research is needed to overcome the loss of objective detail that occurs during the video-to-text conversion process.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><figDesc>1) Prompt: SURVEILLANCE VIDEO DESCRIPTION:A white car approaches a silver car. Two people come out. One of them goes near the front wheel of the car. The other then opens the bonnet. After 30 seconds, the two people return to the white car. TASK: List possible explanations, and categorise them as one of [Abuse, Arrest, Arson, Assault, Burglary, Explosion, Fighting, Road Accident, Robbery, Shooting, Shoplifting, Stealing, Vandalism, Normal]. Then determine which category is most likely. Let's think step by step. Finally, output one line containing a single category in quotes. Do not include anything other than the category on the final line. 2) GPT-4 Chain-of-Thought: Possible explanations: 1. The two people are helping the driver of the silver car with a mechanical issue [Normal] 2. The two people are attempting to steal parts from the silver car [Stealing] 3. The two people are tampering with the silver car to cause harm [Vandalism] 4. The two people are involved in a car theft [Robbery]</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Possible explanations: 1 .</head><label>1</label><figDesc>The two people are helping the driver of the silver car with a mechanical issue [Normal] 2. The two people are attempting to steal parts from the silver car [Stealing] 3. The two people are tampering with the silver car to cause harm [Vandalism] 4. The two people are involved in a car theft[Robbery]    Most likely category: "Normal"</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="2,330.81,50.54,213.40,269.97" type="bitmap" /></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_0"><p>https://paperswithcode.com/sota/anomaly-detection-in-surveillancevideos-on</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>https://huggingface.co/microsoft/git-large-coco</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_2"><p>https://github.com/mikel-brostrom/yolo tracking</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_3"><p>https://github.com/ultralytics/ultralytics</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>ACKNOWLEDGMENT</head><p>This paper was supported by research funding from the <rs type="grantName">National Intelligence Postdoctoral Grant program</rs> (<rs type="grantNumber">NIPG-2021-006</rs>).</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_vqUkqEA">
+					<idno type="grant-number">NIPG-2021-006</idno>
+					<orgName type="grant-name">National Intelligence Postdoctoral Grant program</orgName>
+				</org>
+			</listOrg>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Detection of rare events with uncertain outcomes</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Ilin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">International Journal of Approximate Reasoning</title>
+		<imprint>
+			<biblScope unit="volume">131</biblScope>
+			<biblScope unit="page" from="252" to="267" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Large language models are zero-shot reasoners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Kojima</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">S</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Reid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Matsuo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Iwasawa</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page">213</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Evaluating commonsense in pre-trained language models</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Huang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">AAAI 2020 -34th AAAI Conference on Artificial Intelligence</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="9733" to="9740" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">GPT-4 Technical Report</title>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<ptr target="http://arxiv.org/abs/2303.08774" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Vatex: A large-scale, high-quality multilingual dataset for video-and-language research</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y.-F</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">Y</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The IEEE International Conference on Computer Vision (ICCV)</title>
+		<imprint>
+			<date type="published" when="2019-10">October 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Real-world anomaly detection in surveillance videos</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Sultani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Shah</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE conference on computer vision and pattern recognition</title>
+		<meeting>the IEEE conference on computer vision and pattern recognition</meeting>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="6479" to="6488" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Visual instruction tuning</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">J</forename><surname>Lee</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2304.08485" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Language Models Don&apos;t Always Say What They Think: Unfaithful Explanations in Chain-of-Thought Prompting</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Turpin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Michael</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">R</forename><surname>Bowman</surname></persName>
+		</author>
+		<ptr target="http://arxiv.org/abs/2305.04388" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">GIT: A Generative Image-to-text Transformer for Vision and Language</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Gan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions on Machine Learning Research</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Bytetrack: Multi-object tracking by associating every detection box</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Weng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the European Conference on Computer Vision (ECCV)</title>
+		<meeting>the European Conference on Computer Vision (ECCV)</meeting>
+		<imprint>
+			<biblScope unit="page">2022</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

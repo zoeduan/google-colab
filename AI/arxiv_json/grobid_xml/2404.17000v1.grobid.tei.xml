@@ -1,0 +1,1125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Evaluating Class Membership Relations in Knowledge Graphs using Large Language Models</title>
+				<funder ref="#_pMf6SPk">
+					<orgName type="full">Dutch Research Council (NWO)</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-04-25">25 Apr 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Bradley</forename><forename type="middle">P</forename><surname>Allen</surname></persName>
+							<email>b.p.allen@uva.nl</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Amsterdam</orgName>
+								<address>
+									<settlement>Amsterdam</settlement>
+									<country key="NL">The Netherlands</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Evaluating Class Membership Relations in Knowledge Graphs using Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-04-25">25 Apr 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">10DCC036FCF17ED3CB4888744613D6F3</idno>
+					<idno type="arXiv">arXiv:2404.17000v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:48+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Knowledge engineering</term>
+					<term>large language models</term>
+					<term>knowledge graph refinement</term>
+					<term>natural language generation</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>A backbone of knowledge graphs are their class membership relations, which assign entities to a given class. As part of the knowledge engineering process, we propose a new method for evaluating the quality of these relations by processing descriptions of a given entity and class using a zero-shot chain-of-thought classifier that uses a natural language intensional definition of a class. We evaluate the method using two publicly available knowledge graphs, Wikidata and CaLiGraph, and 7 large language models. Using the gpt-4-0125-preview large language model, the method's classification performance achieves a macro-averaged F1score of 0.830 on data from Wikidata and 0.893 on data from CaLiGraph. Moreover, a manual analysis of the classification errors shows that 40.9% of errors were due to the knowledge graphs, with 16.0% due to missing relations and 24.9% due to incorrectly asserted relations. These results show how large language models can assist knowledge engineers in the process of knowledge graph refinement. The code and data are available on Github 1 .</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Knowledge graphs (KGs) have become a key technology in many applications in industry and academia <ref type="bibr" target="#b19">[20]</ref>. This has brought attention to the area of KG refinement <ref type="bibr" target="#b27">[28]</ref>, for which a main goal is ensuring that the knowledge captured in KGs is as complete and correct as possible. This is a challenge, given that largescale KGs composed of contributions from multiple sources of knowledge often contain incomplete, misaligned, and inaccurate information <ref type="bibr" target="#b30">[31,</ref><ref type="bibr" target="#b28">29]</ref>. At the same time, as part of the knowledge engineering process, direct manual evaluation of KG quality by human reviewers to detect and remediate these problems is expensive <ref type="bibr" target="#b36">[37,</ref><ref type="bibr" target="#b17">18]</ref>.</p><p>The recent emergence of large language models (LLMs) has inspired work towards understanding how LLMs can applied to knowledge graph construction.</p><p>To date, much of this work has centered on the use of LLMs for knowledge graph completion <ref type="bibr" target="#b37">[38]</ref> and the evaluation of provenance <ref type="bibr" target="#b4">[5]</ref> and correctness <ref type="bibr" target="#b31">[32]</ref> in a knowledge graph. In this paper, we describe work on using LLMs to evaluate class membership relations in a KG. Class membership relations are important because they are a principal way in which knowledge graphs represent classification schemes. Classification schemes are a major consideration in many knowledge engineering efforts, often with significant implications for social policy and scientific consensus <ref type="bibr" target="#b8">[9]</ref>.</p><p>We present an approach to evaluate class membership relations by using an LLM to define a zero-shot chain-of-thought (CoT) <ref type="bibr" target="#b22">[23,</ref><ref type="bibr" target="#b35">36]</ref> classifier that takes natural language descriptions of an entity and a class in a given KG, and predicts whether or not the entity is an instance of the class, providing a natural language rationale for the prediction. The motivation for this approach is to leverage an LLM's capabilities for natural language processing to allow knowledge engineers to use intensional knowledge expressed in natural language by domain experts directly, as opposed to having to first transform it into a symbolic knowledge representation, and apply it to determining if that knowledge is accurately reflected in a given knowledge graph.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related work</head><p>Using LLMs for knowledge engineering tasks Beyond uses for KG refinement, LLMs are beginning to be applied to other tasks in the engineering of knowledge graphs. In <ref type="bibr" target="#b3">[4]</ref>, two scenarios for the use of LLMs in knowledge engineering are described: creating hybrid neurosymbolic knowledge systems and enabling knowledge engineering in natural language. Pan et al <ref type="bibr" target="#b26">[27]</ref> describe three categories of LLM/KG hybrids: KG-enhanced LLMs, LLM-augmented KGs, and synergized LLMs + KGs. Specific examples of LLM augmentation of KGs include the use of LLMs for KG completion <ref type="bibr" target="#b37">[38,</ref><ref type="bibr" target="#b2">3]</ref> and for ontology engineering <ref type="bibr" target="#b25">[26]</ref>. We view our work as an example of an LLM-augmented KG approach that performs knowledge engineering using intensional knowledge expressed in natural language to develop classifiers; classification is a well-known instance of an analytic knowledge task as defined in the CommonKADS taxonomy of knowledge-intensive task types <ref type="bibr" target="#b29">[30]</ref>. KG refinement Knowledge graph refinement is defined by Paulheim <ref type="bibr" target="#b27">[28]</ref> as the process of improving an existing KG by adding missing knowledge or identifying and removing errors. KG refinement has been implemented using manual, statistical, rule-based and hybrid methods <ref type="bibr" target="#b36">[37,</ref><ref type="bibr" target="#b17">18]</ref>. Interactive solutions to aid human reviewers have been developed, including tools for crowdsourcing KG quality assessment <ref type="bibr" target="#b23">[24]</ref>, fact-checking triples using textual evidence <ref type="bibr" target="#b31">[32]</ref>, ontology repair using description logic reasoners <ref type="bibr" target="#b24">[25]</ref>, and sampling techniques to better focus manual reviewers' attention <ref type="bibr" target="#b12">[13]</ref>. Our work builds on these results by creating classifiers that can be used to alert a knowledge engineer to misalignments between natural language definitions of a class and elements of the class's extension in a given KG.</p><p>Automated fact checking A recent survey <ref type="bibr" target="#b13">[14]</ref> provides a useful overview of the large amount of methods for fact checking. The work most related to ours is that of Atanasova et al. <ref type="bibr" target="#b6">[7]</ref> on justification production using language models of the BERT family. That work focuses on the fact checking applied to claims expressed as natural language statements; in contrast, our methods admit of the combination of both serialized RDF statements and natural language descriptions as input for both justification production and verdict prediction.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Preliminaries</head><p>To precisely specify the integration between KGs and LLMs in our experiments, we now introduce a formalization of a neurosymbolic workflow <ref type="bibr" target="#b11">[12]</ref> for entity classification.</p><p>Language models Let T be the set of sequences of tokens T i = t 1 , t 2 , . . . , t n such that t i is a token in a predefined vocabulary V . Given a corpus C ⊆ T , a language model L C is a probabilistic model trained on a sample of C that defines a distribution over sequences of tokens.</p><formula xml:id="formula_0">L C (T i ) = p(t 1 , t 2 , . . . , t n ) (1)</formula><p>is an estimate of the probability of a sequence T i , given a corpus C. A prompt P = (T, F ) is a pair of a sequence of tokens T and an set of free tokens</p><formula xml:id="formula_1">F ⊆ {f 1 , f 2 , . . . , f n }. A substitution θ with respect to a prompt P is a set of pairs (f i , T i ) such that f i ∈ F and T i ∈ T . An instantiation instantiate(P, θ) is a prompt P ′ such that ∀(f i , T i ) ∈ θ every occurrence of f i in P is replaced with f i .</formula><p>Given a prompt P , the goal of a language model L C is to generate a sequence of tokens that maximizes the conditional probability under L C .</p><formula xml:id="formula_2">T out = arg max T L C (T |P )<label>(2)</label></formula><p>is the output sequence generated by the language model, conditioned on P . Knowledge graphs Following <ref type="bibr" target="#b5">[6]</ref>, we use the RDF data model to describe knowledge graphs. Let I be an infinite set of IRIs (Internationalized Resource Identifiers <ref type="bibr" target="#b10">[11]</ref>), B be an infinite set of blank nodes <ref type="bibr" target="#b18">[19]</ref>, and L an infinite set of literals <ref type="bibr" target="#b7">[8]</ref>. </p><formula xml:id="formula_3">ext(c) = i∈N ext i (c)<label>(3)</label></formula><p>be the extension of a class c, where</p><formula xml:id="formula_4">ext 0 (c) = {e | ∃(e, instanceOf, c) ∈ G} (4) ext i+1 (c) =ext i (c) ∪ {e | e ∈ ext(c ′ ) ∧ ∃(c ′ , subClassOf, c) ∈ G}<label>(5)</label></formula><p>Zero-shot chain-of-thought entity classifiers Given the definitions above, we now proceed to show how to construct classifiers that prompt LLMs with intensional definitions of classes in natural language to classify entities in a knowledge graph. A serialization T G of a knowledge graph G is a sequence of tokens T that represents the triples in G using a structured formal language (e.g. RDF). For any entity e ∈ E, let T Ge be the serialization of Ge. A verbalization T e of an entity e is a sequence of tokens T that represents a description of e in natural language. Given an language model L C , we define a function classify as follows:</p><formula xml:id="formula_5">(T R , T B ) = classify(c, e)<label>(6)</label></formula><p>where T R is a sequence of tokens that represents a rationale for a classification decision, and T B ∈ {positive, negative} are tokens that represent classification decisions, i.e., whether or not e ∈ ext(c), respectively. We instantiate T R and T B as follows:</p><formula xml:id="formula_6">T R = arg max T L C (T |instantiate(P rationale generation , θ 0 ))<label>(7)</label></formula><formula xml:id="formula_7">T B = arg max T L C (T |instantiate(P answer generation , θ 1 ))<label>(8)</label></formula><formula xml:id="formula_8">θ 0 = {({label}, T label(c) ), ({definition}, T c ),</formula><p>({entity}, T label(e) ), ({description}, T e )} ( <ref type="formula">9</ref>)</p><formula xml:id="formula_9">θ 1 = θ 0 ∪ {({rationale}, T Re )}<label>(10)</label></formula><p>given two prompt templates P rationale generation and P answer generation . The specific prompt templates used in the experiments were manually authored and iteratively refined between June 2023 and October 2023. Figure <ref type="figure">3</ref> shows an example of such a classifier instantiated for a class and entity in the CaLiGraph KG.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Experiments</head><p>To understand the potential of classifiers built using the above approach for the problem of KG refinement, we conducted experiments to explore two research questions:</p><formula xml:id="formula_10">Q 1 :</formula><p>Can the classifiers exhibit good alignment with KGs? Much of the work on LLM/KG synergy to date is predicated on the idea that KGs, as curated sources of knowledge, can be used to address gaps in the knowledge obtainable from LLMs, or mitigate the problem of hallucination by grounding LLMs. This makes assumptions about the degree of alignment between LLMs and KGs, hence this question aims to measure this alignment. Q 2 : Can the classifiers detect missing or incorrect relations? Our main goal is to generate classifications based on intensional class definitions in with natural language rationales to help guide human reviewers to areas where KGs may be incomplete or incorrect. Any such approach must demonstrate the ability to do so across multiple knowledge graphs and classes. The experiments to address these questions were implemented as follows:</p><p>Knowledge graphs Two publicly available knowledge graphs were used to construct evaluation datasets: Wikidata <ref type="bibr" target="#b33">[34]</ref> and CaLiGraph <ref type="bibr" target="#b14">[15,</ref><ref type="bibr" target="#b15">16,</ref><ref type="bibr" target="#b16">17]</ref>. The two KGs represent distinct approaches to KG construction. Wikidata is the result of the crowd-sourced contribution of factual statements by thousands of human contributors and automated processes working independently, yielding relatively diverse approaches to modeling concepts and entities, and is loosely coupled with and derived from information in Wikipedia. CaLiGraph is the result of the automated extraction of terminology and assertions from Wikipedia and DBPedia pages, and as such is more consistent in how it models concepts and entities than is Wikidata.</p><p>Data sets We randomly sampled 20 classes from Wikidata and 19 from CaLi-Graph using SPARQL queries, including their super-classes. For each, 20 entities were selected as positive examples, and up to 20 entities from the set difference of the extensions of the class and one of its superclasses as negative examples (in some of the sampled classes the cardinality of the set difference was less than 20). Language models We evaluated seven large language models accessible using services provided by OpenAI and Hugging Face: OpenAI's gpt-4-0125-preview and gpt-3.5-turbo, Google's gemma-7b-it and gemma-2b-it, Mistral AI's Mixtral-8x7B-Instruct-v0.1 and Mistral-7B-Instruct-v0.2, and Meta's Llama-2-70b-chathf. For all experiments, temperatures were set to a value of 0.1.</p><p>Classifiers We use the definitions provided above to instantiate a classifier for each class in the datasets. For each class c and entity e, we obtained natural language descriptions to use as T c and T e arguments for the classifier. For Wikidata, we retrieved natural language summaries of the class or entity from its associated Wikipedia page. For CaLiGraph, we used gpt-4-1106-preview to generate RDF verbalizations to serve as T c and T e , given inputs of T Gc and T Ge obtained as the TSV serialization of the triples returned from SPARQL DESCRIBE queries for c and e with LIMIT = 20. Evaluation procedure Experimental runs were then conducted by applying classifiers to each class/entity pair for a given class in each of the two knowledge graphs, generating for each class a confusion matrix based on the resulting set of classifications, from which performance metrics are computed. Algorithm 1 describes this procedure in pseudo-code. Evaluations whose statistics are reported below were conducted during the period from 24 February 2024 to 27 February 2024. Costs incurred through calls to language model APIs during this period totalled around $225 USD.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Findings</head><p>We summarize below the finding obtained from our evaluations. Detailed results can be found in our aforementioned Github repository. Classifier performance (assuming the KG as ground truth) of the seven closed-and open-source LLMs is shown in Table <ref type="table" target="#tab_0">1</ref>. The performance as shown  Table <ref type="table">2</ref> shows the results of an error analysis of the evaluation results for the highest-performing classifier (using gpt-4-0125-preview). It was conducted by having one of the authors manually annotate each classification error with their own classification decision, based on the information in the provided descriptions. This human judgment was then compared with that of the KG and classifier using the pairwise Cohen's κ value as a measure of inter-annotator agreement. In cases where where Wikidata and the classifier using gpt-4-0125preview disagreed, the human showed fair agreement with Wikidata and no agreement with the classifier, and for examples where CaLiGraph and the given classifier disagreed, the human showed slight agreement with the classifier and no agreement with CaLiGraph.</p><formula xml:id="formula_11">end foreach e ∈ E -do (TR, T B ) ← classify(c, e); if T B = negative then T N ← T N + 1; else F N ← F N + 1; end M ← [[T P, F P ], [F N, T N ]];</formula><p>In addition, the annotator assigned each error to one of five causes: missing data in the entity description that comprised the LLM's ability to classify the entity, a missing class membership relation in the KG between the given entity and class (an example of which is shown in Figure <ref type="figure">3</ref>), an incorrectly asserted class membership relation in the KG between the given entity and class, and an error on the part of the LLM, through either hallucination or misinterpretation of the class definition or entity description. We assert that these results support</p><p>KG N F P F N human-KG κ human-LLM κ missing data missing relation incorrect relation incorrect reasoning Wikidata 136 46 90 0.243 -0.241 34 (25.0%) 15 (11.0%) 33 (24.3%) 54 (39.7%) CaLiGraph 77 27 50 -0.295 0.198 28 (36.4%) 19 (24.7%) 20 (26.0%) 10 (13.0%) 213 73 140 62 (29.1%) 34 (16.0%) 53 (24.9%) 64 (30.0%)</p><p>Table 2: Summary of the analysis of classification errors by gpt-4-0125-preview.</p><p>another finding: classifiers can detect missing or incorrect relations in KGs (Q 2 ). The error analysis showed that in instances where the classifier using gpt-4-0125-preview was in disagreement with the KG, 40.9% of errors were due to the knowledge graphs, with 16.0% due to missing relations and 24.9% due to incorrect relations. 29.1% of the errors could be ascribed to missing or insufficient data in the entity description, which may have had a negative impact on classifier performance. This is attributed primarily to one of two reasons: for CaLiGraph, RDF verbalizations missed relevant information about entities due to the omission of relevant triples in the set produced by the SPARQL DE-SCRIBE queries; and for Wikidata, some entities had descriptions that were simply the label assigned to the entity. We plan to address these shortcomings in future versions of the evaluation datasets. These results suggest that, pâce efforts focused on using KGs to mitigate knowledge gaps and hallucinations in LLMs, LLMs may have a corresponding role to play in mitigating knowledge gaps and errors in KGs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Discussion</head><p>Contributions The principal contributions of this work are 1) a formal approach to the design of a neurosymbolic knowledge engineering workflow integrating KGs and LLMs, and 2) experimental evidence that this method can assist knowledge engineers in addressing the correctness and completeness of KGs, potentially reducing the effort involved in knowledge acquisition and elicitation.</p><p>Limitations Challenges with the use of LLMs include the cost of API calls to proprietary LLMs and the speed of processing tasks with such resource-intensive systems. Our results show the potential for open source, locally deployed LLMs to address the first problem; we expect that sampling approaches, frequently used in other approaches to KG refinement in large-scale KGs, can help address the second. The human evaluation for error analysis could be improved through the use of crowd-sourcing to expand the number of reviewers (allowing much larger sets of rationales and classification decisions to be evaluated), by evaluating the true positives and true negatives produced by the classifier, and by evaluating the soundness of rationales and faithfulness of classification to the given rationales. The potential impact of one or more of the LLMs having processed the Wikidata and CaLiGraph data during pre-training was not considered in the analysis. The question of whether the use of gpt-4-1106-preview to generate RDF verbalizations in the CaLiGraph experiments approach to verbalization introduced bias relative to the other LLMs is yet to be addressed. Finally, this work is limited to the evaluation of class membership relations in a KG, and evaluated against KGs that are domain-general and either crowdsourced (Wikidata) or automatically generated from crowdsourced content (CaLiGraph). To support use against KG refinement challenges faced by domain-specific KGs, such as those developed for life sciences applications <ref type="bibr" target="#b9">[10]</ref>, this needs to be generalized to support the definition of classifiers based on intensional definitions of predicates in natural language.</p><p>Future work We have in this work taken a minimalist approach to the prompt engineering of classifiers, restricting ourselves to a zero-shot chain-of-thought approach. Expanding this to include using temperature sampling <ref type="bibr" target="#b0">[1]</ref> for selfconsistency <ref type="bibr" target="#b34">[35]</ref> and uncertainty estimation <ref type="bibr" target="#b20">[21]</ref>, mitigating hallucination in rationale generation <ref type="bibr" target="#b21">[22]</ref>, and addressing faithfulness in rationale generation <ref type="bibr" target="#b32">[33,</ref><ref type="bibr" target="#b1">2]</ref> are three other areas for future work, in addition to work on addressing the limitations described above by expanding the number and types of relations considered, and evaluating our approach against domain-specific KGs.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><figDesc>A knowledge graph G is a set of triples {(s, p, o) | s ∈ S, p ∈ P, o ∈ O}, where S ⊂ I ∪B is the set of subjects in G, P ⊂ I is the set of properties in G, and O ⊂ I ∪B ∪L is the set of objects in G. Let instanceOf, subClassOf, label ∈ P denote an instance-of relation, a subclass-of relation, and a label property in G, respectively. A class c ∈ I ∪B is an entity that represents a set of entities sharing common properties and relationships in G. Let</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>For any entity e ∈ I ∪ B, let Ge = {(s, p, o) ∈ G | s = e ∨ o = e} be the neighborhood of e. Let T label(e) = {o | ∃(e, label, o) ∈ G }.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Fig. 1 .</head><label>1</label><figDesc>Fig. 1. A zero-shot chain-of-thought classifier applied to the class clgo:Romania international rugby union player and the entity clgr:Iosif Nemes from the CaLiGraph knowledge graph [15].</figDesc><graphic coords="5,154.97,143.27,270.56,492.29" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>input : a pair of classes c, d from G | (c, subClassOf, d) ∈ G output: a confusion matrix M (T P , F P , T N , F N ) ← (0, 0, 0, 0); E + ← a sample from ext(c); E -← a sample from ext(d) \ ext(c); foreach e ∈ E + do (TR, T B ) ← classify(c, e); if T B = positive then T P ← T P + 1; else F P ← F P + 1;</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Classifier performance by LLM.</figDesc><table><row><cell>KG</cell><cell>LLM</cell><cell>ACC</cell><cell>AUC</cell><cell>F1</cell><cell>κ</cell></row><row><cell>Wikidata</cell><cell>gpt-4-0125-preview</cell><cell>0.830</cell><cell>0.830</cell><cell>0.823</cell><cell>0.660</cell></row><row><cell></cell><cell>gemma-7b-it</cell><cell>0.726</cell><cell>0.727</cell><cell>0.705</cell><cell>0.454</cell></row><row><cell></cell><cell>Mixtral-8x7B-Instruct-v0.1</cell><cell>0.697</cell><cell>0.696</cell><cell>0.654</cell><cell>0.393</cell></row><row><cell></cell><cell>Mistral-7B-Instruct-v0.2</cell><cell>0.671</cell><cell>0.671</cell><cell>0.620</cell><cell>0.342</cell></row><row><cell></cell><cell>gemma-2b-it</cell><cell>0.674</cell><cell>0.670</cell><cell>0.629</cell><cell>0.330</cell></row><row><cell></cell><cell>gpt-3.5-turbo</cell><cell>0.627</cell><cell>0.627</cell><cell>0.547</cell><cell>0.255</cell></row><row><cell></cell><cell>Llama-2-70b-chat-hf</cell><cell>0.631</cell><cell>0.616</cell><cell>0.569</cell><cell>0.239</cell></row><row><cell>CaLiGraph</cell><cell>gpt-4-0125-preview</cell><cell>0.900</cell><cell>0.893</cell><cell>0.889</cell><cell>0.788</cell></row><row><cell></cell><cell>Mixtral-8x7B-Instruct-v0.1</cell><cell>0.893</cell><cell>0.884</cell><cell>0.874</cell><cell>0.767</cell></row><row><cell></cell><cell>gpt-3.5-turbo</cell><cell>0.842</cell><cell>0.833</cell><cell>0.815</cell><cell>0.665</cell></row><row><cell></cell><cell>Mistral-7B-Instruct-v0.2</cell><cell>0.812</cell><cell>0.803</cell><cell>0.779</cell><cell>0.605</cell></row><row><cell></cell><cell>gemma-7b-it</cell><cell>0.783</cell><cell>0.774</cell><cell>0.750</cell><cell>0.547</cell></row><row><cell></cell><cell>Llama-2-70b-chat-hf</cell><cell>0.637</cell><cell>0.625</cell><cell>0.558</cell><cell>0.252</cell></row><row><cell></cell><cell>gemma-2b-it</cell><cell>0.563</cell><cell>0.543</cell><cell>0.422</cell><cell>0.090</cell></row></table><note><p>Algorithm 1: Evaluation procedure supports the following finding: classifiers can exhibit good alignment with KGs (Q 1 ). As evidenced by Cohen's κ values, one LLM was in moderate agreement with Wikidata, and four were in moderate agreement with CaLiGraph.</p></note></figure>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgements</head><p>This work is partially funded by the <rs type="funder">Dutch Research Council (NWO)</rs> through grant <rs type="grantNumber">MVI.19.032</rs>. The authors wish to thank <rs type="person">Filip Ilievski</rs>, <rs type="person">Jan-Christoph Kalo</rs>, <rs type="person">Xue Li</rs>, <rs type="person">Fina Polat</rs>, <rs type="person">Thivyan Thanapalasingam</rs>, and <rs type="person">Lise Stork</rs> for discussions and suggestions that have been invaluable in refining this work. We would also like to thank the anonymous reviewers for their insightful comments and suggestions, which have been invaluable in refining our work.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_pMf6SPk">
+					<idno type="grant-number">MVI.19.032</idno>
+				</org>
+			</listOrg>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">A learning algorithm for boltzmann machines</title>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">H</forename><surname>Ackley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">E</forename><surname>Hinton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">J</forename><surname>Sejnowski</surname></persName>
+		</author>
+		<idno type="DOI">10.7551/mitpress/4943.003.0039</idno>
+		<ptr target="http://dx.doi.org/10.7551/mitpress/4943.003.0039" />
+	</analytic>
+	<monogr>
+		<title level="j">Cognitive Science</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="147" to="169" />
+			<date type="published" when="1985">1985</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">C</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">H</forename><surname>Tanneru</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lakkaraju</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.04614</idno>
+		<title level="m">Faithfulness vs. plausibility: On the (un) reliability of explanations from large language models</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">D</forename><surname>Alivanistos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">B</forename><surname>Santamaría</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Cochez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">C</forename><surname>Kalo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Van Krieken</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Thanapalasingam</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2208.11057</idno>
+		<title level="m">Prompting as probing: Using language models for knowledge base construction</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Knowledge engineering using large language models</title>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">P</forename><surname>Allen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Stork</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Groth</surname></persName>
+		</author>
+		<idno type="DOI">10.4230/TGDK.1.1.3</idno>
+		<ptr target="https://drops.dagstuhl.de/entities/document/10.4230/TGDK.1.1.3" />
+	</analytic>
+	<monogr>
+		<title level="j">Transactions on Graph Data and Knowledge</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page">19</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Prove: A pipeline for automated provenance verification of knowledge graphs against textual sources</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Amaral</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Rodrigues</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Simperl</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.14846</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Mapping rdf databases to property graph databases</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Angles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Thakkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Tomaszuk</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Access</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="page" from="86091" to="86110" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Generating fact checking explanations</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Atanasova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">G</forename><surname>Simonsen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Lioma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Augenstein</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2004.05773</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Literally better: Analyzing and improving the quality of literals</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Beek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Ilievski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Debattista</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Schlobach</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wielemaker</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Semantic Web</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="131" to="150" />
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">C</forename><surname>Bowker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">L</forename><surname>Star</surname></persName>
+		</author>
+		<title level="m">Sorting things out: Classification and its consequences</title>
+		<imprint>
+			<publisher>MIT press</publisher>
+			<date type="published" when="2000">2000</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Knowledge graphs for the life sciences: Recent developments, challenges and opportunities</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hastings</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Jiménez-Ruiz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>López</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Monnin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Pesquita</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Škoda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Tamma</surname></persName>
+		</author>
+		<idno type="DOI">10.4230/TGDK.1.1.5</idno>
+		<ptr target="https://drops.dagstuhl.de/entities/document/10.4230/TGDK.1.1.5" />
+	</analytic>
+	<monogr>
+		<title level="j">Transactions on Graph Data and Knowledge</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page">33</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Internationalized resource identifiers (iris)</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Dürst</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Suignard</surname></persName>
+		</author>
+		<editor>Tech. rep., RFC Editor</editor>
+		<imprint>
+			<date type="published" when="2005">2005</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Describing and organizing semantic web and machine learning systems in the swemls-kg</title>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">J</forename><surname>Ekaputra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Llugiqi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Sabou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ekelhart</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Paulheim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Breit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Revenko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Waltersdorfer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">E</forename><surname>Farfar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Auer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">European Semantic Web Conference</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="372" to="389" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">E</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Sisman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><forename type="middle">L</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1907.09657</idno>
+		<title level="m">Efficient knowledge graph accuracy evaluation</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">A survey on automated fact-checking</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Schlichtkrull</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vlachos</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="page" from="178" to="206" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<author>
+			<persName><forename type="first">N</forename><surname>Heist</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Paulheim</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2110.05028</idno>
+		<title level="m">The caligraph ontology as a challenge for owl reasoners</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Information extraction from co-occurring similar entities</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Heist</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Paulheim</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Web Conference 2021</title>
+		<meeting>the Web Conference 2021</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="3999" to="4009" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<author>
+			<persName><forename type="first">N</forename><surname>Heist</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Paulheim</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.01482</idno>
+		<title level="m">Transformer-based subject entity detection in wikipedia listings</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<author>
+			<persName><forename type="first">M</forename><surname>Hofer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Obraczka</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Saeedi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Köpcke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Rahm</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.11509</idno>
+		<title level="m">Construction of knowledge graphs: State and challenges</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Everything you always wanted to know about blank nodes</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Hogan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Arenas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mallea</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Polleres</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Web Semantics</title>
+		<imprint>
+			<biblScope unit="volume">27</biblScope>
+			<biblScope unit="page" from="42" to="69" />
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Knowledge graphs</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Hogan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Blomqvist</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Cochez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Melo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">D</forename><surname>Gutierrez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Kirrane</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gayo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E L</forename><surname>Navigli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Neumaier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ngomo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">C N</forename><surname>Polleres</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rashid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">M</forename><surname>Rula</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Schmelzeisen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Sequeda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Staab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zimmermann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename></persName>
+		</author>
+		<idno type="DOI">10.1145/3447772</idno>
+		<ptr target="https://doi.org/10.1145/3447772" />
+	</analytic>
+	<monogr>
+		<title level="j">ACM Comput. Surv</title>
+		<imprint>
+			<biblScope unit="volume">54</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<date type="published" when="2021-07">jul 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Look before you leap: An exploratory study of uncertainty measurement for large language models</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ma</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.10236</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Survey of hallucination in natural language generation</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Frieske</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Ishii</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">J</forename><surname>Bang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Madotto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Fung</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Computing Surveys</title>
+		<imprint>
+			<biblScope unit="volume">55</biblScope>
+			<biblScope unit="issue">12</biblScope>
+			<biblScope unit="page" from="1" to="38" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Large language models are zero-shot reasoners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Kojima</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">S</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Reid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Matsuo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Iwasawa</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="22199" to="22213" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Triplecheckmate: A tool for crowdsourcing the quality assessment of linked data</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kontokostas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zaveri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Auer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lehmann</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Knowledge Engineering and the Semantic Web: 4th International Conference</title>
+		<title level="s">Proceedings</title>
+		<meeting><address><addrLine>St. Petersburg, Russia</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2013-10-07">2013. October 7-9, 2013. 2013</date>
+			<biblScope unit="volume">4</biblScope>
+			<biblScope unit="page" from="265" to="272" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Completing and debugging ontologies: State of the art and challenges in repairing ontologies</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lambrix</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Journal of Data and Information Quality</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mateiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Groza</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.16699</idno>
+		<title level="m">Ontology engineering with large language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.08302</idno>
+		<title level="m">Unifying large language models and knowledge graphs: A roadmap</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Knowledge graph refinement: A survey of approaches and evaluation methods</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Paulheim</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Semantic web</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="489" to="508" />
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">What we talk about when we talk about wikidata quality: a literature survey</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Piscopo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Simperl</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 15th International Symposium on Open Collaboration</title>
+		<meeting>the 15th International Symposium on Open Collaboration</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="1" to="11" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">Knowledge engineering and management: the CommonKADS methodology</title>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">T</forename><surname>Schreiber</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Schreiber</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Akkermans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Anjewierden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shadbolt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>De Hoog</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Van De Velde</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Wielinga</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2000">2000</date>
+			<publisher>MIT press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">A study of the quality of wikidata</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Shenoy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Ilievski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Garijo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Schwabe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Szekely</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Web Semantics</title>
+		<imprint>
+			<biblScope unit="volume">72</biblScope>
+			<biblScope unit="page">100679</biblScope>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Factcheck: Validating rdf triples using textual evidence</title>
+		<author>
+			<persName><forename type="first">Z</forename><forename type="middle">H</forename><surname>Syed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Röder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">C</forename><surname>Ngonga Ngomo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 27th ACM International Conference on Information and Knowledge Management</title>
+		<meeting>the 27th ACM International Conference on Information and Knowledge Management</meeting>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="1599" to="1602" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">Language models don&apos;t always say what they think: Unfaithful explanations in chain-of-thought prompting</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Turpin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Michael</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">R</forename><surname>Bowman</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.04388</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Wikidata: a free collaborative knowledgebase</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Vrandečić</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Krötzsch</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Communications of the ACM</title>
+		<imprint>
+			<biblScope unit="volume">57</biblScope>
+			<biblScope unit="issue">10</biblScope>
+			<biblScope unit="page" from="78" to="85" />
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title level="m" type="main">Self-consistency improves chain of thought reasoning in language models</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.11171</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="24824" to="24837" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Knowledge graph quality management: a comprehensive survey</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Xue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Knowledge and Data Engineering</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Using large language models for knowledge engineering</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Reklos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M</forename><surname>Peñuela</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Simperl</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.08491</idno>
+	</analytic>
+	<monogr>
+		<title level="m">A case study on wikidata</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

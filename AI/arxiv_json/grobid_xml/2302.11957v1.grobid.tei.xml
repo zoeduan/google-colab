@@ -1,0 +1,1144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Sentence Simplification via Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-02-23">23 Feb 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Yutao</forename><surname>Feng</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">College of Information Engineering</orgName>
+								<orgName type="institution">Yangzhou University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Jipeng</forename><surname>Qiang</surname></persName>
+							<email>jpqiang@yzu.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="department">College of Information Engineering</orgName>
+								<orgName type="institution">Yangzhou University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yun</forename><surname>Li</surname></persName>
+							<email>liyun@yzu.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="department">College of Information Engineering</orgName>
+								<orgName type="institution">Yangzhou University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yunhao</forename><surname>Yuan</surname></persName>
+							<email>yhyuan@yzu.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="department">College of Information Engineering</orgName>
+								<orgName type="institution">Yangzhou University</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yi</forename><surname>Zhu</surname></persName>
+							<email>zhuyi@yzu.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="department">College of Information Engineering</orgName>
+								<orgName type="institution">Yangzhou University</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Sentence Simplification via Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-02-23">23 Feb 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">781174A33C5FFE1BD1BBD0ACD8CF1610</idno>
+					<idno type="arXiv">arXiv:2302.11957v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:51+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Sentence Simplification aims to rephrase complex sentences into simpler sentences while retaining original meaning. Large Language models (LLMs) have demonstrated the ability to perform a variety of natural language processing tasks. However, it is not yet known whether LLMs can be served as a high-quality sentence simplification system. In this work, we empirically analyze the zero-/few-shot learning ability of LLMs by evaluating them on a number of benchmark test sets. Experimental results show LLMs outperform state-of-the-art sentence simplification methods, and are judged to be on a par with human annotators.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Sentence Simplification (SS) is a task of rephrasing a sentence into a new form that is easier to read and understand while retaining its meaning, which can be used for increasing accessibility for people with dyslexia <ref type="bibr" target="#b19">(Rello et al., 2013)</ref>, autism <ref type="bibr" target="#b4">(Evans et al., 2014)</ref> or low-literacy skills <ref type="bibr" target="#b25">(Watanabe et al., 2009)</ref>.</p><p>In recent years, neural SS methods utilize parallel SS datasets to train Sequence-to-Sequence models <ref type="bibr" target="#b24">(Wang et al., 2016;</ref><ref type="bibr" target="#b31">Zhang and Lapata, 2017;</ref><ref type="bibr" target="#b32">Zhao et al., 2018)</ref> or fine-tune pretrained language models (e.g. BART <ref type="bibr" target="#b7">(Lewis et al., 2020)</ref>) <ref type="bibr" target="#b9">(Martin et al., 2020;</ref><ref type="bibr" target="#b8">Lu et al., 2021;</ref><ref type="bibr" target="#b10">Martin et al., 2022)</ref>. However, much work <ref type="bibr" target="#b27">(Woodsend and Lapata, 2011;</ref><ref type="bibr" target="#b29">Xu et al., 2015;</ref><ref type="bibr" target="#b16">Qiang and Wu, 2021)</ref> pointed out that the public English SS benchmark (WikiLarge <ref type="bibr" target="#b31">Zhang and Lapata (2017)</ref>) which align sentences from English Wikipedia and Simple English Wikipedia are deficient, because they contain a large proportion of inaccurate or inadequate simplifications, which lead to the poor generalization performance of SS methods.</p><p>Large Language Models (LLMs) have demonstrated their ability to solve a range of natural language processing tasks through zero-/few-Shot learning <ref type="bibr" target="#b1">(Brown et al., 2020;</ref><ref type="bibr">Thoppilan et al., 2022;</ref><ref type="bibr" target="#b2">Chowdhery et al., 2022)</ref>. Nevertheless, it remains unclear how LLMs perform in SS task compared to current SS methods. To address this gap in research, we undertake a systematic evaluation of the Zero-/Few-Shot learning capability of LLMs, by assessing their performance on existing SS benchmarks. We carry out an empirical comparison of the performance of ChatGPT and the most advanced GPT3.5 model <ref type="bibr">(text-davinci-003 )</ref>.</p><p>To the best of our knowledge, this is the first study of LLMs's capabilities on SS task, aiming to provide a preliminary evaluation, including simplification prompt, multilingual simplification, and simplification robustness. The key findings and insights are summarized as follows:</p><p>(1) GPT3.5 or ChatGPT based on one-shot learning outperform the state-of-the-art SS methods. We found that these models excel at deleting non-essential information and adding new information, while existing supervised SS methods tend to preserve the content without change.</p><p>(2) ChatGPT is a monolithic model capable of supporting multiple languages, which makes it a comprehensive multilingual text simplification technique. After evaluating the performance of ChatGPT on the task of simplification across two languages (Portuguese and Spanish), we observed that it surpasses the best baseline methods by a considerable margin. This also confirms that LLMs can be adapted to other languages</p><p>(3) By performing human evaluation over LLMs's simplification and human's simplification, LLMs's simplifications are judged to be on a par with human written simplifications.</p><p>Additionally, the results of this paper is available by visiting <ref type="url" target="https://github.com/BrettFyt/SS_Via_LLMs">https://github.com/BrettFyt/SS Via LLMs</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related Work</head><p>Supervised Sentence Simplification methods: Supervised SS methods usually treat SS task as monolingual machine translation, which requires a large parallel corpus of aligned Complex-Simple sentences pairs <ref type="bibr" target="#b13">(Nisioi et al., 2017)</ref>. Those methods often em-I want you to replace my complex sentence with simple sentence. Keep the meaning same, but make them simpler. Complex: On the January 16 episode of Friday Night SmackDown, it was announced that Swagger would defend the ECW title against Hardy in a rematch at the Royal Rumble. Simple: In the January 16 Friday Night Smackdown show, they said that Swagger would fight Hardy again to keep the ECW title at the Royal Rumble. Complex: Some trails are designated as nature trails, and are used by people learning about the natural world. Simple: Some trails are marked as nature trails, and are used by people learning about nature.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>……</head><p>Complex: His next work, Saturday, follows an especially eventful day in the life of a successful neurosurgeon.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Simple: {Outputs}</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Manual Examples One by One</head><p>Test Question</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>LLM</head><p>His next book, Saturday, follows a busy day in the life of a successful neurosurgeon.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>LLM Outputs (b) Few-Shot</head><p>I want you to replace my complex sentence with simple sentence. Keep the meaning same, but make them simpler. Complex: His next work, Saturday, follows an especially eventful day in the life of a successful neurosurgeon.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Simple: {Outputs}</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Test Question</head><p>His next work is about a successful neurosurgeon's busy day on Saturday. ployed a Sequence-to-Sequence model (such as Transformer <ref type="bibr" target="#b23">(Vaswani et al., 2017)</ref>) as backbone, then integrating different sub-modules into it such as reinforcement learning <ref type="bibr" target="#b31">(Zhang and Lapata, 2017)</ref>, external simplification rules databases <ref type="bibr" target="#b32">(Zhao et al., 2018)</ref>, adding a new loss <ref type="bibr" target="#b12">(Nishihara et al., 2019)</ref>, or lexical complexity features <ref type="bibr" target="#b9">(Martin et al., 2020)</ref>. Another way is to train a sequence editing model, simplifying sentences by predicting the operations for every words <ref type="bibr" target="#b3">(Dong et al., 2019)</ref>. These methods rely heavily on public training sets, namely WikiLarge <ref type="bibr" target="#b31">(Zhang and Lapata, 2017)</ref> and WikiSmall <ref type="bibr" target="#b33">(Zhu et al., 2010)</ref>. However, recent studies have pointed out their defects since they contain a substantial number of inaccurate or inadequate simplification pairs <ref type="bibr" target="#b27">(Woodsend and Lapata, 2011;</ref><ref type="bibr" target="#b29">Xu et al., 2015;</ref><ref type="bibr" target="#b16">Qiang and Wu, 2021)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>LLM Outputs</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>LLM</head><p>To alleviate this constraint, recent research has concentrated on developing novel parallel SS corpora. In this way, <ref type="bibr" target="#b10">Martin et al. (2022)</ref> employed sentence embedding modeling to measure the similarity between sentences from approximately one billion CC-NET <ref type="bibr" target="#b26">(Wenzek et al., 2020)</ref> sentences, and subsequently constructed a new parallel SS corpora. <ref type="bibr" target="#b8">Lu et al. (2021)</ref> utilize machine translation corpus to consturct SS corpora via bach-translation technique. Compared with WikiLarge, these corpora can help to enhance the performance of supervised SS methods.</p><p>Unsupervised Sentence Simplification methods: Unsupervised SS methods utilize non-aligned complex-simple pairs corpora. One such method employs style-transfer techniques to achieve content reduction and lexical simplification by importing adversarial and denoising auxiliary losses <ref type="bibr" target="#b22">(Surya et al., 2019)</ref>. However, this method is less controllable and cannot perform syntactic simplification. Some methods only focus on lexical simplification <ref type="bibr">(Qiang et al., 2021b,a)</ref>. For pipeline methods, one proposed framework uses revision-based approaches such as lexical simplification, sentence splitting, and phrase deletion <ref type="bibr" target="#b11">(Narayan and Gardent, 2016)</ref>, while another improved it by adding an iterative mechanism to these revision-based approaches <ref type="bibr" target="#b6">(Kumar et al., 2020)</ref>. However, these methods have too many simplification errors in practice.  <ref type="bibr" target="#b14">(Ouyang et al., 2022)</ref> shows that the instruct-tuned LLMs are better than finetuned pretrained language models on many natural language tasks. But, there is no work about the capabilities of LLMs on SS task.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Large</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Sentence Simplification via LLMs</head><p>Through exhibiting zero-shot transfer capabilities of LLMs, they have also become more attractive for lowerresourced tasks. Considering sentence simplification (SS) task lacks large-scale training corpus, we will test the performance of LLMs on SS task.</p><p>Specific template patterns, commonly known as prompts, are often employed to guide models towards predicting a particularly desirable output or answer format, without requiring a dedicated training on labeled examples. Utilizing this paradigm shift, we experimented with different prompts issued to OpenAI's largest available model, GPT3.5 (text-davinci-003 ) and ChatGPT.</p><p>Simplification Prompts: To design the prompts for triggering the sentence simplification ability of LLMs, we test multiple prompts to analyze the results. Finally, we meticulously craft two manual instruction prompts, which are illustrated in Table <ref type="table" target="#tab_0">1</ref>.</p><p>For the two prompts, {Complex Sentence} means the blanks that we need to fill a complex sentence in, while {Outputs} was the place carries the outputs of LLMs.</p><p>In the first prompt (T1), we utilize the {Guidance-Complex-Simple} mapping whereby LLMs are employed to simplify complex sentences into simpler ones under the guidance. In the second prompt (T2), we conceive the {Sentence-Question-Answer} mapping methodology to simplify complex sentences in the form of questions. Furthermore, the outputs of the model are unpredictable. In order to achieve a sole output of simplified sentences devoid of any extraneous details, the prompts T1 and T2 employ a specialized guide word, namely "Simple:" and "Answer:", respectively, which implement SS by filling in blanks. When executing multilingual SS tasks, we translate the two prompts into the identical languages which utilized in the specific SS tasks.</p><p>Zero-shot: When we implement Zero-shot SS, we only need one {Guidance-Complex-Simple} combination or one {Sentence-Question-Answer} combination for inducing LLMs to generate simplified sentences directly (as shown on Figure <ref type="figure" target="#fig_0">1 (a)</ref>).</p><p>Few-shot: For few-shot SS, we need to stack multiple combinations for providing simplified examples (as shown on Figure <ref type="figure" target="#fig_0">1 (b)</ref>). It is worth noting that we do not need to repeat the guidance in prompt T1, we only need to stack {Complex-Simple} combination under the guidance. In contrast, for prompt T1, we need to stack the whole {Sentence-Question-Answer} combination.</p><p>For both prompts, we provide the simplified examples in the part of {Simplified Sentence(s)} for fewshot setting. Since the diversity of simplified forms of a sentence, we also test the way of the multiple manual simplified references. In this way, we change sentence in the prompts to sentences for adapting to the context of manual references. In actuality, the utilization of multiple simplified references induces the generation of multiple simplified candidates by LLMs. To address this predicament, we opt to select the first simplified candidate for each complex sentence, which yields comparatively superior outcomes in our experiments (Section 4.5).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Experiments</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Evaluation Settings</head><p>Datasets: For English (we note as "En") SS task, we chose TURKCORPUS (so-called WikiLarge Test- set) <ref type="bibr" target="#b30">(Xu et al., 2016)</ref> and ASSET(Alva-Manchego et al., 2020) as multi-references SS datasets to evaluate the performance of LLMs. Both TURKCORPUS and AS-SET are the most popular evaluation datasets for English SS, which consist of 2,000 valid sentences and 359 test sentences. TURKCORPUS employed Amazon Mechanical Turk to give 8 manual simplified versions for each complex sentence. ASSET is an improved version of TURKCORPUS which focuses on the multiple simplification operations, such as lexical paraphrasing, sentence splitting and compression, every complex sentence in it has 10 manual simplified versions sentences.</p><formula xml:id="formula_0">TURKCORPUS (En) ASSET (En) SARI ↑ Add ↑ Keep ↑ Delete ↑ FKGL ↓ SARI ↑ Add ↑ Keep ↑ Delete ↑ FKGL ↓</formula><p>To evaluate the multilingual generalization efficacy of LLMs, we have opted for the evaluation of multilingual (SS) task in Portuguese (we note as "Pt") and Spanish (we note as "Es"). For Portuguese, we employ Portuguese version ASSET as our testsets with 359 Portuguese complex sentences, which is also used to evaluate MUSS methods <ref type="bibr" target="#b10">(Martin et al., 2022)</ref> 1 . For Spanish, we chose the SIMPLEXT Corpus <ref type="bibr" target="#b20">(Saggion et al., 2015)</ref> for evaluation. SIMPLEXT is a high-quality 1to-1 Spanish SS testset with complex 1416 sentences. it is simplified manually by experts for people with learning disabilities. We randomly select 100 sentences from these two datasets for our evaluation and translate prompt T1 into Portuguese and Spanish (as shown on Table <ref type="table">4</ref>).</p><p>1 This Portuguese dataset can be obtained by visiting the websit: <ref type="url" target="https://github.com/facebookresearch/muss">https://github.com/facebookresearch/muss</ref> Baseline: To evaluate English SS task, we compare LLMs with the supervised and unsupervised SS methods. For supervised SS methods, we select three classic methods (PBMT-R <ref type="bibr" target="#b28">(Wubben et al., 2012)</ref>, Dress-LS <ref type="bibr" target="#b31">(Zhang and Lapata, 2017)</ref>, DMASS-DCSS <ref type="bibr" target="#b32">(Zhao et al., 2018)</ref>, ACCESS <ref type="bibr" target="#b9">(Martin et al., 2020)</ref>) and the recent state-out-of-art methods MUSS-S <ref type="bibr" target="#b10">(Martin et al., 2022)</ref>. For unsupervised SS methods, we compare with three methods (UNTS <ref type="bibr" target="#b22">(Surya et al., 2019)</ref>, BTTS10 <ref type="bibr" target="#b6">(Kumar et al., 2020)</ref>, MUSS-Unsup <ref type="bibr" target="#b10">(Martin et al., 2022)</ref>), where MUSS-US was considered as the state-out-of-art unsupervised SS method. To evaluate multilingual SS task, we also choose MUSS-US <ref type="bibr" target="#b10">(Martin et al., 2022)</ref>, this method that can complete multilingual SS tasks recently, for comparison.</p><p>Evaluation Metrics: To evaluate sentences simplification methods, SARI <ref type="bibr" target="#b30">(Xu et al., 2016</ref>) is primary metric in studies. SARI (the higher the better) compares the generated sentences to the references sentences and returns a arithmetic mean of the n-gram F1 scores of three operations (keeping, adding, and deleting), where 1 ≤ n ≤ 4.</p><p>We also report Flesch-Kincaid Grade Level (FKGL) <ref type="bibr" target="#b5">(Kincaid et al., 1975)</ref> to evaluate the readability of the generated sentences. FKGL (the lower the better) is a classic algorithm for measuring readability, which reflects the readability of a text by calculating the age required to understand it. Like the recent works <ref type="bibr" target="#b9">(Martin et al., 2020)</ref> Table 4: Prompting in Spanish and Portuguese.</p><p>the BLEU <ref type="bibr" target="#b15">(Papineni et al., 2002)</ref> since recent study showed BLEU does not correlate well with sentence simplicity <ref type="bibr" target="#b21">(Sulem et al., 2018)</ref>. Since FKGL is not available for Spanish, we report FRES <ref type="bibr" target="#b5">(Kincaid et al., 1975)</ref> instead.</p><p>In the experiments, we use standard simplification evaluation package EASSE<ref type="foot" target="#foot_0">foot_0</ref> to calculate the SARI and FKGL metrics. We calculate FRES by using the script from <ref type="bibr" target="#b8">Lu et al. (2021)</ref> <ref type="foot" target="#foot_1">foot_1</ref> .</p><p>Other Details: We chose the latest available LLMs GPT3.5(text-davinci-003 ) and ChatGPT, and we evaluate them by visiting OpenAI's website<ref type="foot" target="#foot_2">foot_2</ref> , in which calling GPT3.5 requires payment. We set the max length of text-davinci-003 to 1024 for our few-shot experi-ments. In addition, for the English few-shot experiments, we randomly select sentences from both TURK-CORPUS and ASSET valid sets as simplified examples. Due to the complex-simple pairs in the valid sets of SIMPLEXT is 1-to-1 relationship, so we just use one simplification reference for other languages.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Automatic Evaluation</head><p>English Simplification: Table <ref type="table" target="#tab_1">2</ref> shows the results of all SS Methods. As both GPT3.5 and ChatGPT are developed from InstractGPT, they have similar performance in SS tasks. Overall, ChatGPT has demonstrated superior performance to GPT3.5 on ASSET (En) under single-shot, as evidenced by a higher SARI score. This accomplishment has allowed ChatGPT to exceed MUSS-S and establish itself as the new standard of excellence on ASSET (En), achieving an unprecedented state-of-the-art performance increase of +3.44 SARI. Nevertheless, when contrasted with ChatGPT, GPT3.5 and MUSS-S have displayed stronger performance on TURKCORPUS.</p><p>After scrutinizing the trial scores of the simplification operations, we have deduced that LLMs boast a superior deletion score in comparison to other SS methods. This indicates that LLMs SS methods possess a penchant for excising segments of intricate sentences. So we perceive this phenomenon (LLMs exhibit inferiority to MUSS-S on TURKCORPUS) to have emanated from the circumstance that the simplified sentences in ASSET (En) are less intricate than those in TURK-CORPUS. The simplified references of ASSET (En) underwent various simplification operations, whereas TURKCORPUS mostly adhered to the original structure <ref type="bibr" target="#b0">(Alva-Manchego et al., 2020)</ref>. However, if we give a simplified example, LLMs will balance the deleting and keeping of the complex sentence. For addition operations, both GPT3.5 and ChatGPT demonstrate high proficiency in scoring, as they are equipped with vast amounts of knowledge derived from copious datasets.</p><p>Portuguese and Spanish Simplification: The Complex Sentence: The Great Dark Spot is thought to represent a hole in the methane cloud deck of Neptune. GPT3.5:</p><p>The Great Dark Spot is believed to be a hole in Neptune's methane cloud deck. ChatGPT:</p><p>The Great Dark Spot is thought to be a hole in Neptune's methane cloud deck. Reference:</p><p>The Great Dark Spot is thought to be a hole in the methane cloud deck of Neptune.</p><p>Complex Sentence: Their eyes are quite small, and their visual acuity is poor. GPT3.5: Their eyes are small and they have poor vision. ChatGPT:</p><p>Their eyes are small and their vision is not very good. Reference:</p><p>Their eyes are small and their vision is poor.</p><p>Complex Sentence: He settled in London, devoting himself chiefly to practical teaching. GPT3.5: He moved to London and focused mainly on teaching. ChatGPT:</p><p>He lived in London and focused on teaching. Reference:</p><p>He moved to London and focused on teaching.</p><p>Complex Sentence: Ned and Dan advanced to the police camp, ordering them to surrender. GPT3.5 : Ned and Dan went to the police camp and ordered them to surrender. ChatGPT:</p><p>Ned and Dan went to the police camp and told them to give up.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Reference:</head><p>Ned and Dan went to police camp and told them to give up.</p><p>Table <ref type="table">5</ref>: The examples of single-shot on English SS Task. The words in bold highlight the differences.</p><formula xml:id="formula_1">Method A ↑ S ↑ F ↑ Avg. ↑</formula><p>Rank ↓ ChatGPT 4.10 3.85 4.32 4.09 1.92 MUSS-S 4.15 3.77 4.21 4.04 2.02 Reference 3.99 3.81 4.23 4.01 1.87</p><p>Table 6: The results of human evaluation on ASSET (En) based on the adequacy (A), simplicity (S), fluency (F), their average score (Avg.) and subjective ranking of referees (Rank). results are shown on the Table 3. It is obvious that ChatGPT outperform the SS results of MUSS-US on both Portuguese and Spanish testset. Firstly, owing to the unsupervised nature of MUSS-US, we compare the Zero-Shot approach of ChatGPT with it. Chat-GPT's Zero-Shot methodology surpasses MUSS-US significantly in both languages, namely by +3.73 SARI and +18.46 SARI respectively. Moreover, in the realm of single-shot, ChatGPT obtains a SARI score of 46.00 on ASSET (Pt) and 41.89 SARI on SIMPLEXT, surpassing MUSS by a notable 5 and 21 points, respectively. In particular, in Spanish dataset SIMPLEXT, ChatGPT has a huge lead over MUSS-US in both fewshot and zero-shot scenarios. The aforementioned findings indicate that ChatGPT exhibits strong generalization capabilities across various languages, surpassing MUSS in terms of multilingual SS performance.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Human Evaluation</head><p>Since automated metrics may be not enough for evaluating sentence generation, we report the results of human evaluation. In the experiment, we only choose the most advanced method MUSS-S and the reference to evaluation.</p><p>Firstly, we followed the evaluation metrics setup in <ref type="bibr" target="#b6">Kumar et al. (2020)</ref> and <ref type="bibr" target="#b3">Dong et al. (2019)</ref>. We measure the adequacy metric (How many meanings of the original sentence are retained in the simplified sentences? ), simplicity metric (Is the sentences output by the system simpler than the original sentence? ), fluency metric (Is the output sentences grammatical or well-formed? ) on five-point scale (1 is the worst, 5 is the best). In addition, we also measured referees' subjective choices (Ranking simplified sentences from No.1 to No.3) to focus on actual usage rather than evaluation criteria.</p><p>We select one hundred complex sentences from AS-SET (En) randomly, and then randomly arrange the sentences produced by MUSS-S, ChatGPT, and the simplified sentences randomly selected from the reference files. Then we ask three non-native English speakers with medium level to assess the sentences based on these above metrics.</p><p>The results are shown in Table <ref type="table">6</ref>. As expressed in Section 4.2, due to the tendency of ASSET (En) dataset and ChatGPT to expunge superfluous elements in complex sentences, the adequacy metric lags behind MUSS-</p><formula xml:id="formula_2">TURKCORPUS (En) ASSET (En) SARI ↑ Add ↑ Keep ↑ Delete ↑ FKGL ↓ SARI ↑ Add ↑ Keep ↑ Delete ↑ FKGL ↓ GPT3.</formula><p>5 Zero-Shot 37.20 8.33 49.54 53.72 6.71 44.92 10.30 53.04 71.42 6.71 Single-Shot + Single-Ref 37.78 10.36 48.93 54.04 6.82 45.68 12.27 52.99 71.72 6.82 + Multi-Refs + No.1 41.82 10.38 61.78 53.31 6.97 47.32 12.40 61.38 68.18 6.97 + Multi-Refs + Random 41.69 10.09 61.97 53.02 7.45 46.49 11.04 61.28 67.15 7.45 Two-Shot (Single-Ref) 40.26 11.33 55.53 53.92 7.22 46.69 13.10 56.96 70.02 7.22 Three-Shot (Single-Ref) 39.78 10.63 54.49 54.21 7.33 46.63 12.58 56.62 70.70 7.33 ChatGPT Zero-Shot 37.72 9.89 48.82 54.48 6.88 45.77 12.22 52.75 72.33 6.88 Single-Shot + Single-Ref 38.80 11.69 49.83 54.90 7.19 47.07 14.47 54.14 72.61 7.19 + Multi-Refs + No.1 41.43 11.93 58.68 54.23 7.00 47.94 13.32 60.12 70.39 7.00 + Multi-Refs + Random 41.13 11.28 57.79 54.32 7.08 47.28 13.02 58.46 70.38 7.07 Table 8: Comparison of different prompts for GPT3.5 on two datasets.</p><p>S in human appraisal. On the contrary, ChatGPT surpasses MUSS-S in the simplicity and fluency metric owing to this attribute. For human preference, the primary option is ChatGPT and reference sentences, as they hold a superior ranking. This implies that Chat-GPT aligns better with individuals' proclivity towards simplicity, in contrast to MUSS-S. It all means the SS performance of ChatGPT surpasses that of MUSS-S in terms of human evaluation and is on a par with human written simplifications.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Qualitative Study</head><p>To intuitively analyze the sentence simplification capability of LLMs. Tabel 5 shows some English sentence simplification examples of GPT3.5 and ChatGPT assembled Single-Shot.</p><p>The method based LLMs significantly reduces the linguistic complexity of the complex sentence while retaining its original main meaning. LLMs perform lexical simplification very well, e.g., "be" as a simpler substitute for "represent", "vision" as a simpler substitute for "visual acuity", "went to" as a simpler substitute for "advanced to", etc. For syntactic simplification, LLMs focus on using simpler and more concise syntactic, e.g., simplifying complex structure "devoting himself chiefly to practical teaching" to "focused on teaching", the form change from the adverbial clause of "ordering" to two parallel clauses by using "ordered", etc. In summary, we draw the conclusions from these examples that GPT3.5 and ChatGPT can use only one manual SS example to perform both lexical simplification and syntactic simplification, and these simplification operations are similar to the reference sentences.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5">Ablation Study</head><p>Prompts Study: We compared the performance differences between different prompts (as shown in Table 1) for SS task. Because the SS performance of GPT3.5 and ChatGPT is very close, we choose GPT3.5 as backbone for the prompts experiments. The performance comparison of different Prompts is shown in Table <ref type="table">8</ref>.</p><p>Generally speaking, prompt T1 surpasses prompt T2  in terms of efficacy for both Zero-Shot and Single-Shot SS. Specifically, with regard to the SARI metric for TURKCORPUS, T1 exhibits a superiority of approximately 1 point over T2. Similarly, on ASSET, T1 outperforms T2 by approximately 1.5 points and 2.0 points for the Zero-Shot and Single-Shot respectively.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Few-shot Study:</head><p>To further analyze the performance of GPT3.5 and ChatGPT SS methods under mutil-references or Single-reference, we do more experiments in this section. The results of our experiments were shown on Table <ref type="table" target="#tab_7">7</ref>. When juxtaposed with the fewshot method employing a single reference (as shown on Figure <ref type="figure" target="#fig_1">2</ref>), this approach demonstrates substantial improvement in the retention operation of LLMs for intricate sentences, thereby striking a balance between the deletion and retention operations of LLMs (as shown on Figure <ref type="figure" target="#fig_2">3</ref>). Moreover, in the event that the selection of the first simplified candidate is removed (noted as "+ Multi-Refs + Random"), the performance of SS would diminish, thereby indicating the efficacy of the whole approach, as well as the proclivity of LLMs to furnish the most feasible simplification as a priority in the presence of multiple references.</p><p>It is noteworthy that, with an augmentation in the number of Shots, which refers to the increment in the count of sentence simplification examples, there will be a diminishing return in the enhancement of performance. This fact holds true for both the English language and other languages (as shown on Table <ref type="table" target="#tab_2">3</ref>).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>In this paper, we present a study of the performance of LLMs (GPT3.5 and ChatGPT) for SS task. Given that GPT3.5 and ChatGPT are both derivatives of In-stractGPT, their performance in SS tasks is comparable. During the benchmark experiments, LLMs outperformed current state-of-the-art SS methods in the realm of multilingual SS tasks. Furthermore, through the implementation of human and qualitative evaluation, LLMs' simplifications are judged to be on a par with the simplified sentences crafted by human. In our subsequent endeavours, our aim is to design more refined SS methodologies founded on LLMs while also delving deeper into the various proficiencies LLMs offer.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: (a) is an example of Zero-Shot Sentence Simplification based on LLMs. (b) is an example of few-shot sentence simplification based on LLMs, which stack multiple combinations. {Outputs} in the picture means where LLMs output simplified sentences.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: The example of single-shot with single-ref.</figDesc><graphic coords="8,80.49,221.09,218.00,181.63" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: The example of single-shot with multi-refs.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Language Models: LLMs (Brown et al., Candidate sentence simplification prompts.</figDesc><table><row><cell>SS Prompts</cell></row><row><cell>I want you to replace my complex sentence</cell></row><row><cell>with simple sentence(s). Keep the meaning</cell></row><row><cell>same, but make them simpler.</cell></row><row><cell>Complex: {Complex Sentence}</cell></row><row><cell>T1 Simple: {Simplified Sentence(s)}</cell></row><row><cell>......</cell></row><row><cell>Complex: {Complex Sentence}</cell></row><row><cell>Simple: {Outputs}</cell></row><row><cell>Sentence: {Complex Sentence}</cell></row><row><cell>Question: Simplify the above sentence</cell></row><row><cell>without changing meaning.</cell></row><row><cell>Answer: {Simplified Sentence(s)}</cell></row><row><cell>T2 ......</cell></row><row><cell>Sentence: {Complex Sentence}</cell></row><row><cell>Question: Simplify the above sentence</cell></row><row><cell>without changing meaning.</cell></row><row><cell>Answer: {Outputs}</cell></row></table><note><p>2020;Thoppilan et al., 2022;<ref type="bibr" target="#b2">Chowdhery et al., 2022)</ref> </p><p>have two distinctive features over previous pretrained models. Firstly, LLMs have much larger scale in terms of model parameters and training data. Secondly, unlike previous pretrained models that require finetuning, LLMs can be prompted zero-shot or few-shot to solve a task. Current work</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 :</head><label>2</label><figDesc>Comparison of supervised and unsupervised SS Methods on TURKCORPU and ASSET (En).</figDesc><table><row><cell>Source</cell><cell>26.29</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>10.02</cell><cell>20.73</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>10.02</cell></row><row><cell>Reference</cell><cell>40.21</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>8.73</cell><cell>45.14</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>6.48</cell></row><row><cell></cell><cell></cell><cell></cell><cell></cell><cell cols="3">Supervised Methods</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>PBMT-R</cell><cell>38.56</cell><cell>5.73</cell><cell>73.02</cell><cell>36.93</cell><cell>8.33</cell><cell>35.76</cell><cell>4.61</cell><cell>59.84</cell><cell>42.84</cell><cell>8.33</cell></row><row><cell>Dress-LS</cell><cell>37.27</cell><cell>2.81</cell><cell>66.77</cell><cell>42.22</cell><cell>6.62</cell><cell>36.90</cell><cell>2.40</cell><cell>56.14</cell><cell>52.15</cell><cell>6.62</cell></row><row><cell>ACCESS</cell><cell>41.51</cell><cell>6.50</cell><cell>71.30</cell><cell>46.73</cell><cell>7.56</cell><cell>40.74</cell><cell>6.44</cell><cell>62.13</cell><cell>53.64</cell><cell>7.56</cell></row><row><cell>MUSS-S</cell><cell>42.55</cell><cell>8.98</cell><cell>73.97</cell><cell>44.70</cell><cell>7.58</cell><cell>44.50</cell><cell>11.39</cell><cell>62.16</cell><cell>59.98</cell><cell>6.40</cell></row><row><cell></cell><cell></cell><cell></cell><cell></cell><cell cols="3">Unsupervised Methods</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>UNTS</cell><cell>37.20</cell><cell>1.50</cell><cell>68.81</cell><cell>41.27</cell><cell>7.84</cell><cell>35.19</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>7.60</cell></row><row><cell>BTTS10</cell><cell>36.91</cell><cell>2.38</cell><cell>69.50</cell><cell>38.85</cell><cell>6.30</cell><cell>35.15</cell><cell>2.21</cell><cell>57.91</cell><cell>45.32</cell><cell>7.83</cell></row><row><cell>MUSS-US</cell><cell>40.80</cell><cell>7.97</cell><cell>67.49</cell><cell>46.96</cell><cell>8.82</cell><cell>42.86</cell><cell>8.58</cell><cell>58.96</cell><cell>61.06</cell><cell>8.78</cell></row><row><cell>GPT3.5</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>+Zero-Shot</cell><cell>37.20</cell><cell>8.34</cell><cell>49.55</cell><cell>53.73</cell><cell>6.71</cell><cell>44.92</cell><cell>10.30</cell><cell>53.04</cell><cell>71.42</cell><cell>6.71</cell></row><row><cell cols="2">+Single-Shot 41.82</cell><cell>10.38</cell><cell>61.78</cell><cell>53.31</cell><cell>6.97</cell><cell>47.32</cell><cell cols="2">12.40 61.38</cell><cell>68.18</cell><cell>6.97</cell></row><row><cell>ChatGPT</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>+Zero-Shot</cell><cell>37.72</cell><cell>9.89</cell><cell>48.82</cell><cell>54.48</cell><cell>6.88</cell><cell>45.77</cell><cell>12.22</cell><cell>52.75</cell><cell>72.33</cell><cell>6.88</cell></row><row><cell cols="4">+Single-Shot 41.43 11.93 58.68</cell><cell>54.23</cell><cell>7.00</cell><cell cols="3">47.94 13.32 60.12</cell><cell>70.39</cell><cell>7.00</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 3 :</head><label>3</label><figDesc>, we do not reportAdd ↑ Keep ↑ Delete ↑ SARI ↑ Add ↑ Keep ↑ Delete ↑ FRES ↑Comparison of the state-of-the-art multilingual SS method MUSS<ref type="bibr" target="#b10">(Martin et al., 2022)</ref> and LLMs SS methods on ASSET (Pt) and SIMPLEXT (Es).</figDesc><table><row><cell></cell><cell></cell><cell cols="2">ASSET (Pt)</cell><cell></cell><cell></cell><cell cols="3">SIMPLEXT (Es)</cell><cell></cell></row><row><cell cols="2">SARI ↑ Source 20.81</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>5.85</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>51.59</cell></row><row><cell>MUSS-US</cell><cell>40.94</cell><cell>7.71</cell><cell>63.23</cell><cell>51.90</cell><cell>20.51</cell><cell>1.87</cell><cell>18.31</cell><cell>41.34</cell><cell>56.12</cell></row><row><cell>ChatGPT</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>+Zero-Shot</cell><cell>44.67</cell><cell>9.71</cell><cell>52.85</cell><cell>71.44</cell><cell>38.97</cell><cell>6.09</cell><cell>26.57</cell><cell>84.27</cell><cell>66.19</cell></row><row><cell cols="4">+Single-Shot 47.06 11.30 59.20</cell><cell>70.71</cell><cell>42.79</cell><cell cols="2">7.07 31.40</cell><cell>89.90</cell><cell>70.77</cell></row><row><cell>+Two-Shot</cell><cell>46.00</cell><cell>10.92</cell><cell>58.35</cell><cell>68.73</cell><cell>41.89</cell><cell>6.78</cell><cell>29.37</cell><cell>89.53</cell><cell>69.76</cell></row><row><cell></cell><cell>SS Prompts</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">Quiero que reemplaces mis frases complejas</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">por frases simples. Mantenga el significado</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">sin cambios, pero Hágalo más simple.</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">Complejo: {Complex Sentence}</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">Es Simple: {Simplified Sentence(s)}</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>......</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">Complejo:: {Complex Sentence}</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="2">Simple: {Outputs}</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="5">Quero que substituas a minha frase complexa</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">por uma frase simples. Mantenha o mesmo</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">significado, mas torne-os mais simples.</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">Complexo: {Complex Sentence}</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">Pt Simples: {Simplified Sentence(s)}</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>......</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">Complexo:: {Complex Sentence}</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="2">Simples: {Outputs}</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_7"><head>Table 7 :</head><label>7</label><figDesc>The ablation experiments on TURKCORPUS (En) and ASSET (En). "+ Multi-Refs + No.1 " means using multiple simplified references and selecting the first simplified candidate as output. "+ Multi-Refs + Random" means using multiple simplified references too, but selecting the simplified candidate randomly as output.</figDesc><table><row><cell cols="2">TURKCORPUS (En)</cell><cell cols="2">ASSET (En)</cell></row><row><cell>SARI ↑</cell><cell>FKGL ↓</cell><cell cols="2">SARI ↑ FKGL ↓</cell></row><row><cell></cell><cell>Zero-Shot</cell><cell></cell><cell></cell></row><row><cell>GPT3.5 + T1 37.20</cell><cell>6.71</cell><cell>44.92</cell><cell>6.71</cell></row><row><cell>GPT3.5 + T2 36.28</cell><cell>7.02</cell><cell>43.57</cell><cell>7.02</cell></row><row><cell cols="2">Single-Shot</cell><cell></cell><cell></cell></row><row><cell>GPT3.5 + T1 41.82</cell><cell>6.97</cell><cell>47.32</cell><cell>6.97</cell></row><row><cell>GPT3.5 + T2 40.65</cell><cell>8.29</cell><cell>45.00</cell><cell>8.29</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_0"><p>https://github.com/feralvam/easse</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>https://github.com/luxinyu1/Trans-SS/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_2"><p>https://openai.com/api/</p></note>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">ASSET: A dataset for tuning and evaluation of sentence simplification models with multiple rewriting transformations</title>
+		<author>
+			<persName><forename type="first">Fernando</forename><surname>Alva-Manchego</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Bordes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carolina</forename><surname>Scarton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benoît</forename><surname>Sagot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucia</forename><surname>Specia</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2002-04">July 2020. 4.1, 4.2</date>
+			<biblScope unit="page" from="4668" to="4679" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page">2</biblScope>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gaurav</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Barham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyung</forename><forename type="middle">Won</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2204.02311</idno>
+		<title level="m">Scaling language modeling with pathways</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page">2</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">EditNTS: An neural programmer-interpreter model for sentence simplification through explicit editing</title>
+		<author>
+			<persName><forename type="first">Yue</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zichao</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mehdi</forename><surname>Rezagholizadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jackie</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kit</forename><surname>Cheung</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 57th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2003">2019. 2, 4.3</date>
+			<biblScope unit="page" from="3393" to="3402" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">An evaluation of syntactic simplification rules for people with autism</title>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Evans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Constantin</forename><surname>Orȃsan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iustin</forename><surname>Dornescu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 3rd Workshop on Predicting and Improving Text Readability for Target Reader Populations (PITR)</title>
+		<meeting>the 3rd Workshop on Predicting and Improving Text Readability for Target Reader Populations (PITR)</meeting>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="page" from="131" to="140" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Derivation of new readability formulas (automated readability index, fog count and flesch reading ease formula) for navy enlisted personnel</title>
+		<author>
+			<persName><forename type="first">Kincaid</forename><surname>Peter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert P Fishburne</forename><surname>Jr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><forename type="middle">L</forename><surname>Rogers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brad</forename><forename type="middle">S</forename><surname>Chissom</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1975">1975</date>
+			<biblScope unit="volume">4</biblScope>
+		</imprint>
+		<respStmt>
+			<orgName>Naval Technical Training Command Millington TN Research Branch</orgName>
+		</respStmt>
+	</monogr>
+	<note type="report_type">Technical report</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Iterative edit-based unsupervised sentence simplification</title>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Kumar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lili</forename><surname>Mou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukasz</forename><surname>Golab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olga</forename><surname>Vechtomova</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2020-07">July 2020</date>
+			<biblScope unit="page" from="7918" to="7928" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics. 2, 4.1, 4.3</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">BART: Denoising sequence-to-sequence pre-training for natural language generation, translation, and comprehension</title>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yinhan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marjan</forename><surname>Ghazvininejad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abdelrahman</forename><surname>Mohamed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omer</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Veselin</forename><surname>Stoyanov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="7871" to="7880" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">An unsupervised method for building sentence simplification corpora in multiple languages</title>
+		<author>
+			<persName><forename type="first">Xinyu</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jipeng</forename><surname>Qiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yun</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunhao</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2021</title>
+		<imprint>
+			<date type="published" when="2001-04-02">2021. 1, 2, 4.1</date>
+			<biblScope unit="page" from="227" to="237" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Controllable sentence simplification</title>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Éric</forename><surname>De La Clergerie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benoît</forename><surname>Sagot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Bordes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Twelfth Language Resources and Evaluation Conference</title>
+		<meeting>the Twelfth Language Resources and Evaluation Conference<address><addrLine>Marseille, France</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2001-04-02">May 2020. 1, 2, 4.1</date>
+			<biblScope unit="page" from="4689" to="4698" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">MUSS: Multilingual unsupervised sentence simplification by mining paraphrases</title>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angela</forename><surname>Fan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Thirteenth Language Resources and Evaluation Conference</title>
+		<meeting>the Thirteenth Language Resources and Evaluation Conference<address><addrLine>Marseille, France</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022-06-01">June 2022. 1, 2, 4.1, 3</date>
+			<biblScope unit="page" from="1651" to="1664" />
+		</imprint>
+	</monogr>
+	<note>Éric de la Clergerie, Antoine Bordes, and Benoît Sagot</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Unsupervised sentence simplification using deep semantics</title>
+		<author>
+			<persName><forename type="first">Shashi</forename><surname>Narayan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claire</forename><surname>Gardent</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="page" from="111" to="120" />
+		</imprint>
+	</monogr>
+	<note>In Proceedings of the 9th International Natural Language Generation conference</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Controllable text simplification with lexical con-straint loss</title>
+		<author>
+			<persName><forename type="first">Daiki</forename><surname>Nishihara</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tomoyuki</forename><surname>Kajiwara</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuki</forename><surname>Arase</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics: Student Research Workshop</title>
+		<meeting>the 57th Annual Meeting of the Association for Computational Linguistics: Student Research Workshop</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="260" to="266" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Exploring neural text simplification models</title>
+		<author>
+			<persName><forename type="first">Sergiu</forename><surname>Nisioi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sanja</forename><surname>Štajner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simone</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paolo</forename><surname>Ponzetto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liviu</forename><forename type="middle">P</forename><surname>Dinu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 55th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 55th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Short Papers</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="85" to="91" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carroll</forename><forename type="middle">L</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katarina</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.02155</idno>
+		<title level="m">Training language models to follow instructions with human feedback</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Bleu: a method for automatic evaluation of machine translation</title>
+		<author>
+			<persName><forename type="first">Kishore</forename><surname>Papineni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Salim</forename><surname>Roukos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Todd</forename><surname>Ward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Jing</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 40th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Philadelphia, Pennsylvania, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2002-07">July 2002</date>
+			<biblScope unit="volume">4</biblScope>
+			<biblScope unit="page" from="311" to="318" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Unsupervised statistical text simplification</title>
+		<author>
+			<persName><forename type="first">Jipeng</forename><surname>Qiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xindong</forename><surname>Wu</surname></persName>
+		</author>
+		<idno type="DOI">10.1109/TKDE.2019.2947679</idno>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Knowledge and Data Engineering</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page">2</biblScope>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Lsbert: Lexical simplification based on bert</title>
+		<author>
+			<persName><forename type="first">Jipeng</forename><surname>Qiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yun</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunhao</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xindong</forename><surname>Wu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE/ACM Transactions on Audio, Speech, and Language Processing</title>
+		<imprint>
+			<biblScope unit="volume">29</biblScope>
+			<biblScope unit="page" from="3064" to="3076" />
+			<date type="published" when="2021-02">2021a. 2</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Chinese lexical simplification</title>
+		<author>
+			<persName><forename type="first">Jipeng</forename><surname>Qiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyu</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yun</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunhao</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xindong</forename><surname>Wu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE/ACM Transactions on Audio, Speech, and Language Processing</title>
+		<imprint>
+			<biblScope unit="volume">29</biblScope>
+			<biblScope unit="page" from="1819" to="1828" />
+			<date type="published" when="2021-02">2021b. 2</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Dyswebxia 2.0! more accessible text for people with dyslexia</title>
+		<author>
+			<persName><forename type="first">Luz</forename><surname>Rello</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clara</forename><surname>Bayarri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Azuki</forename><surname>Górriz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ricardo</forename><surname>Baeza-Yates</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saurabh</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gaurang</forename><surname>Kanvinde</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Horacio</forename><surname>Saggion</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefan</forename><surname>Bott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roberto</forename><surname>Carlini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vasile</forename><surname>Topac</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 10th International Cross-Disciplinary Conference on Web Accessibility</title>
+		<meeting>the 10th International Cross-Disciplinary Conference on Web Accessibility</meeting>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="1" to="2" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Making it simplext: Implementation and evaluation of a text simplification system for spanish</title>
+		<author>
+			<persName><forename type="first">Horacio</forename><surname>Saggion</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sanja</forename><surname>Štajner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefan</forename><surname>Bott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Mille</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luz</forename><surname>Rello</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Biljana</forename><surname>Drndarevic</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Transactions on Accessible Computing (TACCESS)</title>
+		<imprint>
+			<biblScope unit="volume">6</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="1" to="36" />
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">BLEU is not suitable for the evaluation of text simplification</title>
+		<author>
+			<persName><forename type="first">Elior</forename><surname>Sulem</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omri</forename><surname>Abend</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Rappoport</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Brussels, Belgium</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2018-11">October-November 2018</date>
+			<biblScope unit="page" from="738" to="744" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics. 4.1</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Unsupervised neural text simplification</title>
+		<author>
+			<persName><forename type="first">Sai</forename><surname>Surya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhijit</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anirban</forename><surname>Laha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Parag</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karthik</forename><surname>Sankaranarayanan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">;</forename><surname>Daniel De Freitas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jamie</forename><surname>Hall</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Apoorv</forename><surname>Kulshreshtha</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Heng-Tze</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alicia</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Taylor</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leslie</forename><surname>Bos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Baker</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Du</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2201.08239</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 57th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Florence, Italy</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2019-07">July 2019. 2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page">2</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Association for Computational Linguistics. 2, 4.1 Romal Thoppilan Language models for dialog applications</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niki</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jakob</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Llion</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Text simplification using neural machine translation</title>
+		<author>
+			<persName><forename type="first">Tong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ping</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Rochford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jipeng</forename><surname>Qiang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2001">Mar. 2016. 1</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Vinícius Rodriguez Uzêda, Renata Pontin de Mattos Fortes, Thiago Alexandre Salgueiro Pardo, and Sandra Maria Aluísio. Facilita: reading assistance for low-literacy readers</title>
+		<author>
+			<persName><forename type="first">Willian</forename><surname>Massami Watanabe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arnaldo</forename><surname>Candido</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junior</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 27th ACM international conference on Design of communication</title>
+		<meeting>the 27th ACM international conference on Design of communication</meeting>
+		<imprint>
+			<date type="published" when="2009">2009</date>
+			<biblScope unit="page" from="29" to="36" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">CCNet: Extracting high quality monolingual datasets from web crawl data</title>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Wenzek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexis</forename><surname>Conneau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vishrav</forename><surname>Chaudhary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Francisco</forename><surname>Guzmán</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Armand</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edouard</forename><surname>Grave</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Twelfth Language Resources and Evaluation Conference</title>
+		<meeting>the Twelfth Language Resources and Evaluation Conference</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Learning to simplify sentences with quasi-synchronous grammar and integer programming</title>
+		<author>
+			<persName><forename type="first">Kristian</forename><surname>Woodsend</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mirella</forename><surname>Lapata</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2011 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2011 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2011">2011</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="409" to="420" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Antal van den Bosch, and Emiel Krahmer. Sentence simplification by monolingual machine translation</title>
+		<author>
+			<persName><forename type="first">Sander</forename><surname>Wubben</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 50th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 50th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2012">2012</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1015" to="1024" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Problems in current text simplification research: New data can help</title>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Callison-Burch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Courtney</forename><surname>Napoles</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="page">2</biblScope>
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Optimizing statistical machine translation for text simplification</title>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Courtney</forename><surname>Napoles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellie</forename><surname>Pavlick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quanze</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Callison-Burch</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">4</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="401" to="415" />
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Sentence simplification with deep reinforcement learning</title>
+		<author>
+			<persName><forename type="first">Xingxing</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mirella</forename><surname>Lapata</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2017 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2017 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Copenhagen, Denmark</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2017-09">September 2017</date>
+			<biblScope unit="page" from="584" to="594" />
+		</imprint>
+	</monogr>
+	<note>1, 2, 4.1</note>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Integrating transformer and paraphrase rules for sentence simplification</title>
+		<author>
+			<persName><forename type="first">Sanqiang</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daqing</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andi</forename><surname>Saptono</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bambang</forename><surname>Parmanto</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Brussels, Belgium</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018-11">October-November 2018</date>
+			<biblScope unit="page" from="3164" to="3173" />
+		</imprint>
+	</monogr>
+	<note>1, 2, 4.1</note>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">A monolingual tree-based translation model for sentence simplification</title>
+		<author>
+			<persName><forename type="first">Zhemin</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Delphine</forename><surname>Bernhard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iryna</forename><surname>Gurevych</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 23rd International Conference on Computational Linguistics (Coling 2010)</title>
+		<meeting>the 23rd International Conference on Computational Linguistics (Coling 2010)</meeting>
+		<imprint>
+			<date type="published" when="2010">2010</date>
+			<biblScope unit="page" from="1353" to="1361" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

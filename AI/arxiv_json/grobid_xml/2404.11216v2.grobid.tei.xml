@@ -1,0 +1,1377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Position Engineering: Boosting Large Language Models through Positional Information Manipulation</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-10-22">22 Oct 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Zhiyuan</forename><surname>He</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Microsoft Research</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Huiqiang</forename><surname>Jiang</surname></persName>
+							<email>hjiang@microsoft.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Microsoft Research</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Zilong</forename><surname>Wang</surname></persName>
+							<email>wangzilong@microsoft.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Microsoft Research</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yuqing</forename><surname>Yang</surname></persName>
+							<email>yuqyang@microsoft.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Microsoft Research</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Luna</forename><surname>Qiu</surname></persName>
+							<email>lunaqiu@microsoft.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Microsoft Research</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Lili</forename><surname>Qiu</surname></persName>
+							<email>liliqiu@microsoft.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Microsoft Research</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Position Engineering: Boosting Large Language Models through Positional Information Manipulation</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-10-22">22 Oct 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">5AD74F20E2D51242046A04853DFEB439</idno>
+					<idno type="arXiv">arXiv:2404.11216v2[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:38+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>The performance of large language models (LLMs) is significantly influenced by the quality of the prompts provided. In response, researchers have developed enormous prompt engineering strategies aimed at modifying the prompt text to enhance task performance. In this paper, we introduce a novel technique termed position engineering, which offers a more efficient way to guide large language models. Unlike prompt engineering, which requires substantial effort to modify the text provided to LLMs, position engineering merely involves altering the positional information in the prompt without modifying the text itself. We have evaluated position engineering in two widely-used LLM scenarios: retrieval-augmented generation (RAG) and in-context learning (ICL). Our findings show that position engineering substantially improves upon the baseline in both cases. Position engineering thus represents a promising new strategy for exploiting the capabilities of large language models.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Recent advancements in Large Language Models (LLMs) have demonstrated significant strides towards achieving artificial general intelligence. These models exhibit a wide range of capabilities, such as in-context learning <ref type="bibr" target="#b1">(Brown et al., 2020)</ref>, answering questions based on documents <ref type="bibr">(Lewis et al., 2020;</ref><ref type="bibr" target="#b6">Guu et al., 2020)</ref>, solving complex mathematical problems <ref type="bibr" target="#b5">(Frieder et al., 2024)</ref>, and generating code <ref type="bibr">(Romera-Paredes et al., 2024;</ref><ref type="bibr" target="#b19">Ma et al., 2023)</ref>.</p><p>When utilizing LLMs, user prompts are inputted, converted into sequences of tokens, and then processed through multiple attention layers <ref type="bibr" target="#b31">(Vaswani et al., 2017)</ref>. These attention layers employ two types of information derived from the token sequences: (i) Semantic information, where the tokens are converted into text embeddings, and (ii) Positional information, where the indices of the tokens are converted into positional embeddings <ref type="bibr" target="#b31">(Vaswani et al., 2017;</ref><ref type="bibr" target="#b28">Su et al., 2024)</ref>. The attention mechanism then combines the semantic and positional information to predict the distribution of the next token in the sequence. to sentences in prompts. Prompt engineering involves either adding, replacing, or removing paragraphs and sentences from prompts. In contrast, the proposed position engineering maintains the original prompt text but incorporates placeholder tokens instead. These placeholders are not involved in the computation of attention scores, thus the computation overhead is not increased. However, they do hold position indices, thereby affecting the position information of other tokens in the text.</p><p>Extensive research has been conducted on modifying prompt text to alter semantic information, aiming to boost task performances. For instance, few-shot prompting is introduced, enabling LLMs to learn new tasks in an in-context manner <ref type="bibr" target="#b1">(Brown et al., 2020)</ref>. Moreover, the Chain-of-Thought methodology has been introduced to enhance LLMs' reasoning abilities by prompting them to produce intermediate tokens <ref type="bibr" target="#b32">(Wei et al., 2022;</ref><ref type="bibr" target="#b13">Kojima et al., 2022)</ref>. Additionally, Automatic Prompt Engineer has been developed to autonomously design the prompting text for better task-specific performance <ref type="bibr" target="#b33">(Zhou et al., 2022)</ref>.</p><p>In this study, we investigate the potential of improving performance by solely modifying po-sitional information, without any semantic information change. For the first time, we reveal that downstream task performance can be significantly enhanced by simply adjusting the positional indices of tokens, without modifying the text itself.</p><p>As illustrated in Figure <ref type="figure" target="#fig_0">1</ref>, our approach involves the introduction of placeholder tokens to modify positional information. These placeholder tokens do not contribute to the computation of attention scores; however, they do occupy token indices. Consequently, the relative position of other tokens is altered, which could optimize the attention weights among different segments within the prompts. We refer to this approach as position engineering, highlighting the exclusive focus on manipulating positional information.</p><p>We propose a simple yet effective method based on brutal force to discover the optimal placeholder token number for each downstream task, and experiment it within two prevalent scenarios of LLMs: Retrieval-Augmented Generation (RAG) and In-Context Learning (ICL). Our method significantly enhances performance in both tasks, achieving up to a 15.4% absolute increase in accuracy for RAG and a 3.6% absolute increase for ICL. We also discover that the same placeholder number can consistently improves the RAG's performance for different datasets and models.</p><p>In all, our contributions can be summarized as follows:</p><p>• For the first time, we discover that different downstream tasks' performances can be improved by merely changing the positional information in prompts.</p><p>• We propose a method to help find a better positional information setting.</p><p>• We demonstrate that RAG performance can be consistently improved by a universal positional information setting on different datasets and models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Methodology</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Preliminary</head><p>In this section, we provide a brief overview of how large language models (LLMs) integrate position information. Let {t i } N i=1 represent the input tokens to language models, and let {e i } N i=1 denote the corresponding token embeddings. Initially, the attention layer computes q, k, v:</p><formula xml:id="formula_0">q m = f q (e m , m) k n = f k (e n , n) v n = f v (e n , n) (1)</formula><p>where m and n are the position indices of tokens. The self-attention is then calculated as follows:</p><formula xml:id="formula_1">a m,n = e q T m kn √ d N j=1 e q T m k j √ d o m = N n=1 a m,n v n (2)</formula><p>where a m,n is a scalar capturing the attention score between m-th token in the query and n-th token in the value and key sets. d denotes the dimension of the attention layer, and o m indicates the output for the m-th query token. Absolute positioning is initially introduced by incorporating a positional embedding vector p n , which is related to m and n <ref type="bibr" target="#b31">(Vaswani et al., 2017)</ref>:</p><formula xml:id="formula_2">f q (e m , m) = W q (e m + p m ) f k (e n , n) = W k (e n + p n ) f v (e n , n) = W v (e n + p n )<label>(3)</label></formula><p>The 2i and 2i + 1 dimension of the positional embedding p n is calculated as follows:</p><formula xml:id="formula_3">p n,2i = sin(n/10000 2i d ) p n,2i+1 = cos(n/10000 2i d ) (4)</formula><p>Recently, RoPE adopts the relative position information instead of the absolute information <ref type="bibr" target="#b28">(Su et al., 2024)</ref>. It utilizes a specifically designed matrix R d i , of dimensions d × d and parameterized by i, to modify the query and key vectors in the following manner:</p><formula xml:id="formula_4">f q (e m , m) = R d m W q e m f k (e n , n) = R d n W k e m f v (e n , n) = W v e n (5) The matrix R d i has a unique property, namely (R d i ) T R d j = R d j-i , which leads to: q T m k n = e m W q R d n-m W k e n<label>(6)</label></formula><p>Consequently, in Equation (2), the model solely focuses on the relative position n -m, instead of the absolute positions n and m. RoPE has been adopted by recent LLMs, including Llama, Llama2 and Mistral <ref type="bibr">(Touvron et al., 2023a,b;</ref><ref type="bibr">Jiang et al., 2023)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Altering Position Information in Prompts</head><p>The performance of LLMs is significantly influenced by the quality of the prompts used. To enhance the effectiveness of these prompts, researchers have developed a wide range of prompt engineering strategies. This refinement process involves transforming the initial input tokens {t i } N i=1 into revised inputs { t j } N j=1 , which necessitates modifications to the text. For instance, the Zeroshot chain-of-thought technique enhances the reasoning abilities of LLMs by appending the sentence "Let's think step by step." to the prompts <ref type="bibr" target="#b13">(Kojima et al., 2022)</ref>.</p><p>In this paper, we propose a novel methodology termed "position engineering" to further exploit the capabilities of LLMs. Unlike prompt engineering, position engineering requires no modification to the input tokens themselves. Instead, it solely modifies the position information utilized in Equation (1). Through empirical experiments, we have discovered that such adjustments to position information can significantly improve performance. Formally, we aim at discovering a position editing function, τ (•) : N → N, that boosts LLM performance. This function changes the token position information, which is incorporated into the model as shown below:</p><formula xml:id="formula_5">q m = f q (e m , τ (m)) k n = f k (e n , τ (n)) v n = f v (e n , τ (n)) (7)</formula><p>We impose a condition on τ that ∀i &gt; j, τ (i) &gt; τ (j). This requirement ensures that: (1) No two distinct tokens are assigned the same new position index, and (2) The causality in language modeling remains intact, meaning only query vectors with a larger index can access the key and value vectors with an equal or smaller index.</p><p>The concept of position engineering can be also explained through placeholder tokens. Placeholder tokens are defined as tokens that are excluded the computation of attention scores, yet they are allocated position indices. To elaborate, when the calculation of a m,n is undertaken as described in the Equation (2), and either the m-th or n-th token is identified as a placeholder, the conventional computation is bypassed, and a m,n is set to 0. While placeholder tokens do not directly influence the attention scores at their positions, they do alter the position indices of other input tokens. As depicted in Figure <ref type="figure" target="#fig_0">1b</ref>, the insertion of placeholder tokens between sentences 1 and 2 affects the relative positional information between them, which in turn influences the calculation of attention scores between tokens of the two sentences. The connection between the position editing function and the placeholder tokens can be described as follows: Employing a position editing function τ translates to adding τ (i + 1) -τ (i) -1 placeholder tokens after the i-th token, and specifically, adding τ (0) placeholder tokens before the 0-th token.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3">Position Engineering</head><p>Consider a particular task defined by (Q, A), for which a training set {(Q i , A i )} N i=1 has been sampled according to the task distribution Γ. We transform each question Q i into its corresponding text prompt P i . A large language model M is utilized, which operates based on the prompt P i , and its output is evaluated through a scoring function r, denoted as r(M, P i ). To potentially enhance the performance, a position editing function might be applied to each question prompt. This function is assumed to be parameterized by a vector θ, and is denoted as τ P i ;θ . After the application of the positional editing function, a new score is generated, formulated as r(M, P i , τ P i ;θ ).</p><p>For instance, in retrieval-augmented generation (RAG) tasks, the prompt P i is typically composed of three segments: the instruction, the documents, and the question. It can be possible to define θ = [θ 1 , θ 2 ], while θ 1 translates to inserting θ 1 placeholder tokens between the instruction and the document segment, and θ 2 translates to inserting placeholder tokens between the document segment and the question.</p><p>Formally, prompt engineering is framed as an optimization problem. We aim at finding the optimal θ that maximizes the score:</p><formula xml:id="formula_6">θ * = arg max θ 1 N</formula><p>In this section, we present our experiments and findings for position engineering. We evaluate two prevalent tasks for LLMs, namely Retrieval-Augmented Generation (RAG) and In-context Learning (ICL). Our primary testing model is Llama2-13B-chat <ref type="bibr">(Touvron et al., 2023b)</ref>, although we also expand our experiments to include additional models in the Appendix.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Position Engineering for RAG</head><p>Datasets: To explore the effectiveness of position engineering on RAG tasks, we utilize four open-domain QA datasets: NQ open <ref type="bibr" target="#b15">(Lee et al., 2019)</ref>, EntityQuestions <ref type="bibr" target="#b25">(Sciavolino et al., 2021)</ref>, TrivialQA <ref type="bibr" target="#b10">(Joshi et al., 2017)</ref>, and WebQuestions <ref type="bibr" target="#b0">(Berant et al., 2013)</ref>. These datasets each include a training and an evaluation (or test) set, with each set comprising a series of question-and-answer pairs. From the original training set of each dataset, we randomly select 300 QA pairs to serve as our training set for position engineering. Similarly, we randomly select 2,000 pairs from their original test sets to constitute our test set. In cases where a dataset lack a test set, we utilize its evaluation set instead. The Contriever model, which has been fine-tuned on the MS-MARCO dataset, is employed as the retrieval model <ref type="bibr" target="#b8">(Izacard et al., 2021)</ref>. We employ document passages from Wikipedia as our source for retrieval, with each passage containing a total of 100 words <ref type="bibr" target="#b12">(Karpukhin et al., 2020)</ref>. k document passages, specifically k = 1, 3, 5, are retrieved, and subsequently concatenated and fed into LLMs. Our evaluation metric is the best exact match accuracy, judging whether any correct answer is in the output, which is a common practice in previous works <ref type="bibr" target="#b11">(Kandpal et al., 2023;</ref><ref type="bibr" target="#b20">Mallen et al., 2023)</ref>.</p><p>Search Space: We adopt the following prompt template for all RAG experiments. The prompt template is divided into three segments. The first segment provides instructions for the task; the second segment presents a list of retrieved documents, each accompanied by its title and a passage; and the third segment combines the instruction with a specific question. These segments are referred to as the instruction segment, the document segment, and the question segment for convenience.</p><p>Instruction Document 1 Document 2 Document 3 Question Instruction Document 1 Document 2 Document 3 Question 𝜽 𝑨 PH Tokens 𝜽 𝑩 PH Tokens In the figure, the term "PH tokens" refers to the placeholder tokens introduced in Section 2.2. We investigate a defined search space, with inserting θ A placeholder tokens between the instruction and document segments, and θ B placeholder tokens between the document and question segments. Both θ A and θ B range from {0, 100, ..., 2500}, subject to θ A + θ B ≤ 2500.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>The prompt template for RAG:</head><p>Answer the question based on the given documents (some of which might be irrelevant). Only give me the answer and do not output any other words. As presented in Figure <ref type="figure" target="#fig_2">2</ref>, our study explores the methodology of position engineering for RAG by strategically inserting θ A placeholder tokens between the instruction and document segments, and θ B placeholder tokens between the document and question segments. To narrow down the search space, the values of θ A and θ B are limited to a predefined set {0, 100, ..., 2500}. Additionally, we impose a restriction that θ A + θ B ≤ 2500, due to the constraints of the context window size. We evaluate the performance of all combinations on the training set with the Llama2-13B-chat model, and then apply the best configuration to the test set. Results: We initially examine all possible combinations to determine the optimal configuration on the training set, which is denoted as θ * A and θ * B . This optimal configuration is then applied on the test set, and the results are presented in the table. The baseline is θ A = θ B = 0. The term "Abs Impr." represents absolute accuracy improvement in percentage. The Llama2-13B-chat model is utilized for the experimentation.</p><p>hance the RAG's performance across all settings. The most notable improvement is 15.4%, observed in the WebQuestions dataset with a single retrieved document. The best-performing parameters, θ * A and θ * B , reveal a consistent trend: θ * A tends to be a large number, usually in the range of 1,000 to 2,000, while θ * B is a smaller figure, ranging between 200 and 600.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Universal Position Configuration for RAG</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>It has been observed that the most effective position configurations, represented as θ *</head><p>A and θ * B in Section 3.1, demonstrate a consistent trend across all examined datasets. In this section, we aim to determine a single position setting that can enhance RAG performance universally across different datasets and various numbers of retrieved documents.</p><p>Given that absolute accuracy scores vary across datasets, we adopt the percentile value of the accuracy score as a metric to assess each position setting. In this context, we define "experiment setting" as the combination of one dataset and a specific number of retrieved documents, and "position setting" as a specific pair of θ A and θ B . For every experiment setting, we accumulate the scores from all position settings. The effectiveness of each position setting is then evaluated based on its percentile ranking, which varies from 0 to 100, within the experiment setting. Finally, The overall efficacy of a position setting is determined by averaging its percentile rankings across all experiment settings. The baseline configuration without position engineering (θ A = θ B = 0) achieves an average percentile of 31.6. This suggests that approximately 68% of configurations can surpass the baseline performance by simply adjusting positional information. The visualization of averaged percentiles for all position settings is provided in Figure <ref type="figure" target="#fig_4">3</ref>.</p><p>Generally, it is advantageous to select a θ A value within the range of 1300 to 2000, and set θ B within the range of 300 to 500. Setting θ B to an exces-sively high figure (for instance, more than 1500) significantly deteriorates performance, possibly because it leads to the neglect of document information in prompts. Moreover, for each specified θ B , an increase in θ A is generally associated with better performance.</p><p>On the training set, θ A = 1900, θ B = 400 exhibits the highest percentile value of 92.9. We apply this configuration to the test set across all datasets and retrieved document numbers. Results presented in Table <ref type="table">2</ref> demonstrate that it leads to a universal performance improvement. In Appendix A.1, we also demonstrate that such configuration remains effective for other models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Dataset</head><p>N Doc Abs Impr.</p><p>NQ Open 1 +9.6% NQ Open 3 +7.1% NQ Open 5 +4.9% EntityQuestions 1 +5.6% EntityQuestions 3 +3.4% EntityQuestions 5 +1.9% TrivialQA 1 +8.1% TrivialQA 3 +4.9% TrivialQA 5 +3.2% WebQuestions 1 +14.8% WebQuestions 3 +9.4% WebQuestions 5 +9.1%</p><p>Table 2: The universal position configuration, θ A = 1900, θ B = 400, is tested on the test split of all datasets employing the Llama2-13B-chat model. The Table presents the absolute accuracy improvements over the baseline configuration (θ A = θ B = 0).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Without the instruction segment</head><p>From Figure <ref type="figure" target="#fig_4">3</ref>, it is observed that a larger θ A is preferred for optimal performance. θ A represents the gap between the instruction segment and the document segment. A larger θ A reduces the instruction segment's impact. This raises the question of whether eliminating the instruction segment entirely could further enhance performance. To explore this, we conduct tests, and the outcomes are presented in Table <ref type="table">3</ref>. It is discovered that the performance of removing the instruction segment is comparable to the baseline setting.</p><p>The most significant improvement, a 2% increase, is observed with the WebQuestions dataset when one retrieved document is utilized. However, the enhancement Dataset N Doc Baseline No Inst. NQ Open 1 0.341 0.353 NQ Open 3 0.424 0.417 NQ Open 5 0.452 0.449 EntityQuestions 1 0.452 0.454 EntityQuestions 3 0.501 0.492 EntityQuestions 5 0.535 0.532 TrivialQA 1 0.582 0.582 TrivialQA 3 0.646 0.650 TrivialQA 5 0.669 0.668 WebQuestions 1 0.319 0.335 WebQuestions 3 0.410 0.410 WebQuestions 5 0.434 0.440</p><p>Table 3: We test the RAG performance without the instruction segment on the Llama2-13B-chat model. The results are comparable to the baseline, with a slight improvement ranging from 1% to 2% on the NQ Open and WebQuestions datasets when a single document is retrieved.</p><p>from position engineering in the same experiment setting is 15.4%. Thus, to achieve the best performance, it is essential to lessen but not eliminate the effect of the instruction segment, a goal that is easy for position engineering, but difficult to accomplish by prompt engineering.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">Position Engineering for ICL</head><p>Datasets: To explore the impact of positional engineering on ICL tasks, we employ two datasets: TREC <ref type="bibr" target="#b17">(Li and Roth, 2002;</ref><ref type="bibr" target="#b7">Hovy et al., 2001)</ref> and SST2 <ref type="bibr" target="#b26">(Socher et al., 2013)</ref>. The TREC dataset includes a variety of questions, with the aim being to categorize these questions into 6 coarse and 50 fine-grained question types. We focus on the 6 coarse question types. The SST2 dataset contains movie reviews, with the objective being to categorize these reviews as either positive or negative.</p><p>For our training set, we randomly choose 300 samples from the original training sets of TREC and SST2. For our test set, we utilize TREC's entire 500-sample test set. For the SST2 dataset, due to the lack of labels in its original test set, we use all 842 samples from its validation set as our test set. For each sample tested, we randomly select 3 examples of each label from the training set as the in-context demonstrations, leading to 18 examples for TREC and 6 for SST2. The exact match score is adopted as the evaluation metric. We initially examine all possible combinations to determine the optimal configuration on the training set, which is denoted as (θ * A , θ * mid , θ * B ). This optimal configuration is then applied on the test set, and the results are presented in the table. The baseline is θ A = θ mid = θ B = 0. The term "Abs Impr." represents absolute accuracy improvement in percentage. The Llama2-13B-chat model is utilized for this experimentation.</p><p>Search Space: The prompt template provided below is designed for evaluating performance on the SST2 dataset and is divided into three sections: an initial instruction segment that outlines the task, a middle segment that provides examples demonstrating the task, and a final segment that combines the instruction with a query. These segments are referred to as the instruction segment, the example segment, and the query segment, respectively. For the TREC dataset, we employ a similar prompt template, altering only the terms "Review" to "Question" and "Sentiment" to "Question Type" with Llama2-13B-chat.</p><p>To investigate the impact of position engineering, we conduct experiments by inserting θ A placeholder tokens between the instruction and example segments, θ B placeholder tokens between the example segment and the query segment, and θ mid placeholder tokens among the examples, as depicted in Figure <ref type="figure" target="#fig_6">4</ref>. The candidate value set of θ A and θ B is set to {0, 100, ..., 600}, and while θ mid is set to {0, 20, ..., 100}. We evaluate the performance of all possible combinations within the training set and apply the optimal configuration to the test set.</p><p>The prompt template for the SST2 dataset:  In the figure, the term "PH tokens" refers to the placeholder tokens introduced in Section 2.2. We investigate a defined search space, with inserting θ A placeholder tokens between the instruction and document segments, θ B placeholder tokens between the document and question segments, and θ mid placeholder tokens among the examples. The candidate value set of θ A and θ B is set to {0, 100, ..., 600}, and while θ mid is set to {0, 20, ..., 100}.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Results:</head><p>The results for ICL are presented in Table 4, indicating an enhancement in performance across both datasets, with an absolute 3.6% improvement observed on the TREC dataset and an absolute 1.9% improvement on the SST2 dataset. The optimal position settings, represented as θ * A , θ * B , and θ * mid , vary between datasets. Specifically, TREC requires adjusting θ mid to 40, with θ A and θ B set to 0, whereas SST2 requires setting θ B to 100, with θ A and θ mid to 0.</p><p>We observe a significant performance drop when θ B is set within the {200, 300, ..., 600} range, mirroring the trends observed in RAG tasks where a high θ B value leads to poor outcomes. θ B can be interpreted as a parameter to adjust the impact of the example segment. In the case of SST2, which involves classifying sentiments of re-views-a domain that LLMs might have common knowledge-the choice of θ * B = 100 is intended to slightly reduce the example segment's influence. For TREC, which requires LLMs to learn question types from examples, maintaining θ * B = 0 is optimal.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Discussion</head><p>We hypothesize that position engineering serves as a technique to finely adjust the attention weights assigned to different segments within prompts. By extending the positional gap between two segments, the interaction between them is lessened, thereby increasing the attention allocated to other segments. For example, in RAG experiments, an increased value of θ A could potentially reduce the impact of the instruction segment while amplifying the attention allocated to the retrieved documents. It is important to note, however, that the initial instruction remains essential, as evidenced in Section 3.3. Position engineering offers a nuanced approach to adjusting the weights of different blocks without the need for direct addition or removal of text.</p><p>Position engineering offers several advantages: (i) It is easier to optimize due to its numerical search space {θ}, in contrast to prompt engineering, which requires searching over a more complex text space. (ii) It is computationally efficient, as altering position information merely involves updating the position indices input into LLMs, without increasing the overall computational overhead. (iii) It is orthogonal to prompt engineering, meaning the two approaches can be effectively combined.</p><p>Future works may advance in the following directions. Firstly, investigating the internal dynamics of LLMs can enhance our understanding of position engineering's underlying mechanisms. Secondly, employing more sophisticated optimizers, such as Gaussian processes or multi-armed bandits, could reduce the search time and discover more refine-grained position editing functions. Finally, the exploration of merging position engineering with prompt engineering could harness the full power of LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Related Works</head><p>Prompt engineering: Prompt engineering has emerged as a technique to enhance the performance of LLMs by modifying the instructions given to them. For instance, few-shot prompting allows LLMs to learn from demonstrations, a process also known as in-context learning <ref type="bibr" target="#b1">(Brown et al., 2020)</ref>. Additionally, Chain-of-Thought prompting encourages LLMs to produce intermediate tokens, thereby improving their reasoning capabilities <ref type="bibr" target="#b32">(Wei et al., 2022;</ref><ref type="bibr" target="#b13">Kojima et al., 2022)</ref>. Another technique, Retrieval-Augmented Generation (RAG), involves retrieving relevant document passages and incorporating them into the prompts <ref type="bibr">(Lewis et al., 2020)</ref>. It has been discovered that the RAG performance can be improved by adding random documents to the mix of relevant documents <ref type="bibr">(Cuconasu et al., 2024)</ref>, a technique that is relevant to our study. However, this approach demands significant additional computational resources. In contrast, our proposed method does not require extra computation. Positional Information in LLMs: Positional embedding has been introduced to integrate the position information of tokens within the attention layers <ref type="bibr" target="#b31">(Vaswani et al., 2017)</ref>. Initially, this concept relied on absolute position indices. However, subsequent developments have introduced methods based on relative positions, such as the relative positional encodings in Transformer-XL <ref type="bibr" target="#b3">(Dai et al., 2019)</ref>, and RoPE <ref type="bibr" target="#b28">(Su et al., 2024)</ref>. ALiBi is a different method for integrating positional information into LLMs <ref type="bibr" target="#b23">(Press et al., 2022)</ref>, which does not utilize embeddings but introduces a fixed bias based on relative positions during the computation of attention scores. More recent studies have focused on modifying positional embeddings to increase the context window size in LLMs <ref type="bibr" target="#b4">(Ding et al., 2024;</ref><ref type="bibr" target="#b22">Peng et al., 2024)</ref>. Apart from positional embeddings, the performance of LLMs has been found to correlate with document positions in prompts. In RAG tasks, documents that are positioned in the middle are often more neglected than those at the beginning or the end <ref type="bibr">(Liu et al., 2024)</ref>. However, to the best of our knowledge, there has been no similar effort on improving task performance by modifying positional indices.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Conclusion</head><p>In this study, we introduce position engineering, an innovative technique to enhance task performances of LLMs by merely altering the position information in the prompts. Our experimentation with position engineering across a range of tasks and models demonstrates its effectiveness. This approach provides a new avenue for maximizing the capabilities of LLMs.</p><p>Our method needs an explicit search process to discover the optimal position setting for a given task. Such search process will cost computation resource and time. Sometimes, the search process can be omitted if a universal good positional setting exists, e.g. the universal setting for RAG tasks with Llama2-13B-chat model. Besides, the internal mechanism of position engineering remains unclear. We hypothesize that position engineering serves as a technique to finely adjust the attention weights assigned to different segments within prompts. Future efforts can be made to further investigate it.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure1: Comparison of prompt engineering and position engineering. "Para" refers to paragraphs, and "Sent" to sentences in prompts. Prompt engineering involves either adding, replacing, or removing paragraphs and sentences from prompts. In contrast, the proposed position engineering maintains the original prompt text but incorporates placeholder tokens instead. These placeholders are not involved in the computation of attention scores, thus the computation overhead is not increased. However, they do hold position indices, thereby affecting the position information of other tokens in the text.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 :</head><label>2</label><figDesc>Figure2: Position Engineering for RAG. In the figure, the term "PH tokens" refers to the placeholder tokens introduced in Section 2.2. We investigate a defined search space, with inserting θ A placeholder tokens between the instruction and document segments, and θ B placeholder tokens between the document and question segments. Both θ A and θ B range from {0, 100, ..., 2500}, subject to θ A + θ B ≤ 2500.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>Document (Title: {title}) {passage} Document (Title: {title}) {passage} Document (Title: {title}) {passage}Answer the question based on the given documents (some of which might be irrelevant). Only give me the answer and do not output any other words. Question: {question} Answer:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: We visualize the average percentile values for each positional configuration (θ A , θ B ). These values are initially obtained by aggregating all accuracy scores for a given dataset and a specific number of retrieved documents, and calculate the percentile scores. Subsequently, they are averaged across all configurations, as detailed in Section 3.2.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><figDesc>are given the following Review. Review: {query} Please output its Sentiment according to the examples. Only output its Sentiment without outputing anything else. Sentiment:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 4 :</head><label>4</label><figDesc>Figure4: Position Engineering for ICL. In the figure, the term "PH tokens" refers to the placeholder tokens introduced in Section 2.2. We investigate a defined search space, with inserting θ A placeholder tokens between the instruction and document segments, θ B placeholder tokens between the document and question segments, and θ mid placeholder tokens among the examples. The candidate value set of θ A and θ B is set to {0, 100, ..., 600}, and while θ mid is set to {0, 20, ..., 100}.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Table 1 displays the results for RAG, indicating that position engineering substantially en-The test results for RAG.</figDesc><table><row><cell>Dataset</cell><cell cols="4">N Doc Baseline Position Engineering Abs Impr.</cell><cell>θ  *  A</cell><cell>θ  *  B</cell></row><row><cell>NQ Open</cell><cell>1</cell><cell>0.341</cell><cell>0.435</cell><cell>+9.5%</cell><cell cols="2">2,000 400</cell></row><row><cell>NQ Open</cell><cell>3</cell><cell>0.424</cell><cell>0.490</cell><cell>+6.6%</cell><cell cols="2">2,100 300</cell></row><row><cell>NQ Open</cell><cell>5</cell><cell>0.452</cell><cell>0.501</cell><cell>+5.0%</cell><cell cols="2">1,600 600</cell></row><row><cell>EntityQuestions</cell><cell>1</cell><cell>0.452</cell><cell>0.511</cell><cell>+5.8%</cell><cell cols="2">1,400 500</cell></row><row><cell>EntityQuestions</cell><cell>3</cell><cell>0.501</cell><cell>0.531</cell><cell>+3.0%</cell><cell cols="2">1,200 300</cell></row><row><cell>EntityQuestions</cell><cell>5</cell><cell>0.535</cell><cell>0.558</cell><cell>+2.3%</cell><cell cols="2">1,300 400</cell></row><row><cell>TrivialQA</cell><cell>1</cell><cell>0.582</cell><cell>0.657</cell><cell>+7.5%</cell><cell cols="2">1,300 200</cell></row><row><cell>TrivialQA</cell><cell>3</cell><cell>0.646</cell><cell>0.697</cell><cell>+5.1%</cell><cell cols="2">1,500 300</cell></row><row><cell>TrivialQA</cell><cell>5</cell><cell>0.669</cell><cell>0.698</cell><cell>+2.9%</cell><cell cols="2">2,300 200</cell></row><row><cell>WebQuestions</cell><cell>1</cell><cell>0.319</cell><cell>0.473</cell><cell>+15.4%</cell><cell cols="2">1,900 500</cell></row><row><cell>WebQuestions</cell><cell>3</cell><cell>0.410</cell><cell>0.507</cell><cell>+9.7%</cell><cell cols="2">2,100 400</cell></row><row><cell>WebQuestions</cell><cell>5</cell><cell>0.434</cell><cell>0.514</cell><cell>+8.1%</cell><cell cols="2">1,600 800</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 4 :</head><label>4</label><figDesc>Dataset Baseline Position Engineering Abs Impr. θ *The test results for ICL.</figDesc><table><row><cell>A</cell><cell>θ  *  mid</cell><cell>θ  *  B</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" xml:id="foot_0"><p>N i=1 r(M, P i , τ P i ;θ ) (8)In this research, we utilize a basic algorithm for tackling the optimization problem by initially defining a limited number of candidates for θ and assessing each candidate's score via brute force. Notably, since θ is a numeric vector, the search process can be accelerated by adopting various optimizers, such as Gaussian processes of Bayesian optimization<ref type="bibr" target="#b27">(Srinivas et al., 2010)</ref>. The exploration of more sophisticated optimization methods will be considered in future works.</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>In Section 3.2, we identified a universal position configuration,θ A = 1900 and θ B = 400 , on RAG tasks for the Llama2-13B-chat model. In this section, we further investigate whether such configuration remains effective for other models by applying it to the Llama2-7B-chat <ref type="bibr">(Touvron et al., 2023b)</ref> and <ref type="bibr">Mistral-7Binstruct-v0.2 (Jiang et al., 2023)</ref> model. The configuration is evaluated on the test splits across all datasets, with the results presented in Table <ref type="table">5</ref>. The findings indicate a consistent enhancement in the performance with the Llama2-7B-chat model under the universal position configuration. It is noteworthy that this configuration is initially identified with the Llama2-13B-chat model, suggesting that the Llama2-7B-chat model exhibits similar positional characteristics with Llama2-13B-chat. Furthermore, the Mistral-7Binstruct-v0.2 model also demonstrates consistent performance improvements when utilizing a single retrieved document. However, the performance gains become inconsistent with the use of multiple retrieved documents, indicating a potential need for model-specific adjustments.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.2 Applying Position Engineering to Non-RoPE Models</head><p>In our previous evaluation section, Llama2-13B-chat was utilized as the primary model for testing. This model employs RoPE <ref type="bibr" target="#b28">(Su et al., 2024)</ref> to integrate positional information. Furthermore, in this section, we aim to assess the effectiveness of position engineering using models with a different method for incorporating positional information. To this end, we apply position engineering to BLOOMZ-7b1 <ref type="bibr" target="#b21">(Muennighoff et al., 2023)</ref> under the same experimental settings for the ICL tasks. BLOOMZ-7b1 is an instruction-fined version of BLOOM <ref type="bibr">(Le Scao et al., 2023)</ref>, which incorporates position information using ALiBi <ref type="bibr" target="#b23">(Press et al., 2022)</ref>. Unlike RoPE, ALiBi introduces a fixed position-related bias term during the computation of attention scores.</p><p>Specifically, we follow the search space in Figure <ref type="figure">4</ref> for ICL tasks. We determine the optimal position configuration on the training dataset by evaluating all configuration candidates in the search space, subsequently applying this configuration to the test set. Both the training and test sets remain the same with the previous settings. The results are presented in Table <ref type="table">6</ref>. Notably, there is a significant improvement in ICL tasks, with the SST2 dataset showing an absolute improvement of 11.0%. It demonstrates that position engineering can be also effective in non-RoPE models.  is the optimal configuration identified in the training set, which is then applied on the test set. The baseline is θ A = θ mid = θ B = 0. The term "Abs Impr." represents absolute accuracy improvement in percentage compared to the baseline.</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Semantic parsing on Freebase from question-answer pairs</title>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Berant</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Chou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roy</forename><surname>Frostig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2013 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2013 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Seattle, Washington, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="1533" to="1544" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">M</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateusz</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Amodei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems</title>
+		<meeting><address><addrLine>NeurIPS</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2020-12-06">2020. 2020. 2020. December 6-12, 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Cesare Campagnano, Yoelle Maarek, Nicola Tonellotto, and Fabrizio Silvestri. 2024. The power of noise: Redefining retrieval for rag systems</title>
+		<author>
+			<persName><forename type="first">Florin</forename><surname>Cuconasu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Giovanni</forename><surname>Trappolini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Federico</forename><surname>Siciliano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simone</forename><surname>Filice</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3626772.3657834</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 47th International ACM SIGIR Conference on Research and Development in Information Retrieval, SIGIR &apos;24</title>
+		<meeting>the 47th International ACM SIGIR Conference on Research and Development in Information Retrieval, SIGIR &apos;24<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<biblScope unit="page" from="719" to="729" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Transformer-XL: Attentive language models beyond a fixed-length context</title>
+		<author>
+			<persName><forename type="first">Zihang</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhilin</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiming</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaime</forename><surname>Carbonell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruslan</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/P19-1285</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 57th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Florence, Italy</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="2978" to="2988" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Longrope: Extending llm context window beyond 2 million tokens</title>
+		<author>
+			<persName><forename type="first">Yiran</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><forename type="middle">Lyna</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengruidong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuanyuan</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ning</forename><surname>Shang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiahang</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fan</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mao</forename><surname>Yang</surname></persName>
+		</author>
+		<idno>ArXiv preprint, abs/2402.13753</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Mathematical capabilities of chatgpt</title>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Frieder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luca</forename><surname>Pinchetti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan-Rhys</forename><surname>Griffiths</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tommaso</forename><surname>Salvatori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Lukasiewicz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philipp</forename><surname>Petersen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julius</forename><surname>Berner</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="page">36</biblScope>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Retrieval augmented language model pre-training</title>
+		<author>
+			<persName><forename type="first">Kelvin</forename><surname>Guu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zora</forename><surname>Tung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Panupong</forename><surname>Pasupat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 37th International Conference on Machine Learning, ICML 2020</title>
+		<meeting>the 37th International Conference on Machine Learning, ICML 2020</meeting>
+		<imprint>
+			<date type="published" when="2020-07-18">2020. 18 July 2020</date>
+			<biblScope unit="volume">13</biblScope>
+			<biblScope unit="page" from="3929" to="3938" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Toward semantics-based answer pinpointing</title>
+		<author>
+			<persName><forename type="first">Eduard</forename><surname>Hovy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laurie</forename><surname>Gerber</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ulf</forename><surname>Hermjakob</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chin-Yew</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Deepak</forename><surname>Ravichandran</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the First International Conference on Human Language Technology Research</title>
+		<meeting>the First International Conference on Human Language Technology Research</meeting>
+		<imprint>
+			<date type="published" when="2001">2001</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Unsupervised dense information retrieval with contrastive learning</title>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mathilde</forename><surname>Caron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucas</forename><surname>Hosseini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Riedel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Piotr</forename><surname>Bojanowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Armand</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edouard</forename><surname>Grave</surname></persName>
+		</author>
+		<idno>abs/2112.09118</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">ArXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Albert Q Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Sablayrolles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Bamford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diego</forename><surname>Singh Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>De Las Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianna</forename><surname>Bressand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lengyel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucile</forename><surname>Lample</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Saulnier</surname></persName>
+		</author>
+		<idno>abs/2310.06825</idno>
+		<imprint/>
+	</monogr>
+	<note>et al. 2023. Mistral 7b. ArXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">TriviaQA: A large scale distantly supervised challenge dataset for reading comprehension</title>
+		<author>
+			<persName><forename type="first">Mandar</forename><surname>Joshi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eunsol</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Weld</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/P17-1147</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 55th Annual Meeting of the Association for Computational Linguistics</title>
+		<title level="s">Long Papers</title>
+		<meeting>the 55th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Vancouver, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="1601" to="1611" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Large language models struggle to learn long-tail knowledge</title>
+		<author>
+			<persName><forename type="first">Nikhil</forename><surname>Kandpal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haikang</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Wallace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="15696" to="15707" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Dense passage retrieval for opendomain question answering</title>
+		<author>
+			<persName><forename type="first">Vladimir</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barlas</forename><surname>Oguz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sewon</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ledell</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergey</forename><surname>Edunov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danqi</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen-Tau</forename><surname>Yih</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.emnlp-main.550</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="6769" to="6781" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Large language models are zero-shot reasoners</title>
+		<author>
+			<persName><forename type="first">Takeshi</forename><surname>Kojima</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shane</forename><surname>Shixiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Machel</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yutaka</forename><surname>Reid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yusuke</forename><surname>Matsuo</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Iwasawa</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="22199" to="22213" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Teven</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angela</forename><surname>Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellie</forename><surname>Akiki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suzana</forename><surname>Pavlick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Ilić</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roman</forename><surname>Hesslow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandra</forename><surname>Castagné</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">François</forename><surname>Sasha Luccioni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Yvon</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Gallé</surname></persName>
+		</author>
+		<title level="m">A 176bparameter open-access multilingual language model</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Latent retrieval for weakly supervised open domain question answering</title>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/P19-1612</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 57th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Florence, Italy</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="6086" to="6096" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Retrieval-augmented generation for knowledge-intensive NLP tasks</title>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">H</forename><surname>Patrick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ethan</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aleksandra</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Piktus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vladimir</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heinrich</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Küttler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen-Tau</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tim</forename><surname>Yih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Rocktäschel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Douwe</forename><surname>Riedel</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Kiela</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems</title>
+		<meeting><address><addrLine>NeurIPS</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2020-12-06">2020. 2020. 2020. December 6-12, 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Learning question classifiers</title>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Roth</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">COLING 2002: The 19th International Conference on Computational Linguistics</title>
+		<imprint>
+			<date type="published" when="2002">2002</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Lost in the middle: How language models use long contexts</title>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Nelson F Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashwin</forename><surname>Hewitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michele</forename><surname>Paranjape</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Bevilacqua</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">12</biblScope>
+			<biblScope unit="page" from="157" to="173" />
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Eureka: Human-level reward design via coding large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Yecheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guanzhi</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">De-An</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Osbert</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dinesh</forename><surname>Bastani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuke</forename><surname>Jayaraman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linxi</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anima</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Anandkumar</surname></persName>
+		</author>
+		<idno>ArXiv preprint, abs/2310.12931</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">When not to trust language models: Investigating effectiveness of parametric and non-parametric memories</title>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Mallen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Akari</forename><surname>Asai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Victor</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rajarshi</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Khashabi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannaneh</forename><surname>Hajishirzi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.acl-long.546</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics<address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="9802" to="9822" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Crosslingual generalization through multitask finetuning</title>
+		<author>
+			<persName><forename type="first">Niklas</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lintang</forename><surname>Sutawika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stella</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Teven</forename><surname>Le Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Saiful Bari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng Xin</forename><surname>Yong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hailey</forename><surname>Schoelkopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangru</forename><surname>Tang</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.acl-long.891</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<editor>
+			<persName><forename type="first">Dragomir</forename><surname>Radev</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Alham</forename><surname>Fikri Aji</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Khalid</forename><surname>Almubarak</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Samuel</forename><surname>Albanie</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Zaid</forename><surname>Alyafeai</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Albert</forename><surname>Webson</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Edward</forename><surname>Raff</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</editor>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics<address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="15991" to="16111" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">YaRN: Efficient context window extension of large language models</title>
+		<author>
+			<persName><forename type="first">Bowen</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Quesnelle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Honglu</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Enrico</forename><surname>Shippole</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Train short, test long: Attention with linear biases enables input length extrapolation</title>
+		<author>
+			<persName><forename type="first">Ofir</forename><surname>Press</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><forename type="middle">A</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Tenth International Conference on Learning Representations, ICLR 2022, Virtual Event</title>
+		<meeting><address><addrLine>Bernardino Romera-Paredes, Mohammadamin</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022-04-25">2022. April 25-29, 2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Mathematical discoveries from program search with large language models</title>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Barekatain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matej</forename><surname>Novikov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M Pawan</forename><surname>Balog</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emilien</forename><surname>Kumar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Francisco Jr</forename><surname>Dupont</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jordan</forename><forename type="middle">S</forename><surname>Ruiz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengming</forename><surname>Ellenberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omar</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Fawzi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Nature</title>
+		<imprint>
+			<biblScope unit="volume">625</biblScope>
+			<biblScope unit="issue">7995</biblScope>
+			<biblScope unit="page" from="468" to="475" />
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Simple entity-centric questions challenge dense retrievers</title>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Sciavolino</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zexuan</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinhyuk</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danqi</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.emnlp-main.496</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Dominican Republic. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="6138" to="6148" />
+		</imprint>
+		<respStmt>
+			<orgName>Online and Punta Cana</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Recursive deep models for semantic compositionality over a sentiment treebank</title>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Socher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Perelygin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jean</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Chuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Potts</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2013 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2013 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Seattle, Washington, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2013">2013</date>
+			<biblScope unit="page" from="1631" to="1642" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Gaussian process optimization in the bandit setting: No regret and experimental design</title>
+		<author>
+			<persName><forename type="first">Niranjan</forename><surname>Srinivas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andreas</forename><surname>Krause</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Sham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><forename type="middle">W</forename><surname>Kakade</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Seeger</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 27th International Conference on Machine Learning (ICML-10)</title>
+		<meeting>the 27th International Conference on Machine Learning (ICML-10)<address><addrLine>Haifa, Israel</addrLine></address></meeting>
+		<imprint>
+			<publisher>Omnipress</publisher>
+			<date type="published" when="2010-06-21">2010. June 21-24, 2010</date>
+			<biblScope unit="page" from="1015" to="1022" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Roformer: Enhanced transformer with rotary position embedding</title>
+		<author>
+			<persName><forename type="first">Jianlin</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Murtadha</forename><surname>Ahmed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shengfeng</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen</forename><surname>Bo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunfeng</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Neurocomputing</title>
+		<imprint>
+			<biblScope unit="volume">568</biblScope>
+			<biblScope unit="page">127063</biblScope>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">Faisal Azhar, et al. 2023a. Llama: Open and efficient foundation language models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<idno>ArXiv preprint, abs/2302.13971</idno>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">2023b. Llama 2: Open foundation and fine-tuned chat models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amjad</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolay</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prajjwal</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shruti</forename><surname>Bhosale</surname></persName>
+		</author>
+		<idno>ArXiv preprint, abs/2307.09288</idno>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niki</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jakob</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Llion</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems</title>
+		<meeting><address><addrLine>Long Beach, CA, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2017-09">2017. 2017. December 4-9, 2017</date>
+			<biblScope unit="page" from="5998" to="6008" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="24824" to="24837" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Large language models are human-level prompt engineers</title>
+		<author>
+			<persName><forename type="first">Yongchao</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrei</forename><forename type="middle">Ioan</forename><surname>Muresanu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ziwen</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keiran</forename><surname>Paster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Silviu</forename><surname>Pitis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harris</forename><surname>Chan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jimmy</forename><surname>Ba</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">NeurIPS 2022 Foundation Models for Decision Making Workshop</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

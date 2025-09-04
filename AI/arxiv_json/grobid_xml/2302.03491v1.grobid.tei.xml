@@ -1,0 +1,818 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">LEARNING TRANSLATION QUALITY EVALUATION ON LOW RESOURCE LANGUAGES FROM LARGE LAN-GUAGE MODELS</title>
+				<funder ref="#_drNhkNs">
+					<orgName type="full">unknown</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-02-07">7 Feb 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Amirkeivan</forename><surname>Mohtashami</surname></persName>
+							<email>amirkeivan.mohtashami@epfl.ch</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">EPFL Lausanne</orgName>
+								<address>
+									<settlement>Zurich</settlement>
+									<country key="CH">Switzerland</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Mauro</forename><surname>Verzetti</surname></persName>
+							<email>verzetti@google.com</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">EPFL Lausanne</orgName>
+								<address>
+									<settlement>Zurich</settlement>
+									<country key="CH">Switzerland</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Paul</forename><forename type="middle">K</forename><surname>Rubenstein</surname></persName>
+							<email>paulrubenstein@google.com</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">EPFL Lausanne</orgName>
+								<address>
+									<settlement>Zurich</settlement>
+									<country key="CH">Switzerland</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">LEARNING TRANSLATION QUALITY EVALUATION ON LOW RESOURCE LANGUAGES FROM LARGE LAN-GUAGE MODELS</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-02-07">7 Feb 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">688452ABB57D425B2388381EDBFA72EF</idno>
+					<idno type="arXiv">arXiv:2302.03491v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:51+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Learned metrics such as BLEURT have in recent years become widely employed to evaluate the quality of machine translation systems. Training such metrics requires data which can be expensive and difficult to acquire, particularly for lowerresource languages. We show how knowledge can be distilled from Large Language Models (LLMs) to improve upon such learned metrics without requiring human annotators, by creating synthetic datasets which can be mixed into existing datasets, requiring only a corpus of text in the target language. We show that the performance of a BLEURT-like model on lower resource languages can be improved in this way.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">INTRODUCTION</head><p>A machine translation system is typically evaluated by comparing its output on a given input sentence with one made by a professional translator. Concretely, a test set is constructed by taking a corpus of sentences {a 1 , a 2 , . . . , a n } in language A and having a human translate them to language B {b 1 , b 2 , . . . , b n }. A machine translation system T : A → B is then evaluated by comparing T (a i ) and b i using some metric m (T (a i ), b i ).</p><p>Until recently, commonly used metrics such as BLEU <ref type="bibr">(Papineni et al., 2002b)</ref> and ROGUE <ref type="bibr" target="#b3">(Lin, 2004)</ref> were generally based on number of co-occurring n-grams. Advantages of such methods include that they are easy to interpret, do not require learning from data, and have been shown to generally correlate with human judgement when averaged over a corpus of sentences.</p><p>Nonetheless, these approaches fail when sentences are semantically similar but differ significantly in phrasing. For example, although the sentences the sky is clear and there are no clouds above have no words in common, their meaning is similar and a good metric should assign a high score to such pairs as well. To alleviate this issue, recent works such as BLEURT <ref type="bibr">(Sellam et al., 2020a)</ref> and COMET <ref type="bibr" target="#b10">(Rei et al., 2020)</ref> have considered neural-network based metrics which work based on semantic similarity, but come at the cost of decreased interpretability and being more computationally intensive to run. Such metrics can be learned by treating the problem of defining a metric m (T (a i ), b i ) as a regression problem, where a high score should be returned if T (a i ) and b i are similar, and a low score if they are different. This requires an annotated dataset of reference and candidate sentences, along with scores provided by human annotators. Phrasing the problem this way, m is not a translation metric per se but rather a sentence similarity metric which can be used to evaluate translation quality.</p><p>Although some public datasets for this purpose exist -notably the WMT datasets released each year as part of the WMT Machine Translation Evaluation task <ref type="bibr" target="#b4">(Ma et al., 2019)</ref> -it is in general expensive to create such datasets as they require expensive annotation by skilled humans. As such, available datasets tend to be either very small or restricted to popular languages, and therefore the performance of metrics trained with these datasets may deteriorate on lower resource languages.</p><p>WMT Internal English Arabic Urdu Mongolian SentenceBLEU 0.316 0.061 0.069 0.025 BLEURT-like baseline 0.592(0.001) 0.210(0.001) 0.255(0.001) 0.123(0.001) PaLM with scoring prompt 0.541 0.163 0.262 0.105 Table <ref type="table">1</ref>: Spearman's ρ correlation between scores given by human raters and automatic raters. This demonstrates that given the right prompting, PaLM can be used to directly score sentence similarity.</p><p>For the baseline the average over 5 fine-tuning is reported along with the standard error in parenthesis. See Section 4 for details about the baseline. SentenceBLEU refers to the sacrebleu reference implementation <ref type="bibr" target="#b7">(Post, 2018)</ref> Fortunately, recent developments in large language models (LLMs) allow for new possible solutions for many tasks including this one. Due to being trained on internet-scale textual datasets, LLMs such as PaLM <ref type="bibr" target="#b1">(Chowdhery et al., 2022)</ref> and <ref type="bibr">GPT-3 (Brown et al., 2020)</ref> have knowledge of a large number of languages; the training sets of both PaLM and GPT-3 include more than 100 languages.</p><p>Furthermore, these models have demonstrated a remarkable ability to perform a wide variety of tasks by selecting prompts with a few (or even zero) examples.</p><p>As such, LLMs could be used directly as a metric to evaluate machine translation systems by asking the model to numerically rate how similar sentence pairs are: Table <ref type="table">1</ref> shows the correlation between the human scores and those generated by PaLM using the method described in Section 3.3 which can be seen is in par with the correlation of the scores generated by the BLEURT-like baseline. While this would be significantly cheaper and faster than doing the same with professional humans, cost and time may still be prohibitive since inference with such models requires significant compute and is slow compared to standard metrics.</p><p>Therefore, we propose another approach to use LLMs to create datasets of sentence pairs with similarity ratings, which can be used to train smaller neural metrics such as BLEURT. This means that the cost of querying the LLM is incurred only once when the dataset is generated, and inference times and cost of the resulting metric are unchanged. The LLM is used to create datasets for languages for which such data is scarce or non-existent. In doing so, knowledge of lower resource languages is distilled from the LLM into the neural metric.</p><p>The contributions of this work are:</p><p>• We demonstrate that LLMs can generate synthetic datasets for training sentence similarity metrics. • We use this to construct to low resource language training data for translation quality metrics, and demonstrate an improvement over prior art by training a BLEURT-like model with this additional data.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">RELATED WORKS</head><p>In recent years, language models have considerably grown in size leading to a remarkable increase in their capabilities and performance. <ref type="bibr">GPT-3 (Brown et al., 2020)</ref> and PaLM <ref type="bibr" target="#b1">(Chowdhery et al., 2022)</ref> are current examples of the state of the art with 175B and 540B parameters respectively. These models are trained in an unsupervised manner over large corpus of text in a variety of languages, contexts, and settings. In this paper we work with PaLM, though any LLM could be used. (In particular, further advances in LLMs made made in the future may translate into further gains in performance.)</p><p>Various learned sentence similarity metrics have been proposed in the literature. BERTscore <ref type="bibr" target="#b17">(Zhang et al., 2019)</ref> uses a pre-trained BERT model <ref type="bibr" target="#b2">(Devlin et al., 2018)</ref> to obtain token embeddings and uses the cosine similarity between the embeddings of two sentences to compute their similarity. Several recent methods also build upon pre-trained language models but directly finetune them to solve the sentence similarity task as a regression. For example, BLEURT <ref type="bibr">(Sellam et al., 2020a)</ref> fine-tunes BERT first over synthetic data labeled using traditional metrics such as BLEU <ref type="bibr" target="#b5">(Papineni et al., 2002a)</ref>, followed by another fine-tuning over human labeled data. In a follow-up <ref type="bibr">Sellam et al. (2020b)</ref> note that the initial fine-tuning for multi-lingual scenarios is not as benefical and can be ommitted. COMET <ref type="bibr" target="#b10">(Rei et al., 2020)</ref> is another learned metric for translation quality evaluation that also takes into account the sentence in the source language. To avoid the need for human-rated sentence pairs, <ref type="bibr" target="#b15">Thompson &amp; Post (2020)</ref> train PRISM in an unsupervised manner to estimate how much a sentence can be considered a para-phrased version of another sentence. Similarly, BARTScore <ref type="bibr" target="#b16">(Yuan et al., 2021)</ref> uses a pre-trained language model to estimate the probability of generating one sentence to continue another sentence and uses the estimated value as a surrogate for their similarity.</p><p>Several recent works also propose methods that are applicable to any learned metric and can be used to improve their performance. For example <ref type="bibr" target="#b8">Pu et al. (2021)</ref> propose to train a smaller student model using a large amount of unlabeled data over the specific set of target languages in order to both improve the speed and the accuracy over those languages.</p><p>Existing works have explored the use of LLMs to generate synthetic datasets. <ref type="bibr" target="#b12">Schick &amp; Schütze (2021)</ref> also consider generating data to train sentence similarity metrics, but only for English and not for application to translation quality evaluation. <ref type="bibr" target="#b11">Rosenbaum et al. (2022)</ref> use LLMs to generate structured data and a corresponding expression in natural language; while they do consider a multilingual setting, they are restricted only to popular languages.</p><p>The work presented here is unique in two regards: first, we demonstrate the capability of LLMs to generate datasets for lower-resource languages; and second we apply this to learning sentence similarity metrics for application to translation quality evaluation. Given the near-universal lack of data for lower-resource languages, our approach to transfer this knowledge from LLMs can be useful to many tasks, even those already having a large amount of data in high resource languages.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">DATASET GENERATION</head><p>Our method to generate datasets assumes access only to a corpus of text in the target language and access to a suitable LLM. In our experiments we use the multilingual C4 dataset <ref type="bibr" target="#b9">(Raffel et al., 2019)</ref> for this purpose, however any other available sources could instead be used (books, news, government documents or transcriptions from parliaments as examples).</p><p>We generate datasets in four steps. In the first step, we select sentences from the text corpus. Since the corpus contains paragraphs extracted from the web, there are many segments which do not constitute a complete sentence such submission date, number of comments, etc. We apply basic filtering to remove such segments. In the second step, we query PaLM to generate a second sentence derived from this, creating a sentence pair. In the third step, we query PaLM to score each of the sentence pairs generated in the first step according to the similarity of the sentences. Finally, we apply heuristic filtering to the generated triples to remove lower quality data.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">SELECTING SENTENCES FROM CORPUS</head><p>For each record in multilingual C4 dataset <ref type="bibr" target="#b9">(Raffel et al., 2019)</ref> we extract the first sentence from each line in that record. We use an internal sentence segmentation model to detect sentence boundaries. Subsequently, we filter out sentences that do not start with an alphabet character or do not finish with a punctuation mark. The resulting set of sentences are fed through the pipeline to generate sentence pairs and then score the generated pairs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">GENERATING SENTENCE PAIRS</head><p>To generate the sentence pair, we use PaLM to introduce alterations in a sentence picked from our text corpus. Since the final model is a metric for evaluating high-quality translation systems, we focus on generating altered sentences that could be outputs of such systems. Therefore, we focus the main instruction given to PaLM on the meaning of the generated alteration. In particular, we ask PaLM to make alterations to achieve different objectives such as rephrasing the sentence or changing its meaning as determined by the prompt. While the instruction does not prohibit adding grammatical mistakes to the sentence, however PaLM usually generates a grammatically correct sentence.</p><p>We also want the generated dataset to be diverse. Thus, to avoid biasing PaLM to a specific change, e.g. only replacing a word with its synonym, we use a zero-shot prompt, i.e. we describe the task without providing examples.</p><p>Similar to prior works <ref type="bibr" target="#b0">(Brown et al., 2020;</ref><ref type="bibr" target="#b1">Chowdhery et al., 2022)</ref>, we create a template with a placeholder for the input sentence and use it to query PaLM. The output is generated with deterministic zero-temperature decoding, whereby the most probably next token is iteratively chosen. While testing various templates, we observed that PaLM sometimes rephrases the given task in terms similar to competitive programming tasks. We utilize this observation and directly phrase our task in a competitive programming task template. Since these tasks usually contain various constraints explained in the description, using this template allows explaining the objective clearly and in our experience reduces the chances of the model ignoring the given constraints.</p><p>We found it effective to follow chain-of-thought reasoning <ref type="bibr" target="#b1">(Chowdhery et al., 2022)</ref> by requesting an explanation of the changes to be made before producing the final sentence. In the absence of this, we observed that in many cases the generated sentences did not satisfy the given constraints. When not asking for an explanation, we frequently observed that the model output follows the generated sentence with a description that falsely asserts that the generated sentence satisfies the given constraints. This description hints that the model has not ignored the constraints completely but fails to apply them when generating the sentence when not asked for a concrete explanation in advance.</p><p>We tested various prompts and based on the number of successfully generated pairs, settled on the following prompts to generate our final dataset:</p><p>Prompts for Preserving the Meaning We ask PaLM to re-write a sentence without using any of the words in the original sentence while preserving the meaning. For the explanation, we either ask it to provide a list of five differences between the input and the output or ask it to provide three ideas used to change the input into the output.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Prompts for Changing Meaning</head><p>In this template, we ask PaLM to change a small number of words in the original sentence to significantly change the meaning but keeping the context. Similar to the first template, we ask for a list of five differences to force the model to provide an explanation of the output.</p><p>Appendix Figure <ref type="figure">1</ref> shows the generic structure of the templates described above.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">SCORING SENTENCE PAIRS</head><p>After generating a sentence pair, we query PaLM a second time and use it to score the similarity of the two sentences in the pair. Note that a score can also be guessed based on the template that was used for generation. For example, the template can instruct PaLM to apply only minor changes. However, we noticed that PaLM can violate such instructions quite often, making the guessed score to be less reliable. Therefore, we decided to obtain a more accurate score by querying PaLM again.</p><p>Similar to generation, we use a template with two placeholders (one for each sentence in the pair) to query PaLM.However, we follow a different approach to obtain the score than greedy decoding.</p><p>The template defines a discrete set of allowed scores: the integers {0, 1, . . . , 4}. We end the template such that the score would be the natural continuation and compute the probability of each score as a continuation. Next, we take a weighted average of these scores, with weighting given by these probabilities. This approach allows obtaining the score in a continuous scale instead of a discrete one and is more reliable as it can take into account uncertainties of the model between two or more scores.</p><p>For this task, we tested several templates including both zero-shot and few-shot templates, measuring the performance of each template according to the correlation metrics between the generated scores and human scores over a subset WMT Shared Metric Task dataset <ref type="bibr" target="#b4">(Ma et al., 2019)</ref>. The final template was a few-shot template including an explanation of the task and the grading scale, followed by examples from several languages. The general structure of this template can be seen in Appendix Figure <ref type="figure">2</ref>. The correlation of the generated scores using this template with human scores over can be seen in Table <ref type="table">1</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">FINAL CLEANING</head><p>To ensure the quality of the generated sentence pairs, we select a subset of the generated sentence pairs based on some heuristics:</p><p>• Sentence Length: We ensure the reference sentence is neither too long or too short. In particular, we filter out any sentence below 20 characters and above 300 characters. For each set, 5 models are trained and the average is shown with standard error in parenthesis. BLEU refers to the sacrebleu sentenceBLEU reference implementation <ref type="bibr" target="#b7">(Post, 2018)</ref>. A colored cell at the intersection of a language and an experiment indicate that the experiment includes the language.</p><p>• Generated/Reference Length Ratio: We ensure that the generated sentence is not much shorter or much longer than the reference. In particular, we allow pairs where the ratio of the generated sentence's length to the original sentence's length is at least 0.8 and at most 2.</p><p>• Minimum Edit Distance: We ensure the two sentences have at least edit distance 5 in order to avoid too similar pairs. Note that this condition is relaxed enough that most pairs with a noticeable change pass it. Thus, this condition mainly filters cases where there are almost no changes, e.g. when the only difference is a removed space. While such pairs could also be useful for training, the ratio of such pairs among the pairs generated by PaLM is quite high which can harm the quality of the final dataset. To avoid this, we filter all such pairs from PaLM output. Note that pairs with identical sentences are already present in the baseline training data as explained in more detail in Section 4.</p><p>Experiments We generate a small dataset for multiple languages. The languages used along with the size of the generated dataset is listed in Table <ref type="table">4</ref>. We perform 3 set of experiments, adding a subset of the generated datasets to the baseline dataset. In particular, the training data for the experiment sets are as follows (refer to Section 4 for more details on the baseline dataset):</p><p>• Small: Bsaeline data plus generated data for Spanish, Mongolian, and Amharic.</p><p>• Medium: Small experiment data plus generated data for Urdu, Belarusian, Punjabi, and Macedonian.</p><p>• Large: Medium experiment data plus generated data for Arabic, and Persian.</p><p>In Appendix C, Table <ref type="table">4</ref> shows which languages were included in each set.</p><p>We measure the correlation between the trained model's score and the true score. For the generated datasets, the true score is also generated by PaLM. The results are listed in Table <ref type="table" target="#tab_1">2</ref>. Comparing the correlation between the large experiments and the baseline, it can be seen that adding the generated data helps improve the final performance across many languages. Furthermore, it can be seen that adding data from more languages is important. For example, performance on Urdu only improves after adding the Urdu dataset. Still, the performance on some languages such as Amharic keeps improving as more data from other languages is added.</p><p>We note that it is not always the case that adding our data in some language improves the results for that language. This may be because of a distribution shift between the test data and our synthesized data. It may also be due to label noise in our generated data. Nonetheless, we see a broad trend of improvement as our data is added.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">FUTURE WORK &amp; CONCLUSION</head><p>Our results demonstrate the efficacy of using large language models to generate datasets for lowerresource languages. While we focus our attention on the task of sentence similarity in this work, the same method can be applied universally to other tasks facilitating the possibility of supporting more languages. Some examples are summarization and sentiment detection.</p><p>Our method can also be further improved, for example by finding better prompts. One possible approach is to use automatic prompt engineering which could allow a more tuned prompt than the manually crafted prompts we used.</p><p>Finally, with the advancement of large language models, it is now possible to use them to perform tasks without the need for a formal definition. We demonstrate one such example in this work by asking PaLM to generate a modified version of a given sentence. This ability could make it possible to automate other tasks that are hard to describe formally.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A OTHER CORRELATION METRICS</head><p>There are various metrics to measure correlation of two sequences. We have already reported the correlation of the trained models with the true score using Pearson's R metric. Here, we additionally report the correlation as measured by Spearman's ρ and Kendall's τ for compeleteness. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Dataset</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B STRUCTURE OF PROMPT TEMPLATES</head><p>Abracadabra is the art of re-writing a sentence without using any of the words in the original sentence while preserving the meaning. For example a beautiful Abracadabra for "Hello" can be "Hi". A weak Abracadabra for " Hello" is "Bye". Write a program to generate an Abracadabra for a given sentence.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Input</head><p>The input contains contains a single line which contains a sentence in &lt; LANGUAGE&gt;.</p><p>Output Output a single line containing the &lt;LANGUAGE&gt; Abracadabra for the given sentence in &lt;LANGUAGE&gt;. </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><figDesc>Figure1: Generic structure of the template for the prompt used to generate a modified sentence with the same meaning. Similar template is used with a different definition to obtain a modified sentence with a different meaning. The term &lt;SENTENCE&gt; and &lt;LANGUAGE&gt; are replaced by the sentence to be modified and its language respectively.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 :</head><label>2</label><figDesc>Pearson's R correlation between the true score and the output of models obtained from different sets of experiments.</figDesc><table><row><cell>Dataset</cell><cell>Language</cell><cell>BLEU</cell><cell>Baseline</cell><cell>Small</cell><cell>Medium</cell><cell>Large</cell></row><row><cell>WMT</cell><cell>All</cell><cell cols="5">0.287 0.573(0.001) 0.573(0.000) 0.573(0.002) 0.576(0.001)</cell></row><row><cell></cell><cell>Spanish</cell><cell cols="5">0.130 0.321(0.001) 0.316(0.001) 0.312(0.001) 0.315(0.002)</cell></row><row><cell></cell><cell>Mongolian</cell><cell cols="5">0.025 0.142(0.002) 0.152(0.005) 0.149(0.004) 0.156(0.003)</cell></row><row><cell></cell><cell>Amharic</cell><cell cols="5">0.035 0.273(0.003) 0.289(0.002) 0.300(0.004) 0.300(0.006)</cell></row><row><cell>Internal</cell><cell>Urdu</cell><cell cols="5">0.069 0.261(0.001) 0.260(0.002) 0.264(0.002) 0.279(0.003)</cell></row><row><cell></cell><cell>Belarusian</cell><cell cols="5">0.051 0.214(0.003) 0.212(0.005) 0.201(0.006) 0.199(0.005)</cell></row><row><cell></cell><cell>Punjabi</cell><cell cols="5">0.080 0.184(0.004) 0.171(0.002) 0.185(0.004) 0.194(0.006)</cell></row><row><cell></cell><cell cols="6">Macedonian 0.159 0.265(0.004) 0.278(0.004) 0.268(0.004) 0.266(0.003)</cell></row><row><cell></cell><cell>Persian</cell><cell cols="5">0.150 0.418(0.001) 0.424(0.001) 0.421(0.002) 0.425(0.002)</cell></row><row><cell></cell><cell>Arabic</cell><cell cols="5">0.061 0.229(0.001) 0.229(0.001) 0.225(0.001) 0.236(0.001)</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 3 :</head><label>3</label><figDesc>Spearman's ρ correlation between the true score and the output of models obtained from different sets of experiments. For each set, 5 models are trained and the average is shown with standard error in parenthesis.</figDesc><table><row><cell></cell><cell>Language</cell><cell>Baseline</cell><cell>Small</cell><cell>Medium</cell><cell>Large</cell></row><row><cell>WMT</cell><cell>All</cell><cell cols="4">0.592(0.001) 0.591(0.001) 0.590(0.002) 0.593</cell></row><row><cell></cell><cell>Spanish</cell><cell cols="4">0.266(0.001) 0.265(0.001) 0.260(0.001) 0.265</cell></row><row><cell></cell><cell cols="5">Mongolian 0.123(0.002) 0.137(0.003) 0.134(0.002) 0.140</cell></row><row><cell></cell><cell>Amharic</cell><cell cols="4">0.287(0.003) 0.295(0.002) 0.303(0.004) 0.295</cell></row><row><cell>Internal</cell><cell>Urdu</cell><cell cols="4">0.255(0.001) 0.249(0.002) 0.245(0.003) 0.260</cell></row><row><cell></cell><cell>Belarusian</cell><cell cols="4">0.174(0.004) 0.171(0.006) 0.151(0.005) 0.152</cell></row><row><cell></cell><cell>Punjabi</cell><cell cols="4">0.116(0.003) 0.121(0.002) 0.126(0.005) 0.150</cell></row><row><cell></cell><cell cols="5">Macedonian 0.300(0.002) 0.304(0.002) 0.297(0.002) 0.302</cell></row><row><cell></cell><cell>Persian</cell><cell cols="4">0.415(0.001) 0.417(0.002) 0.414(0.002) 0.416</cell></row><row><cell></cell><cell>Arabic</cell><cell cols="4">0.210(0.001) 0.210(0.002) 0.208(0.001) 0.213</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>Available at https://github.com/google-research/multilingual-t5</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>For additional details see details available at https://github.com/google-research/bleurt</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head n="4">MODELS, DATA AND EXPERIMENTS</head><p>Model We train a BLEURT-like model, taking as a starting point the mT5-XL model with 3.7B parameters 1 which is pretrained using the multilingual C4 dataset <ref type="bibr" target="#b9">(Raffel et al., 2019)</ref>. Similar to Sellam et al. (2020b)  we omit the "mid-training" step proposed in the original BLEURT paper and fine-tune pre-trained model directly on rated sentence pairs.</p></div>
+<div><head>Baseline Training Data</head><p>We obtained the dataset used to train the BLEURT-20 2 model from the authors which consists of the <rs type="programName">WMT Metrics Shared Task data</rs> with additional augmentations.</p></div>
+<div><head>Additional LLM-synthesized Training Data</head><p>We generate additional datasets in several languages by following the process described in Section 3. Depending on the experiment, a combination of these datasets are used as the final training set.</p><p>Test Data The lack of data for lower-resource languages extends to the test data as well, making it hard to evaluate new methods. In this work, we report our result over a small internal dataset which contains a set of sentences translated by human experts and different machine translation systems from English to different target languages, with human-assigned scores of translation quality obtained by comparing the human reference translations with the machine translations. The test set for each language contains 1-2k examples. We note that in this dataset each sentence pair is rated only by a single rater, which may be a source of label noise. We expect a good sentence similarity model to correlate with the human ratings and therefore, use the correlation between our model's score and the human scores as a metric.</p></div>
+<div><head>ACKNOWLEDGEMENT</head><p>This work was done while <rs type="person">Amirkeivan Mohtashami</rs> was doing an internship at <rs type="institution">Google</rs>. We acknowledge and thank Google for supporting this work as well as providing the necessary infrastructure to perform the experiments. We would like to thank <rs type="person">Aditya Siddhant</rs>, <rs type="person">Thibault Sellam</rs>, <rs type="person">Lotem Golany</rs>, <rs type="person">Michael Tschannen</rs>, <rs type="person">Duc Dung Nguyen</rs> and <rs type="person">Alex Tudor</rs> for support, feedback and helpful discussions over the course of this work.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_drNhkNs">
+					<orgName type="program" subtype="full">WMT Metrics Shared Task data</orgName>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Task: Consider the pair of sentences and rate them on a scale of 0 to 4 based on how similar they are, where 0 is least similar and 4 is most similar. The sentences could be in any language.</p><p>An explanation of the ratings: -0: the hypothesis is incoherent, contains serious grammatical errors, words in different languages, or has meaning completely different from the reference.</p><p>-1: the hypothesis has some relation to the reference, but has many errors.</p><p>-2: the hypothesis has similar meaning to the reference, but contains grammatical errors.</p><p>-3: the hypothesis has almost the same meaning as the reference, and is mostly grammatically correct.</p><p>-4: the hypothesis has the same or very similar meaning as the reference, and is grammatically correct.</p><p>Reference </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Language models are Few-Shot learners</title>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Tom B Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Daniel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateusz</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Amodei</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020-05">May 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gaurav</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Barham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyung</forename><forename type="middle">Won</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Parker</forename><surname>Schuh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kensen</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sasha</forename><surname>Tsvyashchenko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joshua</forename><surname>Maynez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhishek</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Parker</forename><surname>Barnes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emily</forename><surname>Vinodkumar Prabhakaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Reif</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ben</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reiner</forename><surname>Hutchinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Pope</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Bradbury</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Austin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guy</forename><surname>Isard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengcheng</forename><surname>Gur-Ari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Toju</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anselm</forename><surname>Duke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sanjay</forename><surname>Levskaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sunipa</forename><surname>Ghemawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henryk</forename><surname>Dev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Michalewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vedant</forename><surname>Garcia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Misra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liam</forename><surname>Robinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daphne</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Ippolito</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyeontaek</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Lim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Spiridonov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Sepassi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shivani</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">M</forename><surname>Omernick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thanumalayan</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie</forename><surname>Sankaranarayana Pillai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aitor</forename><surname>Pellat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erica</forename><surname>Lewkowycz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Moreira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleksandr</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katherine</forename><surname>Polozov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zongwei</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brennan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Saeta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Orhan</forename><surname>Diaz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michele</forename><surname>Firat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Catasta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kathy</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Douglas</forename><surname>Meier-Hellstern</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Eck</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022-04">April 2022</date>
+			<pubPlace>Jeff Dean, Slav Petrov</pubPlace>
+		</imprint>
+	</monogr>
+	<note>and Noah Fiedel. PaLM: Scaling language modeling with pathways</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">BERT: Pre-training of deep bidirectional transformers for language understanding</title>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2018-10">October 2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">ROUGE: A package for automatic evaluation of summaries</title>
+		<author>
+			<persName><forename type="first">Chin-Yew</forename><surname>Lin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Text summarization branches out</title>
+		<imprint>
+			<date type="published" when="2004">2004</date>
+			<biblScope unit="page" from="74" to="81" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Results of the WMT19 metrics shared task: Segment-Level and strong MT systems pose big challenges</title>
+		<author>
+			<persName><forename type="first">Qingsong</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johnny</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ondřej</forename><surname>Bojar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yvette</forename><surname>Graham</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Fourth Conference on Machine Translation</title>
+		<meeting>the Fourth Conference on Machine Translation<address><addrLine>Florence, Italy</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019-08">August 2019</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="62" to="90" />
+		</imprint>
+	</monogr>
+	<note>Shared Task Papers, Day 1)</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">Kishore</forename><surname>Papineni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Salim</forename><surname>Roukos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Todd</forename><surname>Ward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Jing</forename><surname>Zhu</surname></persName>
+		</author>
+		<title level="m">Bleu: a method for automatic evaluation of machine translation. 40th Annual Meeting of the Association for Computational Linguistics</title>
+		<imprint>
+			<date type="published" when="2002-07">July 2002a</date>
+			<biblScope unit="page" from="311" to="318" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">BLEU: a method for automatic evaluation of machine translation</title>
+		<author>
+			<persName><forename type="first">Kishore</forename><surname>Papineni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Salim</forename><surname>Roukos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Todd</forename><surname>Ward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Jing</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th annual meeting of the Association for Computational Linguistics</title>
+		<meeting>the 40th annual meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2002">2002</date>
+			<biblScope unit="page" from="311" to="318" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">A call for clarity in reporting BLEU scores</title>
+		<author>
+			<persName><forename type="first">Matt</forename><surname>Post</surname></persName>
+		</author>
+		<ptr target="https://www.aclweb.org/anthology/W18-6319" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Third Conference on Machine Translation: Research Papers</title>
+		<meeting>the Third Conference on Machine Translation: Research Papers<address><addrLine>Belgium, Brussels</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018-10">October 2018</date>
+			<biblScope unit="page" from="186" to="191" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Learning compact metrics for MT</title>
+		<author>
+			<persName><forename type="first">Amy</forename><surname>Pu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Won</forename><surname>Hyung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ankur</forename><forename type="middle">P</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibault</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Sellam</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021-10">October 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Exploring the limits of transfer learning with a unified Text-to-Text transformer</title>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katherine</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Matena</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanqi</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><forename type="middle">J</forename><surname>Liu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019-10">October 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">COMET: A neural framework for MT evaluation</title>
+		<author>
+			<persName><forename type="first">Ricardo</forename><surname>Rei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Craig</forename><surname>Stewart</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ana</forename><forename type="middle">C</forename><surname>Farinha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alon</forename><surname>Lavie</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020-09">September 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">CLASP: Few-Shot Cross-Lingual data augmentation for semantic parsing</title>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>Rosenbaum</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saleh</forename><surname>Soltan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wael</forename><surname>Hamza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Saffari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Damonte</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Isabel</forename><surname>Groves</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022-10">October 2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Generating datasets with pretrained language models</title>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Schick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Schütze</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021-04">April 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">BLEURT: Learning robust metrics for text generation</title>
+		<author>
+			<persName><forename type="first">Thibault</forename><surname>Sellam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dipanjan</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ankur P</forename><surname>Parikh</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020-04">April 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Learning to evaluate translation beyond english: Bleurt submissions to the wmt metrics 2020 shared task</title>
+		<author>
+			<persName><forename type="first">Thibault</forename><surname>Sellam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amy</forename><surname>Pu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyung</forename><forename type="middle">Won</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qijun</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Markus</forename><surname>Freitag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dipanjan</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ankur P</forename><surname>Parikh</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2010.04297</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Automatic machine translation evaluation in many languages via zero-shot paraphrasing</title>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Thompson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matt</forename><surname>Post</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="90" to="121" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Bartscore: Evaluating generated text as text generation</title>
+		<author>
+			<persName><forename type="first">Weizhe</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Graham</forename><surname>Neubig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengfei</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="27263" to="27277" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">BERTScore: Evaluating text generation with BERT</title>
+		<author>
+			<persName><forename type="first">Tianyi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Varsha</forename><surname>Kishore</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felix</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kilian</forename><forename type="middle">Q</forename><surname>Weinberger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Artzi</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019-04">April 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

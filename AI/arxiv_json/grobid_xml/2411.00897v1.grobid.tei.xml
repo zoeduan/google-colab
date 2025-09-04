@@ -1,0 +1,1361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Enhancing the Traditional Chinese Medicine Capabilities of Large Language Model through Reinforcement Learning from AI Feedback</title>
+				<funder ref="#_4883ft2">
+					<orgName type="full">National Natural Science Foundation of China</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-11-01">1 Nov 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Song</forename><surname>Yu</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">School of Computer and Information Science</orgName>
+								<orgName type="institution">Southwest University</orgName>
+								<address>
+									<settlement>Chongqing</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xiaofei</forename><surname>Xu</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="department">School of Computing Technologies</orgName>
+								<orgName type="institution">RMIT University</orgName>
+								<address>
+									<postCode>3000</postCode>
+									<settlement>Melbourne</settlement>
+									<region>Victoria</region>
+									<country key="AU">Australia</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Fangfei</forename><surname>Xu</surname></persName>
+							<affiliation key="aff2">
+								<orgName type="department">Donggexinli Station</orgName>
+								<orgName type="institution">Yongdingmenwai Community Health Service Center</orgName>
+								<address>
+									<settlement>Dongcheng Beijing</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Li</forename><surname>Li</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">School of Computer and Information Science</orgName>
+								<orgName type="institution">Southwest University</orgName>
+								<address>
+									<settlement>Chongqing</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Enhancing the Traditional Chinese Medicine Capabilities of Large Language Model through Reinforcement Learning from AI Feedback</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-11-01">1 Nov 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">60B2562D2708E515C4AA2862CA45050D</idno>
+					<idno type="arXiv">arXiv:2411.00897v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:41+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Large Language Models</term>
+					<term>Traditional Chinese Medicine</term>
+					<term>Direct Preference Optimization</term>
+					<term>Reinforcement Learning</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Although large language models perform well in understanding and responding to user intent, their performance in specialized domains such as Traditional Chinese Medicine (TCM) remains limited due to lack of expertise. In addition, high-quality data related to TCM is scarce and difficult to obtain, making large language models ineffective in handling TCM tasks. In this work, we propose a framework to improve the performance of large language models for TCM tasks using only a small amount of data. First, we use medical case data for supervised fine-tuning of the large model, making it initially capable of performing TCM tasks. Subsequently, we further optimize the model's performance using reinforcement learning from AI feedback (RLAIF) to align it with the preference data. The ablation study also demonstrated the performance gain is attributed to both supervised fine-tuning and the direct policy optimization. The experimental results show that the model trained with a small amount of data achieves a significant performance improvement on a representative TCM task.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>I. INTRODUCTION</head><p>Language modeling, as an important approach to language understanding and generation, has been extensively studied over the past two decades, evolving from statistical language models to neural language models. Recently, pre-trained language models drown a lot of attention, and by pre-training Transformer models on large-scale corpora, these models have demonstrated their power in solving various natural language processing tasks <ref type="bibr" target="#b0">[1]</ref>. Interestingly, when the parameter size exceeds a certain level, these language models not only improve performance, but also show capabilities that are not available in small-scale models. In general, large language models (LLMs) are Transformer-based language models containing billions or more parameters trained on large amounts of textual data, such as OpenAI's ChatGPT <ref type="bibr" target="#b1">[2]</ref> and GPT-4 <ref type="bibr" target="#b2">[3]</ref>, which are capable of understanding and answering a wide range of questions, and their performance on certain tasks even meets or exceeds that of humans. In addition, the open source community has rapidly introduced a series of LLMs, such as ChatGLM <ref type="bibr" target="#b3">[4]</ref>, LLaMA <ref type="bibr" target="#b4">[5]</ref>, Qwen <ref type="bibr" target="#b5">[6]</ref>, which have demonstrated impressive performance.</p><p>However, the training data for LLMs mainly come from the Internet and books and are mostly common-sense data, thus limiting them in domains such as Traditional Chinese Medicine (TCM). Additionally, high quality TCM data is scarce, and existing large language models perform poorly on TCM tasks. Despite the challenges, TCM LLM has great potential to provide value in answering questions, assisting doctors in diagnosis and prescribing.</p><p>In the medical domain, several medical language models have been proposed, such as Med-Palm <ref type="bibr" target="#b6">[7]</ref>, DoctorGLM <ref type="bibr" target="#b7">[8]</ref>, etc., which show great promise in a variety of medical applications, such as medical question and answer, dialog systems, and text generation. However, almost all of these works focus on modern medicine, with very few addressing TCM. Developing a large model for the TCM domain is challenging. First, most TCM works are written in ancient Chinese, and many terms do not have corresponding explanations in modern Chinese, with large grammatical differences <ref type="bibr" target="#b8">[9]</ref>. Additionally, many theories and diagnostic and therapeutic methods in TCM lack uniform quantitative and objective standards and cannot be easily verified. Finally, TCM is not a widely applied discipline, and there is less information on related works, and high-quality data are even more difficult to obtain <ref type="bibr" target="#b9">[10]</ref>.</p><p>To address these limitations, we propose a framework for enhancing the performance of large-model TCM tasks with only a small amount of data. Specifically, we focus on two types of tasks: initial visit and follow-up visit, as shown in Table <ref type="table">1</ref>. Our framework consists of three stages. First, we collect a corpus of real medical cases and perform supervised fine-tuning on a open-source large language model, this step will steer the LLM into solving TCM tasks. Second, for each input, we instruct the model to generate multiple outputs to build a preference dataset. Considering the inefficiency and high cost of manual annotation, we introduced a reinforcement learning method based on AI feedback (RLAIF) to train language models using AI-generated feedback instead of human feedback. Finally, we use preference data to instruct the model's learning, enabling it to generate outputs that better</p><p>TABLE I TASK TYPE Task1: First visit Task2: Follow-up visit User input: 患者</p><formula xml:id="formula_0">:窦某，女，64岁，2012年12月25日就诊。 主诉：入睡困难1月余。 现病史：患者1月前无明显诱因出现入睡困难，眠浅易醒，身上有力，心 烦急躁，纳呆，口干，欲饮热水，二便调。 Model output: 中医诊断：不寐。 治法：清利肝胆，健脾养心。 方剂：小柴胡汤和归脾汤加减。 处 方 ： 柴 胡10g， 黄 芩12g， 半 夏9g， 炒 白 术15g， 茯 苓12g ， 炒 枣 仁15g，龙眼肉15g，麦冬15g，合欢花15g，黄连6g，珍珠母30g，7付， 水煎服7剂，水煎服。 User input: 患者:窦某，女，64岁，2012年12月25日就诊。 主诉：入睡困难1月余。 现病史：患者1月前无明显诱因出现入睡困难，眠浅易醒，身上有力，心 烦急躁，纳呆，口干，欲饮热水，二便调。 中医诊断：不寐。 治法：清利肝胆，健脾养心。 方剂：小柴胡汤和归脾汤加减。 处 方 ： 柴 胡10g， 黄 芩12g， 半 夏9g， 炒 白 术15g， 茯 苓12g ， 炒 枣 仁15g，龙眼肉15g，麦冬15g，合欢花15g，黄连6g，珍珠母30g，7付， 水煎服7剂，水煎服。 二诊(12月31日)：服上方后睡眠改善不明显，入睡困难，眠浅易醒， 心烦急躁，纳呆，口淡无味，口干欲饮，二便调，舌红，苔薄白，脉 数。 Model output: 复 诊 开 方 ： 熟 地15g， 炒 白 芍15g， 枸 杞15g， 炒 白 术15g， 炒 枣 仁15g，元肉15g，黄柏10g，淫羊藿10g，生龙骨30g，生牡蛎30g，夜交 藤30g，7付，水煎服。</formula><p>align with user expectations.</p><p>The main contributions of this paper are as follows:</p><p>• We develop a framework for enhancing the performance of TCM tasks using only a small amount of data, enabling the full process of training from supervised fine-tuning to RLAIF. • We develop an automated labeling and ranking method using generative AI to build high-quality preference datasets instead of manual labor. • We conduct several experiments on test datasets to demonstrate the effectiveness of our proposed framework.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>II. RELATED WORK A. Large language models</head><p>In 2022, ChatGPT went live and attracted a lot of attention, triggering a heated discussion about LLM across the community. With the release of GPT-4 (2023) and GPT-4o (2024), the multimodal capability of large models was further improved, which set off a new wave of AI, however, OpenAI did not announce its training strategies and weights due to various factors. As a result, open source LLMs such as LLaMA and BLOOM <ref type="bibr" target="#b10">[11]</ref> quickly attracted a lot of attention from the research community once they were released. These models made public their training methods and weighting files, enabling researchers and developers to further train and improve the models on this basis. A large number of open source LLMs have also emerged in China, such as ChatGLM, DeepSeek <ref type="bibr" target="#b11">[12]</ref>, Qwen, Baichuan <ref type="bibr" target="#b12">[13]</ref>, and ERNIE <ref type="bibr" target="#b13">[14]</ref>. These open-source LLMs use rich Chinese corpus for training and optimization.</p><p>With the proliferation of these models, various optimization techniques have been explored to enhance their performance. Optimizing the performance of large language models involves various techniques, with RLHF (reinforcement learning from human feedback) <ref type="bibr" target="#b14">[15]</ref> and RLAIF (reinforcement learning from AI feedback) <ref type="bibr" target="#b15">[16]</ref> being two prominent methods. In RLHF, a reward model is trained to learn alignment based on human feedback. Once fine-tuned, this reward model can evaluate different outputs, scoring them according to the alignment preferences specified by humans. This feedback is then used to further refine the original language model. On the other hand, RLAIF involves directly linking a pretrained, well-aligned model to the language model, allowing it to learn from larger and more aligned models. Research shows that RLAIF performs as well as, or even better than, human feedback (RLHF) in tasks such as text summarization, helpful dialogue generation, and harmless dialogue generation.</p><p>In a recent study known as Direct Preference Optimization (DPO) <ref type="bibr" target="#b16">[17]</ref> highlighted the complexity and instability of RLHF. They proposed an alternative approach by leveraging a mapping between reward functions and optimal policies. This mapping allows the constrained reward maximization problem to be optimized precisely through a single stage of policy training, effectively transforming it into a direct objective optimization based on human preference data. Their algorithm, termed DPO, is noted for its stability, performance, and computational efficiency, eliminating the need for fitting a reward model. They found that DPO surpasses RLHF in controlling sentiment generation and enhancing response quality in summarization.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Large Language Models in Medical</head><p>Currently, some progress has been made in the research of large language models in medical domain, but there are still some limitations and challenges. Due to the special characteristics of Traditional Chinese medicine, the medical domain tuned large language models released worldwide mainly focus on Western medicine, and most of them are in English as the main language, such as Google Med-PaLM series which has some limitations on the discovery and application of knowledge of TCM, and it is difficult to meet the special needs of TCM.</p><p>In China, research teams have begun to emphasize the development of Chinese medical LLMs, such as Huatuo GPT</p><p>First visit Follow-up visit Base LLM Model Base LLM Model BM25 Cosine similarity Commercial LLM Borda Rank BM25 Cosine similarity Commercial LLM Borda Rank Diagnosis1 Diagnosis2 Diagnosis3 Diagnosis4 Diagnosis1 Diagnosis2 Diagnosis3 Diagnosis4 ... ... Sfted LLM Model Sfted LLM Model Sfted LLM Model SFT Preference data Automated Annotation Diversified output DPO Medical records Diagnosis3 Diagnosis + Diagnosis3 Diagnosis + Diagnosis3 Diagnosis + Diagnosis3 Diagnosis + Diagnosis3 Diagnosis + Diagnosis3 Diagnosis + Diagnosis3 Diagnosis + √ √ Preference-aligned Data collection Data cleaning External database First visit Follow-up visit Base LLM Model BM25 Cosine similarity Commercial LLM Borda Rank Diagnosis1 Diagnosis2 Diagnosis3 Diagnosis4 ... ... Sfted LLM Model SFT Preference data Automated Annotation Diversified output DPO Medical records Diagnosis3 Diagnosis + Diagnosis3 Diagnosis + Diagnosis3 Diagnosis + √ Preference-aligned Data collection Data cleaning</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>External database</head><p>Fig. <ref type="figure" target="#fig_1">1</ref>. The structure of our proposed framework includes data collection, supervised fine-tuning, automatic labeling, and direct preference optimization. After supervised fine-tuning, the model will generate multiple outputs, which are labeled using automatic labeling to obtain preference data. The model is further optimized using dpo and preference data.</p><p>[18], zhongjing <ref type="bibr" target="#b18">[19]</ref>, shennong-TCM <ref type="bibr" target="#b19">[20]</ref> and DoctorGLM. However, the number of large models for TCM is relatively small compared with those for Western medicine. Most of the current so-called large models for Chinese medicine are not purely focused on traditional Chinese medicine. Instead, they are hybrid models that mix knowledge from Western medicine, Chinese medicine, and other related fields. These efforts may overly pursue breadth at the expense of depth. In addition, the quality of the data used to train those existing Chinese medicine LLMs rely varies, which affects the final results of the models. For example, Shennong used the TCM dataset generated by ChatGPT, but the quality cannot be guaranteed, and most of the tasks are common sense questions and answers rather than prescription tasks; Zhongjing collected a large amount of real-world data, but it was also not focused on TCM prescription tasks. Despite the great potential of Large Language Models (LLMs) in healthcare, there are still some important and specific challenges that need to be addressed. When models are used for general knowledge quizzes, the impact of errors is not fatal to humans; however, this is not the case in the medical domain, where incorrect interpretations and answers can have serious consequences for patients. The accuracy and reliability of the information provided by LLMs can be life threatening, as it may affect medical decisions, diagnosis, and treatment plans. In addition, the definition of responsibility after using a LLM to aid in diagnosis is an issue that needs to be considered. Therefore, we need to ensure the quality of model output as much as possible.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>III. METHOD</head><p>This section describes the process of building the framework, which is divided into data construction, supervised finetuning, reinforcement learning from AI feedback. Each step is discussed sequentially to reflect the research workflow. The integrated methodology flowchart is shown in Figure <ref type="figure" target="#fig_1">1</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Data Construction</head><p>One of the challenges in training high-performance LLM models for TCM lies in obtaining high-quality data. A high quality corpus can greatly improve the performance of LLMs and even break the scaling law to some extent <ref type="bibr" target="#b20">[21]</ref>. The model needs not only theoretical data from TCM textbooks, but also professional data from real doctor-patient scenarios, which can reflect the specific conditions of patients and guide the addition, subtraction and proportion of medicines. In order to ensure the diversity of the medical corpus, we collect a variety of real medical text data from multiple sources, including open source data, proprietary data, and real medical consultations. These data cover most of the domains and symptoms of TCM, providing rich and detailed medical knowledge for the model.</p><p>In this paper, we will focus on the classical types of prescription tasks. Specifically, there are two types of prescription tasks: first visit and follow-up visit. The first visit task needs to issue a prescription based on the user's symptoms and examination results, while the follow-up visit task needs to synthesize all the previous follow-ups, prescriptions, and feedbacks from the user's medication to give subsequent medication suggestions.</p><p>TABLE II PROMPT EXAMPLE Prompt Example Instruction: You are an intelligent assistant that specializes in solving medical-related problems for users. Please give specific Chinese medicine diagnosis, treatment and prescription based on the medical case provided to you by the user. You need to give a TCM diagnosis, treatment and prescription according to the symptoms provided to you by the user. I will give you an example: Patient: Ji, male, 43 years old. Initial diagnosis: 08/16/2021. Complaint: recurrent cough for 1 year. Medical history: the patient has had recurrent cough for the past 1 year. Physical examination: tongue red and dark. You need to give: TCM diagnosis: [specific diagnosis]. Treatment: [specific treatment]. Prescription: [name of prescription]. Prescription: [specific prescription].</p><p>Please note that some medical cases include follow-up visit data, and you will need to synthesize all the information to determine the next step in medication. Now, please give the TCM diagnosis, treatment and prescription based on the symptoms provided to your patient:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Supervised fine-tuning</head><p>Supervised fine-tuning (SFT) is a key stage in empowering the model with dialog capabilities. With the help of highquality doctor-patient dialog data, the model can effectively invoke the medical knowledge accumulated during the pretraining process to understand and answer the user's query. The goal of SFT is to teach the model how to understand and generate appropriate replies based on TCM diagnostic principles and treatment methods.</p><p>The SFT process consists of optimizing the model parameters to minimize the cross-entropy loss between the predicted output and the actual output for a given input set. In the SFT process, the model learns to generate prescriptions based on the initial diagnosis and subsequent diagnoses. This process involves providing the model with detailed case information including symptoms, diagnoses, and patient feedback to guide its learning process.</p><p>The cross-entropy loss used for training the model is defined as follows:</p><formula xml:id="formula_1">L = - 1 N N i=1 T t=1 y it log(ŷ it )<label>(1)</label></formula><p>where N is the total number of samples, T is the sequence length, y it is the true token at position t for the i-th sample, and ŷit is the predicted probability of the true token at position t for the i-th sample. This loss function measures the difference between the predicted token distribution and the actual token distribution, and the goal of training is to minimize this loss. The pseudo-code for this phase is shown in Algorithm 1.</p><p>Note a good prompt helps to stimulate the model's capability, so we designed a prompt to guide the model to generate the specified response, as shown in Table <ref type="table">2</ref>. We decide whether to use English or Chinese prompts based on the corpus used in the pre-training stage of the base model, but the output is uniformly specified to be in Chinese. for D batch ∼ D do 3:</p><formula xml:id="formula_2">(x, z) ∼ D batch 4: ẑ ∼ π θ<label>(x) 5:</label></formula><p>L = CrossEntropyLoss(ẑ, z)</p><p>θ ← θ -η∇ θ L //Update the parameters using any gradient descent algorithm 7:</p><p>end for 8: end for</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Reinforcement Learning from AI Feedback</head><p>Despite SFT accumulating medical knowledge and guiding conversational abilities, the model can still produce inaccurate, harmful, or unfriendly responses, which can have serious consequences in medical dialogues. We use RLAIF to improve the conversation process. Specifically, for each question, we guide the supervised fine-tuned model to generate diverse outputs, score them using a specific annotation model, and then rank them using Borda rank. Finally, we align the training using the DPO algorithm.</p><p>1) AI Feedback for TCM: Considering the specificity of medical conversations, we obtain feedback in three ways, make metrics from three different aspects of the output, and develop a sorted annotation rule.</p><p>• Lexical overlap: This refers to cases where both the ground truth and the model output contain the same or similar terms. We use BM25, a well-established ranking function used by search engines <ref type="bibr" target="#b21">[22]</ref>. The advantage of BM25 lies in its ability to weigh query terms according to their TF-IDF importance, thus providing a reliable measure of term overlap. • Semantic overlap: This refers to cases where the ground truth and the model output contain semantically related content. Even if the model output does not contain the exact terms from the ground truth, they may still be relevant, such as "yin-yang imbalance" and "yang deficiency." We use the dense encoder model bert-base-chinese, which works by encoding ground truth and model output as dense vectors in a shared embedding space, respectively <ref type="bibr" target="#b22">[23]</ref>. It focuses on deeper semantic connections between words and phrases. The dot product of the two vectors then gives a measure of semantic similarity. • Model annotation: The above two similarity measurement methods may be biased in TCM. Therefore, we also use DeepSeek-V2 and GPT-4o as annotation models, guiding them to evaluate the generated dialogues from the perspectives of completeness, professionalism, and fluency. Annotation questions come from the test set, and we provide both the questions and the standard answers to the annotation models. The annotation models will score the generated dialogues on a scale from 0 to 100. To mitigate the differences caused by the scoring distribution of different models, ranking is used as a means of introducing regularization supervision signals. Specifically, when multiple rankings of candidate outputs are provided, we use a voting method, Borda Rank, to merge them into a unified ranking. For example, given N items and M individual rankings, the Borda ranking score B i of item i is calculated as follow:</p><formula xml:id="formula_4">B i = Σ M j=1 (N -rank j (i))<label>(2)</label></formula><p>where rank j (i) represents the ranking of item i in the j-th individual ranking. Based on the ranking results, we can construct binary tuples containing positive samples and negative samples (s + , s -) for the DPO training process.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>S + S -</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>&gt; preference data maximum likelihood</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Direct Preference Optimization (DPO)</head><p>x: "What does the earth revolve around?"</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>SFTed LLM</head><p>update policy 𝝅 𝜽 Fig. <ref type="figure" target="#fig_2">2</ref>. Increasing the log probability of a preferred sample versus decreasing the log probability of a non-preferred sample response, the model's policy tends to select the preferred sample.</p><p>2) Reinforcement Learning: Finally, we use the labeled ranking data and DPO to further optimize the model, as shown in Figure <ref type="figure" target="#fig_2">2</ref>. Each training sample in our dataset consists of a conversation between a doctor and a patient, a chosen response, and a rejected response generated by the model.</p><p>Given the dataset, we extract the dialogue, chosen response, and rejected response for each sample.</p><p>The DPO loss function is defined as follows:</p><formula xml:id="formula_5">loss = -log σ β • (π chosen -π rejected ) - γ β<label>(3)</label></formula><p>where π chosen is the log probability of the chosen response, and π rejected is the log probability of the rejected response. This ratio measures how much more likely the model is to generate the chosen response compared to the rejected one. The hyperparameter γ and β controls the adjustment applied to the log probability difference, while scales the entire loss function. The pseudo-code for this phase is shown in Algorithm 2. θ ← θ -η∇ θ L //Update the parameters using any gradient descent algorithm 14:</p><p>end for 15: end for</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>IV. EXPERIMENTS AND EVALUATION</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Training Details</head><p>We use four widely used open-source models as our base models, GLM-4-9B-Chat, Llama-3-8B-instruct <ref type="bibr" target="#b23">[24]</ref>, Qwen2-7B-chat, DeepseekMOE-16B <ref type="bibr" target="#b24">[25]</ref>. GLM-4-9B-Chat is the open-source version of the latest generation of LLms in the GLM-4 family from Smart Spectrum AI, and has been evaluated on a variety of benchmarks in semantics, math, reasoning, code and knowledge extraction, demonstrated superior performance against previous generation of models. LLaMA3 is a LLM developed by Meta, optimized for a wide range of conversational use cases, outperforming many open-source models on common industry benchmarks. Qwen2 is a series of open source large models of Tongyi Qianqian developed by Aliyun. The series provides multiple versions and scales of open source models, such as Base and Instruct, so as to meet different computing needs. DeepSeekMoE 16B is a Mixtureof-Experts (MoE) language model with 16.4B parameters. It employs an innovative MoE architecture, which involves two principal strategies: fine-grained expert segmentation and shared experts isolation.</p><p>Training was performed on 1 NVIDIA Tesla A40(48GB) using a low-rank adaptive (lora) parameter efficient tuning method <ref type="bibr" target="#b25">[26]</ref>. We trained using bf16 (Deepseek for fp32) precision with learning rate = 5e-5, batchsize = 2, gradient accumulation = 8, maximum length = 1024, dropout = 0.1, and a cosine learning rate scheduler. In the stage of indicating the model produces diversified outputs, we set the number of samples k = 3 and the temperature = 1.2. The statistical information of the dataset is presented in the following Table <ref type="table">3</ref>.</p><p>TABLE III DATASET COMPOSITION Component Initial Visits Follow-up Visits Training 50 131 Validation 7 19 Test 14 38 Total 71 188</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Baseline</head><p>In order to fully evaluate our method, we chose a series of LLMs with different training path and training data as baselines for comparison.</p><p>• Zero-shot <ref type="bibr" target="#b26">[27]</ref>: The model is given a task without any prior examples. This approach tests the model's ability to generalize from its training data to new, unseen scenarios.</p><p>For each model, the zero-shot prompt is carefully crafted to be clear and concise, providing only the necessary context and the query. • Few-shot <ref type="bibr" target="#b27">[28]</ref>: The model is provided with a few examples to learn from before it is asked to perform the task. This method helps the model understand the task better by seeing similar instances. The few-shot prompts are designed to include a small number of examples (2 in our experiment) before presenting the actual query.</p><p>• SFT <ref type="bibr" target="#b28">[29]</ref>: Supervised fine-tuning will provide medical cases with their corresponding standard diagnoses for the model to learn. • SFT+DPO: After warming up using supervised finetuning, the model is guided to generate multiple outputs, and the data is labeled using an automated labeling system which in turn generates preference data for the dpo training process. Zero-shot learning is an important method for evaluating the generalization ability of language models without any taskspecific data. For the field of TCM, zero-shot testing can demonstrate the adaptability of the model to unseen TCM tasks, especially when data is scarce. This method can highlight the basic language understanding and reasoning ability of the model, and provide a lower bound on the performance of tasks in this field.</p><p>Few-shot learning provides the ability of the model to learn quickly from a small number of examples. Through training with a few samples, we can evaluate whether the model can effectively reason and generate accurate results under the condition of limited labeled data.</p><p>SFT is a standard method for model fine-tuning. For the field of TCM, supervised fine-tuning of the model using existing medical case data can improve the performance of the model on specific tasks. In the baseline comparison, supervised fine-tuning provides the upper limit of the performance that the model can achieve after using domain-specific data.</p><p>The SFT+DPO method combines supervised fine-tuning and preference optimization to improve the quality of model generation while reducing bias. By using an automated annotation system to generate preference data, DPO can help the model learn outputs that are more in line with the doctor's preferences.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Evaluation Metrics</head><p>The assessment of the quality of medical dialog is a multifaceted task. In order to comprehensively assess the quality of medical dialog, we used Bleu <ref type="bibr" target="#b29">[30]</ref>, Rough <ref type="bibr" target="#b30">[31]</ref>, and bert-score <ref type="bibr" target="#b31">[32]</ref> as evaluation metrics. For the same problem, we sampled three outputs from the model and calculated the average metric of these three outputs for error reduction and their standard deviation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D. Results</head><p>As shown in Tables <ref type="table">4</ref> and <ref type="table">5</ref>, the experimental results comprehensively evaluate the performance metrics of various models and methods applied to the proposed TCM task. The primary performance metrics include ROUGE-1, ROUGE-2, ROUGE-L, BLEU-4, precision, recall, and BERT-Score F1. The zero-shot results demonstrate the initial capabilities of the models, generating responses based solely on pre-trained knowledge without any prior examples. In this scenario, all models performed poorly as they had not learned how to prescribe correctly based on medical cases during the pre-training phase. Notably, LLaMA3 performed significantly worse than other models, possibly due to LLaMA being more extensively trained on English corpora, while TCM tasks likely require a higher level of proficiency in Chinese.</p><p>After adopting the few-shot method, the performance of all models improved to varying degrees, highlighting their ability to learn and adapt from a small number of instances, thereby enhancing their response quality. It is worth noting that GPT-3.5-turbo showed the most significant improvement, indicating its strong ability to follow instructions. The SFT stage embedded more specific TCM knowledge and prescription tasks into the models, enabling them to generate more accurate and contextually appropriate responses, significantly improving performance across all models at this stage. The DPO stage refined the model outputs using preference data, aligning them more closely with human preferences and expectations, achieving superior overall performance. For certain models, such as LLaMA3, the bias in outputs was reduced post-DPO, indicating the effectiveness of aligning the work with preference data, leading to more stable and intentionaligned outputs.</p><p>Despite GPT-3.5-turbo's excellent performance, models enhanced through SFT and DPO exhibited superior results, underscoring the effectiveness of our proposed framework. Considering the difficulty of obtaining high-quality TCM data,</p><p>TABLE IV PERFORMANCE METRICS FOR VARIOUS MODELS AND METHODS (PART 1). Metrics Model Method ROUGE-1 ROUGE-2 ROUGE-L BLEU-4 GLM4-9b-chat Zero-shot 17.205 ± 0.083 5.403 ± 0.403 11.157 ± 0.049 3.887 ± 0.142 Few-shot 22.427 ± 0.046 11.064 ± 0.329 18.150 ± 0.222 9.707 ± 0.509 SFT 54.730 ± 0.821 39.024 ± 1.320 52.453 ± 0.892 37.021 ± 1.288 SFT+DPO 55.137 ± 0.730 39.718 ± 0.392 53.785 ± 0.849 38.754 ± 0.600 LLaMA3-8b-chat Zero-shot 4.266 ± 0.720 1.280 ± 0.090 3.076 ± 0.356 1.186 ± 0.175 Few-shot 18.933 ± 0.369 10.428 ± 0.386 15.707 ± 0.596 7.248 ± 0.133 SFT 51.707 ± 2.943 34.545 ± 3.401 49.269 ± 2.820 31.601 ± 2.515 SFT+DPO 51.107 ± 0.426 35.161 ± 0.711 50.254 ± 0.928 33.934 ± 0.627 DeepSeek-MOE-16b-chat Zero-shot 11.273 ± 0.689 4.107 ± 0.545 10.239 ± 0.409 4.710 ± 0.296 Few-shot 17.939 ± 0.223 7.496 ± 0.808 13.801 ± 0.647 5.864 ± 0.763 SFT 51.600 ± 0.866 34.812 ± 0.723 49.787 ± 0.759 32.756 ± 0.961 SFT+DPO 54.989 ± 1.267 39.576 ± 1.473 53.698 ± 1.840 37.429 ± 1.427 Qwen2-7b-chat Zero-shot 10.029 ± 0.291 3.873 ± 0.351 11.074 ± 0.217 4.618 ± 0.577 Few-shot 14.422 ± 0.291 5.213 ± 0.372 11.279 ± 0.247 4.258 ± 0.278 SFT 51.578 ± 1.129 35.146 ± 1.748 49.309 ± 1.345 33.348 ± 2.206 SFT+DPO 53.628 ± 1.268 38.163 ± 1.649 51.789 ± 1.512 36.460 ± 1.628 GPT-3.5-turbo Zero-shot 19.661 ± 0.584 8.865 ± 0.291 16.111 ± 0.211 6.935 ± 0.343 Few-shot 32.019 ± 1.743 20.040 ± 1.784 31.062 ± 1.753 18.448 ± 1.498 achieving such results with a small amount of data is gratifying. Additionally, our framework can be applied to any large foundational model without any modifications. Our research results validate the effectiveness of the proposed framework, particularly the integration of SFT and DPO in improving model performance. The models can generate accurate and relevant medical responses while ensuring alignment with expert preferences, laying the foundation for our next steps in research.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>E. Case Study</head><p>To illustrate the effectiveness of our proposed framework, we conducted a detailed case study focusing on its application in Traditional Chinese Medicine (TCM) diagnosis and prescription tasks. This case study demonstrates the model's capability to handle both initial and follow-up diagnoses effectively, showcasing its practical utility in real-world medical scenarios. We selected a patient case from our corpus, which includes both initial and follow-up visits. The case details are as follows:</p><p>1) Initial Visit: November 6, 2022. Patient: Liu, Female, 71 years old. Chief Complaint: Dizziness for over a year. Present Illness History: The patient started experiencing dizziness a year ago, occurring when lying flat and turning her head to the left at night, as well as when looking upward during the day. This dizziness is accompanied by visual rotation, occasional nausea and vomiting, a feeling of heaviness and fatigue in the limbs, irritability, normal appetite and sleep, a slightly bitter taste in the mouth, and regular bowel movements and urination.</p><p>Tongue: Pale tongue with yellow greasy coating. Pulse: Slippery.</p><p>2) Follow-up Visit: November 13, 2022. Symptoms: After taking the previous prescription, the patient's dizziness significantly reduced. She experienced slight dizziness when getting up in the morning but had almost no dizziness when turning her head to the left. The patient felt physically strong, not irritable, had a normal appetite and sleep, a neutral taste in her mouth, and regular bowel movements and urination. Her tongue was red with a yellow greasy coating, and her pulse was wiry, tight, and rapid.</p><p>3) Model application: We instructed the model to make a corresponding diagnosis based on the patient's symptoms.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>• Step 1: Initial Diagnosis and Prescription</head><p>During the initial diagnosis, the model generated the following prescription based on the given patient information:</p><p>Traditional Chinese Medicine Diagnosis: Vertigo, hyperactivity of liver yang, and phlegm-dampness obstruction in the middle burner.</p><p>Treatment Principle: Pacify the liver and subdue yang, transform phlegm and dampness.</p><p>Prescription: Modified Tianma Gouteng Decoction combined with Yidou Powder.</p><p>Ingredients: Gastrodia (Tianma) 10g, Uncaria (Gouteng) 15g, Raw Dragon Bone (Sheng Longgu) 30g (decoct first), Chuanxiong (Ligusticum Chuanxiong) 10g, Sparganium (Sanleng) 10g, Curcuma Zedoaria (Ezhu) 10g, Angelica Sinensis (Danggui) 15g, Raw Astragalus (Sheng Huangqi) 30g, Leonurus (Yimucao) 30g, White Peony (Baishao) 20g, Ziziphus Jujuba Seed (Zao Ren) 20g, Poria (Fuling) 15g, Polygala (Yuanzhi) 10g, Acorus Tatarinowii (Shichangpu) 10g, Prepared Pinellia (Qing Banxia) 10g, Dried Tangerine Peel (Chenpi) 10g, Bamboo Shavings (Zhuru) 10g, Honey-fried Licorice (Zhigancao) 10g, Amomum (Doukou) 10g, Raw Coix Seed (Sheng Yiyiren) 30g.</p><p>TABLE V PERFORMANCE METRICS FOR VARIOUS MODELS AND METHODS (PART 2). Metrics Model Method Precision Recall F1 GLM4-9b-chat Zero-shot 0.604 ± 0.001 0.748 ± 0.001 0.668 ± 0.001 Few-shot 0.637 ± 0.002 0.780 ± 0.003 0.700 ± 0.002 SFT 0.821 ± 0.003 0.830 ± 0.002 0.829 ± 0.004 SFT+DPO 0.833 ± 0.006 0.834 ± 0.003 0.830 ± 0.004 LLaMA3-8b-chat Zero-shot 0.491 ± 0.002 0.544 ± 0.005 0.515 ± 0.003 Few-shot 0.602 ± 0.004 0.748 ± 0.014 0.666 ± 0.006 SFT 0.829 ± 0.011 0.819 ± 0.010 0.821 ± 0.010 SFT+DPO 0.824 ± 0.003 0.827 ± 0.003 0.823 ± 0.003 DeepSeek-MOE-16b-chat Zero-shot 0.623 ± 0.002 0.745 ± 0.002 0.677 ± 0.001 Few-shot 0.586 ± 0.005 0.670 ± 0.005 0.622 ± 0.005 SFT 0.821 ± 0.006 0.825 ± 0.006 0.821 ± 0.006 SFT+DPO 0.845 ± 0.009 0.834 ± 0.010 0.831 ± 0.009 Qwen2-7b-chat Zero-shot 0.601 ± 0.002 0.735 ± 0.004 0.660 ± 0.002 Few-shot 0.581 ± 0.003 0.701 ± 0.006 0.634 ± 0.004 SFT 0.822 ± 0.006 0.821 ± 0.005 0.818 ± 0.005 SFT+DPO 0.826 ± 0.004 0.830 ± 0.003 0.826 ± 0.003 GPT-3.5-turbo Zero-shot 0.634 ± 0.003 0.765 ± 0.001 0.692 ± 0.002 Few-shot 0.707 ± 0.008 0.800 ± 0.003 0.748 ± 0.006 Dosage: 7 doses, to be decocted in water and taken once daily, divided into morning and evening doses. • Step 2: Follow-up Diagnosis and Prescription For the follow-up visit, the model synthesized the previous prescriptions and patient feedback to generate a new prescription:</p><p>Follow-up Prescription: The previous prescription is continued with the addition of Chrysanthemum (Juhua) 10g, for another 7 doses.</p><p>We evaluated the generated prescriptions using automated annotation and confirmed the relevance and accuracy of the prescriptions based on traditional medical principles. The model's ability to adapt to patient feedback and effectively adjust treatment plans demonstrates its potential for practical medical applications. We are well aware that manual evaluation will provide a better insight of how the proposed framework performed in real-world application, but due to issues such as time and cost, we use automated evaluation instead of manual evaluation in this work.</p><p>4) Insights and Impact:</p><p>• Accuracy: The model accurately diagnosed and prescribed treatment based on TCM principles, reflecting a deep understanding of the medical corpus it was trained on.</p><p>• Adaptability: The model effectively handled follow-up visits, adjusting prescriptions based on patient feedback and progress, similar to a human practitioner. • Efficiency: Automated annotations significantly reduced the need for manual labeling, streamlining the process of preference data collection and enhancing model performance. By integrating supervised fine-tuning with automated annotation and direct preference optimization, our framework not only improves model performance but also ensures that the generated outputs align closely with expert knowledge and user preferences. This approach offers a scalable and efficient solution for enhancing large language models in specialized domains like Traditional Chinese Medicine.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>V. CONCLUSION AND LIMITATIONS</head><p>In this paper, we propose a framework that combines supervised fine-tuning and direct preference optimization to improve the performance of large language models for Traditional Chinese Medicine tasks. Our proposed approach addresses the unique challenges faced by TCM, such as the scarcity of high-quality data and the expertise required for accurate medical applications. By utilizing a small but high-quality corpus of TCM and incorporating an automated annotation process, we are able to significantly improve the model's ability to generate accurate and relevant medical prescriptions. Experimental results show that our framework outperforms existing models, including widely used LLMs such as GPT-3.5-turbo, on various evaluation metrics such as ROUGE, BLEU, and BERT-Score.</p><p>Our case study further illustrates the practical applicability of the framework in real TCM consultation scenarios, demonstrating the model's ability to effectively handle both initial and follow-up consultations. Automatic annotation proved to be efficient, reducing the need for manual annotation while maintaining high accuracy of the model output.</p><p>Despite the promising results, there are limitations to our approach. The reliance on small datasets, while demonstrating the efficiency of the framework, also highlights the potential advantages of larger and more diverse corpora. In addition, our task is limited to the TCM prescription task only, and the expert annotation is not as high quality as the manual annotation. In conclusion, our framework provides a scalable and efficient solution for augmenting large language models in specialized fields such as TCM, paving the way for future research and development in integrating AI with TCM practices. Scaling up the size of the dataset, introducing expert labeling and developing new tasks are our future work. In addition, high-quality datasets are difficult to obtain, and due to the particularity of traditional Chinese medicine, datasets are almost all Chinese corpus. Appropriate addition of English corpus for mixed training can fully tap the potential of the model.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Algorithm 1</head><label>1</label><figDesc>Supervised Fine-tuning Input: Initial policy π θ , Training dataset D, Number of epochs N , Batchsize B, Learning rate η ∈ [0, 1] Output: SFTed policy πθ 1: for epoch=1,2,3,...,N do 2:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Algorithm 2</head><label>2</label><figDesc>Direct Preference OptimizationInput: SFTed policy πθ , Traning dataset D, Number of epochs N , Batchsize B, Learning rate η ∈ [0, 1], sample size k, Initial M = ∅ Output: Trained policy πθ 1: for (x, z) ∈ D do end for 7: D = AutoAnnotation(M ) //Get dpo training data 8: for epoch=1,2,3,...,N do 9: for D batch ∼ D do 10: (s + , s -, z) ∼ D batch 11: ẑ ∼ πθ (s + , s -) 12: L = SigmoidLoss(ẑ, z) 13:</figDesc></figure>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>ACKNOWLEDGMENT</head><p>The authors thank anonymous reviewers for their insightful comments. This research was partially supported by grants from the <rs type="funder">National Natural Science Foundation of China</rs>(No.<rs type="grantNumber">61877051</rs>).</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_4883ft2">
+					<idno type="grant-number">61877051</idno>
+				</org>
+			</listOrg>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Scibert: A pretrained language model for scientific text</title>
+		<author>
+			<persName><forename type="first">I</forename><surname>Beltagy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Cohan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1903.10676</idno>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ray</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="27" to="730" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Adler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ahmad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Akkaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">L</forename><surname>Aleman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Altenschmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Altman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Anadkat</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.08774</idno>
+		<title level="m">Gpt-4 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Glm: General language model pretraining with autoregressive blank infilling</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Qiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="320" to="335" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Llama: Open and efficient foundation language models</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-A</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Azhar</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Dang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Ge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Huang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.16609</idno>
+		<title level="m">Qwen technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Towards generalist biomedical ai</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Tu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Azizi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Driess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Schaekermann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Amin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P.-C</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Carroll</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Lau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Tanno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Ktena</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mustafa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kornblith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Fleet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mansfield</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Prakash</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Wong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Virmani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Semturs</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">S</forename><surname>Mahdavi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Green</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Dominowska</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">A</forename><surname>Arcas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Barral</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Webster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">S</forename><surname>Corrado</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Matias</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Singhal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Florence</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Karthikesalingam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Natarajan</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Doctorglm: Fine-tuning your chinese doctor is not a herculean task</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Shen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.01097</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Basic theories of traditional chinese medicine</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Lozano</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="page" from="13" to="43" />
+		</imprint>
+	</monogr>
+	<note>Acupuncture for pain management</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Understanding traditional chinese medicine therapeutics: an overview of the basics and clinical applications</title>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">C</forename><surname>Matos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">P</forename><surname>Machado</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">J</forename><surname>Monteiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">J</forename><surname>Greten</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Healthcare</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page">257</biblScope>
+			<date type="published" when="2021">2021</date>
+			<publisher>MDPI</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Bloom: A 176bparameter open-access multilingual language model</title>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">Le</forename><surname>Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Akiki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Pavlick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ilić</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Hesslow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Castagné</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">S</forename><surname>Luccioni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Yvon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Gallé</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Deepseek-v2: A strong, economical, and efficient mixture-of-experts language model</title>
+		<author>
+			<persName><forename type="first">Deepseek-Ai</forename></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Baichuan 2: Open large-scale language models</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Bian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Lv</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Yan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.10305</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Ernie 3.0: Large-scale knowledge enhanced pre-training for language understanding and generation</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Pang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Shang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2107.02137</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Deep reinforcement learning from human preferences</title>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">F</forename><surname>Christiano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Martic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Legg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">30</biblScope>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<title level="m" type="main">Rlaif: Scaling reinforcement learning from human feedback with ai feedback</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Phatale</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Mansoor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Mesnard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Bishop</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Carbune</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rastogi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.00267</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Direct preference optimization: Your language model is secretly a reward model</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Rafailov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Mitchell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ermon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Finn</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">36</biblScope>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Xiao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.15075</idno>
+		<title level="m">Huatuogpt, towards taming language model to be a doctor</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Zhongjing: Enhancing the chinese medical capabilities of large language model through expert feedback and real-world multi-turn dialogue</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="page" from="19" to="368" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Shennong-tcm: A traditional chinese medicine large language model</title>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">Y</forename><surname>Wei Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<ptr target="https://github.com/michael-wzhu/ShenNong-TCM-LLM" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gunasekar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Aneja</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">C T</forename><surname>Mendes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Del Giorno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gopi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Javaheripi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Kauffmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>De Rosa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Saarikivi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.11644</idno>
+		<title level="m">Textbooks are all you need</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">The probabilistic relevance framework: Bm25 and beyond</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Robertson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zaragoza</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Foundations and Trends® in Information Retrieval</title>
+		<imprint>
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="333" to="389" />
+			<date type="published" when="2009">2009</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Chinesebert: Chinese pretraining enhanced by glyph and pinyin information</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Ao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2106.16038</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">T</forename><surname>Glm</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Rojas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Duan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">L</forename><surname>Tam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Lv</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>An</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Niu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Qi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>Chatglm: A family of large language models from glm-130b to glm-4 all tools,&quot; 2024</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Deepseekmoe: Towards ultimate expert specialization in mixture-of-experts language models</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2401.06066</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">Lora: Low-rank adaptation of large language models</title>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">J</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2106.09685</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">A survey of zero-shot learning: Settings, methods, and applications</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><forename type="middle">W</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Miao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Transactions on Intelligent Systems and Technology (TIST)</title>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="1" to="37" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Generalizing from a few examples: A survey on few-shot learning</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">T</forename><surname>Kwok</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">M</forename><surname>Ni</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM computing surveys (csur)</title>
+		<imprint>
+			<biblScope unit="volume">53</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="1" to="34" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<title level="m" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">B</forename><surname>Brown</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2005.14165</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Bleu: a method for automatic evaluation of machine translation</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Papineni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Roukos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Ward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-J</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th annual meeting of the Association for Computational Linguistics</title>
+		<meeting>the 40th annual meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2002">2002</date>
+			<biblScope unit="page" from="311" to="318" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Rouge: A package for automatic evaluation of summaries</title>
+		<author>
+			<persName><forename type="first">C.-Y</forename><surname>Lin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Text summarization branches out</title>
+		<imprint>
+			<date type="published" when="2004">2004</date>
+			<biblScope unit="page" from="74" to="81" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title level="m" type="main">Bertscore: Evaluating text generation with bert</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Kishore</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">Q</forename><surname>Weinberger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Artzi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1904.09675</idno>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

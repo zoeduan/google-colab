@@ -1,0 +1,774 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">The Heap: A Contamination-Free Multilingual Code Dataset for Evaluating Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2025-01-16">16 Jan 2025</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Jonathan</forename><surname>Katzy</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Delft University of Technology Delft</orgName>
+								<address>
+									<postCode>0009-0005-9574-2414</postCode>
+									<country key="NL">The Netherlands</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Razvan</forename><forename type="middle">Mihai</forename><surname>Popescu</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="institution">Delft University of Technology Delft</orgName>
+								<address>
+									<postCode>0009-0003-6251-770X</postCode>
+									<country key="NL">The Netherlands</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Arie</forename><surname>Van Deursen</surname></persName>
+							<affiliation key="aff2">
+								<orgName type="institution">Delft University of Technology Delft</orgName>
+								<address>
+									<postCode>0000-0003-4850-3312</postCode>
+									<country key="NL">The Netherlands</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Maliheh</forename><surname>Izadi</surname></persName>
+							<affiliation key="aff3">
+								<orgName type="institution">Delft University of Technology Delft</orgName>
+								<address>
+									<postCode>0000-0001-5093-5523</postCode>
+									<country key="NL">The Netherlands</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">The Heap: A Contamination-Free Multilingual Code Dataset for Evaluating Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2025-01-16">16 Jan 2025</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">81AFEA96F2D91CC8527E4B1A1D266AA0</idno>
+					<idno type="arXiv">arXiv:2501.09653v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:25+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Dataset</term>
+					<term>Evaluation</term>
+					<term>Large Language Models</term>
+					<term>Open Science</term>
+					<term>Data Contamination</term>
+					<term>Multilingual</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>The recent rise in the popularity of large language models has spurred the development of extensive code datasets needed to train them. This has left limited code available for collection and use in the downstream investigation of specific behaviors, or evaluation of large language models without suffering from data contamination. To address this problem, we release The Heap, a large multilingual dataset covering 57 programming languages that has been deduplicated with respect to other open datasets of code, enabling researchers to conduct fair evaluations of large language models without significant data cleaning overhead.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>I. INTRODUCTION</head><p>The data-intensive training process of Large Language Models (LLMs) has driven the release of numerous large-scale datasets, particularly for code, to facilitate the development of new models. This rapid increase in the amount of training data used to pre-train LLMs has resulted in extensive datasets covering almost all publicly available code <ref type="bibr" target="#b0">[1]</ref>- <ref type="bibr" target="#b2">[3]</ref>.</p><p>To assess the success of such LLMs in downstream tasks, fresh data not seen during training is needed. Otherwise such evaluations are contaminated, possibly resulting in overly optimistic results. Unfortunately, obtaining such non-contaminated data is increasingly difficult. In fact, a recent study establishes that only 10% of investigations involving LLMs deduplicate their data with respect to the training data in order to avoid contamination <ref type="bibr" target="#b3">[4]</ref>.</p><p>To address this, we propose The Heap, a dataset of not previously used code that can be used for contamination-free multilingual evaluation of LLMs in downstream tasks. We address contamination in two ways. First, we select code with a non-permissive license, such as the GNU General Public License. Using such code for training is unattractive, as it may require the end user to publicly release all code in their code bases. Second, we pre-conduct computationally expensive near and exact deduplication, removing code that is used in other datasets widely used for training such as The Stack <ref type="bibr" target="#b0">[1]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>II. COLLECTION</head><p>Using the search API, we collect our dataset from GitHub, a commonly used online platform for sharing code repositories. This collection process mimics the data distribution of other large-scale datasets <ref type="bibr" target="#b2">[3]</ref>, <ref type="bibr" target="#b4">[5]</ref>- <ref type="bibr">[8]</ref>, minimizing the probability of including confounding factors in the dataset, such as drifts in the representations of data <ref type="bibr" target="#b7">[9]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Programming Languages</head><p>We aim to compile a representative dataset that encompasses a wide range of programming languages. To achieve this, we select languages based on several criteria. Our selection includes languages with diverse syntactic structures, such as LISP, C, Python, Haskell, and Assembly. We also select different programming paradigms, such as COBOL, Pascal, and C for procedural languages, Java, C#, Python, for objectoriented languages, and Haskell and Clojure for functional languages. To cover more specific use cases, we also include domain-specific languages such as Mathematica, Emacs-Lisp, and Coq. A complete list of all languages included in the dataset is presented in Table <ref type="table">I</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Query</head><p>We focus on repositories that have one of the targeted languages as the main language of the repository. We further select only repositories that are licensed under non-permissive licenses. We choose non-permissive licenses as an initial filter for repositories, as many large-scale datasets focus on exclusively unlicensed or permissively licensed code <ref type="bibr" target="#b1">[2]</ref>, <ref type="bibr" target="#b2">[3]</ref>, <ref type="bibr" target="#b4">[5]</ref>. The reasons for the exclusion of non-permissively licensed code in other datasets come from potential licensing issues that may be related to the output of models trained on nonpermissively licensed data <ref type="bibr" target="#b8">[10]</ref>. The Heap is not intended for pre-training models that are aimed at end users, but rather for exclusive use in a research setting. The inclusion of exclusively non-permissively licensed code has the added benefit that it acts as a deterrent for developers to train LLMs on The Heap, ensuring it remains a relevant source of data for downstream tasks. We provide an overview of the licenses used in this work in Table <ref type="table">II</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Scraping</head><p>For each programming language, we scrape up to 50,000 repositories or as many as are available. Our dataset contains code from repositories created between January 2008 and August 2024. For each selected language, we extract repositories sorted by star count in descending order; this has been used as a loose quality metric before <ref type="bibr" target="#b9">[11]</ref>. To</p><p>TABLE I LANGUAGES INCLUDED IN THE DATASET Language Repositories Raw Files Unique Files Ada 676 41,367 35,425 Agda 142 5,483 5,113 ANTLR 101 564 541 Apex 253 17,833 7,641 Assembly 7,100 208,896 104,901 C 50,000 16,585,280 4,960,192 C# 50,000 5,906,716 3,770,829 C++ 50,000 14,891,856 4,811,620 Clojure 27,107 380,567 273,181 Cobol 341 2,242 1,208 Common Lisp 796 45,083 16,968 Coq 477 54,137 26,175 Crystal 368 11,606 7,300 Cuda 1,191 26,948 13,359 D 1,185 185,630 126,111 Dart 11,907 484,935 413,203 EJS 1,475 15,513 12,884 Elixir 2,371 643,856 127,910 Emacs Lisp 377 8,260 7,963 Erlang 1,240 55,932 32,049 F# 876 22,152 16,015 Forth 222 28,287 7,932 Go 50,000 8,506,379 2,355,716 Groovy 2,198 60,299 48,353 Hack 1,379 84,916 37,405 Haskell 8,023 122,788 111,234 Java 50,000 6,989,601 5,197,338 JavaScript 50,000 8,289,901 3,393,747 Julia 2,859 46,284 38,381 Kotlin 21,665 1,467,343 1,045,396 Less 433 17,276 7,389 Lua 42,241 4,605,230 913,898 Mathematica 1,528 164,498 89,853 MATLAB 20,828 1,051,354 665,659 NetLogo 332 900 863 NewLisp 35 5,819 5,148 Nix 1,892 75,093 71,199 Objective-C 7,700 1,899,714 698,137 OCaml 1,961 121,890 69,171 Pascal 5,218 330,832 225,749 Perl 14,673 1,798,520 629,769 PHP 50,000 12,707,727 3,363,040 Processing 2,950 24,723 20,343 Prolog 1,071 38,995 20,279 Python 50,000 2,290,182 1,792,451 R 44,993 589,139 374,812 Raku 158 1,384 1,306 Ruby 13,378 1,579,655 794,364 Rust 42,847 2,496,177 844,258 Scala 5,893 749,370 224,021 Scheme 1,878 106,620 54,226 Scilab 199 4,531 4,084 SQL 130 47,185 41,178 Starlark 146 524 498 Swift 13,924 633,819 439,565 Vue 14,858 457,605 323,672 WebAssembly 68 834 587 Total 733,663 96,990,250 38,681,609</p><p>TABLE II COPYLEFT LICENSES INCLUDED IN THE DATASET.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>License</head><p>Family</p><formula xml:id="formula_0">Description 1 CECILL-1.0 CECILL-1.1 CECILL-2.0 CECILL-2.1 CECILL-C EPL-1.0 EPL-2.0 LGPL-2.1 LGPL-3.0 MS-RL MPL-2.</formula><p>0 Weak Copyleft Share changes and additions to the licensed software when redistributing. GPL-2.0 GPL-3.0 Strong Copyleft Share larger programs built with the licensed software when redistributing. This extends weak copyleft requirements. AGPL-3.0 EUPL-1.1 EUPL-1.2 OSL-3.0 Network Copyleft Share larger programs built with the licensed software when redistributing or running it over a network. This extends strong copyleft requirements.</p><p>maximize extraction efficiency and avoid GitHub's rate limits, we employ pagination and repository creation date filtering.</p><p>When the number of repositories within a specified time frame exceeds the rate limit, we narrow the time interval and apply a tumbling window approach to ensure comprehensive coverage. We guide the file extraction based on a list of file extensions from The Stack <ref type="bibr" target="#b4">[5]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D. Cleaning</head><p>After collecting the data from online sources, we perform some cleaning steps. First, we exclude files containing fewer than 10 words or exceeding 10 MB in size. We also remove exact duplicates from our own dataset. We use the same approach as the exact deduplication with respect to other datasets described in Section III-A.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>III. DEDUPLICATION</head><p>An important aspect of fairly evaluating downstream tasks is preventing data leakage <ref type="bibr" target="#b3">[4]</ref>. This is often done through a deduplication process. Although there should be no overlap between our non-permissively licensed dataset and permissively licensed datasets due to our selection procedure, it does not completely prevent overlap <ref type="bibr" target="#b8">[10]</ref>.</p><p>Our deduplication strategy consists of exact deduplication and near deduplication. Before each deduplication strategy, we remove all comments (using a regex, based on the programming language) and whitespace from each file. This ensures that small changes to files, such as the removal of a license comment or changes in whitespace characters, still result in the detection of an exact duplicate. The final files included in The Heap are the unaltered versions scraped from GitHub.</p><p>1 <ref type="url" target="https://blueoakcouncil.org/copyleft">https://blueoakcouncil.org/copyleft</ref> content: "REPL: loop (jmp short read-start) ;; ...", 6 size: 4,099, avg_line_length: 27.52, 11 max_line_length: 104, 12 alphanum_fraction: 0.59, 13 repo_name: "whily/yalo", 14 repo_stars: 571, 15 repo_forks: 32, 16 repo_open_issues:1, 17 repo_license: "GPL-2.0", 18 repo_extraction_date: "9/19/2024, 11:24:32 AM", exact_duplicates_stackv1: False, For exact deduplication, we calculate the SHA-256 hash of each file to identify exact duplicates between The Heap and publicly available datasets. We selected this hash function for its low collision probability, which reduces the risk of false positives.</p><p>b) Near Deduplication: We also perform neardeduplication between our scraped dataset and the publicly available ones. To achieve this, we utilize the MinHash Locality-Sensitive Hashing (LSH) approach, implemented using the datasketch 2 library. We apply the same SHA-256 hashing function as before, with 128 permutations and a precision-recall weight distribution of 40% -60%. These design choices help mitigate hash collisions while maintaining a balanced trade-off, hence favoring higher recall at the expense of a controlled increase in false positives (removing files that were not duplicates).</p><p>We use a shingle size of 7 characters, as code files typically use a smaller set of characters compared to large research articles, where k = 9 <ref type="bibr" target="#b10">[12]</ref>. This reduces the likelihood of overly common shingles, which could otherwise inflate similarity scores, as would occur with smaller values of k. Files with a Jaccard similarity above 0.7 are flagged as near duplicates, a threshold shown to be effective for duplicate detection <ref type="bibr" target="#b11">[13]</ref>.</p><p>We identify and flag duplicates between our dataset and all publicly available datasets to facilitate a more flexible approach to LLM evaluation, prioritizing both reproducibility and ease of use. This setup minimizes time and computational overhead by removing the burden of duplicate detection from researchers. Users can seamlessly filter data by language or by exact and near-duplicate files, tailoring the dataset to 2 <ref type="url" target="https://ekzhu.com/datasketch/lsh.html">https://ekzhu.com/datasketch/lsh.html</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>TABLE III LIST OF PUBLICLY-AVAILABLE DATASETS USED FOR DEDUPLICATION</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Dataset</head><p>Source The Stack V2 <ref type="bibr" target="#b2">[3]</ref> All permissively licensed and unlicensed files collected in the Software Heritage [14] archive. The Stack <ref type="bibr" target="#b0">[1]</ref> All permissively licensed repositories collected in the GHArchive [15] and scraped from GitHub. Red Pajama <ref type="bibr" target="#b1">[2]</ref> Repositories from the GitHub dataset hosted by Google BigQuery [16] licensed under MIT, BSD, or Apache licenses. GitHub Code <ref type="bibr">[8]</ref> Repositories from the GitHub dataset hosted by Google BigQuery <ref type="bibr">[16]</ref>. CodeParrot <ref type="bibr" target="#b6">[7]</ref> All Python files from the GitHub dataset hosted by Google BigQuery <ref type="bibr">[16]</ref>.</p><p>their specific requirements. Table <ref type="table">I</ref> provides a comprehensive summary of the languages extracted. The third column lists the number of files collected after filtering based on file size and word count. The last column indicates the number of files obtained after removing exact duplicates within our dataset, with exact and near duplicates from other datasets flagged among the remaining files. For more detailed information on the dataset creation process, please refer to the dataset page <ref type="foot" target="#foot_0">3</ref> .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Datasets</head><p>Our selection of datasets for deduplication is based on previously curated lists <ref type="bibr" target="#b8">[10]</ref>, with the addition of The Stack V2 <ref type="bibr" target="#b2">[3]</ref>, which is the only new dataset that has been released since the publication of previous works. We give an overview of all potential datasets in Table <ref type="table">III</ref>. Due to the comment removal being based on the programming languages of the files, we are not able to infer the correct language for two datasets. The Pile <ref type="bibr" target="#b5">[6]</ref>, which has been removed and re-uploaded, has lost information about the programming language of a file. Furthermore, due to a known issue with the curation of CodeClippy<ref type="foot" target="#foot_1">foot_1</ref> , the languages and names of files are misaligned in the dataset. We also exclude this dataset from deduplication. Although we could predict the languages used in the files in these datasets, the tools that provide this functionality do return incorrect predictions, which could result in a duplicate not being removed. As we aim to provide a guarantee that there is no data contamination in our dataset, we remove these two datasets from consideration.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>IV. LAYOUT</head><p>The Heap is organized into multiple subsets, each of them corresponding to one programming language. In each subset, the entries included in the dataset can be summarized into 3 groups: file content and metadata, quality indicators, and duplicates. We give an example of one entry in Figure <ref type="figure" target="#fig_0">1</ref>. a) File Content and Metadata: For the file content and metadata, we list the actual content of the file, which is the main information to be used in downstream tasks. We also include information about filename and path, as this has been included in the pre-training procedure of some LLMs <ref type="bibr" target="#b2">[3]</ref>, <ref type="bibr" target="#b9">[11]</ref>, <ref type="bibr" target="#b12">[17]</ref>.</p><p>b) Quality Indicators: To facilitate the selection of files for downstream use, we incorporated several quality indicators previously utilized in related works, ensuring the dataset can be easily filtered and selected. We included numerical statistics about the file such as the total lines, avg line length, max line length and alphanumeric fraction, as well as repository-wide statistics such as repo stars, repo forks, open issues and the extraction date of the repo. The repository star count will be artificially inflated for languages where more than 50, 000 repositories exist, due to the ordering of the repositories in the collection steps.</p><p>c) Duplicates: As we deduplicate The Heap with respect to a number of other publicly available datasets, we incorporate two columns for every dataset. One column contains a Boolean value, whether there is an exact duplicate of the given file in the dataset, and the other column contains a Boolean value describing whether there is a near duplicate of the given file in the dataset. We choose not to remove files but to use a Boolean mask in order to maximize the amount of available data for each available dataset.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>V. FUTURE IMPROVEMENTS</head><p>In future iterations of this dataset, several potential improvements could be made. These include enhancing the deduplication process, releases of new training datasets, providing detailed information about the natural languages represented in the dataset, and tracking the evolution of codebases.</p><p>a) New Datasets: The main goal of this dataset is to reduce the burden of deduplicating a dataset used for downstream tasks for future research. This is only effective if the dataset is deduplicated against all available datasets. As new datasets are released we intend to pass them through the same pipeline to ensure The Heap remains relevant for the future.</p><p>b) Deduplication: We addressed the deduplication of datasets using two widely adopted methods: exact deduplication based on hashing and near-deduplication leveraging locality-sensitive hashing. However, there is limited research on what constitutes an effective deduplication strategy. There could be issues with duplicates at a lower granularity level than file-based deduplications, as well as possible issues with the provenance of code fragments. Once studies are conducted on the impact of various deduplication approaches, we plan to incorporate these strategies as a new entry in the dataset. c) Cleaning: We include all files that we scraped that were not duplicates, while this gives us a dataset of deduplicated files, there is still the question of file "quality". In NLP research, keywords have been used for filtering websites, such as lorem ipsum or TODOs <ref type="bibr" target="#b13">[18]</ref>, and code datasets have been cleaned of autogenerated files using a similar approach <ref type="bibr" target="#b2">[3]</ref>. We believe that this may also affect the quality of code datasets. Specifically, languages that rely heavily on boiler plating, such as Java, may benefit from removing certain common phrases from their corpus. This will be included as a further filtering step in a future release of the dataset. d) Topic Modeling: While languages can be used to loosely select an area that is being analyzed (Mathematica for mathematics, or JavaScript for web-based projects), many languages can be used in multiple specializations/areas. Adopting the FineWeb topic modeling approach for code datasets would create interesting annotations for the code files, as well as show any form of topic-based imbalances in the dataset.</p><p>e) Natural Language: An under-explored research area involves the presence of multiple natural languages within code. As natural languages are often mixed within one file <ref type="bibr" target="#b14">[19]</ref>, we plan to adopt a Parts of Speech-like tagging <ref type="bibr" target="#b15">[20]</ref> system for the natural languages present in each file. This can give information about the performance of code LLMs when the code is not in English. This will both help the development of non-English code LLMs, as well as aid English-focused LLMs, as they can be evaluated on only English.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>VI. LIMITATIONS/CHALLENGES</head><p>The limitations and challenges faced by this dataset are twofold. First, other actors may decide to train their models on this data, removing the benefits, and second, developers may object to their code being present in this dataset. We address these problems as follows.</p><p>a) Training: In order to use The Heap for a fair evaluation of an LLM, the researcher must be sure that the target LLM has not been trained on The Heap. Aside from our deduplication ensuring this fact for current existing LLMs, our collection process also adds a layer of protection from the inclusion of The Heap in the training procedure. The trend of training LLMs has shifted to only training on permissively licensed data, which would exclude The Heap. Furthermore, the restriction of The Heap to research only, alleviates the problems with author attribution in LLM generations as trained models are not intended to be used by end-users <ref type="bibr" target="#b8">[10]</ref>, <ref type="bibr" target="#b16">[21]</ref>.</p><p>Furthermore, existing works such as membership inference attacks, have been extended to the scale of entire datasets <ref type="bibr" target="#b17">[22]</ref>. This should make it possible in the near future to retroactively test for the inclusion of The Heap in the training procedures of a model. b) Ethics: With the rapid rise of public repositories being used to train code language models, many authors of older repositories were unaware that their code could be utilized for such purposes, leaving them unable to opt-out. Moreover, there is currently no consensus on how developers can opt in or out of having their code included in datasets. We acknowledge these ethical concerns regarding the use of code in deep learning practices and offer the ability for repository owners to opt out of having their code included in our dataset. Although this approach is not ideal, as it places the burden of exclusion on the authors, it aligns with the current best practices <ref type="bibr" target="#b2">[3]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>VII. CONCLUSION</head><p>We present The Heap, a multilingual dataset of source code that we deduplicated against datasets commonly used in the (pre-)training of large language models. The Heap enables researchers to conduct investigations into the behavior and performance of code large language models without the need to perform extensive deduplication with other datasets. This addresses the shortcomings of LLM investigations not testing for data leakage in 90% of all investigations <ref type="bibr" target="#b3">[4]</ref> allowing for more robust conclusions to be made.</p><p>We release the dataset (only for research purposes) and outline a road map for future features such as natural language annotation, topic annotations, and further cleaning procedures to be incorporated into the dataset, to make higher-quality evaluations easier and more available for all researchers.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Fig. 1 .</head><label>1</label><figDesc>Fig. 1. Example of final dataset structure for one entry</figDesc></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_0"><p>https://huggingface.co/datasets/WizzF/Heap-Forge</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_1"><p>https://github.com/CodedotAl/gpt-code-clippy/issues/71</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0" />			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Leandro von Werra, and Harm de Vries. The stack: 3 tb of permissively licensed source code</title>
+		<author>
+			<persName><forename type="first">Denis</forename><surname>Kocetkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raymond</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Loubna</forename><surname>Ben Allal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jia</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenghao</forename><surname>Mou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carlos</forename><surname>Muñoz Ferrandis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yacine</forename><surname>Jernite</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Margaret</forename><surname>Mitchell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sean</forename><surname>Hughes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Wolf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dzmitry</forename><surname>Bahdanau</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Redpajama: An open source recipe to reproduce llama training dataset</title>
+		<author>
+			<persName><forename type="first">Together</forename><surname>Computer</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">Anton</forename><surname>Lozhkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raymond</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Loubna</forename><surname>Ben Allal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Federico</forename><surname>Cassano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joel</forename><surname>Lamy-Poirier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nouamane</forename><surname>Tazi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ao</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dmytro</forename><surname>Pykhtar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiawei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxiang</forename><surname>Wei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.19173</idno>
+		<title level="m">Starcoder 2 and the stack v2: The next generation</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">A catalog of data smells for coding tasks</title>
+		<author>
+			<persName><forename type="first">Antonio</forename><surname>Vitale</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rocco</forename><surname>Oliveto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simone</forename><surname>Scalabrino</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Trans. Softw. Eng. Methodol</title>
+		<imprint>
+			<date type="published" when="2024-12">December 2024</date>
+		</imprint>
+	</monogr>
+	<note>Just Accepted</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Leandro Von Werra, and Harm de Vries. The stack: 3 TB of permissively licensed source code</title>
+		<author>
+			<persName><forename type="first">Denis</forename><surname>Kocetkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raymond</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Loubna</forename><surname>Ben</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">I</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenghao</forename><surname>Mou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yacine</forename><surname>Jernite</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Margaret</forename><surname>Mitchell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carlos</forename><surname>Muñoz Ferrandis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sean</forename><surname>Hughes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Wolf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dzmitry</forename><surname>Bahdanau</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions on Machine Learning Research</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">Leo</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stella</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sid</forename><surname>Black</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laurence</forename><surname>Golding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Travis</forename><surname>Hoppe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Foster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Phang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Horace</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anish</forename><surname>Thite</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noa</forename><surname>Nabeshima</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2101.00027</idno>
+		<title level="m">The pile: An 800gb dataset of diverse text for language modeling</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Wolf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leandro</forename><surname>Von Werra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lewis</forename><surname>Tunstall</surname></persName>
+		</author>
+		<ptr target="https://huggingface.co/datasets/transformersbook/codeparrot" />
+		<imprint/>
+	</monogr>
+	<note type="report_type">Codeparrot dataset</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">Tolga</forename><surname>Bolukbasi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Pearce</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ann</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>Coenen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emily</forename><surname>Reif</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fernanda</forename><surname>Viégas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Wattenberg</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2104.07143</idno>
+		<title level="m">An interpretability illusion for bert</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">An exploratory investigation into code license infringements in large language model training datasets</title>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Katzy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Razvan</forename><surname>Popescu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arie</forename><surname>Van Deursen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maliheh</forename><surname>Izadi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2024 IEEE/ACM First International Conference on AI Foundation Models and Software Engineering, FORGE &apos;24</title>
+		<meeting>the 2024 IEEE/ACM First International Conference on AI Foundation Models and Software Engineering, FORGE &apos;24<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="74" to="85" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Raymond</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Loubna</forename><surname>Ben Allal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yangtian</forename><surname>Zi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niklas</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denis</forename><surname>Kocetkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenghao</forename><surname>Mou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marc</forename><surname>Marone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Akiki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">I</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jenny</forename><surname>Chim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qian</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Evgenii</forename><surname>Zheltonozhskii</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Terry</forename><surname>Yue Zhuo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olivier</forename><surname>Dehaene</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joel</forename><surname>Lamy-Poirier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joao</forename><surname>Monteiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicolas</forename><surname>Gontier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Ho</forename><surname>Yee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Logesh</forename><surname>Kumar Umapathi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ben</forename><surname>Lipkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Muhtasham</forename><surname>Oblokulov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiruo</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rudra</forename><surname>Murthy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><forename type="middle">T</forename><surname>Stillerman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sankalp</forename><surname>Siva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dmitry</forename><surname>Patel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Abulkhanov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manan</forename><surname>Zocca</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhihan</forename><surname>Dey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Urvashi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenhao</forename><surname>Bhattacharyya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sasha</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paulo</forename><surname>Luccioni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fedor</forename><surname>Villegas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tony</forename><surname>Zhdanov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nadav</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jennifer</forename><surname>Timor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claire</forename><forename type="middle">S</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hailey</forename><surname>Schlesinger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Schoelkopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tri</forename><surname>Ebert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mayank</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Mishra</surname></persName>
+		</author>
+		<editor>Alex Gu, Carolyn Jane Anderson, Brendan Dolan-Gavitt, Danish Contractor, Siva Reddy, Daniel Fried, Dzmitry Bahdanau, Yacine Jernite, Carlos Muñoz Ferrandis, Sean Hughes, Thomas Wolf, Arjun Guha</editor>
+		<imprint>
+			<publisher>Leandro Von Werra, and Harm de Vries</publisher>
+		</imprint>
+	</monogr>
+	<note>Starcoder: may the source be with you! Transactions on Machine Learning Research, 2023. Reproducibility Certification</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jure</forename><surname>Leskovec</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anand</forename><surname>Rajaraman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>David Ullman</surname></persName>
+		</author>
+		<title level="m">Mining of Massive Datasets</title>
+		<meeting><address><addrLine>USA, 2nd edition</addrLine></address></meeting>
+		<imprint>
+			<publisher>Cambridge University Press</publisher>
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">The adverse effects of code duplication in machine learning models of code</title>
+		<author>
+			<persName><forename type="first">Miltiadis</forename><surname>Allamanis</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 ACM SIGPLAN International Symposium on New Ideas, New Paradigms, and Reflections on Programming and Software, Onward! 2019</title>
+		<meeting>the 2019 ACM SIGPLAN International Symposium on New Ideas, New Paradigms, and Reflections on Programming and Software, Onward! 2019<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="143" to="153" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">Codegemma</forename><surname>Team</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heri</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Hui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joshua</forename><surname>Howland</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nam</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siqi</forename><surname>Zuo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrea</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><forename type="middle">A</forename><surname>Choquette-Choo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingyue</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joe</forename><surname>Kelley</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2406.11409</idno>
+		<title level="m">Open code models based on gemma</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jesse</forename><surname>Dodge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Sap</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ana</forename><surname>Marasović</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Agnew</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriel</forename><surname>Ilharco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dirk</forename><surname>Groeneveld</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Margaret</forename><surname>Mitchell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matt</forename><surname>Gardner</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2104.08758</idno>
+		<title level="m">Documenting large webtext corpora: A case study on the colossal clean crawled corpus</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Is this code written in english? a study of the natural language of comments and identifiers in practice</title>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Pawelka</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elmar</forename><surname>Juergens</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2015 IEEE International Conference on Software Maintenance and Evolution (ICSME)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="page" from="401" to="410" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Part of speech tagging: a systematic review of deep learning and machine learning approaches</title>
+		<author>
+			<persName><forename type="first">Alebachew</forename><surname>Chiche</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Betselot</forename><surname>Yitagesu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Big Data</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page">10</biblScope>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">The data provenance initiative: A large scale audit of dataset licensing &amp; attribution in ai</title>
+		<author>
+			<persName><forename type="first">Shayne</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Mahari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anthony</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naana</forename><surname>Obeng-Marnu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Damien</forename><surname>Sileo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Brannon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niklas</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nathan</forename><surname>Khazam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jad</forename><surname>Kabbara</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kartik</forename><surname>Perisetla</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.16787</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<author>
+			<persName><forename type="first">Pratyush</forename><surname>Maini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hengrui</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicolas</forename><surname>Papernot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Dziedzic</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2406.06443</idno>
+		<title level="m">Llm dataset inference: Did you train on my dataset? arXiv preprint</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

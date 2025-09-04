@@ -1,0 +1,2086 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">A Recipe of Parallel Corpora Exploitation for Multilingual Large Language Models</title>
+				<funder ref="#_mwwT9Cz">
+					<orgName type="full">European Research Council</orgName>
+				</funder>
+				<funder ref="#_VHeyKmq">
+					<orgName type="full">Portuguese Recovery</orgName>
+				</funder>
+				<funder ref="#_mu7CCmT">
+					<orgName type="full">DFG</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">FCT/MECI</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">Federal Ministry of Education and Research</orgName>
+				</funder>
+				<funder ref="#_JFjNxtx">
+					<orgName type="full">EU&apos;s Horizon Europe Research and Innovation Actions (UTTER</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">EU</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">DAAD programme Konrad Zuse Schools of Excellence in Artificial Intelligence</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Peiqin</forename><surname>Lin</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">Center for Information and Language Processing</orgName>
+								<orgName type="institution">LMU Munich</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="department">Munich Center for Machine Learning</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">André</forename><forename type="middle">F T</forename><surname>Martins</surname></persName>
+							<affiliation key="aff2">
+								<orgName type="institution" key="instit1">Instituto Superior Técnico</orgName>
+								<orgName type="institution" key="instit2">Universidade de Lisboa (Lisbon ELLIS Unit</orgName>
+							</affiliation>
+							<affiliation key="aff3">
+								<orgName type="department">Instituto de Telecomunicações 5 Unbabel</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Hinrich</forename><surname>Schütze</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">Center for Information and Language Processing</orgName>
+								<orgName type="institution">LMU Munich</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="department">Munich Center for Machine Learning</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">A Recipe of Parallel Corpora Exploitation for Multilingual Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">6BF3E97089000B9EFB3165015397D2ED</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:40+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Recent studies have highlighted the potential of exploiting parallel corpora to enhance multilingual large language models in both bilingual tasks, e.g., machine translation, and generalpurpose tasks, e.g., text classification. Building upon these findings, our comprehensive study aims to identify the most effective strategies for leveraging parallel corpora. We investigate the impact of parallel corpus quality and quantity, training objectives, and model size on the performance of multilingual large language models enhanced with parallel corpora across diverse languages and tasks. Our analysis reveals several key insights: (i) filtering noisy translations is essential for exploiting parallel corpora, while language identification and short sentence filtering have little effect; (ii) even a corpus with just 10K parallel sentences can yield results comparable to those obtained from larger datasets; (iii) employing only the machine translation objective yields the best results among various training objectives and their combinations; (iv) larger multilingual language models benefit more from parallel corpora than smaller models. Our study offers valuable insights into the optimal utilization of parallel corpora to enhance multilingual large language models, extending the generalizability of previous findings from limited languages and tasks to a broader range of scenarios.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Recent multilingual large language models (mLLMs), represented by <ref type="bibr">BLOOM (Scao et al., 2022)</ref>, MaLA500 <ref type="bibr">(Lin et al., 2024b)</ref>, and Aya <ref type="bibr">(Üstün et al., 2024)</ref>, have shown impressive capacity on diverse tasks across languages. Parallel corpora have emerged as crucial resources for enhancing mLLMs, both for specific tasks, e.g., machine translation <ref type="bibr" target="#b40">(Xu et al., 2023;</ref><ref type="bibr" target="#b3">Alves et al., 2024)</ref>, and for general-purpose tasks <ref type="bibr" target="#b6">(Cahyawijaya et al., 2023;</ref><ref type="bibr" target="#b45">Zhu et al., 2023;</ref><ref type="bibr" target="#b22">Li et al., 2023)</ref>. achieved by mLLMs enhanced with parallel corpora compared to their base models. Best: Instruction tuning of BLOOM-7B1 with the machine translation objective (MT) using 10K high-quality (i.e., filtered) parallel sentences yields the best results. Main variations explored include: Filter (No) (using the original data); OBJ (TLM) (translation language modeling objective); OBJ (XSS) (cross-lingual semantic similarity objective); |Data| (50K) (a larger 50K-sentence dataset); |Model| (1B7) (BLOOM-1B7 model).</p><p>However, existing studies often lack in comprehensive exploration of methodologies for harnessing parallel corpora. The quality and quantity of parallel corpora remain inadequately explored, inhibiting the full potential of such resources. Moreover, the influence of different training objectives and mLLM sizes across diverse languages and tasks remains under-investigated. This limitation impedes the generalization of parallel corpus exploitation methods across varied linguistic landscapes and task domains. Therefore, this paper aims to address these gaps by presenting a comprehensive recipe for exploiting parallel corpora for mLLMs. We focus on four key factors, with some main results shown in Figure <ref type="figure" target="#fig_0">1</ref>.</p><p>Quality: We explore three dimensions of paral-arXiv:2407.00436v2 [cs.CL] 8 Feb 2025 lel corpus quality: translation accuracy, sentence length, and language identification. Our results show that translation quality is vital for exploiting parallel corpora, while sentence length filtering and language identification have minimal impact. Quantity: Acquiring large amounts of highquality parallel corpora is challenging, especially for relatively low-resource languages. Our study examines the minimum corpus size necessary to achieve performance improvements across diverse tasks. We find that even a corpus of just 10K sentences can yield results comparable to those obtained from much larger datasets.</p><p>Objective: Previous studies <ref type="bibr" target="#b6">(Cahyawijaya et al., 2023)</ref> have investigated the effectiveness of different training objectives and their combinations on classification tasks of Indonesian local languages, using smaller-sized mLLMs up to 1B7 parameters. We extend this investigation by examining the impact of various training objectives and their combinations on larger mLLMs across a range of languages and tasks. Our experiments demonstrate that employing the machine translation objective produces the most promising results.</p><p>Model Size: The size of mLLMs can greatly impact their ability to comprehend instructions derived from parallel corpora. Our findings indicate that larger mLLMs exhibit superior comprehension and cross-task transferability compared to their smaller counterparts. Consequently, they achieve more substantial improvements across a broader spectrum of tasks.</p><p>In light of the critical role parallel corpora play in mLLMs, our study provides a comprehensive recipe for effectively exploiting parallel corpora. We have identified four primary factors: quality ( §4), quantity ( §5), objective ( §6), and model size ( §7). Our detailed analysis of these factors reveals their great impact on mLLM performance across diverse languages and tasks. By delving into these aspects, we offer actionable insights that can inform the development and optimization of strategies for parallel corpus exploitation, ultimately contributing to the advancement of mLLMs in both bilingual and general-purpose tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related Work</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Parallel Data for Multilingual Language Models</head><p>Over the years, multilingual language models have evolved from earlier, smaller models, such as XLM <ref type="bibr" target="#b11">(Conneau and Lample, 2019)</ref>, XLM-R <ref type="bibr" target="#b10">(Conneau et al., 2020)</ref>, and Glot500 <ref type="bibr" target="#b17">(Imani et al., 2023)</ref>, to more recent, larger models, including BLOOM <ref type="bibr">(Scao et al., 2022)</ref>, MaLA500 <ref type="bibr">(Lin et al., 2024b)</ref>, and Aya <ref type="bibr">(Üstün et al., 2024)</ref>. These models consistently demonstrate strong performance across various downstream tasks <ref type="bibr" target="#b1">(Ahuja et al., 2023;</ref><ref type="bibr">Lin et al., 2024c)</ref>.</p><p>Parallel corpora have played a pivotal role in both the analysis <ref type="bibr" target="#b29">(Piqueras and Søgaard, 2022;</ref><ref type="bibr">Lin et al., 2024a)</ref> and enhancement <ref type="bibr" target="#b11">(Conneau and Lample, 2019;</ref><ref type="bibr" target="#b28">Ouyang et al., 2020;</ref><ref type="bibr" target="#b41">Yang et al., 2020;</ref><ref type="bibr" target="#b16">Huang et al., 2019;</ref><ref type="bibr">Chi et al., 2021a;</ref><ref type="bibr" target="#b39">Wei et al., 2021;</ref><ref type="bibr" target="#b15">Hu et al., 2021;</ref><ref type="bibr">Chi et al., 2021b;</ref><ref type="bibr">Reid and Artetxe, 2022b;</ref><ref type="bibr" target="#b26">Liu et al., 2023)</ref> of small multilingual language models.</p><p>In the era of mLLMs, parallel corpora are constructed as instruction data and used to enhance mLLMs through supervised fine-tuning <ref type="bibr" target="#b6">(Cahyawijaya et al., 2023;</ref><ref type="bibr" target="#b45">Zhu et al., 2023;</ref><ref type="bibr" target="#b22">Li et al., 2023)</ref>. Specifically, <ref type="bibr" target="#b6">Cahyawijaya et al. (2023)</ref> propose three methods of incorporating parallel corpora as instruction tuning data: Machine Translation (MT), Translation Language Modeling (TLM), and Cross-Lingual Semantic Similarity (XSS) (see §3.3). However, their evaluation is limited to small models with up to 1.7 billion parameters and focuses solely on classification tasks within Indonesian local languages. Both <ref type="bibr" target="#b45">Zhu et al. (2023)</ref> and <ref type="bibr" target="#b22">Li et al. (2023)</ref> propose using machine-translationstyle instruction data to improve mLLMs but do not explore different training objectives. While these studies yield promising results, their scope is limited. Firstly, they do not explore critical factors such as the quality and quantity of parallel corpora, considering the high cost of collecting high-quality and massive parallel corpora, especially for relatively low-resource languages. Secondly, their investigations do not encompass an in-depth analysis of training objectives and mLLMs with varied model sizes across diverse languages and tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Key Elements for Language Modeling</head><p>Previous research has extensively examined critical factors essential for the pretraining and enhancement of language models. Quality: <ref type="bibr" target="#b19">Kreutzer et al. (2022)</ref> conducted manual audits of prevalent monolingual and parallel corpora, revealing significant portions of low-quality data, particularly in corpora for relatively lowresource languages. Follow-up studies have investigated the impact of data quality on model per-formance. <ref type="bibr" target="#b4">Artetxe et al. (2022)</ref> observed that similar results on downstream tasks can be achieved regardless of the degree of quality of the corpus used for pretraining, while other studies found that the quality of parallel corpora matters for machine translation <ref type="bibr" target="#b30">(Ranathunga et al., 2024)</ref> and generalpurpose tasks <ref type="bibr">(Reid and Artetxe, 2022a)</ref>.</p><p>Quantity: Recent works <ref type="bibr">(Chen et al., 2023;</ref><ref type="bibr" target="#b44">Zhou et al., 2023;</ref><ref type="bibr" target="#b13">Gupta et al., 2023)</ref> have focused on the impact of fine-tuning with small amounts of high-quality instruction data, such as one or a few thousand instances, showing promising performance gains in evaluation tasks. <ref type="bibr" target="#b40">Xu et al. (2023)</ref> demonstrate that as few as 10K high-quality parallel sentences can significantly enhance machine translation performance.</p><p>Objective: Different training objectives based on parallel corpora for enhancing mLLMs can be viewed as distinct instructions. <ref type="bibr" target="#b36">Wang et al. (2023)</ref> explore the impact of various types of instruction tuning data and find that their combination can be optimal in certain scenarios.</p><p>Model Size: Recent studies indicate that scaling up language models enhances their capability to excel in diverse and complex reasoning tasks <ref type="bibr" target="#b37">(Wei et al., 2022</ref><ref type="bibr" target="#b38">(Wei et al., , 2023;;</ref><ref type="bibr" target="#b27">Lu et al., 2023)</ref>. Follow-up studies <ref type="bibr" target="#b38">(Wei et al., 2023)</ref> further illustrate distinct behavioral differences between larger and smaller models.</p><p>However, these factors have not yet been comprehensively explored in the context of leveraging parallel corpora to enhance mLLMs across diverse languages and tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Setup</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Language</head><p>We use three criteria for language selection. Firstly, we select languages well covered by mLLMs as our goal is to assess how parallel data enhances performance after pre-training an mLLM with monolingual data. Secondly, the selected languages should be also covered by several different evaluation benchmarks, allowing for robust evaluation across diverse downstream tasks. Lastly, we select typologically diverse languages, enabling our investigation to generalize to a wide range of relatively low-resource languages. Thus, we select five languages: Arabic (ar), Spanish (es), Hindi (hi), Vietnamese (vi) and Chinese (zh).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Data</head><p>We utilize the OPUS100 dataset <ref type="bibr" target="#b43">(Zhang et al., 2020)</ref>, an English-centric multilingual corpus, to gather parallel sentences between English (en) and each target language. The quality of OPUS100 is assessed across three dimensions:</p><p>Translation Quality Manual quality assessment of the vast amount of parallel corpora is impractical. Instead, we employ COMETKIWI <ref type="bibr" target="#b31">(Rei et al., 2022)</ref> <ref type="foot" target="#foot_0">foot_0</ref> , a tool for estimating the quality of machine translation outputs across multiple languages. We set a COMETKIWI score threshold τ c , retaining parallel corpora with scores not lower than τ c .</p><p>Sentence Length Given the variation in character length across languages, we avoid using it as a metric for consistency. Instead, we measure sentence length by the number of tokens, as determined by the tokenizer of our chosen mLLM, BLOOM-7B1. We establish a length threshold τ l , retaining parallel corpora where both source and target sentences contain no fewer than τ l tokens.</p><p>Language Identification To identify sentences potentially not in the correct language, we employ GlotLID <ref type="bibr">(Kargaran et al., 2023)</ref>, an open-source language identification model. This language identification filter is applied to both the source and target sentences.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Training</head><p>We select the BLOOM series <ref type="bibr">(Scao et al., 2022)</ref> for our investigation due to its offering of different sizes of mLLMs which well cover the five target languages under consideration. <ref type="foot" target="#foot_1">2</ref> The pretraining data size for the five target languages ranges from 23GB (Hindi) to 452GB (English). We explore BLOOM models of various sizes, including 7B1, 3B, and 1B7. Due to limited computational resources, we use LoRA <ref type="bibr" target="#b14">(Hu et al., 2022)</ref>, which is known for its competitive performance compared to full-parameter training <ref type="bibr" target="#b2">(Alves et al., 2023)</ref>, for instruction tuning of BLOOM. We configure the learning rate to 1 × 10 -4 , weight decay to 0.1, and set the rank of LoRA to 16 based on preliminary experiment in §B. The maximum sequence length for both source and target sentences is set to 128.  <ref type="formula">2023</ref>), we construct the data for instruction tuning based on the parallel corpora by three distinct patterns: Machine Translation (MT), Translation Language Modeling (TLM), and Cross-Lingual Semantic Similarity (XSS). Table <ref type="table" target="#tab_0">1</ref> presents the templates for these three objectives. Here, [SOURCE_LANG] and [TARGET_LANG] represent the language names of the source and target languages, respectively. In our study, we consider both English-to-targetlanguage and target-language-to-English directions, where [SOURCE_LANG] represents English or [TARGET_LANG] represents English. For MT, [SOURCE_TEXT] and [TARGET_TEXT] refer to the parallel sentences in the source and target languages, respectively. For TLM, a portion of tokens in [TARGET_TEXT] are masked to generate <ref type="bibr">[INPUT_TEXT]</ref>. For XSS, our objective is to predict whether parallel sentences [SOURCE_TEXT] and [TARGET_TEXT] are semantically similar, with [LABEL] being "Yes" or "No". Specifically, we utilize the parallel corpora as positive examples and introduce perturbations to [TARGET_TEXT] to construct negative examples. We consider applying the objectives both individually and in combination. We tune the model with the objective of causal language modeling without loss mask.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>To maintain consistency across experiments with</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.4">Evaluation</head><p>We conduct evaluation across five diverse benchmarks: FLORES <ref type="bibr" target="#b12">(Costa-jussà et al., 2022)</ref>, MUSE <ref type="bibr" target="#b20">(Lample et al., 2018)</ref>, <ref type="bibr">MLQA (Lewis et al., 2020)</ref>, XQUAD <ref type="bibr" target="#b5">(Artetxe et al., 2020), and</ref><ref type="bibr">SIB (Adelani et al., 2023)</ref>. A comprehensive overview of these benchmarks is available in Table 2: Details of evaluation benchmarks. |Data|: Number of samples for evaluation. I/C: In-language/Crosslanguage. C/G: Classification/Generation.</p><p>uation spans both classification tasks (SIB) and generation tasks (FLORES, MUSE, MLQA, and XQuAD), covering a spectrum of cross-language (FLORES, MUSE, and MLQA) and in-language tasks (XQuAD and SIB).</p><p>For translation tasks within FLORES and MUSE, we explore bidirectional translation: from English to other languages (en-xx) and from other languages to English (xx-en). Additionally, for MLQA, we evaluate scenarios where questions are in English and the passages and answers are in other languages (en-xx), as well as situations where questions are in other languages and the passages and answers are in English (xx-en).</p><p>To provide a thorough understanding of our evaluation procedures, we offer detailed prompts for each task in §C. In all experiments, we employ a 2shot in-context learning approach, where the model is given two examples appended to the input query to aid in making predictions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Quality</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Quality of OPUS100</head><p>We measure the quality of 500K parallel sentences from OPUS100 for our five language pairs using three key metrics: translation quality, sentence length, and language identification accuracy, as illustrated in Figures <ref type="figure">2</ref><ref type="figure">3</ref><ref type="figure" target="#fig_2">4</ref>.</p><p>A considerable portion of OPUS100 is of lowquality. All quality measures indicate that a large portion of OPUS100 contains low-quality data. Ap- Figure <ref type="figure">3</ref>: Sentence length of 500K parallel sentences from OPUS100 for our five language pairs. The three categories are 0-5, 5-10, greater than 10 tokens.</p><p>proximately 10% of the data has COMETKIWI scores below 0.25, indicating very poor translation quality. Additionally, between 10% to 30% of the data falls within the 0.25-0.5 score range, which is still considered sub-optimal. Regarding sentence length, we find that over 20% of the OPUS100 data consists of very short sentences, with a length of no more than five tokens. For language identification, 13% to 25% of the data is removed due to incorrect language identification results in one of the two parallel sentences.</p><p>Relatively low-resource languages suffer more from low-quality issues. For relatively low-resource languages like Hindi, there are fewer high-quality parallel sentences compared to highresource languages such as Spanish. Analysis of translation quality indicates that the English-Hindi pair has less than 20% of parallel sentences with high COMETWIKI scores (0.75-1), whereas the English-Spanish pair has around 45%. For sentence length, the English-Hindi pair contains 10% more short sentences (0-5 tokens) compared to high-resource language pairs. Moreover, both the English-Arabic and English-Hindi pairs exhibit about 10% more parallel sentences that may be in the wrong languages. These comprehensive findings underscore the critical importance of data quality when exploiting parallel corpora for mLLM training.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Effect of Quality</head><p>Table <ref type="table" target="#tab_3">3</ref> presents the performance of BLOOM-7B1 after instruction tuning with the machine translation objective, using 10K parallel corpora with various quality filtering strategies.</p><p>Parallel corpora containing noisy translations still improve results. Comparing the results of the experiment with τ c = 0 (ID 1) to the original model (ID 0), there's an average improvement of 0.4% for all tasks. The most notable improvements are observed in both bilingual tasks (en-xx) and in-language tasks. However, generating English for bilingual tasks yields degraded or marginally improved results. Experiment 1 exhibits 0.7% and 1.1% decrements in FLORES and MUSE respectively, with only a 0.3% improvement in MLQA.</p><p>Filtering out noisy translations leads to notable improvements. When τ c = 0.5, the average performance rises from 53.2% to 53.7%. Further refinement to τ c = 0.75 achieves an additional 0.3% improvement. These improvements are consistently observed across all evaluated tasks. In the optimal setting (ID 5), there's a 1.2% improvement compared to BLOOM-7B1 (ID 0). The improvements corroborate the reliability of COMETKIWI as a metric for filtering low-quality translations.</p><p>Filtering short sentences yields slightly worse results than using unfiltered data. The experi- ment with filtering short sentences (ID 3) achieves comparable or slightly worse results compared to that without filtering short sentences (ID 5). This suggests that short sentences, whether at the word or phrase level, may offer some benefits for sentence-level tasks.</p><p>Using data with language identification filtering results in only a 0.1% improvement on average. A comparison of experimental outcomes with and without language identification filtering (ID 4 and 5) reveals that using data with language identification filtering yields merely a 0.1% improvement on average. The most notable performance difference is observed the MUSE task, where using data with language identification filtering leads to improvements of 0.6% (en-xx) and 0.2% <ref type="bibr">(xxen)</ref>. This marginal enhancement may be attributed to the presence of sentences in similar languages within OPUS100, which exhibit minor linguistic variations compared to the true language. These variations could potentially have a slight negative impact on word-level translations while having little impact on sentence-level tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Quantity</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">Effect of Quantity Across Tasks</head><p>Based on Table <ref type="table" target="#tab_4">4</ref>, which shows the performance of BLOOM-7B1 after instruction tuning with the machine translation objective using different amounts of parallel sentences, we can derive the following key findings:</p><p>Adding merely 1K parallel sentences helps. Exploiting 1K parallel sentences for instruction tuning improves the overall average score by 1%. This increase is observed across most tasks, with notable improvements in FLORES (en-xx), MUSE (en-xx), and SIB.</p><p>Using 10K parallel sentences leads to the optimal performance. The best overall performance is achieved with 10K parallel sentences, resulting in an average score of 54.0%. This setting yields the highest scores in MUSE and SIB. This aligns with the findings in <ref type="bibr" target="#b40">Xu et al. (2023)</ref>.</p><p>More data achieves comparable results. Increasing the number of parallel sentences beyond 10K results in comparable performance. Specifically, using 25K or 50K parallel sentences yields average scores of 53.9%, which are very close to the score obtained with 10K sentences.</p><p>The analysis suggests that instruction tuning with a moderate amount of parallel sentences (around 10K) yields the best overall improvement in performance for the BLOOM-7B1 model across various tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Effect of Quantity Across Languages</head><p>We delve deeper into the influence of parallel corpora quantity, as depicted in Table <ref type="table">5</ref>.</p><p>Using 10K parallel sentences achieves optimal performance across most languages. For the majority of languages, except Vietnamese (vi) and Chinese (zh), the highest performance is obtained with 10K parallel sentences. Even for Vietnamese and Chinese, leveraging 10K parallel sentences can yield comparable results. These observations align with the findings in §5.1.</p><p>Different languages exhibit varying appetites for parallel corpora. Across most languages, increasing the number of parallel sentences used for instruction tuning generally leads to incremental improvements in performance. However, for Hindi (hi) and Chinese (zh), transitioning from 1K to 10K parallel sentences does not yield improvement. This phenomenon may be attributed to BLOOM-7B1's limited proficiency in these languages compared to others, as reflected in the results of the original BLOOM-7B1 model (|SENT|=0).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Objective</head><p>We explore the effectiveness of different objectives and their combinations, with results in Table <ref type="table" target="#tab_5">6</ref>.</p><p>BLOOM-7B1 performs well on English generation tasks. The baseline BLOOM-7B1 model exhibits robust performance across a spectrum of evaluation tasks, notably excelling in English generation tasks such as FLORES (xx-en) and MUSE (xx-en). Further exploitation of parallel corpora fails to yield any discernible improvement.</p><p>MT emerges as the top performer. The MT objective consistently outperforms the baseline BLOOM-7B1 model, showcasing an average improvement of 1.2%. Moreover, MT achieves the highest performance in 5 out of 8 evaluated tasks.</p><p>TLM exhibits limited effectiveness. While TLM shows slight improvements on average (0.2%), primarily driven by enhancements in tasks like MUSE (en-xx), MLQA (xx-en), XQuAD, and SIB, it also leads to degradation in tasks including <ref type="bibr">FLORES and MUSE (xx-en)</ref>.</p><p>XSS achieves strong performance for classification. Using the XSS objective improves BLOOM-7B1 by 0.7%, though it performs 0.5% worse than MT. The major decrease is observed in translation tasks, especially from English to other languages. However, XSS can still slightly improve translation tasks compared to BLOOM-7B1. Notably, XSS achieves 0.3% better performance on SIB, highlighting its effectiveness for classification.</p><p>Combining training objectives does not provide large benefits. While combinations of different objectives can improve BLOOM-7B1 by 0.2% to 1.0%, none surpass the performance of using the MT objective alone. The combination of MT and XSS is the best among the combinations, slightly worse than MT by 0.2%, but better than all other objectives. Notably, MT +XSS achieves the best results on SIB, and TLM +XSS yields the best results on MLQA (xx-en). These observations indicate that no single objective excels across all tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Model Size</head><p>We explore the impact of parallel corpora on various sizes of BLOOM models, detailed in Table <ref type="table">7</ref>.</p><p>Smaller models exhibit more pronounced improvements in FLORES. Notably, BLOOM-1B7 demonstrates larger improvements compared to its larger counterparts in the FLORES task, where the prompt is the same as the one used during instruction tuning with the MT objective. This is attributed Table 7: Effect of parallel corpora on BLOOM models of different sizes across various tasks. '+ Parallel Data'</p><p>indicates instruction tuning of the given mLLM with the MT objective, using 10K parallel corpora obtained with the best filtering strategy (ID 5) as shown in Table <ref type="table" target="#tab_3">3</ref>.</p><p>to the smaller models' less developed in-context learning capabilities before instruction tuning, allowing for more substantial improvements when supplemented with parallel corpora. Larger models excel in diverse tasks. Conversely, larger models generally demonstrate greater enhancements in tasks beyond machine translation. Both BLOOM-7B1 and BLOOM-3B exhibit a 1.2% improvement compared to their original mLLMs, while BLOOM-1B7 shows a slight 0.3% improvement. Specifically, BLOOM-7B1 and BLOOM-3B display notable improvements in tasks except for FLORES, while BLOOM-1B7 achieves comparable or even worse results.</p><p>These findings demonstrate that when leveraging parallel corpora to enhance mLLMs, larger models not only exhibit improvements in direct tasks, such as machine translation, but also demonstrate a more substantial overall enhancement across a variety of tasks. In contrast, smaller models primarily show benefits in direct tasks. This difference can be attributed to the superior cross-task transferability of larger mLLMs, where insights gained from parallel corpora in one task contribute to improved performance in others.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">Conclusion</head><p>This paper investigates the impact of four critical factors -data quality, data quantity, objectives, and mLLM sizes -on leveraging parallel corpora to enhance mLLMs across diverse languages and tasks. Our findings underscore the crucial importance of filtering out noisy translations to procure high-quality training data for improving mLLMs. Surprisingly, even a relatively modest dataset of 10K samples can yield promising results. Furthermore, our analysis shows that employing the machine translation objective leads to optimal outcomes. Importantly, larger models exhibit a greater capacity to benefit from parallel corpora, achieving more substantial improvements. This study provides a comprehensive recipe for effectively lever-aging parallel corpora to enhance mLLMs. These insights significantly contribute to advancing the understanding and optimization of mLLMs across different languages and tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitations</head><p>Due to limited computational resources, we opted not to explore full-parameter training for leveraging parallel corpora. Instead, we focused on LoRA, drawing on insights from previous studies. Additionally, our investigation is restricted to the BLOOM series, and we did not extend our analysis to other mLLMs. Furthermore, we did not also explore mLLMs larger than 7B1.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure1: Average performance improvements (y-axis) achieved by mLLMs enhanced with parallel corpora compared to their base models. Best: Instruction tuning of BLOOM-7B1 with the machine translation objective (MT) using 10K high-quality (i.e., filtered) parallel sentences yields the best results. Main variations explored include: Filter (No) (using the original data); OBJ (TLM) (translation language modeling objective); OBJ (XSS) (cross-lingual semantic similarity objective); |Data| (50K) (a larger 50K-sentence dataset); |Model| (1B7) (BLOOM-1B7 model).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>Figure 2:Translation quality measured by COMETWIKI of 500K parallel sentences from OPUS100 for our five language pairs. The COMETWIKI scores are segmented into four ranges: 0-0.25, 0.25-0.5, 0.5-0.75, and 0.75-1. Higher scores represent better translation quality.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Percentage of sentences retained after language identification filtering of 500K parallel sentences from OPUS100 for our five language pairs.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Templates of MT, TLM, and XSS for instruction data construction based on parallel corpora.</figDesc><table><row><cell cols="2">Objective Template</cell></row><row><cell>MT</cell><cell>Translate the following text from [SOURCE_LANG] to</cell></row><row><cell></cell><cell>[TARGET_LANG].\nText: [SOURCE_TEXT]\nTranslation: [TARGET_TEXT]</cell></row><row><cell>TLM</cell><cell>[INPUT_TEXT]. Denoise the previous [TARGET_LANG] text to its</cell></row><row><cell></cell><cell>equivalent sentence in [SOURCE_LANG]: [SOURCE_TEXT]\n[TARGET_TEXT]</cell></row><row><cell>XSS</cell><cell>[SOURCE_LANG] sentence: [SOURCE_TEXT]\n[TARGET_LANG] sentence:</cell></row><row><cell></cell><cell>[TARGET_TEXT]\nDo the two sentences have the same meaning? [LABEL]</cell></row><row><cell cols="2">different quantities of parallel corpora, we ensure a</cell></row><row><cell cols="2">uniform training budget of 50K parallel sentences.</cell></row><row><cell cols="2">Specifically, we calculate the number of epochs as</cell></row><row><cell cols="2">50K divided by the number of sentences consid-</cell></row><row><cell cols="2">ered from the OPUS100 dataset. The batch size is</cell></row><row><cell cols="2">128, and we save the checkpoints every 20 steps.</cell></row><row><cell cols="2">Following Cahyawijaya et al. (</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 .</head><label>2</label><figDesc>Our eval-</figDesc><table><row><cell>Dataset</cell><cell>Task</cell><cell>|Data|</cell><cell>Metric</cell><cell cols="2">I/C C/G</cell></row><row><cell cols="2">FLORES Machine Translation</cell><cell>1012</cell><cell cols="2">COMETKIWI C</cell><cell>G</cell></row><row><cell>MUSE</cell><cell>Word Translation</cell><cell>1500</cell><cell>F1</cell><cell>C</cell><cell>G</cell></row><row><cell>MLQA</cell><cell cols="2">Question Answering 4918 -5495</cell><cell>F1</cell><cell>C</cell><cell>G</cell></row><row><cell cols="2">XQuAD Question Answering</cell><cell>1190</cell><cell>F1</cell><cell>I</cell><cell>G</cell></row><row><cell>SIB</cell><cell>Text Classification</cell><cell>204</cell><cell>Acc</cell><cell>I</cell><cell>C</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 3 :</head><label>3</label><figDesc>Performance (%) of BLOOM-7B1 after instruction tuning with the machine translation objective using 10K parallel corpora with various quality filtering strategies. Parameters include τ c for COMETWIKI score threshold, τ l for sentence length threshold, and LID indicating the adoption of language identification filtering.</figDesc><table><row><cell>ID</cell><cell></cell><cell>MODEL</cell><cell></cell><cell cols="2">FLORES</cell><cell cols="2">MUSE</cell><cell cols="2">MLQA</cell><cell cols="2">XQUAD SIB AVG</cell></row><row><cell></cell><cell></cell><cell></cell><cell></cell><cell cols="6">EN-XX XX-EN EN-XX XX-EN EN-XX XX-EN</cell><cell></cell><cell></cell></row><row><cell>0</cell><cell cols="3">BLOOM-7B1</cell><cell>69.1</cell><cell>72.4</cell><cell>43.1</cell><cell>53.7</cell><cell>36.4</cell><cell>42.7</cell><cell>47.2</cell><cell>58.1 52.8</cell></row><row><cell></cell><cell>τ c</cell><cell cols="2">τ l LID</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>1</cell><cell>0</cell><cell>0</cell><cell>✓</cell><cell>69.7</cell><cell>71.7</cell><cell>44.4</cell><cell>52.6</cell><cell>37.8</cell><cell>43.0</cell><cell>47.7</cell><cell>58.8 53.2</cell></row><row><cell>2</cell><cell cols="2">0.5 0</cell><cell>✓</cell><cell>69.9</cell><cell>72.1</cell><cell>45.0</cell><cell>53.0</cell><cell>38.1</cell><cell>43.7</cell><cell>48.1</cell><cell>59.8 53.7</cell></row><row><cell cols="3">3 0.75 5</cell><cell>✓</cell><cell>70.3</cell><cell>72.1</cell><cell>45.7</cell><cell>53.6</cell><cell>38.1</cell><cell>43.5</cell><cell>47.8</cell><cell>59.2 53.8</cell></row><row><cell cols="3">4 0.75 0</cell><cell>✗</cell><cell>70.5</cell><cell>72.1</cell><cell>44.9</cell><cell>53.7</cell><cell>37.7</cell><cell>44.0</cell><cell>48.3</cell><cell>59.6 53.9</cell></row><row><cell cols="3">5 0.75 0</cell><cell>✓</cell><cell>70.3</cell><cell>72.3</cell><cell>45.5</cell><cell>53.9</cell><cell>38.0</cell><cell>43.9</cell><cell>48.3</cell><cell>59.5 54.0</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 4 :</head><label>4</label><figDesc>Task performance (%) of BLOOM-7B1 after instruction tuning with the machine translation objective using varying amounts of parallel sentences, obtained with the best filtering strategy (ID 5) as shown in Table3. |SENT| indicates the number of parallel sentences used for instruction tuning, with |SENT|=0 representing the original BLOOM-7B1 model.</figDesc><table><row><cell>|SENT|</cell><cell cols="7">FLORES EN-XX XX-EN EN-XX XX-EN EN-XX XX-EN MUSE MLQA</cell><cell cols="2">XQUAD SIB AVG</cell></row><row><cell>0</cell><cell></cell><cell>69.1</cell><cell>72.4</cell><cell>43.1</cell><cell>53.7</cell><cell>36.4</cell><cell>42.7</cell><cell>47.2</cell><cell>58.1 52.8</cell></row><row><cell>1K</cell><cell></cell><cell>70.0</cell><cell>72.2</cell><cell>45.3</cell><cell>53.6</cell><cell>38.2</cell><cell>43.6</cell><cell>47.9</cell><cell>59.2 53.8</cell></row><row><cell>5K</cell><cell></cell><cell>70.3</cell><cell>72.2</cell><cell>45.4</cell><cell>53.5</cell><cell>38.2</cell><cell>43.8</cell><cell>48.2</cell><cell>59.5 53.9</cell></row><row><cell>10K</cell><cell></cell><cell>70.3</cell><cell>72.3</cell><cell>45.5</cell><cell>53.9</cell><cell>38.0</cell><cell>43.9</cell><cell>48.3</cell><cell>59.5 54.0</cell></row><row><cell>25K</cell><cell></cell><cell>70.3</cell><cell>72.2</cell><cell>45.1</cell><cell>53.8</cell><cell>38.0</cell><cell>44.0</cell><cell>48.4</cell><cell>59.5 53.9</cell></row><row><cell>50K</cell><cell></cell><cell>70.4</cell><cell>72.2</cell><cell>45.1</cell><cell>53.8</cell><cell>38.1</cell><cell>43.7</cell><cell>48.3</cell><cell>59.5 53.9</cell></row><row><cell></cell><cell>ar</cell><cell>es</cell><cell>hi</cell><cell>vi</cell><cell>zh</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">0 49.5 57.7 46.5 63.8 46.7</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">1K 50.8 58.1 47.7 64.3 47.8</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">5K 51.2 58.2 47.6 64.6 47.9</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">10K 51.3 58.4 47.7 64.6 47.8</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">25K 51.2 58.2 47.7 64.7 47.7</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">50K 51.2 58.2 47.7 64.7 47.6</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">Table 5: Language performance (%) of BLOOM-7B1</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">after instruction tuning with the machine translation</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">objective using varying amounts of parallel sentences,</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">obtained with the best filtering strategy (ID 5) as shown</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">in Table 3. |SENT| indicates the number of parallel</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">sentences used for instruction tuning, with |SENT|=0</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="6">representing the original BLOOM-7B1 model.</cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 6 :</head><label>6</label><figDesc>Performance (%) of BLOOM-7B1 after instruction tuning with different objectives and their combinations using 10K parallel corpora, obtained with the best filtering strategy (ID 5) as shown in Table3.</figDesc><table><row><cell>MODEL</cell><cell cols="6">FLORES EN-XX XX-EN EN-XX XX-EN EN-XX XX-EN MUSE MLQA</cell><cell cols="2">XQUAD SIB AVG</cell></row><row><cell>BLOOM-7B1</cell><cell>69.1</cell><cell>72.4</cell><cell>43.1</cell><cell>53.7</cell><cell>36.4</cell><cell>42.7</cell><cell>47.2</cell><cell>58.1 52.8</cell></row><row><cell>MT</cell><cell>70.3</cell><cell>72.3</cell><cell>45.5</cell><cell>53.9</cell><cell>38.0</cell><cell>43.9</cell><cell>48.3</cell><cell>59.5 54.0</cell></row><row><cell>TLM</cell><cell>67.2</cell><cell>72.2</cell><cell>44.3</cell><cell>53.0</cell><cell>36.3</cell><cell>44.4</cell><cell>47.6</cell><cell>58.7 53.0</cell></row><row><cell>XSS</cell><cell>69.4</cell><cell>72.2</cell><cell>43.7</cell><cell>53.5</cell><cell>37.0</cell><cell>44.2</cell><cell>48.3</cell><cell>60.0 53.5</cell></row><row><cell>MT +TLM</cell><cell>69.3</cell><cell>72.1</cell><cell>44.1</cell><cell>53.2</cell><cell>36.8</cell><cell>43.8</cell><cell>47.2</cell><cell>59.5 53.2</cell></row><row><cell>MT +XSS</cell><cell>70.3</cell><cell>72.1</cell><cell>44.9</cell><cell>53.3</cell><cell>37.4</cell><cell>44.5</cell><cell>47.9</cell><cell>60.4 53.8</cell></row><row><cell>TLM +XSS</cell><cell>67.7</cell><cell>72.2</cell><cell>43.0</cell><cell>52.5</cell><cell>34.9</cell><cell>45.6</cell><cell>48.2</cell><cell>60.0 53.0</cell></row><row><cell>MT +TLM +XSS</cell><cell>69.5</cell><cell>72.1</cell><cell>44.2</cell><cell>53.2</cell><cell>36.1</cell><cell>45.1</cell><cell>47.7</cell><cell>59.0 53.4</cell></row><row><cell>MODEL</cell><cell cols="6">FLORES EN-XX XX-EN EN-XX XX-EN EN-XX XX-EN MUSE MLQA</cell><cell cols="2">XQUAD SIB AVG</cell></row><row><cell>BLOOM-7B1</cell><cell>69.1</cell><cell>72.4</cell><cell>43.1</cell><cell>53.7</cell><cell>36.4</cell><cell>42.7</cell><cell>47.2</cell><cell>58.1 52.8</cell></row><row><cell>+ Parallel Data</cell><cell>70.3</cell><cell>72.3</cell><cell>45.5</cell><cell>53.9</cell><cell>38.0</cell><cell>43.9</cell><cell>48.3</cell><cell>59.5 54.0</cell></row><row><cell>∆</cell><cell>01.2</cell><cell>-00.1</cell><cell>02.4</cell><cell>00.2</cell><cell>01.6</cell><cell>01.2</cell><cell>01.0</cell><cell>01.4 01.2</cell></row><row><cell>BLOOM-3B</cell><cell>64.0</cell><cell>68.9</cell><cell>39.7</cell><cell>50.9</cell><cell>29.4</cell><cell>26.2</cell><cell>32.7</cell><cell>54.5 45.8</cell></row><row><cell>+ Parallel Data</cell><cell>65.0</cell><cell>69.1</cell><cell>41.4</cell><cell>51.6</cell><cell>30.9</cell><cell>26.7</cell><cell>34.5</cell><cell>56.9 47.0</cell></row><row><cell>∆</cell><cell>01.0</cell><cell>00.2</cell><cell>01.8</cell><cell>00.7</cell><cell>01.5</cell><cell>00.5</cell><cell>01.8</cell><cell>02.4 01.2</cell></row><row><cell>BLOOM-1B7</cell><cell>59.0</cell><cell>65.8</cell><cell>37.2</cell><cell>48.5</cell><cell>20.0</cell><cell>22.2</cell><cell>24.8</cell><cell>53.0 41.3</cell></row><row><cell>+ Parallel Data</cell><cell>61.1</cell><cell>65.7</cell><cell>38.9</cell><cell>48.0</cell><cell>20.8</cell><cell>20.9</cell><cell>24.4</cell><cell>53.0 41.6</cell></row><row><cell>∆</cell><cell>02.0</cell><cell>-00.1</cell><cell>01.6</cell><cell>-00.6</cell><cell>00.8</cell><cell>-01.3</cell><cell>-00.3</cell><cell>00.0 00.3</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://huggingface.co/Unbabel/wmt23 -cometkiwi-da-xxl</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>Additional experiments with XGLM, as presented in §A, yield conclusions consistent with those of BLOOM.</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgements</head><p>This work was funded by <rs type="funder">DFG</rs> (<rs type="grantNumber">SCHU 2246/14-1</rs>), the <rs type="funder">European Research Council</rs> (<rs type="programName">DECOLLAGE, ERC-2022-CoG #</rs><rs type="grantNumber">101088763</rs>), <rs type="funder">EU's Horizon Europe Research and Innovation Actions (UTTER</rs>, contract <rs type="grantNumber">101070631</rs>), by the <rs type="funder">Portuguese Recovery</rs> and <rs type="person">Resilience Plan</rs> through project <rs type="grantNumber">C645008882-00000055</rs> (<rs type="grantName">Center for Responsible AI</rs>), by the <rs type="funder">DAAD programme Konrad Zuse Schools of Excellence in Artificial Intelligence</rs>, sponsored by the <rs type="funder">Federal Ministry of Education and Research</rs>, and by <rs type="funder">FCT/MECI</rs> through national funds and when applicable co-funded <rs type="funder">EU</rs> funds under UID/50008: <rs type="institution">Instituto de Telecomunicações</rs>.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_mu7CCmT">
+					<idno type="grant-number">SCHU 2246/14-1</idno>
+				</org>
+				<org type="funding" xml:id="_mwwT9Cz">
+					<idno type="grant-number">101088763</idno>
+					<orgName type="program" subtype="full">DECOLLAGE, ERC-2022-CoG #</orgName>
+				</org>
+				<org type="funding" xml:id="_JFjNxtx">
+					<idno type="grant-number">101070631</idno>
+				</org>
+				<org type="funding" xml:id="_VHeyKmq">
+					<idno type="grant-number">C645008882-00000055</idno>
+					<orgName type="grant-name">Center for Responsible AI</orgName>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Additional Experiments on XGLM</head><p>We explore the effect of parallel corpora quality on XGLM-7.5B, and the results are shown in </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Effect of LoRA Rank</head><p>We conduct initial experiments on Arabic to explore the effect of setting the rank of LoRA, and the results are shown in Table <ref type="table">9</ref>. As shown, setting the rank of LoRA as 16 lead to best performance. Therefore, we use LoRA rank as 16 across all the experiments.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C Prompt</head><p>The prompts of FLORES, MUSE, MLQA, XQuAD, and SIB are shown as follows: </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">SIB-200: A simple, inclusive, and big evaluation dataset for topic classification in 200+ languages and dialects</title>
+		<author>
+			<persName><forename type="first">David</forename><surname>Ifeoluwa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adelani</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannah</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikita</forename><surname>Vassilyev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jesujoba</forename><forename type="middle">O</forename><surname>Alabi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanke</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haonan</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">En-Shiun Annie</forename><surname>Lee</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2309.07445</idno>
+		<idno>CoRR, abs/2309.07445</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">MEGA: multilingual evaluation of generative AI</title>
+		<author>
+			<persName><forename type="first">Kabir</forename><surname>Ahuja</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishav</forename><surname>Hada</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Millicent</forename><surname>Ochieng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prachi</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harshita</forename><surname>Diddee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Samuel</forename><surname>Maina</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tanuja</forename><surname>Ganu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sameer</forename><surname>Segal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maxamed</forename><surname>Axmed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kalika</forename><surname>Bali</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sunayana</forename><surname>Sitaram</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2303.12528</idno>
+		<idno>CoRR, abs/2303.12528</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Steering large language models for machine translation with finetuning and in-context learning</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Duarte</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nuno</forename><surname>Alves</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">João</forename><surname>Miguel Guerreiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">José</forename><surname>Alves</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ricardo</forename><surname>Pombal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">José</forename><surname>Rei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><surname>Guilherme Camargo De Souza</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Colombo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">T</forename><surname>André</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Martins</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/V1/2023.FINDINGS-EMNLP.744</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2023</title>
+		<meeting><address><addrLine>Singapore</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023-12-06">2023. December 6-10, 2023</date>
+			<biblScope unit="page" from="11127" to="11148" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Tower: An open multilingual large language model for translation-related tasks</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Duarte</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">José</forename><surname>Alves</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Pombal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Nuno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pedro</forename><forename type="middle">Henrique</forename><surname>Guerreiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">João</forename><surname>Martins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Alves</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ben</forename><surname>Amin Farajian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ricardo</forename><surname>Peters</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Rei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sweta</forename><surname>Fernandes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Colombo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">C</forename><surname>José</surname></persName>
+		</author>
+		<author>
+			<persName><surname>De Souza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">T</forename><surname>André</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Martins</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2402.17733</idno>
+		<idno>CoRR, abs/2402.17733</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Does corpus quality really matter for low-resource languages?</title>
+		<author>
+			<persName><forename type="first">Mikel</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Itziar</forename><surname>Aldabe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rodrigo</forename><surname>Agerri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olatz</forename><surname>Perez-De-Viñaspre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aitor</forename><surname>Soroa</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2022 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Abu Dhabi, United Arab Emirates</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022-12-07">2022. December 7-11</date>
+			<biblScope unit="volume">2022</biblScope>
+			<biblScope unit="page" from="7383" to="7390" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">On the cross-lingual transferability of monolingual representations</title>
+		<author>
+			<persName><forename type="first">Mikel</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Ruder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dani</forename><surname>Yogatama</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.acl-main.421</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, ACL 2020</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics, ACL 2020<address><addrLine>Online</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020-07-05">2020. July 5-10, 2020</date>
+			<biblScope unit="page" from="4623" to="4637" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Instructalign: Teaching novel languages with to llms through alignment-based cross-lingual instruction</title>
+		<author>
+			<persName><forename type="first">Samuel</forename><surname>Cahyawijaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Holy</forename><surname>Lovenia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tiezheng</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Willy</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pascale</forename><surname>Fung</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2305.13627</idno>
+		<idno>CoRR, abs/2305.13627</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Maybe only 0.5% data is needed: A preliminary exploration of low training data instruction tuning</title>
+		<author>
+			<persName><forename type="first">Yiming</forename><surname>Hao Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hantao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaomeng</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuetao</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yifan</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junbo</forename><surname>Yanggong</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhao</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2305.09246</idno>
+		<idno>CoRR, abs/2305.09246</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Infoxlm: An information-theoretic framework for cross-lingual language model pre-training</title>
+		<author>
+			<persName><forename type="first">Zewen</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Furu</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saksham</forename><surname>Singhal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenhui</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xia</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xian-Ling</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heyan</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.naacl-main.280</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL-HLT 2021, Online</title>
+		<meeting>the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL-HLT 2021, Online</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021-06-06">2021. June 6-11, 2021</date>
+			<biblScope unit="page" from="3576" to="3588" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">2021b. Improving pretrained cross-lingual language models via self-labeled word alignment</title>
+		<author>
+			<persName><forename type="first">Zewen</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bo</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaohan</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xian-Ling</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heyan</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Furu</forename><surname>Wei</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.acl-long.265</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing, ACL/IJCNLP 2021</title>
+		<meeting>the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing, ACL/IJCNLP 2021</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2021">August 1-6, 2021</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="3418" to="3430" />
+		</imprint>
+	</monogr>
+	<note>Virtual Event Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Unsupervised cross-lingual representation learning at scale</title>
+		<author>
+			<persName><forename type="first">Alexis</forename><surname>Conneau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kartikay</forename><surname>Khandelwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vishrav</forename><surname>Chaudhary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Wenzek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Francisco</forename><surname>Guzmán</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edouard</forename><surname>Grave</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Myle</forename><surname>Ott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Veselin</forename><surname>Stoyanov</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.acl-main.747</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, ACL 2020, Online</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics, ACL 2020, Online</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020-07-05">2020. July 5-10, 2020</date>
+			<biblScope unit="page" from="8440" to="8451" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Crosslingual language model pretraining</title>
+		<author>
+			<persName><forename type="first">Alexis</forename><surname>Conneau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lample</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Annual Conference on Neural Information Processing Systems</title>
+		<meeting><address><addrLine>NeurIPS; Vancouver, BC, Canada</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2019-12-08">2019. 2019. 2019. December 8-14, 2019</date>
+			<biblScope unit="volume">32</biblScope>
+			<biblScope unit="page" from="7057" to="7067" />
+		</imprint>
+	</monogr>
+	<note>Advances in Neural Information Processing Systems</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">No language left behind: Scaling human-centered machine translation</title>
+		<author>
+			<persName><forename type="first">Marta</forename><forename type="middle">R</forename><surname>Costa-Jussà</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Cross</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Onur</forename><surname>Çelebi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maha</forename><surname>Elbayad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenneth</forename><surname>Heafield</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Heffernan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elahe</forename><surname>Kalbassi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Janice</forename><surname>Lam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Licht</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jean</forename><surname>Maillard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anna</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Skyler</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Wenzek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Al</forename><surname>Youngblood</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bapi</forename><surname>Akula</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Loïc</forename><surname>Barrault</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriel</forename><forename type="middle">Mejia</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prangthip</forename><surname>Hansanti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Hoffman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Semarley</forename><surname>Jarrett</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ram</forename><surname>Kaushik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dirk</forename><surname>Sadagopan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shannon</forename><surname>Rowe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chau</forename><surname>Spruit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><surname>Tran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Necip</forename><surname>Andrews</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shruti</forename><surname>Fazil Ayan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergey</forename><surname>Bhosale</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angela</forename><surname>Edunov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cynthia</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vedanuj</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Francisco</forename><surname>Goswami</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philipp</forename><surname>Guzmán</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Koehn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christophe</forename><surname>Mourachko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Safiyyah</forename><surname>Ropers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Holger</forename><surname>Saleem</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Schwenk</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wang</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2207.04672</idno>
+		<idno>CoRR, abs/2207.04672</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Instruction tuned models are quick learners</title>
+		<author>
+			<persName><forename type="first">Himanshu</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arjun</forename><surname>Saurabh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Swaroop</forename><surname>Sawant</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mutsumi</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arindam</forename><surname>Nakamura</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Mitra</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2306.05539</idno>
+		<idno>CoRR, abs/2306.05539</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>Santosh Mashetty, and Chitta Baral</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Lora: Low-rank adaptation of large language models</title>
+		<author>
+			<persName><forename type="first">Edward</forename><forename type="middle">J</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yelong</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phillip</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zeyuan</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuanzhi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shean</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhu</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Tenth International Conference on Learning Representations, ICLR 2022, Virtual Event</title>
+		<imprint>
+			<publisher>OpenReview</publisher>
+			<date type="published" when="2022-04-25">2022. April 25-29, 2022</date>
+		</imprint>
+	</monogr>
+	<note>net</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Explicit alignment objectives for multilingual bidirectional encoders</title>
+		<author>
+			<persName><forename type="first">Junjie</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melvin</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Orhan</forename><surname>Firat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Siddhant</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Graham</forename><surname>Neubig</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.naacl-main.284</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL-HLT 2021</title>
+		<meeting>the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL-HLT 2021<address><addrLine>Online</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2021-06-06">2021. June 6-11, 2021</date>
+			<biblScope unit="page" from="3633" to="3643" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Unicoder: A universal language encoder by pretraining with multiple cross-lingual tasks</title>
+		<author>
+			<persName><forename type="first">Haoyang</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yaobo</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Duan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Gong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linjun</forename><surname>Shou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daxin</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D19-1252</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing<address><addrLine>Hong Kong, China</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2019-11-03">2019. 2019. November 3-7, 2019</date>
+			<biblScope unit="page" from="2485" to="2494" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Glot500: Scaling multilingual corpora and language models to 500 languages</title>
+		<author>
+			<persName><forename type="first">Ayyoob</forename><surname>Imani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peiqin</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Hossein Kargaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Silvia</forename><surname>Severini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jalili</forename><surname>Masoud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nora</forename><surname>Sabet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunlan</forename><surname>Kassner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Helmut</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Schmid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">T</forename><surname>André</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">François</forename><surname>Martins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Yvon</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Schütze</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/V1/2023.ACL-LONG.61</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics<address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2023-07-09">2023. July 9-14, 2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1082" to="1117" />
+		</imprint>
+	</monogr>
+	<note>ACL 2023 Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Glotlid: Language identification for low-resource languages</title>
+		<author>
+			<persName><forename type="first">Ayyoob</forename><surname>Amir Hossein Kargaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">François</forename><surname>Imani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Yvon</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Schütze</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/V1/2023.FINDINGS-EMNLP.410</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2023</title>
+		<meeting><address><addrLine>Singapore</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023-12-06">2023. December 6-10, 2023</date>
+			<biblScope unit="page" from="6155" to="6218" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Quality at a glance: An audit of web-crawled multilingual datasets</title>
+		<author>
+			<persName><forename type="first">Julia</forename><surname>Kreutzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Isaac</forename><surname>Caswell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lisa</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ahsan</forename><surname>Wahab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daan</forename><surname>Van Esch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nasanbayar</forename><surname>Ulzii-Orshikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Allahsera</forename><surname>Tapo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nishant</forename><surname>Subramani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Artem</forename><surname>Sokolov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claytone</forename><surname>Sikasote</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Monang</forename><surname>Setyawan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Supheakmungkol</forename><surname>Sarin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sokhar</forename><surname>Samb</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benoît</forename><surname>Sagot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clara</forename><surname>Rivera</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Annette</forename><surname>Rios</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Isabel</forename><surname>Papadimitriou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Salomey</forename><surname>Osei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pedro</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Javier</forename><forename type="middle">Ortiz</forename><surname>Suárez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iroro</forename><surname>Orife</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kelechi</forename><surname>Ogueji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andre</forename><surname>Niyongabo Rubungo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Toan</forename><forename type="middle">Q</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mathias</forename><surname>Müller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">André</forename><surname>Müller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hassan</forename><surname>Shamsuddeen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nanda</forename><surname>Muhammad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ayanda</forename><surname>Muhammad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jamshidbek</forename><surname>Mnyakeni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tapiwanashe</forename><surname>Mirzakhalov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Matangira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nze</forename><surname>Leong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sneha</forename><surname>Lawson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yacine</forename><surname>Kudugunta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mathias</forename><surname>Jernite</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Orhan</forename><surname>Jenny</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Firat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">P</forename><surname>Bonaventure</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sakhile</forename><surname>Dossou</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Dlamini</surname></persName>
+		</author>
+		<idno type="DOI">10.1162/tacl_a_00447</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Trans. Assoc. Comput. Linguistics</title>
+		<editor>
+			<persName><forename type="first">Sakine</forename><surname>Nisansa De Silva</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Stella</forename><surname>Çabuk Balli</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Alessia</forename><surname>Biderman</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ahmed</forename><surname>Battisti</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ankur</forename><surname>Baruwa</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Pallavi</forename><surname>Bapna</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Baljekar</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Abebe</forename><surname>Israel</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Azime</surname></persName>
+		</editor>
+		<imprint>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="page" from="50" to="72" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+		<respStmt>
+			<orgName>Ayodele Awokoya, Duygu Ataman, Orevaoghene Ahia, Oghenefego Ahia, Sweta Agrawal, and Mofetoluwa Adeyemi</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Word translation without parallel data</title>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lample</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexis</forename><surname>Conneau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marc'aurelio</forename><surname>Ranzato</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ludovic</forename><surname>Denoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hervé</forename><surname>Jégou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">6th International Conference on Learning Representations, ICLR 2018</title>
+		<title level="s">Conference Track Proceedings. OpenReview</title>
+		<meeting><address><addrLine>Vancouver, BC, Canada</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2018-04-30">2018. April 30 -May 3, 2018</date>
+		</imprint>
+	</monogr>
+	<note>net</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">MLQA: evaluating cross-lingual extractive question answering</title>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">H</forename><surname>Patrick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barlas</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruty</forename><surname>Oguz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Rinott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Holger</forename><surname>Riedel</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Schwenk</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.acl-main.653</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, ACL 2020</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics, ACL 2020<address><addrLine>Online</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020-07-05">2020. July 5-10, 2020</date>
+			<biblScope unit="page" from="7315" to="7330" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Align after pre-train: Improving multilingual generative models with cross-lingual alignment</title>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaonan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiajun</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengqing</forename><surname>Zong</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2311.08089</idno>
+		<idno>CoRR, abs/2311.08089</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">2024a. mplm-sim: Better cross-lingual similarity and transfer in multilingual pretrained language models</title>
+		<author>
+			<persName><forename type="first">Peiqin</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengzhi</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheyu</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">T</forename><surname>André</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Martins</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Schütze</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EACL 2024, St</title>
+		<meeting><address><addrLine>Julian&apos;s, Malta</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2024">March 17-22, 2024</date>
+			<biblScope unit="page" from="276" to="310" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">2024b. Mala-500: Massive language adaptation of large language models</title>
+		<author>
+			<persName><forename type="first">Peiqin</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaoxiong</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jörg</forename><surname>Tiedemann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">T</forename><surname>André</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Martins</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Schütze</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2401.13303</idno>
+		<idno>CoRR, abs/2401.13303</idno>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">XAMPLER: learning to retrieve cross-lingual in-context examples</title>
+		<author>
+			<persName><forename type="first">Peiqin</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">T</forename><surname>André</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Martins</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Schütze</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2405.05116</idno>
+		<idno>CoRR, abs/2405.05116</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">OFA: A framework of initializing unseen subword embeddings for efficient largescale multilingual continued pretraining</title>
+		<author>
+			<persName><forename type="first">Yihong</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peiqin</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mingyang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Schütze</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2311.08849</idno>
+		<idno>CoRR, abs/2311.08849</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<title level="m" type="main">Are emergent abilities in large language models just in-context learning?</title>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Irina</forename><surname>Bigoulaeva</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2309.01809</idno>
+		<idno>CoRR, abs/2309.01809</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>Rachneet Sachdeva, Harish Tayyar Madabushi, and Iryna Gurevych</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<title level="m" type="main">ERNIE-M: enhanced multilingual representation by aligning cross-lingual semantics with monolingual corpora</title>
+		<author>
+			<persName><forename type="first">Xuan</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuohuan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chao</forename><surname>Pang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hua</forename><surname>Hao Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haifeng</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wang</surname></persName>
+		</author>
+		<idno>CoRR, abs/2012.15674</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Are pretrained multilingual models equally fair across languages?</title>
+		<author>
+			<persName><forename type="first">Laura</forename><surname>Cabello</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Piqueras</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anders</forename><surname>Søgaard</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 29th International Conference on Computational Linguistics, COLING 2022</title>
+		<meeting>the 29th International Conference on Computational Linguistics, COLING 2022<address><addrLine>Gyeongju, Republic of Korea</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022-10-12">2022. October 12-17, 2022</date>
+			<biblScope unit="page" from="3597" to="3605" />
+		</imprint>
+	</monogr>
+	<note>International Committee on Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">Quality does matter: A detailed look at the quality and utility of web-mined parallel corpora</title>
+		<author>
+			<persName><forename type="first">Surangika</forename><surname>Ranathunga</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Menan</forename><surname>Nisansa De Silva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aloka</forename><surname>Velayuthan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charitha</forename><surname>Fernando</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Rathnayake</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2402.07446</idno>
+		<idno>CoRR, abs/2402.07446</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Cometkiwi: Ist-unbabel 2022 submission for the quality estimation shared task</title>
+		<author>
+			<persName><forename type="first">Ricardo</forename><surname>Rei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marcos</forename><forename type="middle">V</forename><surname>Treviso</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Miguel</forename><surname>Nuno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chrysoula</forename><surname>Guerreiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ana</forename><forename type="middle">C</forename><surname>Zerva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christine</forename><surname>Farinha</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Maroti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">C</forename><surname>José</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Taisiya</forename><surname>De Souza</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Glushkova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Duarte</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luísa</forename><surname>Alves</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alon</forename><surname>Coheur</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lavie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">T</forename><surname>André</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Martins</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Seventh Conference on Machine Translation</title>
+		<meeting>the Seventh Conference on Machine Translation<address><addrLine>Abu Dhabi, United Arab Emirates (Hybrid)</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022-12-07">2022. December 7-8, 2022</date>
+			<biblScope unit="volume">2022</biblScope>
+			<biblScope unit="page" from="634" to="645" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">2022a. On the role of parallel data in cross-lingual transfer learning</title>
+		<author>
+			<persName><forename type="first">Machel</forename><surname>Reid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikel</forename><surname>Artetxe</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2212.10173</idno>
+		<idno>CoRR, abs/2212.10173</idno>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">PARADISE: exploiting parallel data for multilingual sequence-tosequence pretraining</title>
+		<author>
+			<persName><forename type="first">Machel</forename><surname>Reid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikel</forename><surname>Artetxe</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.naacl-main.58</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL 2022</title>
+		<meeting>the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL 2022<address><addrLine>Seattle, WA, United States</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022-07-10">2022. July 10-15, 2022</date>
+			<biblScope unit="page" from="800" to="810" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Teven</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angela</forename><surname>Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellie</forename><surname>Akiki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suzana</forename><surname>Pavlick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Ilic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roman</forename><surname>Hesslow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandra</forename><surname>Castagné</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">François</forename><surname>Sasha Luccioni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Yvon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Gallé</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><forename type="middle">M</forename><surname>Tow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stella</forename><surname>Rush</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pawan</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Sasanka Ammanamanchi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benoît</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niklas</forename><surname>Sagot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olatunji</forename><surname>Villanova Del Moral</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rachel</forename><surname>Ruwase</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stas</forename><surname>Bawden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angelina</forename><surname>Bekman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iz</forename><surname>Mcmillan-Major</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huu</forename><surname>Beltagy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucile</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Samson</forename><surname>Saulnier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pedro</forename><forename type="middle">Ortiz</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Victor</forename><surname>Suarez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Sanh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yacine</forename><surname>Laurençon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julien</forename><surname>Jernite</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Margaret</forename><surname>Launay</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Mitchell</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2211.05100</idno>
+		<editor>Colin Raffel, Aaron Gokaslan, Adi Simhi, Aitor Soroa, Alham Fikri Aji, Amit Alfassy, Anna Rogers, Ariel Kreisberg Nitzav, Canwen Xu, Chenghao Mou, Chris Emezue, Christopher Klamm, Colin Leong, Daniel van Strien, David Ifeoluwa Adelani</editor>
+		<imprint/>
+	</monogr>
+	<note>and et al. 2022. BLOOM: A 176b-parameter open-access multilingual language model. CoRR, abs/2211.05100</note>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ahmet</forename><surname>Üstün</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Viraat</forename><surname>Aryabumi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Yin</forename><surname>Yong</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D'</forename><surname>Daniel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gbemileke</forename><surname>Souza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Neel</forename><surname>Onilude</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shivalika</forename><surname>Bhandari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hui-Lee</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amr</forename><surname>Ooi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Freddie</forename><surname>Kayid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phil</forename><surname>Vargus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shayne</forename><surname>Blunsom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niklas</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marzieh</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julia</forename><surname>Fadaee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sara</forename><surname>Kreutzer</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hooker</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2402.07827</idno>
+		<idno>CoRR, abs/2402.07827</idno>
+		<title level="m">Aya model: An instruction finetuned open-access multilingual language model</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<title level="m" type="main">How far can camels go? exploring the state of instruction tuning on open resources</title>
+		<author>
+			<persName><forename type="first">Yizhong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hamish</forename><surname>Ivison</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pradeep</forename><surname>Dasigi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Hessel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tushar</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raghavi</forename><surname>Khyathi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Chandu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kelsey</forename><surname>Wadden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><forename type="middle">A</forename><surname>Macmillan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iz</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannaneh</forename><surname>Beltagy</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hajishirzi</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2306.04751</idno>
+		<idno>CoRR, abs/2306.04751</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Emergent abilities of large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishi</forename><surname>Bommasani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dani</forename><surname>Yogatama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Donald</forename><surname>Metzler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tatsunori</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oriol</forename><surname>Vinyals</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Dean</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Fedus</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Trans. Mach. Learn. Res</title>
+		<imprint>
+			<date type="published" when="2022">2022. 2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<monogr>
+		<title level="m" type="main">Larger language models do in-context learning differently</title>
+		<author>
+			<persName><forename type="first">Jerry</forename><forename type="middle">W</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dustin</forename><surname>Tran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yifeng</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyun</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hanxiao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Da</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tengyu</forename><surname>Ma</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2303.03846</idno>
+		<idno>CoRR, abs/2303.03846</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">On learning universal representations across languages</title>
+		<author>
+			<persName><forename type="first">Xiangpeng</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rongxiang</forename><surname>Weng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yue</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luxi</forename><surname>Xing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heng</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weihua</forename><surname>Luo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">9th International Conference on Learning Representations, ICLR 2021, Virtual Event</title>
+		<meeting><address><addrLine>Austria</addrLine></address></meeting>
+		<imprint>
+			<publisher>OpenReview</publisher>
+			<date type="published" when="2021-05-03">2021. May 3-7, 2021</date>
+		</imprint>
+	</monogr>
+	<note>net</note>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<monogr>
+		<title level="m" type="main">A paradigm shift in machine translation: Boosting translation performance of large language models</title>
+		<author>
+			<persName><forename type="first">Haoran</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Young</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jin</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amr</forename><surname>Sharaf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hany</forename><surname>Hassan Awadalla</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2309.11674</idno>
+		<idno>CoRR, abs/2309.11674</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<monogr>
+		<title level="m" type="main">Alternating language modeling for cross-lingual pre-training</title>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuming</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dongdong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuangzhi</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhoujun</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Zhou</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<monogr>
+		<title level="m">The Thirty-Fourth AAAI Conference on Artificial Intelligence, AAAI 2020, The Thirty-Second Innovative Applications of Artificial Intelligence Conference, IAAI 2020, The Tenth AAAI Symposium on Educational Advances in Artificial Intelligence</title>
+		<meeting><address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>AAAI Press</publisher>
+			<date type="published" when="2020">February 7-12, 2020</date>
+			<biblScope unit="volume">2020</biblScope>
+			<biblScope unit="page" from="9386" to="9393" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">Improving massively multilingual neural machine translation and zero-shot translation</title>
+		<author>
+			<persName><forename type="first">Biao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philip</forename><surname>Williams</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ivan</forename><surname>Titov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rico</forename><surname>Sennrich</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.acl-main.148</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, ACL 2020</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics, ACL 2020<address><addrLine>Online</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020-07-05">2020. July 5-10, 2020</date>
+			<biblScope unit="page" from="1628" to="1639" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<monogr>
+		<title level="m" type="main">LIMA: less is more for alignment</title>
+		<author>
+			<persName><forename type="first">Chunting</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengfei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Puxin</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Srini</forename><surname>Iyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiao</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuning</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhe</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Avia</forename><surname>Efrat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ping</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lili</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Susan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gargi</forename><surname>Ghosh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omer</forename><surname>Levy</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2305.11206</idno>
+		<idno>CoRR, abs/2305.11206</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<monogr>
+		<title level="m" type="main">Extrapolating large language models to non-english by aligning languages</title>
+		<author>
+			<persName><forename type="first">Wenhao</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunzhe</forename><surname>Lv</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingxiu</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingjing</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shujian</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lingpeng</forename><surname>Kong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiajun</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Li</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2308.04948</idno>
+		<idno>CoRR, abs/2308.04948</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

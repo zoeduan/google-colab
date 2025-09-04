@@ -1,0 +1,810 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Helping Language Models Learn More: Multi-dimensional Task Prompt for Few-shot Tuning*</title>
+				<funder ref="#_8qegAru">
+					<orgName type="full">National Natural Science Foundation of China</orgName>
+				</funder>
+				<funder ref="#_DscwVpQ">
+					<orgName type="full">Guizhou Province Education Department Project</orgName>
+				</funder>
+				<funder ref="#_JpC4tqj">
+					<orgName type="full">Qiannan Science and Technology Planning Project</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-12-13">13 Dec 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Jinta</forename><surname>Weng</surname></persName>
+							<email>wengjinta@iie.ac.cn</email>
+						</author>
+						<author>
+							<persName><forename type="first">Jiarui</forename><surname>Zhang</surname></persName>
+							<email>zhangjiarui@iie.ac.cn</email>
+						</author>
+						<author>
+							<persName><forename type="first">Yue</forename><surname>Hu</surname></persName>
+							<email>huyue@iie.ac.cn</email>
+							<affiliation key="aff0">
+								<orgName type="department">School of Cyber Security</orgName>
+								<orgName type="institution">Jinta Weng</orgName>
+								<address>
+									<addrLine>Jiarui Zhang Yue Hu</addrLine>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Daidong</forename><surname>Fa</surname></persName>
+							<affiliation key="aff2">
+								<orgName type="department">Daidong Fa with the School of Computer and Information</orgName>
+								<orgName type="institution">Qiannan Normal University for Nationalities</orgName>
+								<address>
+									<settlement>Duyun</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xiaofeng</forename><surname>Xu</surname></persName>
+							<affiliation key="aff3">
+								<orgName type="department">Xiaofeng Xu with the School of Computer Science and Cyber Engineering</orgName>
+								<orgName type="institution">Guangzhou University</orgName>
+								<address>
+									<settlement>Guangzhou</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Heyan</forename><surname>Huang</surname></persName>
+						</author>
+						<author>
+							<affiliation key="aff1">
+								<orgName type="institution">University of Chinese Academy of Sciences</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff4">
+								<orgName type="department">School of Computer Sci- ence and Technology, the Southeast Academy of Information Technology</orgName>
+								<orgName type="institution">Beijing Institute of Technology</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Helping Language Models Learn More: Multi-dimensional Task Prompt for Few-shot Tuning*</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-12-13">13 Dec 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">5D3209D6CF16C99437921427EC82EAF1</idno>
+					<idno type="arXiv">arXiv:2312.08027v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:33+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large language models (LLMs) can be used as accessible and intelligent chatbots by constructing natural language queries and directly inputting the prompt into the large language model. However, different prompt' constructions often lead to uncertainty in the answers and thus make it hard to utilize the specific knowledge of LLMs (like ChatGPT).</p><p>To alleviate this, we use an interpretable structure to explain the prompt learning principle in LLMs, which certificates that the effectiveness of language models is determined by position changes of the task's related tokens. Therefore, we propose MTPrompt, a multi-dimensional task prompt learning method consisting based on task-related object, summary, and task description information. By automatically building and searching for appropriate prompts, our proposed MTPrompt achieves the best results on few-shot samples setting and five different datasets. In addition, we demonstrate the effectiveness and stability of our method in different experimental settings and ablation experiments. In interaction with large language models, embedding more task-related information into prompts will make it easier to stimulate knowledge embedded in large language models.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>I. INTRODUCTION</head><p>Pre-trained language models (PLMs) have widely changed the research paradigm and applications(like ChatGPT and GPT4) of natural language processing in recent years <ref type="bibr" target="#b0">[1]</ref>. At present, most of these models are composed of two processes: pre-training model and fine-tuning process. PLMs use its huge parameters to record or learn the linguistic relation within large open-resource corpus in pre-training process. Then, with limited fine-tuning parameters and more domain-related datasets, PLMs can show better task-level adaption on downstream application.</p><p>Ideally, linguistic knowledge and semantic relations are reparameterized and motivated in the PLMs. Thus, through the proper design of external prompt, the PLMs' knowledge can Fig. <ref type="figure">1:</ref> The analytic structure of prompt-tuning and finetuning processes. be extracted or activated. Motivated by this, different model designs and promoting methods, like GPT-3's demonstration learning <ref type="bibr" target="#b1">[2]</ref> and cloze question templates <ref type="bibr" target="#b2">[3]</ref>, have shown their powerful ability in few-shot learning tasks. In these prompt-based fine-tuning methods, the model generally consists of a manual template to generate an explicit or implicit prompting input, a mask token for label prediction, and the label mapping that maps different labels into specified words.</p><p>However, finding a suitable template is fundamental to utilizing the prompt in PLMs <ref type="bibr" target="#b3">[4]</ref>, <ref type="bibr" target="#b4">[5]</ref>. Even minor change in the prompt form can make the result widely different <ref type="bibr" target="#b5">[6]</ref>. Most researchers try to explore suitable prompts from the aspect of their representation and model construction. For example, Schick and Schtze propose the PET and IPET models from the viewpoint of multi-template learning and using the expanded training dataset, but the effectiveness is based on hidden information of large unlabeled datasets <ref type="bibr" target="#b6">[7]</ref>. Chen et al. <ref type="bibr" target="#b7">[8]</ref> also design a violence searching method for selecting the suitable label mapping, which allows generating maximal hidden value of mask token on all inputs . Webson et al. <ref type="bibr" target="#b8">[9]</ref> argues that most prompt-based finetuning methods are more like relaxed RegEx rules, which aim to fit the language model and original corpora. Moreover, the search space for finding a suitable template or label mapping explosively increases with the number of tokens or labels. Nevertheless, the effectiveness is mainly based on the experienced manual-defined template, which makes prompt design still a specialist-first and computational-ability-first thing due to its heuristic-discovery process.</p><p>Unlike the textual prompt above, by encoding the prompt in a continuous vector in PLMs, continuous prompt (also called soft prompt) learning methods have effectively reduced the cost of finding suitable prompt <ref type="bibr" target="#b6">[7]</ref>, <ref type="bibr" target="#b9">[10]</ref>- <ref type="bibr" target="#b11">[12]</ref>. These continuous prompts can tune the prompt vector and learn the hidden relationships within the template and the original input, while it may lack portability and interpretation. Moreover, the suitable initialization of the continuous prompt is also essential to realize an ideal effect, which is more common in few-shot learning tasks <ref type="bibr" target="#b8">[9]</ref>.</p><p>In general, although some prompt learning methods have achieved significant effects, the efficiency and reliability of prompt learning are still considered issues. It's not easy to quickly design an effective and usable prompt.</p><p>To get close to this problem, we propose a sphere model to reveal the learning mechanism of pre-trained language models (PLMs). Based on the proposed structure, we explain the effectiveness of the prompt tuning process by comparing the fine-tuning process. We reveal that adding appropriate task-related tokens could facilitate sentence representation in a more appropriate position. Therefore, we proposed the MTPrompt model, a Multi-dimensional Task-driven Prompt learning model generated from different types of task descriptions. We aim to design more instructive prompts from the degree of meta-description of the task and help the model utilize more task-oriented information from PLMs. The main contributions of the proposed paper are as follows:</p><p>• We reveal the learning and prompting mechanisms of natural language models by the interpretative modeling method. • A multi-dimensional task prompt used to stimulate the information activation of language models is proposed. • Our proposed method can achieve state-of-the-art results in various few-shot learning tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>II. THEORY FOUNDATION</head><p>In this section, we first introduce the definition of finetuning and prompt-based tuning. Then we use the analytic structure method to clarify the theoretical basis of the proposed MTPrompt.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Fine-tuning Process</head><p>Fine-tuning is the most basic model-tuning method for natural language processing applications. By initializing the language model with pre-trained parameters (acquired from an open-source trained model), the fine-tuning process tunes these parameters on task-related data with a gradient descent training process. Therefore, large language models can quickly adapt to downstream tasks, and fine-tuning has also become a standard trick for deep learning and neural networks. It has been shown that using a pre-trained model on a large dataset and fine-tuning on task-related data can often get better results than training directly on your data without the pre-trained model because the parameters of the pre-trained model are in a better position for the fine-tuning process.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Prompt-based fine-tuning</head><p>With the exponential growth of the pre-trained language model, large language models (such as Chat-GPT and GPT3), which can store human knowledge and adjust to changes in the natural language query (Prompt), could complete some tasks and realize human interaction based on parameter emergence ability. Therefore, a tuning method called prompt-based fine-tuning (prompt tuning) has been proposed.</p><p>The prompt-based fine-tuning consists of a human-defined template and label verbalizer. For the text emotion classification task, we may use a template like 'input. Emotion:[mask position]' to transform the input 'I like movie' into 'I like movie. Emotion:[mask position]'. The [mask position] is used to generate specific words like 'positive' or 'negative'. If the prediction word of mask position is 'positive', we would directly classify the input as positive emotion while the word 'negative' is for negative emotion. The prediction word could be changed based on the task's mapping labels, and we call this label mapping process a label verbalizer. The pre-trained model only needs to predict the mask position in specific words with the help of a prompt template and a verbalizer. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Prompt Mechanism and Limitation</head><p>To reveal the different and the association of the finetuning and the prompt-based fine-tuning method in PLMs. As figure <ref type="figure">1</ref> depicted, we construct the analytic structure between the fine-tuning and the prompt-tuning process.</p><p>We first classify the pre-trained language model into three categories, the language kernel, token sphere, and text sphere. The language kernel is the ideal language origin with language syntax. All the words are listed in the token sphere with different positions, and the distance between them reveals their semantic similarity(Like apple and fruit). The text sphere with maximum space is used to represent different sentences, and the positions of these sentences are calculated by the words in the token sphere. The existence of the concept of 'position' is a task-specific perspective. For example, in the emotional classification task, we define an emotional classification surface to classify these words and sentences into suitable positions. For example, the projection of the word 'like' on the emotional surface should be closer to the positive aspect.</p><p>In the fine-tuning process, the sentence 'I like movie' and the word 'like' would fine-tune to the positive aspect, while the sentence 'I hate movie' and the word 'hate' would finetune to the negative aspect.</p><p>Different from the fine-tuning process, the input would first add a prompt template with tokens 'emotion:', then the position of the sentence 'I like to move' is influenced by the adding token 'emotion', which brings a new initialization position closer to the emotional surface. Therefore, promptbased fine-tuning needs less training corpus and less training cost with a more suitable initialization position, as the information of adding prompt template and tokens can influence the finnal prediction.</p><p>What is more, the effectiveness of prompting learning method have shown PLM is a parameterized knowledge base of training corpus. The prompt-based fine-tuning process not only optimizing huge parameters to adapt in downstream task, but also finding a best parameterized path to access similar knowledge. Furthermore, could we optimize the prompt-tuning process through more task-related tokens and task-related information? III. MTPROMPT: MULTI-DIMENSIONAL TASK PROMPT Motivated by above-mentioned discovery, we put forward a new prompt learning, Multi-dimensional Task Prompt(MTPrompt). In detail, the MTPrompt is composed of three different types of description: object description (OD), summary description (SD), and task description (TD). These descriptions are generated from the metadata of current task, such as label information, task goal, and other metadata information, which are easy to extracted from opensource knowledge.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Task name (labels) -Prompt Type: Description</head><p>Example: SST-2 Task (positive / negative) -OD: A movie review -SD: Talking about its director, actor, performance, character skill, and story.</p><p>-TD: The emotion of this review was <ref type="bibr">[MASK]</ref> TABLE I: Our Meta-prompt combining by object description (OD), summary description (SD), and task description (TD) with a 'mask' token.</p><p>We list a MTPrompt of SST-2(The Stanford Sentiment Treebank) emotional classification tasks in Tab. I.</p><p>As following equation depicted, after select suitable types of MTPrompt, the original input x i is transferred to:</p><formula xml:id="formula_0">T(x i ) = x i .[t Od ][t Sd ][t T d ][M ASK] (<label>1</label></formula><formula xml:id="formula_1">)</formula><p>where T is the template for the input x, i is the index of the instance, and t are the different types of word tokens. Since PLMs may see similar tasks and corpus in the pretraining process, we could use more metadata description about current task to help the model recall its knowledge memory quickly, instead of merely using a cloze question or demonstration example like GPT-3. Besides, the metadata description could help the PLMs fine-tune in more narrow and similar semantic space, for which the metadata description template introduces more task-related information.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Task name (labels) -[OD]-[SD]-[TD])</head><p>SST-2 (positive / negative) -A movie review -talking about its director, actor, performance, character skill, and story, -the emotion of this review was [MASK] SST-5 (very positive / positive / neutral / negative / very negative) -A movie review -talking about its director, actor, performance, character skill, and story, -the emotion of this review was <ref type="bibr">[</ref>MASK] TREC (abbreviation / entity / description / human / location / numeric) -A English question. -about huaman, description, location numeric entity , and abbreviations. -The question type is [mask]. SNLI (entailment / neutral / contradiction) -[sent 1 .] A Stanford Natural Language Inference sentence pairs -labeled as entailment , contradiction , and neutral. -whether the context contains the answer to the question?[mask][sent 2 .] QNLI (entailment / contradiction) -[sent 1 .] A Stanford Question Answering sentence pairs -labeled as entailment and contradiction. -whether the context contains the answer to the question? [mask][sent 2 .]</p><p>TABLE II: Our MTPrompt combining object description (OD), summary description (SD), and task description (TD) with a mask token.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Select Semantic Prompt</head><p>Since minor change of prompt tokens may result in the uncertainty result, thus selecting suitable template T (prompt) is essential. We thus introduce the prompt candidate to store different types of MTPrompts and put forward a searching strategy for the prompt selection. We provide manual and automatic selection, allowing users to select a specific type of prompt or to traverse supported prompts. The formula of automatic selection process is as follows:</p><formula xml:id="formula_2">topk( D i p (y|T n (x i ), mask)) (<label>2</label></formula><formula xml:id="formula_3">)</formula><p>where D is the size of task's training sample, n is the index of different templates, y is the label?s mapping token corresponding to the label of X.</p><p>In the manual setting, we have listed some ideal prompt options for experimental datasets in the table II by means of automatic searching. As the suitable prompt is selected, a transition template of current prompt is used to transform the original input x i to prompting x i :</p><formula xml:id="formula_4">x i = T select (x i ) = x i .[t 1 ][t 2 ][t .. ][t N ][M ASK]. (3)</formula><p>where the [mask] is the specif token that would be subsequently used to generate the word distribution over PLM's vocabulary, and T select is the selected template.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Model formulation</head><p>Given the transition input x i , the target is predicting the pre-definded label-mapping tokens on [mask] position.</p><p>As the Fig. <ref type="figure" target="#fig_0">2</ref> depicted, only the output of [mask] token h [mask] would be used to create a token-level distribution over PLM's vocabulary by introducing a learnable linear projector W:</p><formula xml:id="formula_5">δ = h [mask] ⊗ W proj = P LM (x i mask ) ⊗ W proj (4)</formula><p>where the size of linear projector W is R |h×len(V )| , and h vt is the value of PLM token distribution in token v t .</p><p>Subsequently, some tokens in PLM's vocabulary V are chosen to represent each label and formed in a pre-defined label mapping.</p><formula xml:id="formula_6">F (y) : y t → v t , y t ∈ Y, v t ∈ V<label>(5)</label></formula><p>, where t is the label index of label set Y , y t is the specific label, and v represents the token in Vocabulary V . For example, in emotion classification task, we could use the PLMs token "good" to stand for the positive label, while using "bad" for negative label.</p><p>Since each label has been represented by some specific tokens, only the distributions of these tokens v t would be retained and used to calculate the final prediction as following equation:</p><formula xml:id="formula_7">p(y i |x i ) ⇒ p(F (y i )|δ) = p(v t |h [mask] ⊗ W proj ) = ln exp(h [mask] • w t ) |Y | k=1 exp(h [mask] • w k )<label>(6)</label></formula><p>, where |Y | is the label number of current task, v k is used to represent the token?s logit value of the k-th token in soft label mapping. The target of task classification thus is transferred into the prediction of tokens in label mappings and the final loss is formulated as:</p><formula xml:id="formula_8">L = - 1 N i |Y | t=1 log p(y it |x it )<label>(7)</label></formula><p>, where i is the index of the training pair (x i , y i ).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>IV. EXPERIMENTS</head><p>In this section, we present the effectiveness of proposed model MTPrompt in different semantic understanding tasks with few-shot setting, for example, the sentiment classification, question classification, and natural language inference. We also try to explore and analysis the generalization and transferability and Meta-prompt.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Datasets</head><p>We have selected five distinct datasets from the glue and sentiment benchmarks, which include tasks such as sentiment classification, question classification, and natural language inference. For the sentiment classification task, we use the two most representative datasets: SST-2 and SST-5. The SST datasets are used to predict the emotion of a movie review, with SST-2 labeling reviews as positive or negative and SST-5 labeling reviews with tags such as 'very positive', 'positive', 'neutral', 'negative', and 'very negative'. We have chosen the TREC-6(The Text REtrieval Conference Question Classification dataset) dataset for the question classification task, which aims to predict the six types of questions given an English question text. Finally, for the natural language inference task, we have utilized both the SNLI(Stanford Natural Language Inference) and QNLI(Qusetion-answering NLI)) datasets to evaluate the model's ability to determine whether the meaning of the next sentence can be inferred from the previous sentence.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Experiment Setting</head><p>Our pre-training language model is RoBERTa-large. The experiments were conducted on NVIDIA V100 32GB, although they could also be run on 1080ti with a small batch size. During the training process, we conducted various experiments with different batch sizes (bs=4,8,16) and learning rates (lr=1e-5,2e-5,5e-5). To ensure fair results, we used five different sub-sets with the same sampling size, as some studies have shown that even minor differences in few-shot datasets can lead to varied results. Additionally, to ensure fairness, we used the mean score and variance of the prediction result on different subsets instead of the highest score. We followed Gaos work to satisfy the fewshot learning in PLMs by selecting five different K-shot subdatasets, where each sub-dataset consists of K=16 training pairs on each type of label <ref type="bibr" target="#b7">[8]</ref>. For instance, the SST-2 emotion classification task with two classes needed five different training sets with the size of 32 and a validation set with the same size of 32, while the testing size used the original size of the SST-2 task without any other data setup. These sub-datasets were trained and predicted individually, and their training process and prediction result were recorded with different batch sizes and learning rates. All training pairs in the same task used the same template transition in the proposed prompting strategies to construct the real input. Finally, we selected the best result of each sub-dataset using different hyperparameters and integrated the best result on the aspect of the sub-dataset. To evaluate the prediction of sub-datasets, we selected the average accuracy and variance of different sub-datasets as the evaluation criteria, as it shows the overall performance and variation of the current task.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Baselines</head><p>We evaluate our approach by comparing it to several existing methods and setting our baselines. The baselines we use include the Majority method, which selects the class with the highest frequency as the prediction, fine-tuning method <ref type="bibr" target="#b12">[13]</ref>, prompt-based zero-shot learning, GPT3-in-context-learning <ref type="bibr" target="#b1">[2]</ref>, and the LMBFF model described in Gao's work <ref type="bibr" target="#b7">[8]</ref>. To ensure a fair comparison with the baselines, we adopt the same settings used in previous studies for each prompt learning method. The specific prompt templates used in these baselines are presented in Table <ref type="table">III</ref>.</p><p>Task Label Mapping Template SST-2 {'0':'good','1':'bad'} *cls**sent 0* It was*mask*.*sep+* SST-5 {'contradiction':'No','entailment':'Yes','neutral':'Maybe'} *cls**sent 0* This movie was*mask*.*sep+* TREC {0:'Description',1:'Entity',2:'Expression',3:'Human',4:'Location',5:'Number'} *cls**mask*:*+sent 0**sep+* QNLI {'not entailment':'No','entailment':'Yes'} *cls**sent-0*?*mask*,*+sentl 1**sep+* SNLI {'contradiction':'No','entailment':'Yes','neutral':'Maybe'} *cls**sent-0*?*mask*,*+sentl 1**sep+*</p><p>TABLE III: The label mapping and template in the other baselines. -Y-: classes Number for classification tasks. L: average words in input sentence(s). In our few-shot experiments, we also sample D train and D dev of K -Y-examples from the original training set. Baselines TREC (acc) SNLI (acc) QNLI (acc) SST-5 (acc) SST-2 (acc) Majority ⋆ 18.8 33.8 49.5 50.9 23.1 prompt-based zero-shot learning⋆ 32.0 49.5 50.8 35.0 83.6 GPT3-in-context-learning⋆ 26.2(2.4) 47.1(0.6) 53.8(0.4) 30.6(0.9) 84.8 fine-tuning⋆ 88.8(2.1) 48.4(4.8) 60.2(6.5) 43.9(2.0) 81.4(3.8) Prefix-tuning 36.0(1.1) 33.5(3.9) 54.5(2.2) 46.1(1.3) 88.1(2.3) P-tuning 40.2(1.3) 37.5(1.6) 57.6(3.9) 32.1(3.1) 90.1(1.2) LMBFF ⋆ 84.8(5.1) 77.1(3.9) 63.7(4.2) 46.1(1.3) 92.1(1.1) CP-Tuning --69.22 -93.35 UPT 76.2 71.1 -45.1 90.8 Our Methods MT-prompt † 85.0(2.0) 77.2 (1.4) 64.9 (3.3) 50.4(1.3) 91.9 (1.5)</p><p>TABLE IV: Main result of the MTPrompt. The results of all experiments are evaluated by selecting the mean and variance of accuracy on five different segmented training datasets and same testing dataset. Note that the results of existing baselines (⋆) are used from the [8] to ensure fairness, and the results of prefix-tuning and prompt-tuning mode are reproduced by the same experimental setting. Combinations Acc. Variance Median OD+SD+TD w/0 46.1 1.3 46.4 TD 47.5 2.3 48.5 OD 48.2 2.5 48.4 SD 48.3 2.1 47.1 SD+TD 48.7↑ 0.6↓ 48.6↑ OD+TD 48.8↑ 1.0↓ 48.6↑ OD+SD 50.1 ↑ 1.4↓ 49.8↑ OD+SD+TD 47.3 ↓ 5.4 ↑ 50.0↑ Average 49.5 1.7 50.3↑</p><p>TABLE V: The effectiveness of different types and combinations of task descriptions in Meta-prompt. The average result is generated from the joint inference of all combinations of Meta-prompt.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D. Main Result</head><p>The main result of different proposed methods is depicted in Tab. IV. According to the results, the presented MTPrompt show better performance on different types of task in the following aspects: (a) Compared with the fine-tuning and GPT-3 in-context learning method, our MTPrompt could get better performance on different tasks, because our MTPrompt adopts more instructive prompt-based fine-tuning methods, allowing the PLM to learn the minor change on unique tokens. (b) Comparing with LMBFF (discrete prompt), the Metaprompt could improve the performance of different text classification tasks. Current prompt-based fine-tuning methods need task-related knowledge to motivate the PLM to finish the semantic understanding tasks. (c) The performance of the MTPrompt indicates that our proposed prompt could reach more gains from the metadescription, and it also shows that the MTPrompt can find the suitable prompt and offer more augmented prompt choices for prompt learning methods. (d) The effectiveness of SST-2 tasks and QNLI tasks shows the insensitive to binary emotional classification task SST-2 with high accuracy, whereas it is still effective for binary entailment classification with low accuracy. We consider that there is no need to add a particular augmented prompt for high-accuracy tasks or simple tasks since the specific MTPrompt may bring much distracting information. In general, our results show that the proposed MTPrompt could get better improvement compared with different baselines.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>E. Explore Different Choices of MTPrompt 1) MTPrompt for Different tasks:</head><p>A compact MTPrompt consists of an Object Description (OD), Summary Description (SD), and Task Description (TD). In evaluating MT-Prompt, all the descriptions in the MTPrompt used in the proposed paper are listed in Tab. II. Note that the label mappings in Meta-prompt still use the setting of Tab. III.</p><p>2) Ablation experiments: To explore different types of task descriptions in Meta-prompt, we further develop ablation experiments on different types of meta-prompt in SST-5 emotion classification tasks. In detail, we use different experimental combinations constructed by three kinds of meta-prompt, object description (OD), summary description (SD), and task description (TD).</p><p>Task Name Settings bs=4 bs=8 bs=16 seed=13 seed=21 seed=42 seed=87 seed=100 Average LMBFF SST-2 90.5 (2.2) 92.8 (0.2) 91.7 (1.4) 89.2 (0.0) 93.6 (0.0) 92.5 (0.0) 91.6 (0.0) 92.5 (0.0) 91.9 (1.5) 92.1(1.2) SST-5 47.7 (2.6) 48.9 (1.9) 50.1 (1.1) 50.3 (0.0) 48.1 (0.0) 51.4 (0.0) 46.9 (0.0) 50.5 (0.0) 50.4 (1.3) 46.1(1.3)</p><p>TABLE VI: The comparison of different experimental settings. Note that the variance result is based on different seeds and therefore the variance of different seeds is null.</p><p>As the Tab. V depicted, it reviews that these three description types can motivate the PLMs to generate more suitable predictions. With the increase in the description type, the accuracy and median value of the current task could be improved, and its variance is decreased. It indicates that using these three types of description and their combination to construct a prompt can help the PLMs find the task-related knowledge embedded in PLMs and increase the effectiveness of the current task.</p><p>All the meta-description have certificated that PLM can realize the semantic understanding to some degree. We consider that the task-related tokens could optima the representation of prompt projector, which is utilized to map the representation of [mask] tokens to all PLM's vocabulary tokens. Compared with the original probability distribution of mapping tokens, our proposed MTPrompt, which contains more task-driven information, could empower the representation of unique labels, reducing the probability of irrelevant label mapping tokens and useless mapping tokens.</p><p>However, though the median accuracy is increasing, the accuracy begins to reduce, and its variance increases when we combine these three description types. Therefore, using more types of descriptions may sometimes bring more interference when the length of augmented tokens is much longer than the original sentence. It indicates that we should balance the prompt size and the initial input, and some representing methods of these task descriptions could also be considered.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>F. Explore the Stability of MTPrompt</head><p>Since relevant studies have proved that different batch sizes and random seeds are the keys to small sample learning experiments, we further evaluated the transferability and stability of the proposed method under different experimental settings. Two sentiment analysis tasks, SST-2 and SST-5, were selected to verify the effects of all experimental Settings, including three different batch sizes and five different random seeds. We use the variable control method, which only changes one experimental setting at a time.</p><p>As shown in Figure <ref type="figure">VI</ref>, it is revealed that all the proposed methods can exceed the main experimental setting without any large-variance results. Specifically, in the SST-2 experiment, we achieved the best effect at bs=8 and seed=21. In contrast, in sst-5, we achieved the best results at bs=16 and seed=42, which far exceeded the main experiment (mean) effect and the comparison model LMBFF. Our method has certain stability and portability in different experimental Settings and the same task.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>V. RELATED WORKS</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Prompts in PLMs</head><p>The effectiveness of two-step PLMs mostly depend on its mutual motivation between huge open-domain datasets and small task-oriented data. On the one hand, huge pre-training corpus offer a data foundation and interface for recording and searching external knowledge by the memory parameter. On the other hand, task-oriented data could retain or restrain adjusted parameters to motivate local similar knowledge. Compared to traditional training paradigm, PLMs have achieved better performance in different NLP task and the explanation of PLMs thus become a hot question. One consensus is PLMs could learn the language structure and knowledge existing in large-scale corpus <ref type="bibr" target="#b13">[14]</ref>. At the same time, the problem of what knowledge and information PLMs learned also attract many attentions <ref type="bibr" target="#b2">[3]</ref>. Lin et al. found that BERT encodes the location information about the word markers well at its lower level, but switches to the hierarchy-oriented encoding at the higher level <ref type="bibr" target="#b14">[15]</ref>. Jiang et al. propose mining and paraphrase based approaches to automatically generate high-quality and diverse prompts to estimate the knowledge contained in LM. While learning language knowledge, these PLMs models may also store relational knowledge that exists in training data. In addition, the performance of PLMs was largely due to biased hints about which data sets had been fitted, and the prediction is improved mainly through entity guidance and golden answer leakage <ref type="bibr" target="#b15">[16]</ref>. Therefore, with the exponential growth in PLMs parameter, PLMs now could seem as a linguistic tool, which could directly generate the prediction of different NLP tasks <ref type="bibr" target="#b16">[17]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Prompt Fine-tuning</head><p>Roberts et al. found that using natural language queries to fine-tuning the PLMs can also achieve competitive results comparing with extracting the external knowledge <ref type="bibr" target="#b17">[18]</ref>. What is more, given with task description or few in-context data, GPT-3 could efficiently finish many NLP tasks. These shifts current fine-tuning paradigm to prompt fine-tuning, a learning paradigm used different prompt strategy to activate the knowledge generation. In task-oriented prompt application, Schick <ref type="bibr" target="#b6">[7]</ref>, <ref type="bibr" target="#b18">[19]</ref> introduces a PET model, which adds a cloze-quesiton template in orgin input, and then predict the masked tag for task of few-shot text classification. Han et al. design the basic sub-prompts manually for text classification and apply logical rules to combine these sub-prompts into the final task-specific prompts <ref type="bibr" target="#b19">[20]</ref>. Ding et al construct an entity-oriented verbalizer and templates used for fine-grained entity tagging <ref type="bibr" target="#b20">[21]</ref>. Madotto et al Use only a few examples of each skill and prompt learning to created a end-to-end Bot for question answering <ref type="bibr" target="#b21">[22]</ref>, and Zhong et al. put forward a OptiPrompt model for factual Probing <ref type="bibr" target="#b22">[23]</ref>. In general, these works have certified the power of prompt fine-tuning, and the design of prompt and tuning strategy are significant for each task.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>VI. CONCLUSION</head><p>To alleviate the problem of finding suitable prompts for large language models (like Chat-GPT and GPT-3), we proposed a more instructive prompt learning model -MTPrompt. Based on the proposed prompt mechanism in language models, we introduce three types of task's meta description to help language motivate the related knowledge(in detail, related tokens). We also put forward two strategies to filter the prompt candidate set. Our results show that MTPrompt could require better improvement on emotion classification, question classification, and natural language inference tasks, which reveals that the proposed MTPrompt could be assumed to be a better knowledge probe of PLMs. Our contrast and supplement experiments also show that MTPrompt has certain stability and portability in different experimental Settings and the same task.</p><p>However, the MTPrompt model still has some limitations: (a) The proposed prompt designs are based on experiential tests on different task-oriented metadata descriptions; (b) Though prompt-based fine-tuning method could achieve fast fine-tuning, an automotive and fast searching these tokens should be considered. Our further work would concentrate more on this and offer more technical guidance of MT-Prompt.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Fig. 2 :</head><label>2</label><figDesc>Fig. 2: The prompt tuning procession with MTPrompt.</figDesc><graphic coords="2,308.56,344.02,253.77,82.69" type="bitmap" /></figure>
+		</body>
+		<back>
+
+			<div type="funding">
+<div><p>*This work is supported by the <rs type="funder">National Natural Science Foundation of China</rs> (Grant No.<rs type="grantNumber">U21B2009</rs>), <rs type="funder">Guizhou Province Education Department Project</rs> under Grant Qianjiaohe <rs type="grantNumber">KY[2022]091</rs>, <rs type="funder">Qiannan Science and Technology Planning Project</rs> under Grant (No.[2018]19), and is also supported by the <rs type="programName">Strategic Priority Research Program of Chinese Academy of Science</rs>, Grant No.<rs type="grantNumber">XDC02030400</rs>.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_8qegAru">
+					<idno type="grant-number">U21B2009</idno>
+				</org>
+				<org type="funding" xml:id="_DscwVpQ">
+					<idno type="grant-number">KY[2022]091</idno>
+				</org>
+				<org type="funding" xml:id="_JpC4tqj">
+					<idno type="grant-number">XDC02030400</idno>
+					<orgName type="program" subtype="full">Strategic Priority Research Program of Chinese Academy of Science</orgName>
+				</org>
+			</listOrg>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding</title>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1810.04805</idno>
+		<imprint>
+			<date type="published" when="2018-10">Oct. 2018</date>
+		</imprint>
+	</monogr>
+	<note>arXiv e-prints</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">How can we know what language models know?</title>
+		<author>
+			<persName><forename type="first">Zhengbao</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Frank</forename><forename type="middle">F</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Araki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Graham</forename><surname>Neubig</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="page" from="423" to="438" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">The power of scale for parameter-efficient prompt tuning</title>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Lester</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rami</forename><surname>Al-Rfou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><surname>Constant</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="3045" to="3059" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Are prompt-based models clueless?</title>
+		<author>
+			<persName><forename type="first">Pride</forename><surname>Kavumba</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryo</forename><surname>Takahashi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yusuke</forename><surname>Oda</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="2333" to="2352" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Pre-trained models for natural language processing: A survey</title>
+		<author>
+			<persName><forename type="first">Xipeng</forename><surname>Qiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianxiang</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yige</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunfan</forename><surname>Shao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ning</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuanjing</forename><surname>Huang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Science China Technological Sciences</title>
+		<imprint>
+			<biblScope unit="volume">63</biblScope>
+			<biblScope unit="issue">10</biblScope>
+			<biblScope unit="page" from="1872" to="1897" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Exploiting cloze-questions for few-shot text classification and natural language inference</title>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Schick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Schütze</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 16th Conference of the European Chapter</title>
+		<meeting>the 16th Conference of the European Chapter</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021-04">Apr. 2021</date>
+			<biblScope unit="page" from="255" to="269" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Making pretrained language models better few-shot learners</title>
+		<author>
+			<persName><forename type="first">Tianyu</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Fisch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danqi</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2012.15723</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Do prompt-based models really understand the meaning of their prompts?</title>
+		<author>
+			<persName><forename type="first">Albert</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellie</forename><surname>Pavlick</surname></persName>
+		</author>
+		<idno>abs/2109.01247</idno>
+	</analytic>
+	<monogr>
+		<title level="j">ArXiv</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanan</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengxiao</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yujie</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhilin</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Tang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2103.10385</idno>
+		<title level="m">Gpt understands, too</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Prefix-tuning: Optimizing continuous prompts for generation</title>
+		<author>
+			<persName><forename type="first">Lisa</forename><surname>Xiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</title>
+		<meeting>the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021-08">Aug. 2021</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="4582" to="4597" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Autoprompt: Eliciting knowledge from language models with automatically generated prompts</title>
+		<author>
+			<persName><forename type="first">Taylor</forename><surname>Shin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasaman</forename><surname>Razeghi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><forename type="middle">L</forename><surname>Logan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><forename type="middle">V</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Wallace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sameer</forename><surname>Singh</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2010.15980</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Roberta: A robustly optimized bert pretraining approach</title>
+		<author>
+			<persName><forename type="first">Yinhan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Myle</forename><surname>Ott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingfei</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mandar</forename><surname>Joshi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danqi</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omer</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Veselin</forename><surname>Stoyanov</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ArXiv</title>
+		<imprint>
+			<date type="published" when="1907">1907.11692, 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Language models as knowledge bases?</title>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tim</forename><surname>Rocktäschel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Riedel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anton</forename><surname>Bakhtin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxiang</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Miller</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)<address><addrLine>Hong Kong, China</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019-11">Nov. 2019</date>
+			<biblScope unit="page" from="2463" to="2473" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Open sesame: Getting inside bert&apos;s linguistic knowledge</title>
+		<author>
+			<persName><forename type="first">Yongjie</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Chern Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Frank</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Knowledgeable or educated guess? revisiting language models as knowledge bases</title>
+		<author>
+			<persName><forename type="first">Boxi</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongyu</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xianpei</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lingyong</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meng</forename><surname>Liao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tong</forename><surname>Xue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jin</forename><surname>Xu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</title>
+		<meeting>the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021-08">Aug. 2021</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1860" to="1874" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Language models are unsupervised multitask learners</title>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">OpenAI blog</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page">9</biblScope>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">How much knowledge can you pack into the parameters of a language model?</title>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020-11">Nov. 2020</date>
+			<biblScope unit="page" from="5418" to="5426" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Automatically identifying words that can serve as labels for few-shot text classification</title>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Schick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Helmut</forename><surname>Schmid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Schütze</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The 28th International Conference on Computational Linguistics</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Ptr: Prompt tuning with rules for text classification</title>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weilin</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ning</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiyuan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maosong</forename><surname>Sun</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2105.11259</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Prompt-learning for fine-grained entity typing</title>
+		<author>
+			<persName><forename type="first">Ning</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yulin</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guangwei</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengjun</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hai-Tao</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiyuan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Juanzi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hong-Gee</forename><surname>Kim</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2108.10604</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Few-shot bot: Prompt-based learning for dialogue systems</title>
+		<author>
+			<persName><forename type="first">Andrea</forename><surname>Madotto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhaojiang</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Genta</forename><surname>Indra Winata</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pascale</forename><surname>Fung</surname></persName>
+		</author>
+		<idno>abs/2110.08118</idno>
+	</analytic>
+	<monogr>
+		<title level="j">CoRR</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Factual probing is [mask]: Learning vs. learning to recall</title>
+		<author>
+			<persName><forename type="first">Zexuan</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Friedman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danqi</forename><surname>Chen</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

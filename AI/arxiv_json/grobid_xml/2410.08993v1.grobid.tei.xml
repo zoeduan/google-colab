@@ -1,0 +1,792 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">The structure of the token space for large language models</title>
+				<funder ref="#_u3uVFJ5 #_dTRjfM6 #_6jWZehv #_ZZ5c393">
+					<orgName type="full">Defense Advanced Research Projects Agency</orgName>
+					<orgName type="abbreviated">DARPA</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-10-11">11 Oct 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Michael</forename><surname>Robinson</surname></persName>
+							<email>michaelr@american.edu</email>
+							<affiliation key="aff0">
+								<orgName type="department">Mathematics and Statistics</orgName>
+								<orgName type="institution">American University</orgName>
+								<address>
+									<settlement>Washington</settlement>
+									<region>DC</region>
+									<country key="US">USA</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Sourya</forename><surname>Dey</surname></persName>
+							<email>sourya@galois.com</email>
+							<affiliation key="aff1">
+								<orgName type="institution">Galois, Inc</orgName>
+								<address>
+									<settlement>Arlington</settlement>
+									<region>VA</region>
+									<country key="US">USA</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Shauna</forename><surname>Sweet</surname></persName>
+							<email>sjaynesweet@gmail.com</email>
+						</author>
+						<title level="a" type="main">The structure of the token space for large language models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-10-11">11 Oct 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">C85217C9DE794BC51BE1F4273A02D09D</idno>
+					<idno type="arXiv">arXiv:2410.08993v1[math.DG]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:41+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large language models encode the correlational structure present in natural language by fitting segments of utterances (tokens) into a high dimensional ambient latent space upon which the models then operate. We assert that in order to develop a foundational, first-principles understanding of the behavior and limitations of large language models, it is crucial to understand the topological and geometric structure of this token subspace. In this article, we present estimators for the dimension and Ricci scalar curvature of the token subspace, and apply it to three open source large language models of moderate size: GPT2, LLEMMA7B, and MISTRAL7B. In all three models, using these measurements, we find that the token subspace is not a manifold, but is instead a stratified manifold, where on each of the individual strata, the Ricci curvature is significantly negative. We additionally find that the dimension and curvature correlate with generative fluency of the models, which suggest that these findings have implications for model behavior.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Large language models (LLMs) encode the correlational structure present in natural language by fitting segments of utterances (tokens) into a high dimensional ambient latent space upon which the models then operate. Not every point in this latent space is linguistically meaningful; only a subspace of it corresponds to tokens that are extant in the learned vocabulary of the target language. We assert that in order to develop a foundational, first-principles understanding of the behavior and limitations of large language models, it is crucial to understand the topological and geometric structure of this token subspace.</p><p>Since the tokens are determined prior to model training, one of the tasks of training from scratch is to determine numerical coordinates for each token. Operationally, the token subspace is therefore defined via the image of a learned embedding function (or simply an embedding), which defines the values of the numerical coordinates at each token. In this paper, we take this embedding function as our starting point.</p><p>The mathematical definition of an embedding requires that both the ambient latent space and the space of tokens each have a well-defined topology. Since the latent space is usually ascribed the usual Euclidean metric, this induces a topology on both the latent space and the token subspace. It is therefore most reasonable to assert that the space of tokens, abstractly, also has a topology induced by the embedding function, which satisfies the mathematical definition of an embedding. From these assertions, we can then show that it is possible to reliably estimate two properties of the token subspace: dimension (a topological property) and Ricci scalar curvature (a geometric property). We aim to show that with these estimates of dimension and Ricci scalar curvature, it is possible to reliably anticipate the inferential quality of model behavior within and across regions of the token subspace.</p><p>In this article, we present the dimension and Ricci scalar curvature for three open source large language models of moderate size: GPT2 <ref type="bibr" target="#b0">[1]</ref>, LLEMMA7B <ref type="bibr" target="#b1">[2]</ref>, and MISTRAL7B <ref type="bibr" target="#b2">[3]</ref>. In all three models, using these measurements, we find that the token subspace is not a manifold, but is instead a stratified manifold, where on each of the individual strata, the Ricci curvature is significantly negative. These findings have implications for model behavior, its boundedness and predictability at inference, and its stability under retraining.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.1">Contributions</head><p>It is a natural question whether the token subspace has the structure of a manifold, a topological space for which every point has a neighborhood that is topologically equivalent to Euclidean space <ref type="bibr" target="#b3">[4]</ref>. We demonstrate instead that the space of tokens is not a manifold for several large language models. The implications are striking: some tokens have dramatically more non-token neighbors in the latent space than do other tokens, and this changes abruptly as one "moves around" within the space of tokens. Since the transformer blocks that are used to predict subsequent tokens employ continuous functions <ref type="bibr" target="#b4">[5]</ref>, these abrupt changes in dimension imply that the behavior of the large language model as a whole is unstable to small perturbations. Because the space of tokens is a stratified manifold, model behavior in response to queries is necessarily locally, not globally, determined.</p><p>We also find that the dimension of the token subspace, estimated at each token, is much lower than the dimension of the ambient latent space. Moreover, we find that the dimension of the token subspace is highly variable in ways that are correlated with generative fluency. In this article, we examine the numeric versus non-numeric tokens; across models these have substantially different local dimension. In GPT2, the numeric tokens are confined to a low dimensional stratum (an embedded submanifold of the latent space), whereas in LLEMMA7B and MISTRAL7B, the numeric tokens do not form a connected subspace, and moreover nearly half of them are isolated from all other tokens.</p><p>In addition to dimension, which is a topological property, the token subspace has estimable geometric properties, which are measurable and also have implications for model behavior. Since the Euclidean metric defines distances and angles, it can likewise induce geometric information on the space of tokens. The most easy property to assess is curvature, which like dimension, is related to the size of neighborhoods of a token. This article shows that the Ricci scalar curvature is always significantly negative for several large language models, yet substantial variations in curvature exist across strata. Again, there is a correlation between curvature and generative fluency. In GPT2, the stratum along which numeric tokens are concentrated is significantly flatter (curvature nearer to zero) than the other strata, whereas in MISTRAL7B and LLEMMA7B, the numeric tokens are associated with roughly the same curvature as the other tokens.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.2">Related research</head><p>Metrics for language have been considered before large language models became popular <ref type="bibr" target="#b5">[6]</ref>. The problem of finding the token embedding itself is a special case of matrix factorization <ref type="bibr" target="#b6">[7,</ref><ref type="bibr" target="#b7">8]</ref>, in which the subspace of tokens is assumed to span a low-dimensional linear subspace, which is a manifold <ref type="bibr" target="#b8">[9]</ref>. Aside from <ref type="bibr" target="#b9">[10,</ref><ref type="bibr" target="#b10">11]</ref>, in which it is argued that subspace of neuron activations or tokens might be a manifold with singularities, we are unaware of any work that attempts to interrogate the assumption that the relevant subspace of the latent space is a manifold, or attempts to discover the topological or geometric structure of the token subspace itself. This is surprising since a hypothesis test for manifolds is known <ref type="bibr" target="#b11">[12]</ref>, and the dimension of word embeddings has been estimated before (for instance <ref type="bibr" target="#b12">[13,</ref><ref type="bibr" target="#b13">14]</ref>, among others). This work both attempts to detect and characterize these structures, as well as link them to model behavior.</p><p>The idea that not every point in the ambient latent space corresponds to a token is consistent in what is observed in the image domain. The paper <ref type="bibr" target="#b14">[15]</ref> notes that "not every pattern of pixels is an image. It is common to say that images lie on a lower-dimensional manifold in the high dimensional space." Our work highlights what might be a critical distinction with how semantics are learned by transformers, namely that tokens do not lie on a lower-dimensional manifold, but instead on a stratified manifold.</p><p>While it seems reasonable to use topological methods, such as persistent homology to estimate dimension, as is done in <ref type="bibr" target="#b15">[16,</ref><ref type="bibr" target="#b10">11,</ref><ref type="bibr" target="#b16">17]</ref>, these methods tend to scale poorly. The reason for scaling difficulty is that generally one must build a representation of the topological space, which involves constructing myriad simplices. Instead, we rely on a regression-based method that does not require this construction, and so is practical enough to be deployed at scale.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.3">Implications</head><p>If the token subspace is not a manifold, this has important implications because the behavior of the transformer blocks<ref type="foot" target="#foot_0">foot_0</ref> , which are piecewise smooth (hence continuous) transformations of the latent space <ref type="bibr" target="#b17">[18]</ref>, must therefore preserve the dimensions we observe. As a result, queries that cross stratification boundaries will yield responses that exhibit dramatic changes in behavior. This instability will likely preclude strong guarantees about the model's generative performance without intimate knowledge of how the token subspace is embedded within the ambient latent space.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Methods</head><p>In this section, we describe a novel Monte-Carlo-based method for estimating both local dimension and Ricci scalar curvature of the token subspace. We also briefly summarize approaches to interpret estimates using both visual and parametric methods.</p><p>First, we introduce the relationship between volume and radius as a function of dimension and curvature, our specific quantities of interest. In Euclidean space of dimension d, each point corresponds to a vector in R d , in which distances between two points x, y ∈ R d is given by the familiar formula</p><formula xml:id="formula_0">dist(x, y) = d i=1 |x i -y i | 2 .</formula><p>In this setting, the volume v of a ball of radius r is</p><formula xml:id="formula_1">v = π d/2 Γ(d/2 + 1) r d .<label>(1)</label></formula><p>It follows that one can estimate d from comparing estimates of volume with radius.</p><p>If the token subspace is not Euclidean, but is still a manifold, the radial dependence of volume changes. Moreover if the token subspace is a stratified manifold, in the limit of small r, the volume at any point in the interior of a stratum 2 is asymptotic to (see <ref type="bibr" target="#b18">[19,</ref><ref type="bibr">Thm 3.1]</ref> if the space is manifold, [20, Cor. 5.2] otherwise)</p><formula xml:id="formula_2">v = Kr n 1 - 1 6(n + 2) Ric r 2 + O(r 4 ) ,<label>(2)</label></formula><p>where n is the local dimension of the token subspace, Ric is the Ricci scalar curvature of the token subspace, and K is constant of proportionality. We will call K the volume scaling coefficient, noting here that its value is difficult to estimate without prior knowledge of the space's total volume. Taking the natural logarithm of both sides of Equation ( <ref type="formula" target="#formula_2">2</ref>) yields the following asymptotic series for small r,</p><formula xml:id="formula_3">log v = log K + n log r - Ric 6(n + 2) r 2 + O(r 4 ),<label>(3)</label></formula><p>where log v depends linearly on the three desired parameters (log K, n, and Ric), we may solve for each of these parameters via a linear regression against pairs of radius-versus-volume values. Recognizing the potential numerical instability of regression estimates, due to the dynamic range in the term involving the Ricci scalar curvature, we solve for each of these parameters as follows: first determining the scaling coefficient K and the dimension n by solving a linear regression, and then from the residual determining Ric.</p><p>We correct for bias in K using the procedure in <ref type="bibr" target="#b20">[21]</ref>,</p><formula xml:id="formula_4">K ′ = Ke σ 2 /2 ,</formula><p>where σ is the standard error of the intercept in the regression.</p><p>The residual for the regression problem for the first two terms on the right in Equation (3) will then be dominated by the next term in the series, namely the term involving the Ricci scalar curvature. That is, if n and K ′ are the estimates obtained by regression, we can therefore estimate the Ricci scalar curvature by</p><formula xml:id="formula_5">Ric = mean 6( n + 2) r 2 log K ′ + n log r -log v . (<label>4</label></formula><formula xml:id="formula_6">)</formula><p>2 In a stratified manifold, the points on stratification boundaries form a set of measure zero.</p><p>This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Estimating volume</head><p>Equation (3) gives a powerful tool for extracting topological and geometric features from a log-log plot of the volume versus radius of a disk centered at a particular token within the token subspace. The token embedding produces a discrete subset of Euclidean space (a so called point cloud ), which has the appearance of being a set of samples drawn from a larger subspace that "interpolates them" in the latent space. If we assert that the tokens are approximately uniformly distributed on the token subspace<ref type="foot" target="#foot_1">foot_1</ref> , then a Monte Carlo estimation of volume is reasonable. The volume of a ball of radius r centered at a token j is proportional to the number of points within a distance r to j, that is</p><formula xml:id="formula_7">v(r; j) ≈ M #{i : ∥i -j∥ ≤ r},</formula><p>where the vertical bars indicate a distance calculation, and M is the volume contribution of each token to the Monte-Carlo estimate. Except in the case of subspaces of known volume, M is usually not known and must be treated as a nuisance constant. Suppose that there are p tokens in total and that the tokens are located in general position in the latent space. Then for a given token j, we can obtain a sequence</p><formula xml:id="formula_8">r 1,j &lt; r 2,j &lt; • • • &lt; r p,j</formula><p>of distances to the other tokens such that v(r k,j ; j) ≈ M k.</p><p>We can arrange the set of r i,j values in a matrix, in which we interpret i as specifying rows and j as specifying columns. Notice that each column of the r i,j matrix is sorted in ascending order. Since the sequence of volumes corresponding each token (column) is the same, namely the sequence of integers from 1 to p, we can rewrite the log-linear portion of Equation (3) as a matrix equation for token j,</p><formula xml:id="formula_9">     0 log 2 . . . log p      + log M ≈      1 log r 1,j 1 log r 2,j . . . . . . 1 log r p,j      log K j n j + O(r 2 )<label>(5)</label></formula><p>This is readily solved via least squares regression to obtain estimates for the dimension n j and scaling coefficient K j at each token j.</p><p>If M is unknown, Equation (5) makes it clear that the estimates of K j are determined up to a multiplicative constant, and moreover n j is not impacted. The estimate of Ric in Equation ( <ref type="formula" target="#formula_5">4</ref>) is also not impacted because it only depends upon the difference log K j -log v, in which the contributions of M cancel.</p><p>To reduce the impact of sampling error from balls of small radius, and to reduce the impact of curvature and stratifications on balls of large radius, it is advantageous to solve the regression problem using only a band from the middle rows in Equation <ref type="formula" target="#formula_9">5</ref>. We found during this work that the precise band of volumes to be used depends delicately upon the particular volume-versus-radius curves, with the starting row adjusted to avoid contamination from points of different strata.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Interpreting volume-versus-radius curves</head><p>The log-log plot of volume versus radius at each token provides considerable information. Briefly, 1. The slope of the curve corresponds to local dimension, 2. A "knee" in the curve, where the slope changes from one non-negative value to another is a clear sign that the space is not a manifold, 3. A horizontal gap in the curve (a zero slope portion) may mean that the neighborhood of the token contains multiple connected components, and 4. The concavity of the curve determines the local curvature, where concave up corresponds to negative Ricci scalar curvature, and concave down corresponds to positive Ricci scalar curvature.</p><p>Unpacking each of these in turn, it is immediately clear that the slope (derivative) of such a curve for small r (near the bottom left of the plot), gives the dimension of the neighborhood of the token. Since our estimates are obtained by Monte-Carlo estimation, it is wise to exclude a small neighborhood of the token from analysis, since this tends to have large sampling error.</p><p>If the slope changes, this means that the dimension of the neighorhood of the token has changed as the radius increases. It is possible for the slope to increase or decrease, depending on whether the neighborhood expands to contain a greater or lesser dimension region. It is worth noting that estimates of dimension far from the original center token may be biased, but the fact of an abrupt change is compelling evidence that the token subspace is not a manifold.</p><p>On the other hand, a gap in the token subspace will mean that there are no additional tokens within a certain band of radii. This means that the volume estimate will not change over these radii. The result is a curve with horizontal (zero) slope.</p><p>Finally, according to Equation (3), nonzero Ricci curvature adds a quadratic term to the volume. This makes the volume-versus-radius curve either concave up or down according to the sign of the curvature.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Results</head><p>We examined the token subspaces of three LLMs: GPT2, LLEMMA7B, and MISTRAL7B. The basic features of these subspaces are shown in Table <ref type="table" target="#tab_1">1</ref> token that contains any numeric character is marked as a "numeric token", otherwise it is marked as a "non-numeric token". There are very few numeric tokens in LLEMMA7B and MISTRAL7B, so the reader is cautioned that statistical inferences regarding numeric tokens are subject to sampling error. A summary of our estimates of dimension and Ricci scalar curvatures are shown in Table <ref type="table">2</ref>. Because the total volumes of each token subspace are not known in advance, we cannot estimate the scaling coefficients.</p><p>The distribution of local dimensions of the three models are very statistically significantly different (p &lt; 0.001 for the Kolmogorov-Smirnov test). In LLEMMA7B and MISTRAL7B the local dimensions of the token subspace are well below half of the latent space dimension, whereas for GPT2 the typical dimension is higher. It is worth noting that the estimates for LLEMMA7B and MISTRAL7B are broadly consistent with the results obtained from other word embeddings <ref type="bibr" target="#b12">[13,</ref><ref type="bibr" target="#b13">14]</ref>. In all of these cases, the conclusion is the same: most of the latent space is not "near" a token in any meaningful way. From a practical standpoint, this means that the embeddings are quite wasteful of memory, especially for LLEMMA7B and MISTRAL7B.</p><p>For GPT2, the Kolmogorov-Smirnov test indicates that the distribution of local dimensions for the numeric and non-numeric tokens differ (with p &lt; 0.001). (Given the small number of numeric tokens in LLEMMA7B and MISTRAL7B, while the dimensions of numeric and non-numeric tokens are statistically significant to the same level, any such comparison is subject to substantial sampling error.) Moreover, as is discussed in the subsections below, the numeric tokens of GPT2 are localized to a small number of connected components with relative uniform dimension. Notice that the interquartile range of dimension for GPT2 numeric tokens is 11.4, whereas for non-numeric tokens it is nearly 200. In contrast, the numeric tokens of LLEMMA7B and MISTRAL7B are frequently isolated points within the token subspace (see Figures <ref type="figure" target="#fig_12">7</ref> and <ref type="figure" target="#fig_17">12</ref>).</p><p>As the subsections below show, inspection of volume-versus-radius curves show that the local dimension varies significantly over connected components of the token subspaces in all three LLMs. This gives strong evidence that the token subspaces are not manifolds, but are stratified manifolds.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">GPT2 '#' '$'</head><p>Band of volumes used for estimation Figure <ref type="figure" target="#fig_0">1</ref> shows volume-versus-radius curves for several tokens in GPT2. Because of Monte-Carlo estimation error, there is some variability for small volumes, so we begin our estimation with the volume corresponding to 10 tokens to avoid undue error.</p><p>Knees between mostly straight segments are prominently visible in the curves for all tokens shown, which provides compelling evidence that the token subspace is a stratified manifold. It is also interesting that the dimension of the tokens, and the structure of their stratifications, is different for different tokens. For instance, the difference between the US dollar symbol $ versus other currency symbols may be due to its use in the syntax of programming languages.</p><p>Figure <ref type="figure" target="#fig_2">2</ref> shows the distribution of local dimensions estimated by our method for GPT2's token subspace. The distribution of numeric tokens is unimodal  and skewed rightward, while the distribution of non-numeric tokens is clearly bimodal. Interestingly, the cluster of non-numeric tokens with low dimension largely consists of tokens related to dates and current events, and mostly consists of whole words. Tokens that are word fragments appear to become increasingly common as the dimension increases.</p><p>Because the local dimension of the token subspace is well above 2, it is impossible to render the token subspace isometrically in 2 dimensions. In order to obtain a visualization, some concessions must be made that will introduce distortions. Figure <ref type="figure" target="#fig_5">3</ref> shows a tSNE projection <ref type="bibr" target="#b21">[22]</ref> of the token subspace, colored by local dimension. Each point in the figure is a distinct token. Since tSNE is a continuous transformation, any tokens that are nearby each other in the token subspace will be nearby their images in Figure <ref type="figure" target="#fig_5">3</ref>. The converse does not hold; there can be tokens whose corresponding images in Figure <ref type="figure" target="#fig_5">3</ref> are nearby each other, but whose actual distance apart in the token subspace is large. However, the usual concerns with clustering and tSNE are that it distorts the geometry of and between connected components, sometimes to the point of forming spurious connected components <ref type="bibr" target="#b22">[23,</ref><ref type="bibr" target="#b23">24]</ref>. In our case, we are more concerned with the opposite problem, that tSNE might combine connected components. While this is possible with arbitrary continuous maps, it is substantially less likely with tSNE itself, because separate connected components will tend to repel each other in the tSNE cost function.</p><p>Most of the numeric tokens fall in the region indicated, though in that region there are also non-numeric tokens present, and a few numeric tokens are scattered elsewhere in the token space. That region mostly consists of a single slice along X1 = 25 numeric tokens tokens with leading spaces connected component in Figure <ref type="figure" target="#fig_5">3</ref>. Continuity of the tSNE transformation does not guarantee that this region is a single connected component, but because of the way tSNE is actually constructed, it is extremely unlikely that there are multiple connnected components.</p><p>Figure <ref type="figure" target="#fig_0">1</ref> provides conclusive proof that the token subspace cannot be a manifold. This is also confirmed by examining a vertical slice of Figure <ref type="figure" target="#fig_5">3</ref>, and aggregating the nearby local dimensions along this slice. Figure <ref type="figure" target="#fig_5">3</ref> shows how the distribution of local dimensions along this slice vary, when grouped into bins of size 10 along the X1 = 25 tSNE axis. Notice that there is an abrupt, and statistically significant, change in local dimension that happens near X2 = 50. This strongly suggests that the token subspace does not have a single local dimension within the corresponding connected component, and therefore is not a manifold.</p><p>Figure <ref type="figure" target="#fig_7">4</ref> shows the distribution of estimates of Ricci scalar curvature for GPT2. It is apparent that all estimates are negative, and the distribution of curvature estimates is unimodal.</p><p>Figure <ref type="figure" target="#fig_10">5</ref> shows the Ricci curvature at each token, using the same tSNE coordinates as in Figure <ref type="figure" target="#fig_5">3</ref>. With one notable exception, the main connected component, consisting of mostly non-numeric tokens, has roughly constant negative Ricci scalar curvature. The numeric tokens appear to lie on a region of substantially lower (closer to zero) curvature than the non-numeric tokens. The uniformly low-curvature region within the non-numeric tokens appears to consist of tokens with leading spaces, and may correspond to the separate lowdimensional stratum indicated along the slice in Figure <ref type="figure" target="#fig_5">3</ref>.  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">LLEMMA7B</head><p>Figure <ref type="figure" target="#fig_11">6</ref> shows the volume-versus-radius curves for several tokens in LLEMMA7B. The first thing to notice is that the nearest 100 or so tokens are all equidistant from the two tokens shown. This can be inferred by the vertical slopes on the left edge of both curves. Since this is likely an artifact of how the embedding was designed, possibly due to rounding of the coordinates, it is appropriate to exclude volumes below 100 from our estimates below. While clear stratifications are not visible as knees in the curves, the token subspace has negative curvature near the two tokens shown since the curves are visibly concave up.</p><p>Figure <ref type="figure" target="#fig_12">7</ref> shows the distribution of local dimensions for the token subspace of LLEMMA7B. Again, the numeric tokens have a statistically significantly different distribution of local dimensions from the non-numeric tokens. Indeed, many of the numeric tokens have a local dimension of 0, which means that they are isolated points. As such, many of the numeric tokens are not near each other.</p><p>Unlike the case of GPT2, where the presence of knees in volume-versusradius curves in Figure <ref type="figure" target="#fig_11">6</ref> establish that the token subspace is not a manifold, the stratifications in LLEMMA7B are a bit more subtle. Figure <ref type="figure" target="#fig_13">8</ref>  numeric tokens tokens with leading spaces    This stratification happens to be transverse to the X1 = 3 slice. Figure <ref type="figure" target="#fig_13">8</ref> shows the local dimensions along that slice, which reveals that the local dimension is quite uniform on one side of the plot, and rather lower and more variable on the other.</p><p>Interestingly, there is a very small region in the center of the tSNE visualization in which the local dimension is quite small. The tokens involved all appear to consist of non-printing Unicode characters. Moreover, the same set of characters (and geometric features) is present in MISTRAL7B as well. Figure <ref type="figure" target="#fig_14">9</ref> shows the histogram of Ricci scalar curvature for LLEMMA7B. The distribution is unimodal for both numeric and non-numeric tokens, and is clearly negative. Figure <ref type="figure" target="#fig_15">10</ref> confirms this hypothesis: the Ricci scalar curvature is largely constant and negative, though it changes abruptly along the stratification boundary. It shows shows one clear exception to this pattern, which is again the small low-dimensional region consisting of non-printing Unicode characters.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Non-numeric Numeric</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">MISTRAL7B</head><p>Figure <ref type="figure" target="#fig_16">11</ref> shows the volume-versus-radius for a typical token in MISTRAL. As in the case of LLEMMA7B, there are about 150 tokens that are equidistant from this token. Since this appears to be the typical situation, we will use volumes with at least 150 for estimation purposes below. A knee in the curve corresponding to a stratification is visible, along with strong negative curvature.</p><p>Figure <ref type="figure" target="#fig_17">12</ref> shows the distribution of dimensions for all tokens in MISTRAL7B. It is interesting to compare this with Figure <ref type="figure" target="#fig_12">7</ref>, because the same set of tokens is   used in LLEMMA7B. Both contain a large number of isolated (dimension 0) numeric tokens. Generally, the dimension of a given token is lower in MISTRAL7B than it is in LLEMMA7B. This suggests that a given token in MISTRAL7B will tend to be easier for the model to distinguish than in LLEMMA7B, because it has dramatically fewer neighbors. Figure <ref type="figure" target="#fig_18">13</ref> shows a tSNE embedding visualization of local dimension for MIS-TRAL7B. Like the case of LLEMMA7B, there is a visible stratification boundary. It also exhibits the same set of low-dimension non-printing Unicode characters, which is probably unsurprising. Unlike GPT2 and LLEMMA7B, the space for MISTRAL7B appears to be more disconnected. However, due to the difficulties in interpreting clusters in tSNE embeddings, the reader is cautioned that this may not be representative.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Stratification boundaries</head><p>Like the case of LLEMMA7B, the Ricci scalar curvature of the token subspace is mostly constant, as indicated by the histograms in Figure <ref type="figure" target="#fig_20">14</ref>. This is confirmed in Figure <ref type="figure" target="#fig_21">15</ref>, though the curvature is seen to vary somewhat over  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Discussion</head><p>We produced strong evidence that, for the three large language models under consideration in this article, the local dimension of the token subspace in large language models varies along connected components of that token subspace. This evidence implies that the token subspaces of these models cannot be manifolds. Moreover, because the local dimension appears to change abruptly at multiple places along a slice through the token subspace, it seems likely that the token subspaces of these models consist of manifolds of different dimensions attached to each other. In other words, the token subspace of each of these three models are stratified manifolds.</p><p>Our work suggests that the presence and nature of the stratification of the token subspace impacts in a predictable way the inferential quality and generative fluency of large language models. The examination of numeric and non-numeric tokens in this article, across models, provides an illustration of this point. While the token subspace of GPT2 is not a manifold, the numeric token subspace is likely a manifold. Since all of the numeric tokens are nearby each other and are confined to a constant dimension submanifold, this limits the expressivity of any continuous dynamic map (e.g. a transformer) that operates upon them.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Because the dynamic map induced by a transformer is continuous (which follows</head><p>This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Stratification boundaries</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Flatter</head><p>More curved from the continuity of the activation functions in a deep neural network <ref type="bibr" target="#b17">[18]</ref>), this implies that any set of numeric tokens that are near each other will tend to be taken to other tokens that are also near each other. It follows, simply from the finding that the numeric token subspace is (largely connected) manifold, that GPT2 will be a poor performer on mathematical queries: the numeric tokens of GPT2 are localized on a small number of connected components, such that that the model will tend to treat these numeric tokens as interchangeable, even though each token contains distinct and critically different semantic information. This insight is consistent with empirical observations of the inability of GPT2 to consistently and coherently reason about numeric data. The topological and geometric structure of the token subspace of GPT2, a foundational model, is substantially different than the subspaces of both LLEMMA7B and MISTRAL7B, which were fine-tuned for performance on numeric and codebased queries. Both LLEMMA7B and MISTRAL7B have far fewer numeric tokens which are not located close to each other in the token subspace, consistent with these models' capability to distinguish between numeric tokens on inference.</p><p>Another implication of this work is how topological and geometric information together suggest model overfitting, which also has implications for generalizability and model performance against novel queries. In GPT2, the local dimension of the token subspace is approximately half the ambient latent space dimension; in both LLEMMA7B and MISTRAL7B, which are fine-tuned, the local dimension of the token subspace is much less than half the latent space dimension. One could infer the onset of overfitting behaviors based entirely upon the difference in dimension between the token subspace and the latent space, which is usually called the codimension of the subspace. Overfitting is a risk whenever the dimension of the latent space exceeds what is necessary to capture the structure of the token subspace. According to the classical Whitney embedding theorem <ref type="bibr" target="#b3">[4]</ref>, this kind of overfitting occurs whenever the codimension exceeds the token subspace dimension, and our findings show that this overfitting is definitely present in LLEMMA7B and MISTRAL7B, and is also present in portions of the token subspace for GPT2.</p><p>In addition to the issue of subspace codimension, we found that the token subspaces of all three models have strong negative Ricci curvature. Since the ambient latent space of each model is of zero curvature (because it is flat Euclidean space), this could explain why the latent space "needs" to have a much higher dimension than the token subspace. Intuitively, a larger codimension for the token subspace (difference between the dimensions of the latent space and the token subspace) would give more "room" to accomodate the curved shape of the the token subspace. However, according to classical interpolation error formulas <ref type="bibr" target="#b24">[25]</ref>, to which all smooth functions are subject, the presence of high negative Ricci scalar curvature will dramatically increase the uncertainty of output of a function. In the classical statistics literature, this is known as a consequence of overfitting.</p><p>An unfortunate anticipated consequence of this negative curvature is that retraining such as fine-tuning, which perturbs part of the token subspace locally, may result in precipitous global changes in the embedding. Large codimension in the presence of negative curvature means that linear transformations (which are usually present in transformers utilizing ReLU, among others <ref type="bibr" target="#b25">[26]</ref>), will necessarily result in tokens being taken to points outside the token subspace. Local perturbations, as may be caused during fine-tuning, could result in bifurcations that yield global perturbations. Some reflection of this has been observed in the literature <ref type="bibr" target="#b26">[27]</ref> because changing the latent space to a hyperbolic space (which has negative curvature) can improve trainging stability. Put another way, because of the stratifications and the negative curvature, bringing these points back to the token subspace is guaranteed to be unstable once they have strayed too far. In short, the geometry and topology of the subspace indicates that in portions of the token subspace, particularly with overfit, instability is mathematically unavoidable, which translates to inferential uncertainty.</p><p>Taken together, our findings may explain why there appear to be instabilities in both the training and the use of large language models for query response, and moreover suggest that these instabilities are unavoidable in most cases. show the quartiles for each parameter computed by our method. The interquartile range of the distribution of estimates of each example contains the correct answer, which indicates that our method is producing the correct answers on average. Derivations of the parameters from classical formulas are included below.</p><p>In addition to the manifolds listed in Table <ref type="table" target="#tab_2">3</ref>, we also ran the method against a stratified manifold consisting of three strata: a 2-dimensional disk joined to a 1-dimensional circle at a 0-dimensional point. As a first example, consider the circle of radius 1, in which the distance between points is given by the arclength between them. The total "volume" of the circle is therefore its circumference, namely 2π. Figure <ref type="figure" target="#fig_11">16</ref> shows the regression problem specified in Equation ( <ref type="formula" target="#formula_9">5</ref>) for a typical point on the circle. Notice that the slope of the line of best fit is close to the ideal one, which has slope exactly 1. Table <ref type="table" target="#tab_2">3</ref> indicates that the dimension is within the interquartile range of all of the dimension estimates. In addition to using the arclength distance, we can measure the distance between points on the circle embedded in the plane by using the Euclidean distance on the plane. Because this is not a Riemannian metric, the Ricci scalar curvature is spuriously nonzero, which our method correctly detects.</p><p>The same two metrics can be used for a 2-dimensional sphere embedded isometrically in R 3 . Again, Table <ref type="table" target="#tab_2">3</ref> shows that the correct values of the parameters are estimated by our method. Notice that points on the sphere are determined by two values, latitude and longitude, so the dimension of the sphere is 2.</p><p>In the case of the sphere with the arclength metric, the curvature is positive (see Table <ref type="table" target="#tab_2">3</ref> and the Appendix). According to Equation 3, this implies that the volume of a disk on the sphere should be somewhat less for a given radius radius volume (points) Line of best fit than for a disk on a flat space. This is confirmed in Figure <ref type="figure" target="#fig_12">17</ref> because the curve is concave down, because according to the discussion in Section 2.2 this corresponds to positive Ricci scalar curvature. For the case of a flat disk of radius 1/2 isometrically embedded in the plane, the dimension is 2. The scaling coefficient will be different for points within the interior versus points on the boundary. At points away from the boundary on the interior, v = πr 2 , so scaling coefficient is π but for points on the boundary,</p><formula xml:id="formula_10">v &lt; π 2 r 2 ,</formula><p>so the scaling coefficient is less than π/2. Figure <ref type="figure" target="#fig_25">18</ref> shows the estimates of scaling coefficient as a function of radius. For small radii, the scaling coefficient is indeed around π, but this drops sharply as the boundary is approached.</p><p>Because our method uses distances to neighboring points to pose the regression problem, the boundary does impact points near, but not on, the boundary.</p><p>This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).  As explained in Section 2.2, volume-versus-radius curves with knees imply the presence of detect stratifications. These knees are prominently visible in Figure <ref type="figure" target="#fig_2">21</ref>, which confirms the presence of stratifications.</p><p>Of the manifolds listed in Table <ref type="table" target="#tab_2">3</ref>, the circle and sphere with the Euclidean metric are not Riemannian manifolds, so Equation (2) does not apply. This is easily seen in the case of the circle: the distance between antipodes is twice the radius, but this disagrees with the arclength distance, namely π times the radius. Nevertheless, we can still use Equation ( <ref type="formula" target="#formula_2">2</ref>) to estimate the Ricci scalar curvature from the data as if the metric were Riemannian. The justification for this is that the leading term is still correct and the remaining terms are geometrically meaningful, though not necessarily interpreted as Ricci scalar curvature <ref type="bibr" target="#b19">[20,</ref><ref type="bibr">Chap. 5]</ref>. Doing this, we will obtain a topological manifold with the same dimension and scaling coefficient, but the curvature will be changed as is clear from the entries in Table <ref type="table" target="#tab_2">3</ref>. Consider Figure <ref type="figure" target="#fig_28">22</ref>, showing a sector of a circle (or cross section of a sphere) of radius R. Since both the circle and the sphere are homogeneous spaces, we may choose any point as a center. It is most convenient to select the point furthest on the left of the diagram. We wish to compute the volume of a ball centered on this point in four different ways:</p><p>1. For the circle with its usual metric corresponding to arclength. Because the circle has one free parameter, it is 1-dimensional, so "volume" means arclength.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">For the circle with distances between points being measured using the</head><p>This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</p><p>Euclidean metric in the plane. Because the circle has one free parameter, it is 1-dimensional, so "volume" means arclength.</p><p>3. For the sphere with its usual metric corresponding to great circle distance.</p><p>Because the sphere has two free parameters (latitude and longitude), it is 2-dimensional, so "volume" means area.</p><p>4. For the sphere with distances between points being measured using the Euclidean metric in the R 3 . Because the sphere has two free parameters (latitude and longitude), it is 2-dimensional, so "volume" means area.</p><p>The two cases of metrics on the circle can be summarized by the following, v = 2r using arclength 2r 1 + r 2 24R 2 + O(r 4 ) using Euclidean distance = 2r + O(r 2 ).</p><p>(</p><formula xml:id="formula_11">)<label>6</label></formula><p>For case (1), the circle with arclength, since radius and arclength are exactly the same, the only thing to recognize is that the ball centered at a given point is symmetric about that point. Hence the "volume" of the ball is twice its radius, in accordance with Equation ( <ref type="formula" target="#formula_11">6</ref>).</p><p>The two cases of metrics on the sphere are summarized by v = πr 2 1 -r 2 12R 2 + O(r 4 ) using arclength πr 2 using Euclidean distance = πr 2 + O(r 2 ).</p><p>(</p><formula xml:id="formula_12">)<label>7</label></formula><p>It is a little surprising that the case of Euclidean distance on the sphere yields the familiar formula for the area of a disk on the plane, but this is due to the fact that the Euclidean distance is not a Riemannian metric for the sphere. Nevertheless, both of these expressions are derived below.</p><p>In both the circle and the sphere, the length of the chord c depends on the angle θ, which in turn depends on arclength via r = Rθ. Therefore,</p><formula xml:id="formula_13">c = (R -R cos θ) 2 + R 2 sin θ = √ 2R √ 1 -cos θ = √ 2R 1 -cos(r/R)<label>(8)</label></formula><p>Since the "volume" of the ball is twice the arclength, we need to invert the above expression, namely which agrees with the second case of Equation ( <ref type="formula" target="#formula_11">6</ref>) after noting that the chord c is the Euclidean distance between points.</p><p>For the case of the sphere, the "volume" is the area of the surface of revolution swept by the arc with length r. Recognizing that points on the circle are defined by</p><formula xml:id="formula_14">x 2 + y 2 = R 2 ,</formula><p>we can use the classical formula for surface area of revolution,</p><formula xml:id="formula_15">A(r) = 2π -R cos(r/R) -R y(x) 1 + y ′ (x) 2 dx = 2π -R cos(r/R) -R R 2 -x 2 1 + x 2 R 2 -x 2 dx = 2π -R cos(r/R) -R R dx = 2πR 2 1 -cos r R .</formula><p>Combining the above expression with Equation ( <ref type="formula" target="#formula_13">8</ref>) results in the expression for surface area as a function of the Euclidean distance,</p><formula xml:id="formula_16">A(c) = π √ 2R 1 -cos(r/R) 2 = πc 2 ,</formula><p>which is the second case of Equation <ref type="bibr" target="#b6">(7)</ref>. On the other hand, a Taylor expansion for the volume in the case of the arclength distance yields the first case, namely </p><formula xml:id="formula_17">A(r) = 2πR</formula></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Volume-versus-radius for several tokens in GPT2: # (red), $ (blue), ¢ (green). Visible stratification boundaries are marked with arrows.</figDesc><graphic coords="9,197.23,236.70,243.00,234.37" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Histogram of estimated local dimensions for GPT2.</figDesc><graphic coords="10,197.62,124.80,216.00,208.32" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Estimated local dimension for GPT2, plotted using tSNE coordinates. Dimension is indicated by the depth of color: darker points have lower local dimension. Numeric tokens are all in the region marked.</figDesc><graphic coords="11,255.78,131.41,183.43,176.91" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><figDesc>This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Histogram of estimated Ricci scalar curvature for GPT2.</figDesc><graphic coords="12,198.10,125.09,215.15,207.51" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><figDesc>Figure6shows the volume-versus-radius curves for several tokens in LLEMMA7B. The first thing to notice is that the nearest 100 or so tokens are all equidistant from the two tokens shown. This can be inferred by the vertical slopes on the left edge of both curves. Since this is likely an artifact of how the embedding was designed, possibly due to rounding of the coordinates, it is appropriate to exclude volumes below 100 from our estimates below. While clear stratifications are not visible as knees in the curves, the token subspace has negative curvature near the two tokens shown since the curves are visibly concave up.Figure7shows the distribution of local dimensions for the token subspace of LLEMMA7B. Again, the numeric tokens have a statistically significantly different distribution of local dimensions from the non-numeric tokens. Indeed, many of the numeric tokens have a local dimension of 0, which means that they are isolated points. As such, many of the numeric tokens are not near each other.Unlike the case of GPT2, where the presence of knees in volume-versusradius curves in Figure6establish that the token subspace is not a manifold, the stratifications in LLEMMA7B are a bit more subtle. Figure8shows the resulting tSNE visualization, again colored by dimension. The numeric tokens are located in two distinct regions of the plot as indicated. There are several connected components visible in Figure8. The largest connected component shows a marked transition in local dimension, which is strong evidence of a stratification.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_10"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Estimated Ricci scalar curvature for GPT2, plotted using tSNE coordinates. Curvature is indicated by the depth of color: darker points have higher (more negative) curvature.</figDesc><graphic coords="13,161.88,232.63,284.33,274.22" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_11"><head>Figure 6 :</head><label>6</label><figDesc>Figure 6: Volume-versus-radius for several tokens in LLEMMA7B.</figDesc><graphic coords="14,197.87,258.33,215.58,246.95" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_12"><head>Figure 7 :</head><label>7</label><figDesc>Figure 7: Histogram of estimated local dimensions for LLEMMA7B. The large spike for numeric tokens of dimension 0 corresponds to tokens that are isolated (not near any other tokens).</figDesc><graphic coords="15,197.62,134.29,216.00,208.32" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_13"><head>Figure 8 :</head><label>8</label><figDesc>Figure 8: Estimated local dimension for LLEMMA7B, plotted using tSNE coordinates. Dimension is indicated by the depth of color: darker points have lower local dimension.</figDesc><graphic coords="15,263.86,428.37,185.68,179.08" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_14"><head>Figure 9 :</head><label>9</label><figDesc>Figure 9: Histogram of estimated Ricci scalar curvature for LLEMMA7B.</figDesc><graphic coords="16,198.10,232.61,215.15,207.51" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_15"><head>Figure 10 :</head><label>10</label><figDesc>Figure 10: Estimated Ricci scalar curvature for LLEMMA7B, plotted using tSNE coordinates. Curvature is indicated by the depth of color: darker points have higher (more negative) curvature.</figDesc><graphic coords="17,161.62,230.75,288.00,277.77" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_16"><head>Figure 11 :</head><label>11</label><figDesc>Figure 11: Volume-versus-radius for several tokens in MISTRAL7B.</figDesc><graphic coords="18,197.11,126.96,255.78,255.78" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_17"><head>Figure 12 :</head><label>12</label><figDesc>Figure 12: Histogram of estimated local dimensions for MISTRAL7B.</figDesc><graphic coords="18,197.62,428.66,216.00,208.32" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_18"><head>Figure 13 :</head><label>13</label><figDesc>Figure 13: Estimated local dimension for MISTRAL7B, plotted using tSNE coordinates. Dimension is indicated by the depth of color: darker points have lower local dimension.</figDesc><graphic coords="19,162.21,208.78,286.87,276.68" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_19"><figDesc>This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_20"><head>Figure 14 :</head><label>14</label><figDesc>Figure 14: Histogram of estimated Ricci scalar curvature for MISTRAL7B.</figDesc><graphic coords="20,198.10,125.09,215.15,207.51" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_21"><head>Figure 15 :</head><label>15</label><figDesc>Figure 15: Estimated Ricci scalar curvature for MISTRAL7B, plotted using tSNE coordinates. Curvature is indicated by the depth of color: darker points have higher (more negative) curvature.</figDesc><graphic coords="21,161.84,253.05,252.29,243.32" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_22"><figDesc>This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_24"><head>Figure 16 :Figure 17 :</head><label>1617</label><figDesc>Figure 16: Log-log regression problem for a random point on the circle of radius 1. Points used in the regression are marked in green. The line of best fit from the data as well as the true volume dependence are both shown.</figDesc><graphic coords="27,198.44,130.24,215.15,207.51" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_25"><head>Figure 18 :</head><label>18</label><figDesc>Figure 18: Effect of the boundary on the scaling coefficient for a disk of radius R = 0.5.</figDesc><graphic coords="28,161.62,171.84,288.00,277.77" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_26"><head>Figure 19 :</head><label>19</label><figDesc>Figure 19: Estimated local dimension for a stratified space. The circular arc has dimension 1, the disk has dimension 2, and the ball has dimension 3.</figDesc><graphic coords="29,208.21,155.21,205.10,90.82" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_27"><head>Figure 20 :</head><label>20</label><figDesc>Figure 20: Distribution of local dimension estimates for a stratified space. The circular arc has dimension 1, the disk has dimension 2, and the ball has dimension 3.</figDesc><graphic coords="29,210.42,357.53,202.84,195.64" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_28"><head>Figure 22 :</head><label>22</label><figDesc>Figure22: Geometry for a sector of both a circle in the plane and a planar cross section of sphere, showing its radius R, arclength r, chord length c, and included angle θ.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_29"><head>c 2 24R 2 +</head><label>22</label><figDesc>O(c 4 ) , This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_30"><head>r 4 +</head><label>4</label><figDesc>O(r 6 ) = πr 2 1 -1 12R 2 r 2 + O(r 4 ) .This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="30,198.27,245.86,215.30,271.79" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>. AParameters of LLMs under test</figDesc><table><row><cell>Model</cell><cell>Latent dim.</cell><cell></cell><cell cols="2">Token counts</cell><cell></cell><cell></cell></row><row><cell></cell><cell></cell><cell cols="4">Non-numeric Numeric Total</cell><cell></cell></row><row><cell>GPT2</cell><cell>768</cell><cell>48563</cell><cell></cell><cell>1694</cell><cell>50257</cell><cell></cell></row><row><cell>LLEMMA7B</cell><cell>4096</cell><cell>31972</cell><cell></cell><cell>44</cell><cell>32016</cell><cell></cell></row><row><cell>MISTRAL7B</cell><cell>4096</cell><cell>31985</cell><cell></cell><cell>31</cell><cell>32016</cell><cell></cell></row><row><cell></cell><cell cols="5">Table 2: Estimated parameters of token space</cell><cell></cell></row><row><cell>Model</cell><cell>Subset</cell><cell cols="2">Dimension</cell><cell></cell><cell cols="3">Ricci scalar curvature</cell></row><row><cell></cell><cell></cell><cell>Q1</cell><cell>Q2</cell><cell>Q3</cell><cell>Q1</cell><cell>Q2</cell><cell>Q3</cell></row><row><cell>GPT2</cell><cell>Non-numeric</cell><cell>384</cell><cell cols="2">498 566</cell><cell>-107</cell><cell>-63</cell><cell>-31.7</cell></row><row><cell></cell><cell>Numeric</cell><cell cols="3">10.7 15.8 22.1</cell><cell>-4.68</cell><cell cols="2">-2.39 -1.40</cell></row><row><cell cols="2">LLEMMA7B Non-numeric</cell><cell cols="3">9.44 10.5 11.2</cell><cell>-185</cell><cell>-169</cell><cell>-153</cell></row><row><cell></cell><cell>Numeric</cell><cell cols="3">4.92 6.84 9.07</cell><cell>-268</cell><cell>-170</cell><cell>-154</cell></row><row><cell cols="2">MISTRAL7B Non-numeric</cell><cell cols="3">5.14 5.64 6.07</cell><cell cols="3">-5339 -5036 -4753</cell></row><row><cell></cell><cell>Numeric</cell><cell cols="6">0.510 2.83 5.21 -82938 -5693 -4782</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 3 :</head><label>3</label><figDesc>Estimated parameters of known manifolds</figDesc><table><row><cell>Manifold</cell><cell>Metric</cell><cell cols="2">Parameter True</cell><cell></cell><cell>Estimated</cell></row><row><cell></cell><cell></cell><cell></cell><cell>value</cell><cell>Q1</cell><cell>Q2</cell><cell>Q3</cell></row><row><cell>Circle</cell><cell cols="2">Arclength Dimension</cell><cell>1</cell><cell>0.945</cell><cell>0.978</cell><cell>1.01</cell></row><row><cell></cell><cell>R = 1</cell><cell>Scaling</cell><cell>2</cell><cell>1.91</cell><cell>1.96</cell><cell>2.16</cell></row><row><cell></cell><cell></cell><cell>Ricci</cell><cell>0</cell><cell cols="3">-0.175 -0.0181 0.0849</cell></row><row><cell>Circle</cell><cell cols="2">Euclidean Dimension</cell><cell>1</cell><cell>0.910</cell><cell>0.964</cell><cell>1.03</cell></row><row><cell></cell><cell>R = 1</cell><cell>Scaling</cell><cell>2</cell><cell>1.84</cell><cell>1.96</cell><cell>2.06</cell></row><row><cell></cell><cell></cell><cell>Ricci</cell><cell>-3/4</cell><cell>-2.05</cell><cell>-1.29</cell><cell>-0.492</cell></row><row><cell>Sphere</cell><cell cols="2">Arclength Dimension</cell><cell>2</cell><cell>1.89</cell><cell>1.97</cell><cell>2.06</cell></row><row><cell></cell><cell>R = 1</cell><cell>Scaling</cell><cell>π</cell><cell>3.11</cell><cell>3.18</cell><cell>3.24</cell></row><row><cell></cell><cell></cell><cell>Ricci</cell><cell>2</cell><cell>1.71</cell><cell>2.04</cell><cell>2.41</cell></row><row><cell>Sphere</cell><cell cols="2">Euclidean Dimension</cell><cell>2</cell><cell>1.75</cell><cell>1.90</cell><cell>2.09</cell></row><row><cell></cell><cell>R = 1</cell><cell>Scaling</cell><cell>π</cell><cell>2.74</cell><cell>3.02</cell><cell>3.37</cell></row><row><cell></cell><cell></cell><cell>Ricci</cell><cell>0</cell><cell>-2.87</cell><cell>-0.906</cell><cell>1.05</cell></row><row><cell>Disk</cell><cell cols="2">Euclidean Dimension</cell><cell>2</cell><cell>1.78</cell><cell>1.91</cell><cell>2.03</cell></row><row><cell></cell><cell>R = 1/2</cell><cell>Scaling</cell><cell>π</cell><cell>1.57</cell><cell>2.45</cell><cell>3.42</cell></row><row><cell></cell><cell></cell><cell>Ricci</cell><cell>0</cell><cell>-65</cell><cell>15.7</cell><cell>117</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>We note that although this paper examines models that use transformers to generate textual or linguistic data, similar architecture components are used in models that generate images.This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>If the tokens are not in general position, the strict inequalities may degenerate to equalities for some values of k. This poses no problem for our method.This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" xml:id="foot_2"><p>This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Contract No. HR001124C0319. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release, Distribution Unlimited).</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgements</head><p>This article is based upon work supported by the <rs type="funder">Defense Advanced Research Projects Agency (DARPA)</rs>. Any opinions, findings and conclusions, or recommendations expressed in this material are those of the authors and do not necessarily reflect the views of DARPA.</p></div>
+			</div>
+			<div type="funding">
+<div><p>This material is based upon work supported by the <rs type="funder">Defense Advanced Research Projects Agency (DARPA)</rs> under Contract No. <rs type="grantNumber">HR001124C0319</rs>. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the <rs type="funder">Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release</rs>, Distribution Unlimited). This material is based upon work supported by the <rs type="funder">Defense Advanced Research Projects Agency (DARPA)</rs> under Contract No. <rs type="grantNumber">HR001124C0319</rs>. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the <rs type="funder">Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release</rs>, Distribution Unlimited). This material is based upon work supported by the <rs type="funder">Defense Advanced Research Projects Agency (DARPA)</rs> under Contract No. <rs type="grantNumber">HR001124C0319</rs>. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the <rs type="funder">Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release</rs>, Distribution Unlimited).</p></div>
+			</div>
+			<div type="funding">
+<div><p>Figure 21: Volume-versus-radius for the stratified space shown in Figure 19. This material is based upon work supported by the <rs type="funder">Defense Advanced Research Projects Agency (DARPA)</rs> under Contract No. <rs type="grantNumber">HR001124C0319</rs>. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the <rs type="funder">Defense Advanced Research Projects Agency (DARPA). Distribution Statement "A" (Approved for Public Release</rs>, Distribution Unlimited).</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_u3uVFJ5">
+					<idno type="grant-number">HR001124C0319</idno>
+				</org>
+				<org type="funding" xml:id="_dTRjfM6">
+					<idno type="grant-number">HR001124C0319</idno>
+				</org>
+				<org type="funding" xml:id="_6jWZehv">
+					<idno type="grant-number">HR001124C0319</idno>
+				</org>
+				<org type="funding" xml:id="_ZZ5c393">
+					<idno type="grant-number">HR001124C0319</idno>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Appendix: Demonstration on spaces of known geometry and topology</head><p>To illustrate the viability of this method beyond its application to the token subspaces of large language models, we demonstrate that it works on several known manifolds with different metrics. Although the method does not presuppose a manifold, it is easy to compute the correct parameters directly on circles, spheres, and disks. The results of these experiments are shown in Table <ref type="table">3</ref>.</p><p>We report quartiles (rather than mean and standard deviation) for the estimated values because all of their respective distributions are highly non-normal. (The p-values from the Shapiro-Wilk test for normality were far below 0.01 in every case tested, which supports this claim.) The dimension, scaling coefficient, and Ricci curvature are defined by Equation (2) above. We were able to determine the scaling coefficient directly because the volume of each of these spaces is known in advance. Since we tested many points on each of these spaces, we</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Language models are unsupervised multitask learners</title>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">OpenAI blog</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page">9</biblScope>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">Zhangir</forename><surname>Azerbayev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hailey</forename><surname>Schoelkopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keiran</forename><surname>Paster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marco</forename><forename type="middle">Dos</forename><surname>Santos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Mcaleer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><forename type="middle">Q</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jia</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stella</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sean</forename><surname>Welleck</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.10631</idno>
+		<title level="m">Llemma: An open language model for mathematics</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Albert Q Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Sablayrolles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Bamford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diego</forename><surname>Singh Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>De Las Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianna</forename><surname>Bressand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lengyel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucile</forename><surname>Lample</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Saulnier</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.06825</idno>
+		<title level="m">Mistral 7b</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lee</surname></persName>
+		</author>
+		<title level="m">Smooth Manifolds</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2003">2003</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niki</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jakob</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Llion</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>Attention is all you need</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">The topology of language</title>
+		<author>
+			<persName><forename type="first">Barney</forename><surname>Stratford</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Mathematical Psychology</title>
+		<imprint>
+			<biblScope unit="volume">53</biblScope>
+			<biblScope unit="page" from="502" to="509" />
+			<date type="published" when="2009">2009</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Improving distributional similarity with lessons learned from word embeddings</title>
+		<author>
+			<persName><forename type="first">Omer</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Goldberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ido</forename><surname>Dagan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="page" from="211" to="225" />
+			<date type="published" when="2015-05">05 2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Neural word embedding as implicit matrix factorization</title>
+		<author>
+			<persName><forename type="first">Omer</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Goldberg</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 27th International Conference on Neural Information Processing Systems</title>
+		<meeting>the 27th International Conference on Neural Information Processing Systems<address><addrLine>Cambridge, MA, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>MIT Press</publisher>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="2177" to="2185" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">The structure of meaning in language: parallel narratives in linear algebra and category theory</title>
+		<author>
+			<persName><forename type="first">Tai-Danae</forename><surname>Bradley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Juan</forename><forename type="middle">Luis</forename><surname>Gastaldi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Terilla</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Notices of the American Mathematical Society</title>
+		<imprint>
+			<biblScope unit="volume">71</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page">2023</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">The geometry of the neuromanifold</title>
+		<author>
+			<persName><forename type="first">Kathlén</forename><surname>Kohn</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">SIAM News</title>
+		<imprint>
+			<date type="published" when="2024-08">July/August 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Topology of word embeddings: Singularities reflect polysemy</title>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Jakubowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Milica</forename><surname>Gasic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marcus</forename><surname>Zibrowius</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Ninth Joint Conference on Lexical and Computational Semantics</title>
+		<editor>
+			<persName><forename type="first">Iryna</forename><surname>Gurevych</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Marianna</forename><surname>Apidianaki</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Manaal</forename><surname>Faruqui</surname></persName>
+		</editor>
+		<meeting>the Ninth Joint Conference on Lexical and Computational Semantics<address><addrLine>Barcelona, Spain (Online</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020-12">December 2020</date>
+			<biblScope unit="page" from="103" to="113" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Testing the manifold hypothesis</title>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Fefferman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sanjoy</forename><surname>Mitter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hariharan</forename><surname>Narayanan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of the American Mathematical Society</title>
+		<imprint>
+			<biblScope unit="volume">29</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="983" to="1049" />
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">A language and its dimensions: Intrinsic dimensions of language fractal structures</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vasilii</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikita</forename><forename type="middle">S</forename><surname>Gromov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Asel</forename><forename type="middle">S</forename><surname>Borodin</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Yerbolova</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Complexity</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Intrinsic dimension estimation for robust detection of ai-generated texts</title>
+		<author>
+			<persName><forename type="first">Eduard</forename><surname>Tulchinskii</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristian</forename><surname>Kuznetsov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laida</forename><surname>Kushnareva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniil</forename><surname>Cherniavskii</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Serguei</forename><surname>Barannikov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Irina</forename><surname>Piontkovskaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergey</forename><surname>Nikolenko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Evgeny</forename><surname>Burnaev</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Probabilistic and semantic descriptions of image manifolds and their applications</title>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Tu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhaoyuan</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Hartley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiwei</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiwei</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dylan</forename><surname>Campbell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaskirat</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyu</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Frontiers in Computer Science</title>
+		<imprint>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="page">1253682</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Julius von Rohrscheidt and Bastian Alexander Rieck. Topological singularity detection at multiple scales</title>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Fractal dimension and the persistent homology of random geometric complexes</title>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Schweinhart</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">The topos of transformer networks</title>
+		<author>
+			<persName><forename type="first">Mattia</forename><surname>Villani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Mcburney</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">The volume of a small geodesic ball of a Riemannian manifold</title>
+		<author>
+			<persName><forename type="first">Alfred</forename><surname>Gray</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Michigan Mathematical Journal</title>
+		<imprint>
+			<biblScope unit="volume">20</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="329" to="344" />
+			<date type="published" when="1974">1974</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Tame geometry with applications in smooth analysis</title>
+		<author>
+			<persName><forename type="first">Yosef</forename><surname>Yomdin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Georges</forename><surname>Comte</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2004">2004</date>
+			<publisher>Springer</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Reducing transformation bias in curve fitting</title>
+		<author>
+			<persName><forename type="first">Don</forename><surname>Miller</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">The American Statistician</title>
+		<imprint>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="124" to="126" />
+			<date type="published" when="1984-05">May 1984</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Visualizing data using t-sne</title>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">V D</forename><surname>Maaten</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Hinton</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="page" from="2579" to="2605" />
+			<date type="published" when="2008-11">Nov 2008</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">The specious art of single-cell genomics</title>
+		<author>
+			<persName><forename type="first">Tara</forename><surname>Chari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lior</forename><surname>Pachter</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">PLOS Computational Biology</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Intrinsic t-stochastic neighbor embedding for visualization and outlier detection -a remedy against the curse of dimensionality?</title>
+		<author>
+			<persName><forename type="first">Erich</forename><surname>Schubert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Gertz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 10th International Conference on Similarity Search and Applications (SISAP)</title>
+		<meeting>the 10th International Conference on Similarity Search and Applications (SISAP)<address><addrLine>Munich, Germany</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Analysis of numerical methods</title>
+		<author>
+			<persName><forename type="first">Eugene</forename><surname>Isaacson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Herbert</forename><forename type="middle">Bishop</forename><surname>Keller</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1994">1994</date>
+		</imprint>
+		<respStmt>
+			<orgName>Courier Corporation</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jacopo</forename><surname>Mattia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nandi</forename><surname>Villani</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Schoots</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.11827</idno>
+		<title level="m">Any deep relu network is shallow</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">The numerical stability of hyperbolic representation learning</title>
+		<author>
+			<persName><forename type="first">Zhengchao</forename><surname>Gal Mishne</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yusu</forename><surname>Wan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Yang</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

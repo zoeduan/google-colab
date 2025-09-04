@@ -1,0 +1,2210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">VeCoGen: Automating Generation of Formally Verified C Code with Large Language Models</title>
+				<funder ref="#_wKAKRSW">
+					<orgName type="full">Advanced Digitalisation Programme of Sweden&apos;s Innovation Agency (VINNOVA)</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2025-04-07">7 Apr 2025</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Merlijn</forename><surname>Sevenhuijsen</surname></persName>
+							<email>merlijn.sevenhuijsen@scania.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Scania &amp; KTH Royal Institute of Technology Södertälje</orgName>
+								<address>
+									<country key="SE">Sweden</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Khashayar</forename><surname>Etemadi</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="institution">KTH Royal Institute of Technology Stockholm</orgName>
+								<address>
+									<country key="SE">Sweden</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Mattias</forename><surname>Nyberg</surname></persName>
+							<email>mattias.nyberg@scania.com</email>
+							<affiliation key="aff2">
+								<orgName type="laboratory">Iterations Verify Compiles Unsuccessfully Verifies Unsuccessfully Verifies Successfully</orgName>
+								<orgName type="institution">Scania &amp; KTH Royal Institute of Technology Södertälje</orgName>
+								<address>
+									<country key="SE">Sweden</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">VeCoGen: Automating Generation of Formally Verified C Code with Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2025-04-07">7 Apr 2025</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">CB1FA18977B0E72409EE888403473F72</idno>
+					<idno type="arXiv">arXiv:2411.19275v3[cs.SE]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:42+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Code Generation</term>
+					<term>Large Language Models</term>
+					<term>Formal Verification</term>
+					<term>Iterative Code Improvement</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large language models have demonstrated impressive capabilities in generating code, yet they often produce programs with flaws or deviations from intended behavior, limiting their suitability for safety-critical applications. To address this limitation, this paper introduces VECOGEN, a novel tool that combines large language models with formal verification to automate the generation of formally verified C programs. VECOGEN takes a formal specification in ANSI/ISO C Specification Language, a natural language specification, and a set of test cases to attempt to generate a verified program. This program-generation process consists of two steps. First, VECOGEN generates an initial set of candidate programs. Secondly, the tool iteratively improves on previously generated candidates. If a candidate program meets the formal specification, then we are sure the program is correct. We evaluate VECOGEN on 15 problems presented in Codeforces competitions. On these problems, VECOGEN solves 13 problems. This work shows the potential of combining large language models with formal verification to automate program generation.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>I. INTRODUCTION</head><p>Large Language Models (LLMs) have demonstrated versatility, excelling in various tasks <ref type="bibr">[1]</ref>- <ref type="bibr" target="#b3">[4]</ref>. One of the tasks where LLMs perform well is the generation of programs <ref type="bibr" target="#b4">[5]</ref>- <ref type="bibr" target="#b6">[7]</ref>. Despite their impressive capabilities, LLMs often produce programs with errors or inconsistencies, making them unsuitable for applications requiring high assurance of correctness <ref type="bibr" target="#b7">[8]</ref>. This lack of trustworthiness poses a significant challenge to safety-critical domains where the correctness of programs is imperative. In the safety-critical domain, even minor software defects can have severe consequences, such as financial losses or threats to human life <ref type="bibr" target="#b8">[9]</ref>- <ref type="bibr" target="#b10">[11]</ref>. To address the lack of trustworthiness, the present paper introduces a new tool named VECOGEN, which combines LLMs with formal verification techniques to automatically generate C programs that are correct with respect to given specifications.</p><p>VECOGEN is based upon a novel two-step process of initial code generation and iterative code improvement through feedback from a compiler and verifier. In the initial code generation step, VECOGEN generates an initial set of program candidates based on natural language specifications in English and formal specifications in ANSI/ISO C Specification Language (ACSL) <ref type="bibr" target="#b11">[12]</ref>. The Weakest Precondition (WP) and Runtime Error (RTE) plugins of Frama-C <ref type="bibr" target="#b12">[13]</ref> then verify the correctness of the program candidates. If all generated program candidates fail compilation or verification, VECOGEN continues to the iterative code improvement step. In this step, VECOGEN parses the feedback from the compiler and verifier to guide the LLM in generating improved candidates. VECOGEN ensures that the generated program candidate is not only syntactically valid but also formally correct with respect to the formal specification. The tool can be downloaded from <ref type="url" target="https://github.com/ASSERT-KTH/Vecogen">https://github.com/ASSERT- KTH/Vecogen</ref>.</p><p>Traditional works, not utilizing LLMs, have addressed the challenge of generating programs automatically <ref type="bibr" target="#b13">[14]</ref>, but they often face scalability issues <ref type="bibr" target="#b14">[15]</ref>, <ref type="bibr" target="#b15">[16]</ref>. LLMs offer a promising solution to the scalability issues of generating a program that meets the specifications, as explored in prior research. Mukherjee and Delaware <ref type="bibr" target="#b16">[17]</ref> employ LLMs along with human intervention to synthesize and verify C programs, demonstrating capability in handling complex scenarios. Similarly, Patil et al. <ref type="bibr" target="#b17">[18]</ref> propose spec2code, a framework that combines LLMs with critics to iteratively synthesize programs. However, these existing approaches either rely on manual feedback to the LLM or do not have a tool that implements the fully automatic verified code generation. VECOGEN is the first LLM-based tool that fully automatically generates and verifies C code.</p><p>We evaluate VECOGEN on 15 competitive programming problems to assess its effectiveness in generating formally verified C programs. VECOGEN solves 13 out of 15 problems, demonstrating its ability to generate formally verified code. This initial benchmarking showcases the potential of generating formally verified C code automatically using VECOGEN, allowing for use in safety-critical software development.</p><p>The paper contains the following contributions: 1) VECOGEN, a novel LLM-based code generation tool for iteratively generating formally verified C code.</p><p>2) The evaluation of VECOGEN on a collection of 15 competitive programming problems. 3) An analysis of the impact of changing the configuration of the tool, including the specification type, the number of generated programs per LLM-invocation, the temperature, the zero-or one-shot prompting, and the choice of LLM. The rest of this paper is organized as follows. Section II provides background on formal verification and LLM-based code generation. Section III describes the design and implementation of VECOGEN. Section IV outlines the experimental / * @ requires 1000 &gt;= x &gt;= 0 &amp;&amp; 1000 &gt;= y &gt;= 0; requires \valid(result); assigns * result; ensures * result == x + y; * / void add_positive(int x, int y, int * result); Fig. <ref type="figure">1</ref>. Formal specification for an "add positive" program. methodology, and Section V presents the results. Section VI discusses threats to validity, Section VII presents related work, and Section VIII concludes the paper.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>II. BACKGROUND</head><p>A. ANSI/ISO C Specification Language ANSI/ISO C Specification Language (ACSL) is a formal specification language for describing the desired behavior of a function in C <ref type="bibr" target="#b11">[12]</ref>. Figure <ref type="figure">1</ref> presents an example of an ACSL specification for a program that computes the sum of two positive integers. The formal specification for this "add positive" function uses three clause types: requires, assigns, and ensures.</p><p>The requires clause specifies preconditions that must be met before running the function. In the "add positive" example, the first precondition states that both input values, x and y, must be positive integers (line 2). Additionally, the second precondition states that the result variable must point to a valid memory location (line 3). The assigns clause defines which memory locations the function can modify while executing. The function is permitted to only modify the memory location pointed to by the result variable (line 4). The ensures clause defines postconditions that must hold after the function completes execution. The postcondition specifies that the output variable, result, must be equal to the sum of x and y (line 5).</p><p>A program that verifies against this specification is guaranteed to implement the intended behavior correctly. In addition to the requires, assigns, and ensures clauses, ACSL supports many other types. These extra clauses are explained in detail in the official ACSL documentation<ref type="foot" target="#foot_0">foot_0</ref> .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Frama-C</head><p>Frama-C is a platform for the static analysis and formal verification of C programs <ref type="bibr" target="#b12">[13]</ref>, <ref type="bibr" target="#b18">[19]</ref>, used in safety-critical projects <ref type="bibr" target="#b19">[20]</ref>- <ref type="bibr" target="#b22">[22]</ref>. The WP plugin of Frama-C, inspired by the principles of Hoare Logic <ref type="bibr" target="#b23">[23]</ref>, verifies functional properties by generating proof obligations based on ACSL specifications. These obligations are then translated into logical goals using the Why platform <ref type="bibr" target="#b24">[24]</ref>. The RTE plugin complements the WP plugin by automatically generating goals to check for runtime errors, such as integer overflows.</p><p>Automated theorem provers like Alt-Ergo, CVC, and Z3 <ref type="bibr" target="#b25">[25]</ref> attempt to prove the logical goals. The theorem provers validate these goals within specified limits. If a goal cannot be proven within the given timeout and computational limits, the plugin provides output to help developers refine their code or specifications. Programs are considered formally verified with respect to the formal specification once all goals generated by the WP and RTE plugins are successfully proven.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Large Language Models</head><p>Large Language Models (LLMs) are machine learning models with a large number of parameters, trained on a vast corpus of data. State-of-the-art LLMs, such as GPT-4o, are built on the Transformer architecture <ref type="bibr" target="#b26">[26]</ref> and use decoderonly models <ref type="bibr" target="#b26">[26]</ref>. The decoder-only models generate text by continuously predicting the next token, consisting of a small set of characters. After generating a token, the generated token is appended to the input. The LLM continues with iteratively producing more tokens until a stop token is predicted as the next token. These decoder-only models have shown highly promising results on code-related tasks <ref type="bibr" target="#b4">[5]</ref>, and we employ them in this study for generating formally verified C code.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>III. VECOGEN APPROACH</head><p>This section describes VECOGEN, an iterative LLM-based tool aimed at automatically generating formally verified C code. VECOGEN uses specifications and test cases to generate a C program that meets the specifications. This approach guarantees the correctness of LLM-generated code, which is a major goal in LLM-based code generation literature <ref type="bibr" target="#b27">[27]</ref>- <ref type="bibr" target="#b30">[29]</ref>. The tool, VECOGEN, performs two steps: initial code generation and code improvement. The initial code generation step generates a set of initial programs by invoking an LLM through an initialization prompt. If none of the programs generated at this step meet the given formal specification, then VECOGEN continues onto step two. Within the code improvement step, VECOGEN iteratively improves the best previously generated program by invoking an LLM using an "improvement prompt". This prompt asks the LLM to improve a candidate program using feedback from a compiler and verifier. The tool iteratively prompts an LLM using previously generated feedback until the LLM generates a program that satisfies the formal specification. VECOGEN is the first LLMbased tool that automatically generates formally verified C code.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. VeCoGen Overview</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. VeCoGen Input</head><p>The search for a formally verified program consists of three inputs: (1) a formal specification given in ACSL, (2) a natural language specification in English, and (3) a set of unit test</p><p>Improvement Prompt Invoke Gather Feedback Vecogen Input Natural Language Specification Formal Specification Rank Candidate Programs Test Cases Step 2: Code Improvement Best Attempt</p><p>Step 1: Initial Code Generation Vecogen Fig. <ref type="figure" target="#fig_0">2</ref>. Outline of VECOGEN: VECOGEN uses formal and natural language specifications to generate a program that meets the formal specification.</p><p>Write a function to compute the sum of two positive integers and store the result at a specified memory location. Input:</p><p>Two positive integers 'x' and 'y' ( 1 ≤ x, y ≤ 10 6</p><p>) and a pointer 'result' to store the sum. Output:</p><p>The function writes the sum of 'x' and 'y' to the memory location pointed to by 'result'. cases in C. The first input is a formal specification used to verify candidate programs. The goal of the tool is to generate a program that meets the ACSL specification.</p><p>The second input is a natural language specification, which is an informal description of the desired behavior of a program. This type of specification conveys the functionality and purpose of the code to the LLM in natural language. Figure <ref type="figure" target="#fig_1">3</ref> shows the natural language description for the "add positive" program defined in Section II-A. It describes the intended behavior of the program as well as its input and output.</p><p>Besides the formal and natural language specifications, we also define a function signature to specify the interface of the program. The signature defines the function name and the input and output parameters. We append this function signature to the specifications.</p><p>Lastly, VECOGEN requires a set of unit test cases. Each test case specifies an input along with the expected output. If the output of a program aligns with the expected output, then the test passes. If the output differs, then the unit test fails. VECOGEN relies on these test cases during the iterative code improvement phase to progressively refine the generated programs (see Section III-D for more details). The test cases, natural language, formal specification, and function signature must be consistent.   </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Step 1: Initial Code Generation</head><p>Based on the two specification types, VECOGEN crafts a prompt to invoke an LLM. VECOGEN uses two types of prompts: the initialization prompt and the improvement prompt. Figure <ref type="figure" target="#fig_4">4</ref> presents the outline of both prompt types.</p><p>Both types contain a system message, a one-shot example, the specifications, and a call to action. The improvement prompt also includes error feedback on a previous attempt (see Section III-D for details). The parts of the prompt highlighted in green and blue remain the same throughout each prompt. Green indicates the role of the LLM, and blue indicates unchanged text explaining the task to the LLM. The gray parts indicate problem-specific information.</p><p>In the initial code generation step, VECOGEN uses the initialization prompt. This prompt type begins with a system message (A) that assigns an expert software engineer role to the LLM. Next, we include a one-shot example (B). The one-shot example provides one single detailed instance of the desired input-output of the LLM. We use the one-shot example to leverage in-context learning, as this explains the task and expected format to the LLM <ref type="bibr">[1]</ref>. This manually created one-shot example includes a natural language specification, a formal specification, a function signature, and a correct implementation. The one-shot example<ref type="foot" target="#foot_1">foot_1</ref> remains unchanged across all problems.</p><p>The third part of the prompt presents the specifications of the desired program (C). These program specifications include a natural language specification, an ACSL specification, a function signature, and a text explaining to the LLM what the model has to do with these. The function signature presents the input and output format of the desired program. The third part of the prompt outlines the specifications for the desired program (C). These specifications include four components: a description in natural language, an ACSL specification, a function signature, and instructions for the LLM. Within the instruction, the prompt specifies what to do with the specifications: to take the provided specifications and generate a program that adheres to them. Additionally, it includes constraints such as avoiding loops in the generated program.</p><p>Part (D) of the prompt is not included in the initialization prompt as we have no previously generated candidate programs in this step. Lastly, both prompt types include a Call to Action (E) instructing the model to generate a formally verified C program that meets the provided specification.</p><p>Using the initialization prompt, VECOGEN invokes the LLM to generate candidate programs. We check the correctness of each candidate in two steps. First, we compile the candidate. If the compilation is successful, VECOGEN employs the WP and RTE plugins of Frama-C to prove that the candidate meets the formal specification. If any candidate passes these checks, it is considered a correct program, and the code generation is successfully completed. Otherwise, the candidates are sent to the next step for an iterative improvement until a correct program is generated.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D. Step 2: Code Improvement</head><p>In the code improvement step, incorrect candidates are iteratively repaired to synthesize a formally verified program.</p><p>As seen in Figure <ref type="figure" target="#fig_4">4</ref>, the improvement prompt has the same system message, one-shot example, and specification as the initialization prompt. In addition to the initialization prompt, the improvement prompt contains a previously generated candidate program along with associated compilation or verification feedback. This feedback provides the LLM with valuable information to enhance its previously generated attempt.</p><p>The improvement prompt only contains one incorrect program. As multiple candidates are generated at each iteration, we have to pick one of the candidates to include in the next improvement prompt. Selecting a single candidate ensures that the LLM is not overwhelmed with conflicting information from multiple programs. VECOGEN randomly selects one of the programs that pass the highest percentage of unit test cases. We choose the most promising candidate to increase the likelihood of quickly converging to a verified program. The LLM then generates improved versions of this program. These revised programs are then compiled and verified. The iterative process of generating new programs based on previous incorrect candidates is repeated until a formally verified program is found or a maximum of ten iterations is reached.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>E. VECOGEN Output</head><p>The output of VECOGEN consists of a formally verified C program that adheres to the provided formal specification or, if unsuccessful, the last generated candidate program. Additionally, VECOGEN produces a detailed log file for each run. If VECOGEN is successful, then the generated program is guaranteed to be both syntactically correct and semantically correct with respect to the formal specification.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>F. Implementation</head><p>VECOGEN is written in Python and uses GCC for compilation and the Frama-C plugins WP and RTE for verification. Solvers attempt to prove the goals generated by the two Frama-C plugins. VECOGEN has been tested with solvers Alt-Ergo, CVC4, and Z3. Frama-C was chosen for its strong verification capabilities, especially in safety-critical systems. Due to the absence of complex control structures like loops, Frama-C offers automatic verification with theorem provers. If more complexity is introduced, then Frama-C would require help to prove that a program adheres to a formal specification.</p><p>VECOGEN is able to employ any LLM with an application programming interface (API). Currently, VECOGEN is configured to use the following LLMs: GPT-3.5-turbo, GPT-4o, Llama-3.1-70B. The default LLM in VECOGEN is GPT-3.5turbo, selected for its balance of cost-effectiveness and suitable performance for generating C programs.</p><p>VECOGEN generates ten programs per LLM invocation. We pick ten, as our experiments show that generating ten programs per request balances diversity in generated candidate programs and the number of duplicates between the generated candidates. To promote the diversity of the programs, VECOGEN uses a sampling temperature of 1. The temperature controls the randomness of an LLM when generating output by adjusting the probability distribution of predicted tokens.</p><p>The values for the temperature range from 0 to 1, where lower values make the output more deterministic, and higher values also introduce greater diversity by predicting less likely tokens. This encourages the LLM to explore varied solutions and minimizes duplicates. During the code improvement step, VECOGEN uses at most ten iterations. We use ten iterations to give the LLM multiple chances to refine incorrect programs based on feedback from the compiler and verifier.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>IV. EXPERIMENTAL METHODOLOGY</head><p>To assess the effectiveness of VECOGEN and the impact of specification types on its performance, we design an experimental methodology guided by research questions to evaluate its ability to generate formally verified C.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Research Questions</head><p>We define three research questions to evaluate the effectiveness of VECOGEN in generating formally verified C programs: RQ1 (effectiveness): How effective is VECOGEN in terms of generating formally verified C programs? As a metric, we count the number of specifications for which VECOGEN generates a formally verified program. Additionally, we investigate the number of problems solved after initial code generation, the number of solved problems after different numbers of code improvement iterations, and the total time taken. If a solution is generated, we also present metrics of the solution. RQ2 (specification type impact): How does providing a natural language or formal specification impact the effectiveness of VECOGEN? We analyze the number of successfully generated verified programs based on different specification inputs. Specifically, we investigate using only natural language specification, only formal specification, and both specification types. RQ3 (ablation study): What is the impact of changing parameters, prompts, and LLMs on the effectiveness of VECOGEN? Specifically, we study the impact of employing different search strategies in terms of number of candidates, temperature, iterations, the use one-shotting, and using different LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Study Subjects</head><p>To evaluate the performance of VECOGEN, we create a dataset called VECOSET. VECOSET consists of formal specifications, natural language specifications, and test cases for 15 problems selected from Codeforces online competitions <ref type="bibr" target="#b32">[30]</ref>. CODE4BENCH <ref type="bibr" target="#b33">[31]</ref> bundles problems used in Codeforces, from which we select problems based on the following criteria:</p><p>1) The problem has a ground-truth accepted solution in the C language. This ensures that we have a reference solution.</p><p>2) The ground-truth solution to the problem is limited to a single function that does not use loops. 3) A formal verification expert must be able to manually specify the problem in ACSL within three hours of work to keep the study manageable, as explained below.</p><p>1 Original code in main function 2 #include&lt;stdio.h&gt; 3 int main() 4 { 5 long long n; 6 scanf("%I64d", &amp;n); 7 long long result; 8 result = n / 2; 9 if(n % 2 == 0) 10 printf("%I64d", result); 11 else 12 printf("%I64d", result + 1); 13 } 14 15 Transformed code as a function 16 void calculateMinimumBrainsForStrategy(long long N, long long * out) 17 { 18 if (N % 2 == 0) Furthermore, we exclude problems involving loops due to two reasons: (1) Including problems that contain a solution with loops often requires additional loop invariants to formally verify the file. Writing these loop invariants typically requires manual effort and domain knowledge. Therefore, we focus our study on programs without loops to make our code generation approach automatic. (2) In safety-critical domains like automotive, loops are often restricted due to predictability and reliability concerns. Standards like MISRA-C <ref type="bibr" target="#b34">[32]</ref> impose strict limits on loop usage to prevent issues such as unbounded execution and timing unpredictability. Excluding loops from the analysis aligns with these safety practices, supporting our goal of automatic code generation for such domains.</p><p>From the resulting set of 77 problems, we randomly pick 15 to include in VECOSET. Problems from Code4Bench include natural language descriptions and test cases, which we use directly in VECOSET without modification. However, formal specifications are not included in Code4Bench. Therefore, we manually create the formal specifications and check their correctness and completeness using two methods. First, we validate that the ground-truth solution meets the formal specification. Second, another formal verification expert confirms the consistency and completeness of each specification. We verify that the full program behavior is captured in the formal specification to ensure that only programs that capture the intended behavior are formally verified.</p><p>Solutions in Codeforces make use of the standard input and output. We transform the ground-truth solution into a singlefunction program to facilitate formal verification. This allows us to write formal specifications for each transformed function. Additionally, using functions is common practice in real-world projects. For example, Figure <ref type="figure">5</ref> presents a solution taken from Code4bench and its transformed functional version.</p><p>In the manual transformation procedure, we perform five steps: <ref type="bibr">(1)</ref> We create a function signature. This is a void</p><p>TABLE I SUMMARY OF THE PROBLEMS PRESENT IN VECOSET. Median Min Max Natural Language Spec. Size (Tokens) 249 122 532 Formal Spec. Size (LoC) 25 11 50 Formal Spec. Size (Clauses) 7 4 14 Ground-truth Solution Size (LoC) 9 1 20 Number of Test Cases 34 5 104 function with a relevant name. (2) We introduce a parameter in the function signature for each value read from the standard input. This allows the function to receive input values as arguments rather than through scanf statements. (3) We introduce a parameter in the function signature for each value printed to the standard output. For this, we utilize an output pointer to capture results. (4) We replace any printf and scanf statements and replace them with assignments to the designated input and output parameters. (5) We remove the include #include&lt;stdio.h&gt; statement, as standard I/O functions are no longer used in the transformed function. Table <ref type="table">I</ref> summarizes features of the 15 problems in our dataset. It shows the size of the natural language specification, the size of the formal specification, the length of the groundtruth solution, and the number of test cases. The table presents the median value and the minimal and maximal values for each of these metrics. This information underscores the variety of problems present in VECOSET.</p><p>The natural language specification size is measured in tokens. For each natural language description, we use the GPT-3.5 tokenizer to count the number of tokens. For example, the natural language specification presented in Figure <ref type="figure" target="#fig_4">4</ref> consists of 141 tokens. The number of clauses in the formal specifications varies from 4 to 14 in VECOSET, which shows the diversity in the level of detail needed to capture their requirements accurately. Problems in Codeforces are rated by difficulty to match user skill. The problems in VECOSET contain problems classified as easy to medium.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Protocol for RQ1 (effectiveness)</head><p>To answer RQ1, we use VECOGEN to generate verified C programs for all 15 problems in VECOSET. If VECOGEN generates a C program that meets the formal specification, then we consider the problem solved. We define the effectiveness of VECOGEN as the number and ratio of problems for which our tool solves the problem. This metric allows us to evaluate the effectiveness of VECOGEN to generate verified C programs.</p><p>We consider the number of problems solved after initial code generation as a baseline. Then, we track the number of solved problems after each code improvement iteration, up to a maximum of ten iterations or until all problems are solved. Additionally, we count metrics of the solution, such as the number of lines of code and the verification time required. Lastly, we capture the total runtime for attempting to generate and verify candidate solutions. These metrics provide insights into the performance and potential integration of VECOGEN.</p><p>For unsolved problems, we manually analyze the generated code to identify the cause of failure.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D. Protocol for RQ2 (specification type impact)</head><p>To answer RQ2, we evaluate the impact of different specification types on the effectiveness of VECOGEN in generating verified C programs. For each of the 15 problems in VE-COSET, we run VECOGEN using three different specification types as inputs: (1) only the natural language specification (2) only the formal specification, and (3) both natural language and formal specifications combined.</p><p>When only natural language specifications are used to generate code programs, the generated programs are attempted to be verified with respect to the formal specification. If this fails, then only natural language feedback is given back to the LLM. This feedback states that the code does not verify and that the LLM must improve on the code.</p><p>When running VECOGEN with each specification type, we record the number of problems solved after the initial code generation step and after iterative improvements. Additionally, we measure the total runtime used when generating programs using VECOGEN. Using these statistics, we evaluate the effectiveness and time efficiency using different specification types as input to VECOGEN.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>E. Protocol for RQ3 (ablation study)</head><p>To answer RQ3, we perform an ablation study to evaluate how different configurations, such as including a one-shot example and using different LLMs, affect the performance of VECOGEN. We vary the number of candidate programs generated per LLM invocation, the used temperature of the LLM when generating candidates, whether or not a one-shot example is included, and the specific LLM employed.</p><p>The first (and default) configuration acts as a baseline, consisting of ten candidate programs per invocation, ten code improvement iterations, a temperature of 1, and a one-shot example. We create the second configuration to investigate the effect of taking the most promising candidate at each iteration. This configuration uses a temperature of 0 to get the best possible candidate at each iteration. This leads to little variety between generated program candidates, so we only generate one program candidate per invocation.</p><p>The third configuration investigates the effect of generating many candidate programs without using code improvement iterations. It generates 100 candidate programs per invocation, a commonly used number in the literature <ref type="bibr" target="#b4">[5]</ref>, <ref type="bibr" target="#b35">[33]</ref>.</p><p>The fourth configuration explores providing a one-shot example, examining the impact of giving an example of the task and output format on the effectiveness of VECOGEN.</p><p>Lastly, we define configurations to use VECOGEN with different LLMs. This assesses the impact of using open-source (Llama-3.1-70B) and closed-source (GPT-3.5-turbo, and GPT-4o) LLMs. This provides insights into how the choice of LLM influences the formally verified program generation process.</p><p>For each configuration, we count the total number of problems solved by VECOGEN after completing the initial code generation and iterative improvement steps. By comparing the results of the defined configurations, we analyze the effect of changing information included in the prompt. Additionally, we examine the time each configuration needs to generate a verifying program to assess the impact on the performance and efficiency of VECOGEN.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>V. EXPERIMENTAL RESULTS</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Results for RQ1</head><p>Table II presents information about the problems and results 3 using VECOGEN. Specifically, it presents generated solutions using the default configuration of VECOGEN. Column "Problem ID" mentions the problem identifier, and column "Problem Name" presents the name of the problem as presented in Codeforces. Column "SS Iter" presents the number of code improvement iterations that VECOGEN uses to synthesize a verifying solution. If 0, then the problem is solved in the initial code generation step. If VECOGEN does not solve the problem, we indicate this using "-". For the solved problems, column "SS LoC" shows the Lines of Code (LoC) of the synthesized solution. Column "SS Ver Time" presents the time needed to formally verify the synthesized solution. Lastly, column "Tot Time" presents the total time spent to synthesize a solution to the problem. The total time includes the total runtime of VECOGEN, Frama-C, and the LLM combined.</p><p>Column "SS Iter" shows the tool solves 9 of the 15 problems in VECOSET during initial code generation. After the iterative code improvement step, the number of solved problems increases to 13. Notably, three problems <ref type="bibr">(9, 13, and 14)</ref> are solved after the first code improvement iteration, and problem six is solved after the third iteration. This shows the effectiveness of the iterative approach of VECOGEN, as many problems are solved during improvement attempts.</p><p>When inspecting the LoC of the synthesized solution in the column "SS LoC", we see that VECOGEN generates solutions of varying lengths. The shortest solution generated is one line long, while the longest synthesized solution contains 14 LoC. Similarly, VECOGEN requires a varying time to verify the synthesized solution, ranging from 0.8 seconds to 15.1 seconds. This highlights the strength of VECOGEN, being applicable for generating a range of different C programs based on formal and natural language specifications.</p><p>Column "Tot Time" highlights the total time required to generate solutions, which varies significantly across problems. For solved problems, the fastest total runtime is 5 seconds for problem 5, while the longest is 388 seconds for problem 6. This shows that the tool is fast enough to be integrated into a common development process.</p><p>Both unsolved problems (12 and 15) have a significantly higher total time spent. When VECOGEN fails to generate a verified program, the tool iterates ten times and generates ten candidates for each iteration. This totals to over 100 generated 3 The results to all experiments conducted can be found at <ref type="url" target="https://github.com/ASSERT-KTH/Vecogen/tree/vecogen-results/results">https://github.  com/ASSERT-KTH/Vecogen/tree/vecogen-results/results</ref>. candidates. As the WP and RTE plugins of Frama-C attempt to verify each of the generated program candidates, the tool takes a long time to handle unsolved problems. For problem 12, as shown in Figure <ref type="figure">6</ref>, the generated candidate does not meet the formal specification, even after code improvement steps. As per our manual analysis, the LLM repeatedly includes loops in the synthesized solutions, while the employed prompt mentions that loops are not allowed. The second unsolved problem (problem 15) is solved by employing GPT-4o. This shows that VECOGEN is able to take advantage of the power of more advanced LLMs to generate more complex verifying programs; see Section V-C for more details.</p><p>Answer to RQ1: How effective is VECOGEN in terms of generating formally verified C programs? VECOGEN proves effective, solving 13 out of 15 problems in VECOSET. During the initial code generation step, nine problems are solved, which are improved to 13 throughout the feedback iterations. This demonstrates the capability of VECOGEN to refine solutions through feedback. Overall, in this experiment, VECOGEN showcases its potential to automate the synthesis of verified C programs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Results for RQ2</head><p>Next, we investigate how different types of input specifications in the prompt affect the ability of VECOGEN to generate formally verified C programs. Table <ref type="table">III</ref> presents the results of using a natural language specification, a formal specification, and both specification types when running VECOGEN. The column "Specification Type" presents the specification type used when prompting the LLM. Columns "Initial" and "Improvement" present the number of problems solved after the initial code generation and improvement steps, respectively. Lastly, column "Tot Time" presents the total time taken by VECOGEN to solve all problems with the given specification type.</p><p>In the initial code generation step, the natural language prompt solves most problems (10 out of 15), followed by</p><p>TABLE II EFFECTIVENESS OF VECOGEN ON DIFFERENT PROBLEMS OF VECOSET. Problem ID Problem Name SS Iter SS LoC SS Ver Time Tot Time 1 Vasya the Hipster 0 2 2.2 s 11 s 2 Elephant 0 5 1.6 s 6 s 3 Again Twenty Five! 0 1 0.8 s 6 s 4 Home Numbers 0 5 2.1 s 129 s 5 Collective Mindsets 0 1 1.2 s 5 s 6 The New Year: Meeting Friends 3 14 4.2 s 388 s 7 Arpas hard exam 0 14 1.3 s 25 s 8 Compote 0 6 2.0 s 103 s 9 Petr and a calendar 1 5 2.5 s 213 s 10 Soft Drinking 0 10 15.1 s 35 s 11 Wizards and Demonstration 0 8 3.5 s 40 s 12 Exams ---1,256 s 13 Hexadecimal's theorem 1 3 1.2 s 129 s 14 Is your horseshoe on the other hoof? 1 2 2.1 s 286 s 15 Little Elephant and Magic Square ---1,090 s</p><p>TABLE III EFFECTIVENESS OF VECOGEN USING DIFFERENT SPECIFICATION TYPES. Specification Type Initial Improvement Tot Time Both (default) 9 13 3,722 s Natural Language 10 13 5,447 s Formal 7 8 10,538 s</p><p>using both specification types (9 out of 15). This shows that using only natural language performs the best when prompting the LLM without iterative feedback. After the code improvement iterations, using natural language and both types of specifications in the prompt solves 13 problems. This entails that after using the code improvement iterations, including a formal specification or not does not influence the number of solved problems in VECOSET. Only using a formal specification performs the worst in both initial code generation and code improvement. Removing the natural language description from the prompt significantly reduces the effectiveness of VECOGEN. This suggests that natural language specifications are crucial for code generation as LLMs are primarily trained on such data. While formal specifications alone perform weaker due to limited context, their combination with natural language improves problem-solving efficiency and resource usage, justifying the prompting strategy used by VECOGEN. When investigating column "Tot Time", we see that the configuration using both natural language and formal specifications is the most time-efficient at 3,722 seconds, followed by natural language at 5,447 seconds. This shows that including both specification types reduces the time needed to run VECOGEN. The reason is that when using natural language only, VECOGEN spends more time on unsolved problems. For example, this specification type spends 2,892 seconds attempting to solve problem 4. Using only formal specifications takes significantly longer, with a total time of 10,538 seconds. This is because using only formal specifications in the prompt cannot solve seven problems. As we discussed in Section V-A, if VECOGEN cannot solve a problem, a lot of time is spent verifying each of the generated candidate solutions, leading to a high time spent per unsolved problem. VECOGEN demonstrates an effective design by leveraging both specification types, solving the most number of problems in the least amount of time.</p><p>Answer to RQ2: How does providing a natural language or formal specification impact the effectiveness of VECOGEN? Experiments show that VECOGEN performs best when combining natural language and formal specifications, solving most problems in the least time. Natural language specification is important as LLMs are primarily trained on such data. Formal specifications alone yield weaker performance, but combining both specification types improves efficiency, enabling VECOGEN to balance problem-solving effectiveness with resource usage.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Results for RQ3</head><p>Table <ref type="table">IV</ref> presents the various configurations in our ablation study that are used to assess the impact of different parameters on the performance of VECOGEN. Each configuration is identified by a unique identifier presented in column "Configuration ID". The "Candidates" column specifies the number of candidate programs generated per LLM invocation, and the "Temperature" column denotes the used temperature, which controls the randomness in program generation. The "Iterations" column lists the maximum number of code improvement iterations, and the "Prompting Method" column indicates whether an example of the task is included. Lastly, column "LLM" specifies the LLM used.</p><p>The remaining columns present the results. The "Solved" column shows the final number of solved problems after running VECOGEN. The "Tot Time" column captures the total time spent (in seconds) for code generation and verification per configuration. For example, the default configuration in row A, as presented in Section V-A, generates ten candidate programs per LLM-invocation using a temperature of 1. This configuration uses a maximum of ten code improvement iterations and employs a one-shot learning approach. The default configuration solves 13 problems in 3,722 seconds.</p><p>Using configuration B, we evaluate the effect of a lower temperature. Configuration B, with a temperature of 0, solves seven problems after iterations, significantly fewer than configuration A. This demonstrates the benefit of a higher tem-</p><p>TABLE IV THE RESULTS OF RUNNING VECOGEN WITH DIFFERENT CONFIGURATIONS ON VECOSET. Configuration ID Candidates Temperature Iterations Prompting Method LLM Solved Tot Time A (default) 10 1 10 One-shot GPT-3.5-turbo 13 3,722 s B 1 0 10 One-shot GPT-3.5-turbo 7 2,062 s C 100 1 0 One-shot GPT-3.5-turbo 12 5,479 s D 10 1 10 Zero-shot GPT-3.5-turbo 13 5,404 s E 10 1 10 One-shot GPT-4o 14 830 s F 10 1 10 One-shot Llama-3.1-70B 15 3,782 s perature, as it allows VECOGEN to explore a broader range of program candidates, increasing its effectiveness in generating verifying programs. Configuration B completes in 2,062 seconds, compared to 3,722 seconds for configuration A. This is due to configuration B verifying at most 11 program candidates per problem compared to over 100 in configuration</p><p>A. This highlights that although configuration A uses more time, the increase in problems solved makes using a higher temperature an effective choice for VECOGEN. The effect of removing the one-shot example is analyzed in configuration D. Both configurations A and D solve 13 problems after all iterations. However, configuration A has a lower runtime (3,722 vs 5,403 seconds). Including a oneshot example uses less time when solving problems, helping towards integrating VECOGEN in a development process.</p><p>Configurations E and F explore the impact of using different LLMs. Configuration E, which employs GPT-4o, outperforms GPT-3.5-turbo in both effectiveness and time efficiency, solving 14 problems in 830 seconds. Similarly, configuration F uses Llama-3.1-70B, solving all 15 problems with a runtime of 3,782 seconds. These results highlight that VECOGEN performs well with both open and closed-source LLMs. This makes VECOGEN suitable for diverse deployment scenarios.</p><p>Answer to RQ3: What is the impact of changing parameters, prompts, and LLMs on the effectiveness of VECOGEN?</p><p>The findings indicate that VECOGEN performs best using a temperature of 1 and generating multiple candidates. Additionally, we find that the iterative approach of VECO-GEN is better than generating more program candidates in the initial code generation step. Moreover, VECOGEN proves effective with both open-and closed-source LLMs, solving 14 problems with GPT-4o and all 15 with Llama-3.1-70B, showcasing its versatility with advanced LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>VI. THREATS TO VALIDITY</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Construct Validity</head><p>A threat to the construct validity of our study arises from data leakage and the non-deterministic behavior of LLMs. Since the problems used in this study are derived from publicly available sources such as Codeforces, it is plausible that the LLMs may have encountered similar problems or solutions during training. This could lead to an overestimation of their problem-solving capabilities, as they might recall or adapt existing solutions rather than independently generate them.</p><p>Despite this threat, the data leakage issue in our study is limited as our manually crafted formal specifications were not publicly available before this study. This means the LLM has not seen these formal specifications in its training dataset.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Internal Validity</head><p>The verification process in VECOGEN depends on the WP and RTE plugins of Frama-C. We run these plugins using the solvers Alt-Ergo, CVC4, and Z3 to leverage and combine their strengths. However, these solvers operate under specific timeouts and step limits. If a solver fails to verify a goal within these constraints, the solution may still be correct, but the solvers cannot confirm it. To mitigate this, we ensure that the ground-truth solution meets the formal specification and thus verifies. This proves that there is at least one solution that can be generated by the LLM and formally verified by Frama-C.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. External Validity</head><p>The limited dataset of 15 problems constrains the generalizability of our findings. Additionally, the problems exclude loops from the analysis. This constraints the applicability of VECOGEN to more general and complex programming problems. Furthermore, our evaluation is restricted to singlefunction programs. In the future, expanding the scope to multifunction programs and incorporating more complex data structures would better reflect real-world software development.</p><p>The limited dataset of 15 problems constrains the generalizability of our findings. Moreover, the problems exclude loops from the analysis and are not based on safety-critical code, which constrains the applicability of VECOGEN to more general and complex programming problems.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>VII. RELATED WORK</head><p>VECOGEN is the first LLMs-based tool to automatically generate formally verified C code using an iterative approach. However, other works have explored combining LLMs with formal methods or employing iterative improvement techniques, which we review in this section.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Formal Specifications-based Code Generation with LLMs</head><p>The closest work to VECOGEN is SynVer <ref type="bibr" target="#b16">[17]</ref>, a recently published framework for synthesizing and formally verifying C programs. Similar to VECOGEN, SynVer invokes an LLM using a natural language specification and a formal specification. The strength of Synver lies in its ability to synthesize complex programs, handling, for example, recursion, which VECOGEN does not support. SynVer employs a human-inthe-loop approach to support these complex programs, which requires manual intervention to refine and verify programs. In contrast, VECOGEN prioritizes full automation, iteratively refining candidate programs without human involvement. Additionally, VECOGEN generates multiple candidate programs and uses test cases to rank the most promising candidate. While both tools share the goal of leveraging LLMs for program synthesis and verification, they target different levels of automation and complexity.</p><p>Patil et al. <ref type="bibr" target="#b17">[18]</ref> propose an iterative LLM-based framework named spec2code that generates C code from specifications. They do not present any tool and, therefore, manually conduct studies that show promising results. Unlike spec2code, we present a tool that automates verified code generation using LLMs. Another work investigating the use of formal specifications to generate code is SpecEval <ref type="bibr" target="#b36">[34]</ref>, which analyzes how well LLMs understands these specifications. SpecEval, similar to VECOGEN, generates programs using LLMs. However, our tool iteratively improves on previously generated program candidates to correct past mistakes.</p><p>Ahrendt et al. <ref type="bibr" target="#b37">[35]</ref> propose a framework named TriCo to help users to create code, tests, and specifications simultaneously. Similarly, Sun et al. introduce Clover <ref type="bibr" target="#b38">[36]</ref>, which combines LLMs and formal methods to check consistency between formal specifications, docstring, and code. As these works require formal specifications, several works have investigated automatically generating these based on code <ref type="bibr" target="#b40">[37]</ref>, <ref type="bibr" target="#b41">[38]</ref> and natural language <ref type="bibr" target="#b42">[39]</ref>- <ref type="bibr" target="#b44">[41]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Traditional Specification-based code generation</head><p>Formal synthesis is a longstanding problem in software engineering aiming to generate programs based on formal specifications <ref type="bibr" target="#b45">[42]</ref>- <ref type="bibr" target="#b48">[44]</ref>. Traditional techniques employ deductive synthesis, where programs are derived directly from formal specifications <ref type="bibr" target="#b49">[45]</ref>. While this method guarantees correctness by construction, it suffers from poor scalability due to the computational complexity of large and complex programs. To address this, Solar-Lezama <ref type="bibr" target="#b15">[16]</ref> introduces sketching, a technique where developers provide partial implementations to guide the synthesis process, reducing synthesis time. Building on this, Alur et al. <ref type="bibr" target="#b50">[46]</ref> propose Syntax-Guided Synthesis (SyGuS), which combines syntactic constraints with semantic correctness to improve program generation.</p><p>Over the years, various approaches have been developed to enhance the automatic code generation process, including inductive learning <ref type="bibr" target="#b13">[14]</ref>, oracle-guided synthesis <ref type="bibr" target="#b45">[42]</ref>, and proof-theoretic synthesis <ref type="bibr" target="#b14">[15]</ref>. Tools like Fiat <ref type="bibr" target="#b51">[47]</ref> refine declarative specifications into functional programs that are correct by construction. Similarly, Li et al. <ref type="bibr" target="#b52">[48]</ref> demonstrate the synthesis of verified code from timed automata models, ensuring behavioral correctness while bridging formal models and real-world implementations. Murphy et al. combine these traditional techniques with LLMs to generate candidates <ref type="bibr" target="#b53">[49]</ref>.</p><p>Contrary to traditional specification-based code generation techniques, VECOGEN is the first iterative tool to integrate LLMs for fully automated generation of formally verified C programs. The key difference with traditional methods is that VECOGEN uses LLMs to generate the programs and feedback from formal methods to improve faulty generated programs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Iterative Code Improvement with Large Language Models</head><p>Many works employ iterative code improvement as a method for enhancing LLM-generated programs, leveraging techniques such as automatic program repair [50]- <ref type="bibr" target="#b56">[52]</ref>, counterexample-guided synthesis <ref type="bibr" target="#b50">[46]</ref>, and feedback from compilers, verification tools, or human reviewers <ref type="bibr" target="#b57">[53]</ref>- <ref type="bibr" target="#b59">[55]</ref>. For example, Jha et al. <ref type="bibr" target="#b60">[56]</ref> explore providing counterexamples as iterative feedback to mitigate hallucinations of LLMs. These counterexamples can be derived from formal verification tools <ref type="bibr" target="#b61">[57]</ref> or from failed test cases <ref type="bibr" target="#b5">[6]</ref>, allowing the LLM to improve candidate programs based on counter-examples.</p><p>Fan et al. highlight that LLM-generated code frequently suffers from syntax errors, incomplete logic, or incorrect solutions, requiring code improvement through feedback <ref type="bibr" target="#b62">[58]</ref>. The prompt to the LLM can include previous failed attempts to prevent the LLM from making the same mistake <ref type="bibr" target="#b59">[55]</ref>. <ref type="bibr">Liventsev et al.</ref> propose SEIDR <ref type="bibr" target="#b63">[59]</ref>, which iteratively improves program candidates using GPT-assisted summarizations of bugs and failing test cases. A balance between iteratively improving and generating new candidates results in the most improved programs. Tang et al. <ref type="bibr" target="#b64">[60]</ref> use Thompson Sampling <ref type="bibr" target="#b65">[61]</ref> to pick what candidate program to repair.</p><p>Unlike existing iterative code improvement frameworks, VECOGEN uniquely integrates formal verifier feedback to iteratively improve on program candidates. In these previous works, feedback for LLMs relies on using counterexamples, whereas VECOGEN employs information about unproven goals by Frama-C for this purpose.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>VIII. CONCLUSION</head><p>This paper introduced a novel LLM-based tool VECOGEN, used for generating formally verified C code. It addresses an initial investigation into automatically generating programs in safety-critical domains. VECOGEN employs a two-step process to generate the programs: (1) it leverages LLMs to generate program candidates based on formal and natural language specifications (2) it iteratively improves previously generated program candidates through compiler and verifier feedback. Each program candidate is formally verified against the provided formal specification, ensuring that only solutions meeting the specification are accepted. Experiments using VECOGEN on 15 competitive programming problems demonstrate its effectiveness, solving 13 of them. These results demonstrate the feasibility of VECOGEN in automating the generation of formally verified C code. As a result, VECOGEN marks a significant advancement in integrating LLMs with formal verification, addressing the rigorous correctness requirements of safety-critical software development.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 2</head><label>2</label><figDesc>Figure 2 presents an overview of how VECOGEN works. The code generation process using VECOGEN consists of four important parts: (1) inputs, which are the program specifications, see Section III-B; (2) initial code generation using VECOGEN, see Section III-C; (3) code improvement using VECOGEN, see Section III-D; (4) output, which is a formally verified program, see Section III-E.The tool, VECOGEN, performs two steps: initial code generation and code improvement. The initial code generation step generates a set of initial programs by invoking an LLM through an initialization prompt. If none of the programs generated at this step meet the given formal specification, then VECOGEN continues onto step two. Within the code improvement step, VECOGEN iteratively improves the best previously generated program by invoking an LLM using an "improvement prompt". This prompt asks the LLM to improve a candidate program using feedback from a compiler and verifier. The tool iteratively prompts an LLM using previously generated feedback until the LLM generates a program that satisfies the formal specification. VECOGEN is the first LLMbased tool that automatically generates formally verified C code.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Fig. 3 .</head><label>3</label><figDesc>Fig. 3. Natural language specification for the add positive program.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><figDesc>the following natural language and formal specifications that describe a program: Please generate the formally verified C code adhering to the natural language and formal specifications.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>(</head></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Fig. 4 .</head><label>4</label><figDesc>Fig. 4. Prompt structure used in VECOGEN for generating formally verified C programs.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>19 *Fig. 5 .</head><label>195</label><figDesc>Fig. 5. A solution to a Codeforces problem in C, before and after transforming it to a function.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>1 9 10 13 *Fig. 6 .</head><label>9136</label><figDesc>Fig. 6. The ground-truth solution and final generated program candidate for problem 12, which does not verify. Given a budget k and n exams, the code minimizes the minimum number of failed exams. See Codeforces for details.</figDesc></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>For further details on ACSL clauses, refer to the official documentation at https://frama-c.com/html/acsl.html.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>The one-shot example can be seen at https://github.com/ASSERT-KTH/ Vecogen/blob/main/prompts/one shot example.txt.</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><p>Acknowledgments This work has been partially funded by the <rs type="funder">Advanced Digitalisation Programme of Sweden's Innovation Agency (VINNOVA)</rs> as the <rs type="projectName">FormAI</rs> project <rs type="grantNumber">2023-02671</rs>.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funded-project" xml:id="_wKAKRSW">
+					<idno type="grant-number">2023-02671</idno>
+					<orgName type="project" subtype="full">FormAI</orgName>
+				</org>
+			</listOrg>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">B</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">M</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2005.14165</idno>
+		<ptr target="http://arxiv.org/abs/2005.14165" />
+		<title level="m">Language Models are Few-Shot Learners</title>
+		<imprint>
+			<date type="published" when="2020-07">Jul. 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">A Survey on Evaluation of Large Language Models</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Yi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">S</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Xie</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3641289</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/3641289" />
+	</analytic>
+	<monogr>
+		<title level="j">ACM Transactions on Intelligent Systems and Technology</title>
+		<imprint>
+			<biblScope unit="volume">15</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="1" to="45" />
+			<date type="published" when="2024-06">Jun. 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">LLMs with Industrial Lens: Deciphering the Challenges and Prospects -A Survey</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Urlana</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">V</forename><surname>Kumar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">K</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">M</forename><surname>Garlapati</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">R</forename><surname>Chalamala</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Mishra</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.14558</idno>
+		<ptr target="http://arxiv.org/abs/2402.14558" />
+		<imprint>
+			<date type="published" when="2024-02">Feb. 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Teaching Large Language Models to Translate with Comparison</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhou</surname></persName>
+		</author>
+		<ptr target="https://ojs.aaai.org/index.php/AAAI/article/view/29920" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2024-03">Mar. 2024</date>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="page">17</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Evaluating Large Language Models Trained on Code</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tworek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Jun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">P D O</forename><surname>Pinto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Edwards</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Burda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Joseph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Brockman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Puri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Petrov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Khlaaf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pavlov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Power</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bavarian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Tillet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">P</forename><surname>Such</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Cummings</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Plappert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Chantzis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Barnes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">H</forename><surname>Guss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Nichol</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Paino</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Tezak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Babuschkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Balaji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Saunders</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">N</forename><surname>Carr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Misra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Morikawa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Knight</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Brundage</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Murati</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Mayer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Welinder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mcgrew</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Zaremba</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2107.03374</idno>
+		<ptr target="http://arxiv.org/abs/2107.03374" />
+		<imprint>
+			<date type="published" when="2021-07">Jul. 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Is Your Code Generated by ChatGPT Really Correct? Rigorous Evaluation of Large Language Models for Code Generation</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">S</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhang</surname></persName>
+		</author>
+		<ptr target="https://proceedings.neurips.cc/" />
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="page" from="21" to="558" />
+			<date type="published" when="2023-12">Dec. 2023</date>
+		</imprint>
+	</monogr>
+	<note>paper files/paper/2023/hash/ 43e9d647ccd3e4b7b5baab53f0368686-Abstract-Conference.html</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">CodeXGLUE: A Machine Learning Benchmark Dataset for Code Understanding and Generation</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Svyatkovskiy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Blanco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Clement</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Drain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Shou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Tufano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Gong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Duan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Sundaresan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">K</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Liu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2102.04664</idno>
+		<ptr target="http://arxiv.org/abs/2102.04664" />
+		<imprint>
+			<date type="published" when="2021-03">Mar. 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Is Your AI-Generated Code Really Safe? Evaluating Large Language Models on Secure Code Generation with CodeSecEval</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Jatowt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Cai</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2407.02395</idno>
+		<ptr target="http://arxiv.org/abs/2407.02395" />
+		<imprint>
+			<date type="published" when="2024-07">Jul. 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Safety critical systems: challenges and directions</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">C</forename><surname>Knight</surname></persName>
+		</author>
+		<ptr target="http://portal.acm.org/citation.cfm?doid=581339.581406" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 24th international conference on Software engineering -ICSE &apos;02</title>
+		<meeting>the 24th international conference on Software engineering -ICSE &apos;02<address><addrLine>Orlando, Florida</addrLine></address></meeting>
+		<imprint>
+			<publisher>ACM Press</publisher>
+			<date type="published" when="2002">2002</date>
+			<biblScope unit="page">547</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Comprehensive formal verification of an OS microkernel</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Klein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Andronick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Elphinstone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Murray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Sewell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Kolanski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Heiser</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/2560537</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/2560537" />
+	</analytic>
+	<monogr>
+		<title level="j">ACM Transactions on Computer Systems</title>
+		<imprint>
+			<biblScope unit="volume">32</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="1" to="70" />
+			<date type="published" when="2014-02">Feb. 2014</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Formal verification of a realistic compiler</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Leroy</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/1538788.1538814</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/1538788.1538814" />
+	</analytic>
+	<monogr>
+		<title level="j">Commun. ACM</title>
+		<imprint>
+			<biblScope unit="volume">52</biblScope>
+			<biblScope unit="issue">7</biblScope>
+			<biblScope unit="page" from="107" to="115" />
+			<date type="published" when="2009-07">Jul. 2009</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">ACSL: ANSI/ISO C Specification</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Baudin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-C</forename><surname>Fillia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Marche</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Monate</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Moy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Prevosto</surname></persName>
+		</author>
+		<ptr target="https://frama-c.com/html/acsl.html" />
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<publisher>Citeseer</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Frama-C: A software analysis perspective</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Kirchner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Kosmatov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Prevosto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Signoles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Yakobowski</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/s00165-014-0326-7</idno>
+		<ptr target="https://dl.acm.org/doi/10.1007/s00165-014-0326-7" />
+	</analytic>
+	<monogr>
+		<title level="j">Form. Asp. Comput</title>
+		<imprint>
+			<biblScope unit="volume">27</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="573" to="609" />
+			<date type="published" when="2015-05">May 2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">A Theory of Formal Synthesis via Inductive Learning</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">A</forename><surname>Seshia</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1505.03953</idno>
+		<ptr target="http://arxiv.org/abs/1505.03953" />
+		<imprint>
+			<date type="published" when="2016-05">May 2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">From program verification to program synthesis</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Srivastava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gulwani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">S</forename><surname>Foster</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/1706299.1706337</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/1706299.1706337" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 37th annual ACM SIGPLAN-SIGACT symposium on Principles of programming languages, ser. POPL &apos;10</title>
+		<meeting>the 37th annual ACM SIGPLAN-SIGACT symposium on Principles of programming languages, ser. POPL &apos;10<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2010-01">Jan. 2010</date>
+			<biblScope unit="page" from="313" to="326" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<title level="m" type="main">Program synthesis by sketching</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Solar-Lezama</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2008">2008</date>
+			<publisher>University of California at Berkeley, USA</publisher>
+			<biblScope unit="page">9781109097450</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">PhD Thesis</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Towards Automated Verification of LLM-Synthesized C Programs</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mukherjee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Delaware</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2410.14835</idno>
+		<ptr target="http://arxiv.org/abs/2410.14835" />
+		<imprint>
+			<date type="published" when="2024-10">Oct. 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Towards Specification-Driven LLM-Based Generation of Embedded Automotive Software</title>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">S</forename><surname>Patil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Ung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Nyberg</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2411.13269</idno>
+		<ptr target="http://arxiv.org/abs/2411.13269" />
+		<imprint>
+			<date type="published" when="2024-11">Nov. 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Frama-C</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Cuoq</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Kirchner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Kosmatov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Prevosto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Signoles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Yakobowski</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Software Engineering and Formal Methods</title>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Eleftherakis</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Hinchey</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Holcombe</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Berlin, Heidelberg</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2012">2012</date>
+			<biblScope unit="page" from="233" to="247" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">An experimental Study using ACSL and Frama-C to formulate and verify Low-Level Requirements from a DO-178C compliant Avionics Project</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Dordowsky</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1508.03894</idno>
+		<ptr target="http://arxiv.org/abs/1508.03894" />
+	</analytic>
+	<monogr>
+		<title level="m">Electronic Proceedings in Theoretical Computer Science</title>
+		<imprint>
+			<date type="published" when="2015-08">Aug. 2015</date>
+			<biblScope unit="volume">187</biblScope>
+			<biblScope unit="page" from="28" to="41" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Program Verification in SPARK and ACSL: A Comparative Case Study</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Brito</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">Sousa</forename><surname>Pinto</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Reliable Software Technologiey Ada-Europe</title>
+		<editor>
+			<persName><forename type="first">J</forename><surname>Real</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">T</forename><surname>Vardanega</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Berlin, Heidelberg</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2010">2010</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Springer</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2010">2010</date>
+			<biblScope unit="page" from="97" to="110" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Post-Hoc Formal Verification of Automotive Software with Informal Requirements: An Experience Report</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Ung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Amilon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Gurov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Lidstrm</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Nyberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Palmskog</surname></persName>
+		</author>
+		<ptr target="https://ieeexplore.ieee.org/document/10628490/?arnumber=10628490" />
+	</analytic>
+	<monogr>
+		<title level="m">2024 IEEE 32nd International Requirements Engineering Conference (RE)</title>
+		<imprint>
+			<date type="published" when="2024-06">Jun. 2024</date>
+			<biblScope unit="page" from="287" to="298" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">An axiomatic basis for computer programming</title>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">A R</forename><surname>Hoare</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/363235.363259</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/363235.363259" />
+	</analytic>
+	<monogr>
+		<title level="j">Communications of the ACM</title>
+		<imprint>
+			<biblScope unit="volume">12</biblScope>
+			<biblScope unit="issue">10</biblScope>
+			<biblScope unit="page" from="576" to="580" />
+			<date type="published" when="1969">1969</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Why: a multi-language multi-prover verification tool</title>
+		<author>
+			<persName><forename type="first">J.-C</forename><surname>Fillitre</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/978-3-540-78739-6_24</idno>
+		<ptr target="https://link.springer.com/chapter/10.1007/978-3-540-78739-624" />
+		<imprint>
+			<date type="published" when="2003-03">Mar. 2003</date>
+		</imprint>
+		<respStmt>
+			<orgName>Universit Paris Sud</orgName>
+		</respStmt>
+	</monogr>
+	<note type="report_type">Tech. Rep. 1366</note>
+	<note>LRI Available</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Z3: an efficient SMT solver</title>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">De</forename><surname>Moura</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Bjrner</surname></persName>
+		</author>
+		<idno>ser. TACAS&apos;08/ETAPS&apos;08</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Theory and practice of software, 14th international conference on Tools and algorithms for the construction and analysis of systems</title>
+		<meeting>the Theory and practice of software, 14th international conference on Tools and algorithms for the construction and analysis of systems<address><addrLine>Berlin, Heidelberg</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer-Verlag</publisher>
+			<date type="published" when="2008-03">Mar. 2008</date>
+			<biblScope unit="page" from="337" to="340" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Attention is All you Need</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">.</forename><forename type="middle">U</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<title level="m" type="main">Calibration and Correctness of Language Models for Code</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Spiess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Gros</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">S</forename><surname>Pai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pradel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">R I</forename><surname>Rabin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Alipour</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Devanbu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Ahmed</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.02047</idno>
+		<imprint>
+			<date type="published" when="2024-08">Aug. 2024</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Online</surname></persName>
+		</author>
+		<ptr target="http://arxiv.org/abs/2402.02047" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">The FormAI Dataset: Generative AI in Software Security through the Lens of Formal Verification</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Tihanyi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Bisztray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">A</forename><surname>Ferrag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">C</forename><surname>Cordeiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Mavroeidis</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3617555.3617874</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/3617555.3617874" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 19th International Conference on Predictive Models and Data Analytics in Software Engineering, ser. PROMISE 2023</title>
+		<meeting>the 19th International Conference on Predictive Models and Data Analytics in Software Engineering, ser. PROMISE 2023<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2023-12">Dec. 2023</date>
+			<biblScope unit="page" from="33" to="43" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">Exploring and Evaluating Hallucinations in LLM-Powered Code Generation</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Ma</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2404.00971</idno>
+		<imprint>
+			<date type="published" when="2024-05">May 2024</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Online</surname></persName>
+		</author>
+		<ptr target="http://arxiv.org/abs/2404.00971" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">Codeforces</title>
+		<ptr target="https://codeforces.com/" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<title level="m" type="main">Code4Bench: A Multidimensional Benchmark of Codeforces Data for Different Program Analysis Techniques</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Amirabbas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V.-A</forename><surname>Mojtaba</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Alireza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B.-D</forename><surname>Ahmad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Bahman</surname></persName>
+		</author>
+		<ptr target="https://zenodo.org/records/2582968" />
+		<imprint>
+			<date type="published" when="2019-03">Mar. 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<author>
+			<persName><surname>Mira Ltd</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Misra-C</surname></persName>
+		</author>
+		<ptr target="https://misra.org.uk/misra-c" />
+		<title level="m">Guidelines for the use of the C language in Critical Systems, MIRA Std</title>
+		<imprint>
+			<date type="published" when="2004-10">2004. Oct. 2004</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title level="m" type="main">GPT-4 Doesn&apos;t Know It&apos;s Wrong: An Analysis of Iterative Prompting for Reasoning Problems</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Stechly</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Marquez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kambhampati</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.12397</idno>
+		<ptr target="http://arxiv.org/abs/2310.12397" />
+		<imprint>
+			<date type="published" when="2023-10">Oct. 2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<title level="m" type="main">SpecEval: Evaluating Code Comprehension in Large Language Models via Program Specifications</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Bu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2409.12866</idno>
+		<ptr target="http://arxiv.org/abs/2409.12866" />
+		<imprint>
+			<date type="published" when="2024-09">Sep. 2024</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">TriCo-Triple Co-piloting of Implementation, Specification and Tests</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Ahrendt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Gurov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Johansson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Rmmer</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/978-3-031-19849-6_11</idno>
+		<ptr target="https://link.springer.com/chapter/10.1007/978-3-031-19849-611" />
+	</analytic>
+	<monogr>
+		<title level="m">Leveraging Applications of Formal Methods, Verification and Validation</title>
+		<editor>
+			<persName><forename type="first">T</forename><surname>Principles</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">B</forename><surname>Margaria</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Steffen</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Springer International Publishing</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="174" to="187" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<monogr>
+		<title level="m" type="main">Clover: Closed-Loop Verifiable Code Generation</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Padon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Barrett</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.17807</idno>
+		<imprint>
+			<date type="published" when="2024-01">Jan. 2024</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Online</surname></persName>
+		</author>
+		<ptr target="http://arxiv.org/abs/2310.17807" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<monogr>
+		<author>
+			<persName><forename type="first">G</forename><surname>Granberry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Ahrendt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Johansson</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2406.15540</idno>
+		<ptr target="http://arxiv.org/abs/2406.15540" />
+		<title level="m">Specify What? Enhancing Neural Specification Synthesis by Symbolic Methods</title>
+		<imprint>
+			<date type="published" when="2024-09">Sep. 2024</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Enchanting Program Specification Synthesis by Large Language Models Using Static Analysis and Program Verification</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Wen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S.-C</forename><surname>Cheung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Tian</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Computer Aided Verification</title>
+		<editor>
+			<persName><forename type="first">A</forename><surname>Gurfinkel</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">V</forename><surname>Ganesh</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Cham</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer Nature Switzerland</publisher>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="302" to="328" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">nl2spec: Interactively Translating Unstructured Natural Language to Temporal Logics with Large Language Models</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Cosler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hahn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Mendoza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Schmitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Trippel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Computer Aided Verification</title>
+		<editor>
+			<persName><forename type="first">C</forename><surname>Enea</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">A</forename></persName>
+		</editor>
+		<meeting><address><addrLine>Cham</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer Nature Switzerland</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="383" to="396" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">C2S: translating natural language comments to formal program specifications</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Fang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3368089.3409716</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/3368089.3409716" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 28th ACM Joint Meeting on European Software Engineering Conference and Symposium on the Foundations of Software Engineering, ser. ESEC/FSE 2020</title>
+		<meeting>the 28th ACM Joint Meeting on European Software Engineering Conference and Symposium on the Foundations of Software Engineering, ser. ESEC/FSE 2020<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2020-11">Nov. 2020</date>
+			<biblScope unit="page" from="25" to="37" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<analytic>
+		<title level="a" type="main">Generation of Formal Requirements from Structured Natural Language</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Giannakopoulou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Pressburger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mavridou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Schumann</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Requirements Engineering: Foundation for Software Quality</title>
+		<editor>
+			<persName><forename type="first">N</forename><surname>Madhavji</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">L</forename><surname>Pasquale</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">A</forename><surname>Ferrari</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Gnesi</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Cham</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer International Publishing</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="19" to="35" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Oracle-guided component-based program synthesis</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gulwani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">A</forename><surname>Seshia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Tiwari</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 32nd ACM/IEEE International Conference on Software Engineering</title>
+		<meeting>the 32nd ACM/IEEE International Conference on Software Engineering</meeting>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<monogr>
+		<title/>
+		<idno type="DOI">10.1145/1806799.1806833</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/1806799.1806833" />
+		<imprint>
+			<date type="published" when="2010-05">May 2010</date>
+			<publisher>ACM</publisher>
+			<biblScope unit="page" from="215" to="224" />
+		</imprint>
+		<respStmt>
+			<orgName>Cape Town South Africa</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<analytic>
+		<title level="a" type="main">Formal synthesis and code generation of embedded real-time software</title>
+		<author>
+			<persName><forename type="first">P.-A</forename><surname>Hsiung</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/371636.371729</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/371636.371729" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the ninth international symposium on Hardware/software codesign, ser. CODES &apos;01</title>
+		<meeting>the ninth international symposium on Hardware/software codesign, ser. CODES &apos;01<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2001-04">Apr. 2001</date>
+			<biblScope unit="page" from="208" to="213" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">Applying formal software synthesis</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Jullig</surname></persName>
+		</author>
+		<ptr target="https://ieeexplore.ieee.org/abstract/document/210596" />
+	</analytic>
+	<monogr>
+		<title level="m">conference Name: IEEE Software</title>
+		<imprint>
+			<date type="published" when="1993-05">May 1993</date>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="page" from="11" to="22" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<analytic>
+		<title level="a" type="main">A Deductive Approach to Program Synthesis</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Manna</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Waldinger</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/357084.357090</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/357084.357090" />
+	</analytic>
+	<monogr>
+		<title level="j">ACM Transactions on Programming Languages and Systems</title>
+		<imprint>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="90" to="121" />
+			<date type="published" when="1980-01">Jan. 1980</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">Syntax-guided synthesis</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Alur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Bodik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Juniwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">M K</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Raghothaman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">A</forename><surname>Seshia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Solar-Lezama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Torlak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Udupa</surname></persName>
+		</author>
+		<ptr target="https://ieeexplore.ieee.org/abstract/document/6679385" />
+	</analytic>
+	<monogr>
+		<title level="m">2013 Formal Methods in Computer-Aided Design</title>
+		<imprint>
+			<date type="published" when="2013-10">Oct. 2013</date>
+			<biblScope unit="page" from="1" to="8" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<analytic>
+		<title level="a" type="main">Fiat: Deductive Synthesis of Abstract Data Types in a Proof Assistant</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Delaware</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Pit-Claudel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gross</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chlipala</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/2775051.2677006</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/2775051.2677006" />
+	</analytic>
+	<monogr>
+		<title level="j">ACM SIGPLAN Notices</title>
+		<imprint>
+			<biblScope unit="volume">50</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="689" to="700" />
+			<date type="published" when="2015-05">May 2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">Formal Modeling and Automatic Code Synthesis for Robot System</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Guan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Song</surname></persName>
+		</author>
+		<ptr target="https://ieeexplore.ieee.org/abstract/document/8292813" />
+	</analytic>
+	<monogr>
+		<title level="m">2017 22nd International Conference on Engineering of Complex Computer Systems (ICECCS)</title>
+		<imprint>
+			<date type="published" when="2017-11">Nov. 2017</date>
+			<biblScope unit="page" from="146" to="149" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<monogr>
+		<title level="m" type="main">Combining LLM Code Generation with Formal Specifications and Reactive Program Synthesis</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Murphy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Holzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Qiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Rothkopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Koenig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Santolucito</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2410.19736</idno>
+		<ptr target="http://arxiv.org/abs/2410" />
+		<imprint>
+			<date type="published" when="2024-09">Sep. 2024. 19736</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<analytic>
+		<title level="a" type="main">Automatic Software Repair: A Bibliography</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Monperrus</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3105906</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/3105906" />
+	</analytic>
+	<monogr>
+		<title level="j">ACM Computing Surveys</title>
+		<imprint>
+			<biblScope unit="volume">51</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="1" to="17" />
+			<date type="published" when="2018-01">Jan. 2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b55">
+	<monogr>
+		<title level="m" type="main">CigaR: Costefficient Program Repair with LLMs</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Hidvgi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Etemadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bobadilla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Monperrus</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.06598</idno>
+		<ptr target="http://arxiv.org/abs/2402.06598" />
+		<imprint>
+			<date type="published" when="2024-04">Apr. 2024</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b56">
+	<analytic>
+		<title level="a" type="main">Exploring True Test Overfitting in Dynamic Automated Program Repair using Formal Methods</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Nilizadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">T</forename><surname>Leavens</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X.-B</forename><forename type="middle">D</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">S</forename><surname>Psreanu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">R</forename><surname>Cok</surname></persName>
+		</author>
+		<ptr target="https://ieeexplore.ieee.org/abstract/document/9438573" />
+	</analytic>
+	<monogr>
+		<title level="m">2021 14th IEEE Conference on Software Testing, Verification and Validation (ICST)</title>
+		<imprint>
+			<date type="published" when="2021-04">Apr. 2021</date>
+			<biblScope unit="page" from="229" to="240" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b57">
+	<monogr>
+		<title level="m" type="main">A New Era in Software Security: Towards Self-Healing Software via Large Language Models and Formal Verification</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Charalambous</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Tihanyi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">A</forename><surname>Ferrag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">C</forename><surname>Cordeiro</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.14752</idno>
+		<ptr target="http://arxiv.org/abs/2305.14752" />
+		<imprint>
+			<date type="published" when="2023-05">May 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b58">
+	<monogr>
+		<title level="m" type="main">LLM4PLC: Harnessing Large Language Models for Verifiable Programming of PLCs in Industrial Control Systems</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Fakih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Dharmaji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Moghaddas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">Q</forename><surname>Araya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Ogundare</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">A A</forename><surname>Faruque</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2401.05443</idno>
+		<ptr target="http://arxiv.org/abs/2401.05443" />
+		<imprint>
+			<date type="published" when="2024-01">Jan. 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b59">
+	<monogr>
+		<title level="m" type="main">Keep the Conversation Going: Fixing 162 out of 337 bugs for $0.42 each using ChatGPT</title>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">S</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.00385</idno>
+		<ptr target="http://arxiv.org/abs/2304.00385" />
+		<imprint>
+			<date type="published" when="2023-04">Apr. 2023</date>
+		</imprint>
+	</monogr>
+	<note>cs</note>
+</biblStruct>
+
+<biblStruct xml:id="b60">
+	<analytic>
+		<title level="a" type="main">Dehallucinating Large Language Models Using Formal Methods Guided Iterative Prompting</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">K</forename><surname>Jha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lincoln</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">D</forename><surname>Bastian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Velasquez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Neema</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE International Conference on Assured Autonomy (ICAA)</title>
+		<imprint>
+			<date type="published" when="2023-06">Jun. 2023</date>
+			<biblScope unit="page" from="149" to="152" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b61">
+	<analytic>
+		<title level="a" type="main">Counter-example generation in symbolic abstract model-checking</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Pace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Halbwachs</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Raymond</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/s10009-003-0127-4</idno>
+		<ptr target="https://doi.org/10.1007/s10009-003-0127-4" />
+	</analytic>
+	<monogr>
+		<title level="j">International Journal on Software Tools for Technology Transfer</title>
+		<imprint>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="158" to="164" />
+			<date type="published" when="2004-03">Mar. 2004</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b62">
+	<analytic>
+		<title level="a" type="main">Automated Repair of Programs from Large Language Models</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Mirchev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Roychoudhury</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">H</forename><surname>Tan</surname></persName>
+		</author>
+		<ptr target="https://ieeexplore.ieee.org/document/10172854" />
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE/ACM 45th International Conference on Software Engineering (ICSE)</title>
+		<imprint>
+			<date type="published" when="2023-05">May 2023</date>
+			<biblScope unit="page" from="1469" to="1481" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b63">
+	<analytic>
+		<title level="a" type="main">Fully Autonomous Programming with Large Language Models</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Liventsev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Grishina</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Hrm</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Moonen</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3583131.3590481</idno>
+		<ptr target="https://dl.acm.org/doi/10.1145/3583131.3590481" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Genetic and Evolutionary Computation Conference, ser. GECCO &apos;23</title>
+		<meeting>the Genetic and Evolutionary Computation Conference, ser. GECCO &apos;23<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2023-07">Jul. 2023</date>
+			<biblScope unit="page" from="1146" to="1155" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b64">
+	<monogr>
+		<title level="m" type="main">Code Repair with LLMs gives an Exploration-Exploitation Tradeoff</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">P</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-L</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Si</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Ellis</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2405.17503</idno>
+		<ptr target="http://arxiv.org/abs/2405.17503" />
+		<imprint>
+			<date type="published" when="2024-05">May 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b65">
+	<analytic>
+		<title level="a" type="main">On the Likelihood that One Unknown Probability Exceeds Another in View of the Evidence of Two Samples</title>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">R</forename><surname>Thompson</surname></persName>
+		</author>
+		<ptr target="https://www.jstor.org/stable/2332286" />
+	</analytic>
+	<monogr>
+		<title level="j">Biometrika Trust</title>
+		<imprint>
+			<biblScope unit="volume">25</biblScope>
+			<biblScope unit="issue">3/4</biblScope>
+			<biblScope unit="page" from="285" to="294" />
+			<date type="published" when="1933">1933</date>
+			<publisher>Oxford University Press</publisher>
+		</imprint>
+	</monogr>
+	<note>Biometrika</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

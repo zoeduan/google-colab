@@ -1,0 +1,1189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">A Comparative Analysis of Conversational Large Language Models in Knowledge-Based Text Generation</title>
+				<funder ref="#_CFAgBX4">
+					<orgName type="full">German Federal Ministry of Education and Research (BMBF) Software Campus</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-02-02">2 Feb 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Phillip</forename><surname>Schneider</surname></persName>
+							<email>phillip.schneider@tum.de</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">Technical University of Munich</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Manuel</forename><surname>Klettner</surname></persName>
+							<email>manuel.klettner@tum.de</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">Technical University of Munich</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Elena</forename><surname>Simperl</surname></persName>
+							<email>elena.simperl@kcl.ac.uk</email>
+							<affiliation key="aff1">
+								<orgName type="department">Department of Informatics</orgName>
+								<orgName type="institution">King&apos;s College London</orgName>
+								<address>
+									<country key="GB">United Kingdom</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Florian</forename><surname>Matthes</surname></persName>
+							<email>matthes@tum.de</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">Technical University of Munich</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">A Comparative Analysis of Conversational Large Language Models in Knowledge-Based Text Generation</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-02-02">2 Feb 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">85894CD6A5DA5AC73C311ABDE0113FD3</idno>
+					<idno type="arXiv">arXiv:2402.01495v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:22+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Generating natural language text from graphstructured data is essential for conversational information seeking. Semantic triples derived from knowledge graphs can serve as a valuable source for grounding responses from conversational agents by providing a factual basis for the information they communicate. This is especially relevant in the context of large language models, which offer great potential for conversational interaction but are prone to hallucinating, omitting, or producing conflicting information. In this study, we conduct an empirical analysis of conversational large language models in generating natural language text from semantic triples. We compare four large language models of varying sizes with different prompting techniques. Through a series of benchmark experiments on the WebNLG dataset, we analyze the models' performance and identify the most common issues in the generated predictions. Our findings show that the capabilities of large language models in triple verbalization can be significantly improved through few-shot prompting, post-processing, and efficient finetuning techniques, particularly for smaller models that exhibit lower zero-shot performance.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Accessing structured information through natural language interfaces has garnered significant research interest in natural language processing (NLP) <ref type="bibr" target="#b0">(Aliannejadi et al., 2021;</ref><ref type="bibr" target="#b22">Radlinski and Craswell, 2017)</ref>. For instance, the emerging information retrieval paradigm of conversational search frames information-seeking processes within multiturn dialogue interactions. Conversational search facilitates exploring and progressively narrowing the search scope to relevant knowledge items within an information space. These search-oriented conversational interfaces are often connected to structured data sources like knowledge graphs. However, a key challenge lies in mediating be-tween natural language, in which users express their queries, and machine-readable knowledge representations. The task of data-to-text generation focuses on this issue, taking structured data as input to produce coherent, human-readable text, which has been extensively studied with approaches ranging from rule-based to supervised neural networkbased techniques.</p><p>Over the last years, the field of NLP has witnessed a shift in methodologies with the advent of pre-trained large language models (LLMs). Unlike traditional supervised learning approaches that rely on annotated datasets, LLMs are trained in a self-supervised manner, predicting tokens within vast amounts of unlabeled data. Combined with scaling up the model size and training corpora, this approach has demonstrated remarkable emergent capabilities of LLMs and their prowess in multitask learning <ref type="bibr" target="#b21">(Radford et al., 2019;</ref><ref type="bibr" target="#b2">Brown et al., 2020)</ref>. An advantage of LLMs lies in prompt-based (in-context) learning. Through carefully defined prompts, these foundation models can perform multiple tasks like question-answering, semantic parsing, or text summarization <ref type="bibr" target="#b16">(Liu et al., 2023)</ref>. More recently, there has been a growing interest in optimizing LLMs for conversational interactions by pre-training on dialogue corpora, instruction finetuning, and reinforcement learning from human feedback <ref type="bibr" target="#b28">(Thoppilan et al., 2022;</ref><ref type="bibr" target="#b19">OpenAI, 2022)</ref>.</p><p>Although LLMs offer tremendous potential for conversational interaction, owing to their ability to produce responses for arbitrary input, they have known limitations, such as the risk of hallucinating or omitting important information and a lack of transparency regarding the origins of information sources from which they derive their outputs <ref type="bibr" target="#b9">(Dou et al., 2022;</ref><ref type="bibr" target="#b12">Ji et al., 2023)</ref>. In order to mitigate these limitations, it becomes imperative to ground their generated outputs in verifiable factual data from knowledge graphs. However, there has been insufficient systematic investigation into their pro-ficiency in verbalizing graph-structured data input.</p><p>To assess LLMs in knowledge-based text generation, we compare four models of different sizes and training objectives, with a primary focus on models optimized for conversational interaction. Based on the popular WebNLG benchmark dataset, we evaluate the models' performance in generating natural language text from semantic triples. Through multiple experiments, we analyze different configurations of models and prompting techniques, discussing insights about their individual capabilities and limitations. Our contributions include:</p><p>(1) adapting the WebNLG benchmark to evaluate closed-and open-source LLMs, (2) providing a thorough error analysis and insights on model performance with automatic reference-based metrics as well as human evaluation, and (3) creating a new fine-tuning dataset with 26,422 conversations with triple-to-text verbalizations in chat completion format. To ensure reproducibility, we publish our source code and datasets in a GitHub repository. 1</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related Work</head><p>Existing works from the NLP literature have explored knowledge-based text generation, with significant advancements driven by new deep learning architectures and fine-tuning language models on downstream tasks <ref type="bibr" target="#b15">(Li et al., 2021;</ref><ref type="bibr" target="#b25">Schneider et al., 2022)</ref>. For triple-to-text generation, many evaluations use the established WebNLG benchmark <ref type="bibr" target="#b8">(Colin et al., 2016)</ref>. Several studies have focused on comparing neural pipeline versus endto-end approaches, assessing supervised versus unsupervised training regimes, and developing frameworks for making text generation more controllable through neuro-symbolic methods <ref type="bibr" target="#b4">(Castro Ferreira et al., 2019;</ref><ref type="bibr" target="#b23">Schmitt et al., 2020;</ref><ref type="bibr" target="#b18">Moryossef et al., 2019;</ref><ref type="bibr" target="#b27">Su et al., 2021)</ref>.</p><p>Concerning pre-trained language models, Chen et al. ( <ref type="formula">2020</ref>) were among the first to propose the task of few-shot natural language generation. With just 200 table-to-text training examples, their approach achieves strong performance and good generalization. By collecting a novel dataset and experimenting with few-shot fine-tuning, <ref type="bibr" target="#b14">Kasner et al. (2023)</ref> demonstrate that pre-trained language models trained with a diverse set of labels exhibit robustness in verbalizing knowledge graph relations, being capable of generalizing to novel domains. Another study from <ref type="bibr" target="#b17">Liu et al. (2021)</ref> highlights 1 GitHub: <ref type="url" target="https://github.com/sebischair/LLM-KG-D2T">https://github.com/sebischair/LLM-KG-D2T</ref> the ability of pre-trained language models (PLMs) to uncover hidden mappings between linguistic tokens and real-world concepts. Conducting experiments on four datasets, the authors show the effectiveness of their awakening latent grounding approach for generating structured queries from text. Similar to our work, <ref type="bibr" target="#b10">Han et al. (2023)</ref> assess capabilities of LLMs but for text-to-graph generation with the GPT-3.5-Turbo model. They develop a prompting framework with iterative verification, improving the generation quality. In contrast, our objective is to achieve a comprehensive understanding of conversational LLMs for triple verbalization rather than solely concentrating on individual use cases or models. To the best of our knowledge, we are the first to conduct a comparative analysis of conversational LLMs and prompt configurations on the task of triple-to-text generation. The empirical approach employed in this study is related to our previous work on evaluating LLMs for semantic parsing for conversational question answering over knowledge graphs <ref type="bibr" target="#b24">(Schneider et al., 2024)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Experiments</head><p>Experimental Setup We conduct our experiments on the WebNLG+ 2020 dataset, a DBpediabased triple-to-text benchmark with a total of 1,779 test examples <ref type="bibr" target="#b3">(Castro Ferreira et al., 2020)</ref>. As evaluation metrics, we calculate the lexical similarity between model outputs and human annotations using BLEU <ref type="bibr" target="#b20">(Papineni et al., 2002)</ref>, METEOR <ref type="bibr" target="#b1">(Banerjee and Lavie, 2005)</ref>, and TER <ref type="bibr" target="#b26">(Snover et al., 2006)</ref>. Since these metrics mainly focus on lexical overlaps, we also use the BERTScore metric, which captures semantic similarity <ref type="bibr" target="#b31">(Zhang et al., 2020)</ref>.</p><p>As a commercial state-of-the-art LLM, we include GPT-3.5-Turbo (ChatGPT) (OpenAI, 2022) in our comparison. It is optimized for conversations and has demonstrated remarkable zero-shot performance on various NLP tasks. Consequently, it is often used as a benchmark for comparing LLMs. We ran our experiments with the model released in June 2023 (GPT-3.5-Turbo-0613). Further, we opted to test LLaMA, a collection of open-source LLMs from Meta <ref type="bibr" target="#b29">(Touvron et al., 2023)</ref>, achieving competitive performance on various benchmarks. We include three model variations with 7B parameters of the first LLaMA version. In addition to the non-conversational base model (LLaMA-7B), we included a fine-tuned model (LLaMA-FT-7B) which we trained on WebNLG examples in a con- The LLaMA and Vicuna models are prompted in the chat completion structure of the FastChat 2 platform, replicating OpenAI's chat completion API endpoint with a structured list of system, user, and assistant messages. We set the token limit to 128 and the temperature parameter to 0, maximizing deterministic generation by favoring high-probability words. The zero-shot prompt contains only the following system mes-2 FastChat: <ref type="url" target="https://github.com/lm-sys/FastChat">https://github.com/lm-sys/FastChat</ref> sage with a triple verbalization instruction: "SYS-TEM: Generate a concise text for the given set of triples. Ensure that the generated output only includes the provided information from the triples.". The few-shot prompt expands the instruction with three in-context examples provided as user and assistant messages in the format: "USER: Input triples: [{'object': 'Mike_Mularkey','property': 'coach','subject': 'Tennessee_Titans'}] "ASSISTANT: Output text: Mike Mularkey is the coach of the Tennessee Titans." Table <ref type="table">3</ref> in Appendix A displays each prompt in full length. <ref type="table" target="#tab_0">1</ref> summarizes the calculated metrics. The Copy-Baseline denotes copying the triples as output without processing. It is included as a metric reference point to establish a lower bound <ref type="bibr" target="#b13">(Kasner and Dusek, 2022)</ref>. We distinguish between scores for raw and postprocessed (+ PP) outputs. Post-processing involved the removal of "Output text" or "Output" since they are not intended parts of the desired text prediction but were present in the few-shot prompt. Additionally, repeated instructions or in-context examples from the prompt were removed when they appeared in the generated output.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Results of Performance Metrics Table</head><p>Examining the scores, LLaMA-FT-7B demonstrates superior performance compared to the other models. Even without few-shot examples, it effectively learned from fine-tuning to handle the triple verbalization task, gaining only a minor performance increase through few-shot prompting. The second-ranking model, GPT-3.5-Turbo, shows similar scores, which is remarkable because it was not explicitly trained for triple-to-text generation. Notably, Vicuna achieves a performance level almost on par with the much bigger GPT-3.5-Turbo model when it was provided with in-context examples and the output was post-processed. In the zero-shot setting, Vicuna could not match the scores of GPT-3.5-Turbo but outperformed LLaMA-7B. Although LLaMA is the worst-performing model, it claims the most significant improvements through fewshot prompting and post-processing, with scores not too far from Vicuna. The metrics collectively suggest that all tested LLMs can generate reasonable output text from knowledge graph triples. Besides, we observe that while all models show improvements with few-shot prompting or postprocessing, models trained on conversations like Vicuna require less post-processing and exhibit better zero-shot proficiency, resulting in comparatively smaller performance gains from post-processed outputs or in-context examples.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Analysis and Discussion</head><p>Our experiments reveal that LLMs, especially those fine-tuned on conversations, are capable of triple-to-text generation without explicit training. However, as expected, the fine-tuned LLaMA-FT-7B model achieved the best overall performance. The WebNLG triple verbalization task involves different subtasks, such as segmentation of the input data, lexicalization of the DBpedia properties, information aggregation, and surface realization of grammatically correct text <ref type="bibr" target="#b8">(Colin et al., 2016)</ref>. All of these subtasks are handled by LLMs in an end-to-end manner. In direct comparison to state-of-the-art models evaluated on WebNLG like Control Prefixes (BLEU: 0.62, METEOR: 0.45, TER: 0.35) from <ref type="bibr" target="#b7">Clive et al. (2022)</ref> or T5-Large+Wiki+Position (BLEU: 0.61, METEOR: 0.44, TER: 0.36, BERTScore: 0.96) from <ref type="bibr" target="#b30">Wang et al. (2021)</ref>, the LLMs' lexical similarity metrics are worse. Yet, when looking at semantic similarity, the BERTScore metric of the LLaMA-FT-7B model is identical at 0.96. We hypothesize that the lower lexical similarity is partly caused by the concise writing style of the WebNLG human ground truth verbalizations, aggregating as much information as possible in succinct sentences. While many WebNLG annotations are as short as possible (e.g., "The 98.0 minute film Super Capers starring Danielle Harris was written by the director Ray Griggs."), the more verbose output of LLMs like GPT-3.5-Turbo consists of multiple sentences (e.g., "Danielle Harris stars in the movie Super Capers. The writer of the movie is Ray Griggs. The movie has a runtime of 98.0 minutes."). This concise writing style can be better learned and replicated by LLaMA-FT and other fine-tuned models. We also observed that the LLMs had a tendency to occasionally use passive voice, initiating sentences 1XPEHURI7ULSOHV %/(86FRUH GPT-3.5-Turbo Vicuna-7B</p><p>LLaMA-7B LLaMA-FT-7B with the object because the input triples were ordered as (object, property, subject), whereas the human annotators started with the subject using an active voice structure. This might be another factor of lower lexical similarity metrics, although the semantic content was the same.</p><p>With a larger number of input triples, models struggle more to transform structured information into cohesive text. Figure <ref type="figure" target="#fig_0">1</ref> illustrates the decreasing model performance when confronted with multiple triples. While all four LLMs follow the same trend, the performance loss seems to be a tapering decrease. Besides, we analyzed model performance differences across the 16 triple categories and found a similar pattern that the worstperforming categories, such as Food, SportsTeam, or ComicsCharacter also had the highest average triple count per example. Since aggregating information into short sentences is also desired in conversational user interactions, we compared the sentence count of generated predictions for each model regarding the number of input triples. As can be discerned from Figure <ref type="figure">2</ref> in Appendix A, the fine-tuned LLaMA-FT model produces sentences in direct proportion to the number of input triples in alignment with the human annotations. Vicuna and GPT-3.5-Turbo, which have been explicitly trained on conversation data, exhibit similar generation behavior. While LLaMA-FT produces the fewest sentences, Vicuna seems to be a bit less verbose than GPT-3.5-Turbo. In contrast, text outputs from LLaMA contain, on average, the largest number of sentences and show a much higher variance. This suggests that fine-tuning LLMs on instructions from dialogue corpora improves adherence to concise triple verbalization.</p><p>After conducting the automatic evaluation, we</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Issue Type</head><p>LLaMA-7B Vicuna-7B LLaMA-FT-7B GPT-3.5- manually examined the model predictions to gauge their reliability and grouped the most common issues into five types as presented in Table <ref type="table">4</ref> in Appendix A. For example, the LLMs sometimes misinterpreted the prompt, failed to lexicalize triples correctly, or produced inaccurate information. Most of these issues occurred in zero-shot predictions from LLaMA or Vicuna, whereas GPT-3.5-Turbo produced the most reliable outputs. To obtain more profound insights into the model-specific occurrence rates of the issue types, two researchers jointly evaluated a sample of 75 zero-and 75 fewshot predictions for the lowest averaged BLEU and METEOR scores across all models. The obtained results are summarized in Table <ref type="table" target="#tab_1">2</ref>. Looking at the relative frequencies, it can be seen that the LLaMA base model has the highest incidence of issues from all types, followed by Vicuna and then LLaMA-FT with better reliability, and GPT-3.5-Turbo as the most dependable model. As to be expected from instruction-tuned and fine-tuned models, LLaMA-FT, Vicuna, and GPT-3.5-Turbo demonstrate a much greater ability to generate zero-shot output that aligns with the given prompt. Conversely, LLaMA tended to misinterpret the prompt, failing to produce the desired output format in nearly two-thirds of the evaluated instances (0.65). Interestingly, off-prompt issues could be effectively resolved in all models by including few-shot examples in the prompt. While few-shot prompting reduced off-prompt generations and caused the LLMs to produce actual sentences based on the graph triples, this led to a relative increase of inaccurate generations, such as hallucinated information, twisted numbers, or omitted facts from the triples. Occasionally, the relationships within these triples were also compromised. The rate of inaccurate zero-shot output in LLaMA (0.60) and Vicuna (0.41) was three to four times higher in comparison to GPT-3.5-Turbo (0.13).</p><p>Another issue type where the usefulness of fewshot examples became evident is unlexicalized triples, meaning the translation of entities and relations into their intact word form. This was observed across all models except LLaMA-FT, with LLaMA and Vicuna particularly affected. Providing in-context examples with lexicalized triples could completely resolve unlexicalized triples for all models. Problems with redundancy, which involves the unnecessary repetition of information, are mostly associated with LLaMA. This was due to some instances where LLaMA became stuck in a loop, repeatedly generating the same sequence until the maximum token limit was reached. In contrast, this issue type appears to be less of a problem for the other models. Lastly, there are rare cases in which the LLM generated output in a language other than the prompt language English. This happened, for example, when most of the input triples contained words in Spanish. Only Vicuna faced translation issues in our benchmark test, specifically in zero-shot scenarios. This behavior may be attributed to its diverse fine-tuning dataset that contains text translation instructions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Conclusion</head><p>We compared the abilities of LLMs in knowledgebased text generation. Our results indicate that even smaller 7B-LLMs exhibit reasonable performance in verbalizing triples, conveying intended meanings and facts in a coherent manner, although they might not always be factually accurate or perfectly replicate the writing style of human annotations. We also discussed model-specific differences and common generation issues that can be mitigated through few-shot prompting or fine-tuning. In future work, we plan to investigate how our findings generalize to more complex graph data structures.</p><p>Our comparative analysis has certain limitations. We focus solely on text generation based on knowledge graph triples, and we acknowledge that verbalizing entire subgraphs or producing graph queries are other important tasks worth exploring. Nonetheless, by studying semantic triples, we can still derive valuable insights about the performance of LLMs for processing more complex graph data structures. In that regard, it is recommended to expand the comparison with human evaluations that go beyond automatically calculated metrics and to assess more models, particularly those trained on source code or documents with structured data.</p><p>Further, the employed test dataset is limited to English triples. Since pre-training corpora of LLMs primarily consist of English text data, they likely work better where entities and relations correspond to meaningful English words or morphemes. Consequently, it is to be expected that LLMs exhibit worse performance on multilingual benchmarks with more morphologically rich languages, such as Russian, which is also part of the WebNLG dataset.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Ethical Considerations</head><p>Our experiments were conducted on the publicly available WebNLG dataset, ensuring that no demographic or identifying information about individuals was processed or disclosed. Because our focus was not on addressing well-documented issues like privacy or biases associated with LLMs, we acknowledge potential risks and concerns in line with similar studies dealing with LLMs. The experiments with LLaMA, LLaMA-FT, and Vicuna were executed on a single NVIDIA V100 GPU and required relatively low computational resources, with around one GPU hour of inference time per model.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Comparison of BLEU score by number of triples for few-shot models with post-processing.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Zero-shot and few-shot performance metrics on WebNLG test set evaluated by BLEU, METEOR, TER, and BERTScore-F1 (+ PP denotes post-processed model output). Bold values indicate the best value per metric.</figDesc><table><row><cell>Model</cell><cell></cell><cell cols="2">Zero-Shot Prompt</cell><cell></cell><cell></cell><cell cols="2">Few-Shot Prompt</cell><cell></cell></row><row><cell></cell><cell cols="8">BLEU METEOR TER BERTScore BLEU METEOR TER BERTScore</cell></row><row><cell>LLaMA-7B</cell><cell>0.06</cell><cell>0.21</cell><cell>1.03</cell><cell>0.84</cell><cell>0.11</cell><cell>0.26</cell><cell>1.03</cell><cell>0.85</cell></row><row><cell>LLaMA-7B + PP</cell><cell>0.15</cell><cell>0.25</cell><cell>0.76</cell><cell>0.89</cell><cell>0.38</cell><cell>0.36</cell><cell>0.53</cell><cell>0.94</cell></row><row><cell>Vicuna-7B</cell><cell>0.27</cell><cell>0.35</cell><cell>0.68</cell><cell>0.92</cell><cell>0.39</cell><cell>0.38</cell><cell>0.64</cell><cell>0.93</cell></row><row><cell>Vicuna-7B + PP</cell><cell>0.27</cell><cell>0.35</cell><cell>0.68</cell><cell>0.92</cell><cell>0.43</cell><cell>0.39</cell><cell>0.51</cell><cell>0.95</cell></row><row><cell>LLaMA-FT-7B</cell><cell>0.47</cell><cell>0.40</cell><cell>0.55</cell><cell>0.94</cell><cell>0.47</cell><cell>0.40</cell><cell>0.55</cell><cell>0.94</cell></row><row><cell>LLaMA-FT-7B + PP</cell><cell>0.52</cell><cell>0.41</cell><cell>0.42</cell><cell>0.96</cell><cell>0.53</cell><cell>0.41</cell><cell>0.42</cell><cell>0.96</cell></row><row><cell>GPT-3.5-Turbo</cell><cell>0.41</cell><cell>0.41</cell><cell>0.56</cell><cell>0.95</cell><cell>0.39</cell><cell>0.40</cell><cell>0.65</cell><cell>0.94</cell></row><row><cell>GPT-3.5-Turbo + PP</cell><cell>0.41</cell><cell>0.41</cell><cell>0.56</cell><cell>0.95</cell><cell>0.44</cell><cell>0.41</cell><cell>0.50</cell><cell>0.95</cell></row><row><cell>Copy-Baseline</cell><cell>0.02</cell><cell>0.02</cell><cell>0.95</cell><cell>0.79</cell><cell>0.02</cell><cell>0.02</cell><cell>0.95</cell><cell>0.79</cell></row><row><cell cols="4">versational format. To have a sufficiently large</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">fine-tuning corpus, we created a new dataset en-</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">compassing 26,422 conversations from all 13,211</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">WebNLG training examples. We ensured that each</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">triple-to-text example appeared, on average, five</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">times in different contexts. The conversations have</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">different lengths and contain verbalizations from</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">various triple categories. The training was done</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table><note><p>through low-rank adaptation (LoRA), a method that fine-tunes only a subset of the model's parameters, referred to as low-rank matrices, rather than updating the entire parameter space, improving the fine-tuning efficiency<ref type="bibr" target="#b11">(Hu et al., 2022)</ref></p><p>. During training time, the model takes in a full conversation in chat completion format, characterized by a series of turns attributed to the user or assistant role (i.e., the model learns from a sequence of sequence-to-sequence examples). We employed five training epochs, a per-device training batch size of eight, and used a half-precision floatingpoint format (FP16). Another fine-tuned LLaMA model we compared is Vicuna. It was trained on a corpus of around 70K user-shared ChatGPT conversations crawled from the ShareGPT website.</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 :</head><label>2</label><figDesc>Relative frequency of issue types for zero-shot and few-shot prompts in evaluated sample of 150 predictions with lowest averaged BLEU and METEOR scores. For values marked with "*", the relative frequency only considers generations being on-prompt.</figDesc><table><row><cell>Turbo</cell></row></table></figure>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgements</head><p>This work has been supported by the <rs type="funder">German Federal Ministry of Education and Research (BMBF) Software Campus</rs> grant <rs type="grantNumber">01IS17049</rs>.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_CFAgBX4">
+					<idno type="grant-number">01IS17049</idno>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Appendix</head><p>The Appendix provides further insights into the results of our research, including the model prompts in full length (Table <ref type="table">3</ref>), an overview of common issue types identified in the predictions (Table <ref type="table">4</ref>), and a comparative distribution chart of generated sentences by number of triples for each model (Figure <ref type="figure">2</ref>).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Prompt Type Prompt Content</head><p>Zero-shot SYSTEM: Generate a concise text for the given set of triples. Ensure that the generated output only includes the provided information from the triples. Few-shot SYSTEM: Generate a concise text for the given set of triples. Ensure that the generated output only includes the provided information from the triples.  GT: The Fellowship of the Ring was followed by The Two Towers. PRED: The_Fellowship_of_the_Ring was followed by The_Two_Towers. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>1XPEHURI7ULSOHV 1XPEHURI6HQWHQFHV</head><p>LLaMA-7B Vicuna-7B GPT-3.5-Turbo LLaMA-FT-7B Human The size of the dots reflects the occurrence frequency. The ground truth annotations are denoted as "Human".</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Analysing mixed initiatives and search strategies during conversational search</title>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Aliannejadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leif</forename><surname>Azzopardi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hamed</forename><surname>Zamani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Evangelos</forename><surname>Kanoulas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Thomas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Craswell</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3459637.3482231</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th ACM International Conference on Information &amp; Knowledge Management, CIKM &apos;21</title>
+		<meeting>the 30th ACM International Conference on Information &amp; Knowledge Management, CIKM &apos;21<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="16" to="26" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">METEOR: An automatic metric for MT evaluation with improved correlation with human judgments</title>
+		<author>
+			<persName><forename type="first">Satanjeev</forename><surname>Banerjee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alon</forename><surname>Lavie</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the ACL Workshop on Intrinsic and Extrinsic Evaluation Measures for Machine Translation and/or Summarization</title>
+		<meeting>the ACL Workshop on Intrinsic and Extrinsic Evaluation Measures for Machine Translation and/or Summarization<address><addrLine>Ann Arbor, Michigan</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2005">2005</date>
+			<biblScope unit="page" from="65" to="72" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Alec Radford, Ilya Sutskever, and Dario Amodei</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateusz</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Mccandlish</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+	<note>Language models are few-shot learners</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">The 2020 bilingual, bi-directional WebNLG+ shared task: Overview and evaluation results (WebNLG+ 2020)</title>
+		<author>
+			<persName><forename type="first">Thiago</forename><surname>Castro Ferreira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claire</forename><surname>Gardent</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolai</forename><surname>Ilinykh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Van Der Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Mille</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diego</forename><surname>Moussallem</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anastasia</forename><surname>Shimorina</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 3rd International Workshop on Natural Language Generation from the Semantic Web (WebNLG+)</title>
+		<meeting>the 3rd International Workshop on Natural Language Generation from the Semantic Web (WebNLG+)<address><addrLine>Dublin, Ireland</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="55" to="76" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Neural data-to-text generation: A comparison between pipeline and end-to-end architectures</title>
+		<author>
+			<persName><forename type="first">Thiago</forename><surname>Castro Ferreira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Van Der Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emiel</forename><surname>Van Miltenburg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emiel</forename><surname>Krahmer</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D19-1052</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)<address><addrLine>Hong Kong, China</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="552" to="562" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Few-shot NLG with pre-trained language model</title>
+		<author>
+			<persName><forename type="first">Zhiyu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harini</forename><surname>Eavani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenhu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yinyin</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wang</forename></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.acl-main.18</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="183" to="190" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Vicuna: An opensource chatbot impressing gpt-4 with 90%* chatgpt quality</title>
+		<author>
+			<persName><forename type="first">Wei-Lin</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuohan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zi</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhanghao</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghao</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ion</forename><surname>Stoica</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><forename type="middle">P</forename><surname>Xing</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<publisher>LMSYS Org Blog</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Control prefixes for parameter-efficient text generation</title>
+		<author>
+			<persName><forename type="first">Jordan</forename><surname>Clive</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kris</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marek</forename><surname>Rei</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.gem-1.31</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2nd Workshop on Natural Language Generation, Evaluation, and Metrics (GEM)</title>
+		<meeting>the 2nd Workshop on Natural Language Generation, Evaluation, and Metrics (GEM)<address><addrLine>Abu Dhabi</addrLine></address></meeting>
+		<imprint>
+			<publisher>United Arab Emirates (Hybrid). Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="363" to="382" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">The WebNLG challenge: Generating text from DBPedia data</title>
+		<author>
+			<persName><forename type="first">Emilie</forename><surname>Colin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Claire</forename><surname>Gardent</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M'</forename><surname>Yassine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shashi</forename><surname>Rabet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laura</forename><surname>Narayan</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Perez-Beltrachini</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/W16-6626</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 9th International Natural Language Generation conference</title>
+		<meeting>the 9th International Natural Language Generation conference</meeting>
+		<imprint>
+			<publisher>Edinburgh, UK. Association for Computational Linguistics</publisher>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="page" from="163" to="167" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Is GPT-3 text indistinguishable from human text? scarecrow: A framework for scrutinizing machine text</title>
+		<author>
+			<persName><forename type="first">Yao</forename><surname>Dou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maxwell</forename><surname>Forbes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rik</forename><surname>Koncel-Kedziorski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><forename type="middle">A</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.acl-long.501</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Dublin, Ireland</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="7250" to="7274" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Pive: Prompting with iterative verification improving graph-based generative capability of llms</title>
+		<author>
+			<persName><forename type="first">Jiuzhou</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nigel</forename><surname>Collier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wray</forename><surname>Buntine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ehsan</forename><surname>Shareghi</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2305.12392</idno>
+		<idno type="arXiv">arXiv:2305.12392</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">LoRA: Low-rank adaptation of large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Edward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yelong</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phillip</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zeyuan</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuanzhi</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shean</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Survey of hallucination in natural language generation</title>
+		<author>
+			<persName><forename type="first">Ziwei</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nayeon</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rita</forename><surname>Frieske</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tiezheng</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yan</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Etsuko</forename><surname>Ishii</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ye</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jin</forename><surname>Bang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrea</forename><surname>Madotto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pascale</forename><surname>Fung</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3571730</idno>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Comput. Surv</title>
+		<imprint>
+			<biblScope unit="issue">12</biblScope>
+			<biblScope unit="page">55</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Neural pipeline for zero-shot data-to-text generation</title>
+		<author>
+			<persName><forename type="first">Zdeněk</forename><surname>Kasner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ondrej</forename><surname>Dusek</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.acl-long.271</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Dublin, Ireland</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="3914" to="3932" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Mind the labels: Describing relations in knowledge graphs with pretrained models</title>
+		<author>
+			<persName><forename type="first">Zdeněk</forename><surname>Kasner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ioannis</forename><surname>Konstas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ondrej</forename><surname>Dusek</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 17th Conference of the European Chapter of the Association for Computational Linguistics</title>
+		<meeting>the 17th Conference of the European Chapter of the Association for Computational Linguistics<address><addrLine>Dubrovnik, Croatia</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="2398" to="2415" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Pretrained language models for text generation: A survey</title>
+		<author>
+			<persName><forename type="first">Junyi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyi</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wayne</forename><forename type="middle">Xin</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ji</forename><surname>Rong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen</forename></persName>
+		</author>
+		<idno type="DOI">10.24963/ijcai.2021/612</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Joint Conference on Artificial Intelligence</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Pretrain, prompt, and predict: A systematic survey of prompting methods in natural language processing</title>
+		<author>
+			<persName><forename type="first">Pengfei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhe</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinlan</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengbao</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hiroaki</forename><surname>Hayashi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Graham</forename><surname>Neubig</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3560815</idno>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Computing Surveys</title>
+		<imprint>
+			<biblScope unit="volume">55</biblScope>
+			<biblScope unit="issue">9</biblScope>
+			<biblScope unit="page" from="1" to="35" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Awakening latent grounding from pretrained language models for semantic parsing</title>
+		<author>
+			<persName><forename type="first">Qian</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dejian</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiahui</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaqi</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bin</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian-Guang</forename><surname>Lou</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.findings-acl.100</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: ACL-IJCNLP 2021</title>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="1174" to="1189" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Step-by-step: Separating planning from realization in neural data-to-text generation</title>
+		<author>
+			<persName><forename type="first">Amit</forename><surname>Moryossef</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Goldberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ido</forename><surname>Dagan</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/N19-1236</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<title level="s">Long and Short Papers</title>
+		<meeting>the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies<address><addrLine>Minneapolis</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="2267" to="2277" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Chatgpt: Optimizing language models for dialogue</title>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Bleu: a method for automatic evaluation of machine translation</title>
+		<author>
+			<persName><forename type="first">Kishore</forename><surname>Papineni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Salim</forename><surname>Roukos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Todd</forename><surname>Ward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Jing</forename><surname>Zhu</surname></persName>
+		</author>
+		<idno type="DOI">10.3115/1073083.1073135</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 40th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Philadelphia, Pennsylvania, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2002">2002</date>
+			<biblScope unit="page" from="311" to="318" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Language models are unsupervised multitask learners</title>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<publisher>OpenAI</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">A theoretical framework for conversational search</title>
+		<author>
+			<persName><forename type="first">Filip</forename><surname>Radlinski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Craswell</surname></persName>
+		</author>
+		<idno type="DOI">10.1145/3020165.3020183</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2017 Conference on Conference Human Information Interaction and Retrieval, CHIIR &apos;17</title>
+		<meeting>the 2017 Conference on Conference Human Information Interaction and Retrieval, CHIIR &apos;17<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="117" to="126" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">An unsupervised joint system for text generation from knowledge graphs and semantic parsing</title>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Schmitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sahand</forename><surname>Sharifzadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hinrich</forename><surname>Volker Tresp</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Schütze</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.emnlp-main.577</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="7117" to="7130" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Evaluating large language models in semantic parsing for conversational question answering over knowledge graphs</title>
+		<author>
+			<persName><forename type="first">Phillip</forename><surname>Schneider</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manuel</forename><surname>Klettner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristiina</forename><surname>Jokinen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elena</forename><surname>Simperl</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>Matthes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 16th International Conference on Agents and Artificial Intelligence</title>
+		<meeting>the 16th International Conference on Agents and Artificial Intelligence<address><addrLine>Rome, Italy</addrLine></address></meeting>
+		<imprint>
+			<publisher>SCITEPRESS</publisher>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">A decade of knowledge graphs in natural language processing: A survey</title>
+		<author>
+			<persName><forename type="first">Phillip</forename><surname>Schneider</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tim</forename><surname>Schopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Juraj</forename><surname>Vladika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikhail</forename><surname>Galkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elena</forename><surname>Simperl</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>Matthes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2nd Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics and the 12th International Joint Conference on Natural Language Processing</title>
+		<meeting>the 2nd Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics and the 12th International Joint Conference on Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="601" to="614" />
+		</imprint>
+	</monogr>
+	<note>Long Papers) Online only. Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">A study of translation edit rate with targeted human annotation</title>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Snover</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bonnie</forename><surname>Dorr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rich</forename><surname>Schwartz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linnea</forename><surname>Micciulla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Makhoul</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 7th Conference of the Association for Machine Translation in the Americas: Technical Papers</title>
+		<meeting>the 7th Conference of the Association for Machine Translation in the Americas: Technical Papers<address><addrLine>Cambridge, Massachusetts, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2006">2006</date>
+			<biblScope unit="page" from="223" to="231" />
+		</imprint>
+	</monogr>
+	<note>Association for Machine Translation in the Americas</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Plan-then-generate: Controlled data-to-text generation via planning</title>
+		<author>
+			<persName><forename type="first">Yixuan</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Vandyke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sihui</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yimai</forename><surname>Fang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nigel</forename><surname>Collier</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.findings-emnlp.76</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2021</title>
+		<meeting><address><addrLine>Punta Cana</addrLine></address></meeting>
+		<imprint>
+			<publisher>Dominican Republic. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="895" to="909" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<author>
+			<persName><forename type="first">Romal</forename><surname>Thoppilan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">De</forename><surname>Freitas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jamie</forename><surname>Hall</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Apoorv</forename><surname>Kulshreshtha</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Heng-Tze</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alicia</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Taylor</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leslie</forename><surname>Bos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Baker</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Du</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2201.08239</idno>
+		<idno type="arXiv">arXiv:2201.08239</idno>
+		<title level="m">Lamda: Language models for dialog applications</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Faisal</forename><surname>Azhar</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/arXiv.2302.13971</idno>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<title level="m">Llama: Open and efficient foundation language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Stage-wise fine-tuning for graph-to-text generation</title>
+		<author>
+			<persName><forename type="first">Qingyun</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Semih</forename><surname>Yavuz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Victoria</forename><surname>Xi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heng</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nazneen</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Rajani</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.acl-srw.2</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing: Student Research Workshop</title>
+		<meeting>the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing: Student Research Workshop</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="16" to="22" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Bertscore: Evaluating text generation with bert</title>
+		<author>
+			<persName><forename type="first">Tianyi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Varsha</forename><surname>Kishore</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felix</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kilian</forename><forename type="middle">Q</forename><surname>Weinberger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Artzi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

@@ -1,0 +1,2461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">From Words to Numbers: Your Large Language Model Is Secretly A Capable Regressor When Given In-Context Examples</title>
+				<funder>
+					<orgName type="full">Defense Advanced Research Projects Agency</orgName>
+					<orgName type="abbreviated">DARPA</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-09-10">10 Sep 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Robert</forename><surname>Vacareanu</surname></persName>
+							<email>rvacareanu@arizona.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">University of Arizona Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit2">Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit3">Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit4">University of Arizona</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Vlad-Andrei</forename><surname>Negru</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">University of Arizona Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit2">Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit3">Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit4">University of Arizona</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Vasile</forename><surname>Suciu</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">University of Arizona Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit2">Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit3">Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit4">University of Arizona</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Mihai</forename><surname>Surdeanu</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">University of Arizona Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit2">Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit3">Technical University of Cluj-Napoca</orgName>
+								<orgName type="institution" key="instit4">University of Arizona</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">From Words to Numbers: Your Large Language Model Is Secretly A Capable Regressor When Given In-Context Examples</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-09-10">10 Sep 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">56291AC9FC68043263A452A1B0C41741</idno>
+					<idno type="arXiv">arXiv:2404.07544v3[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:37+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>We analyze how well pre-trained large language models (e.g., Llama2, GPT-4, Claude 3, etc) can do linear and non-linear regression when given in-context examples, without any additional training or gradient updates. Our findings reveal that several large language models (e.g., GPT-4, Claude 3) are able to perform regression tasks with a performance rivaling (or even outperforming) that of traditional supervised methods such as Random Forest, Bagging, or Gradient Boosting. For example, on the challenging Friedman #2 regression dataset, Claude 3 outperforms many supervised methods such as AdaBoost, SVM, Random Forest, KNN, or Gradient Boosting. We then investigate how well the performance of large language models scales with the number of in-context exemplars. We borrow from the notion of regret from online learning and empirically show that LLMs are capable of obtaining a sub-linear regret. 1</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Figure <ref type="figure">1</ref>: Mean Absolute Error (↓) comparison between three large language models (LLMs) and four traditional supervised methods for learning a linear regression function with one informative variable out of two. Given only in-context examples and without any additional training or gradient updates, pre-trained LLMs such as Claude 3, GPT-4, or DBRX can outperform supervised methods such as Random Forest or Gradient Boosting.</p><p>Large Language Models (LLMs) are capable of learning to perform a task when given examples of that task in their context, without any additional training. This surprising capability, called in-context learning (ICL) <ref type="bibr" target="#b12">Brown et al. (2020)</ref>, emerges just from next-token prediction for sufficiently large models.</p><p>We use regression tasks to analyze the incontext capabilities of already pre-trained large language models (LLMs), such as Llama2, GPT-4, or Claude 3. <ref type="bibr" target="#b24">Garg et al. (2022)</ref> have previously explored the range of functions that transformers, when trained specifically for incontext learning, are capable of learning. However, contemporary LLMs emerge as capable in-context learners without being specifically trained for it. We extend previous work and analyze the extent to which LLMs, decoderonly transformers trained auto-regressively for next-token prediction, are capable of learning regression functions when given in-context exemplars, without any additional form of supervision or training.</p><p>Similar to previous work <ref type="bibr" target="#b24">(Garg et al., 2022)</ref>, we use (synthetic) regression datasets. Synthetic regression datasets have the following advantages:</p><p>(i) Algorithmically generated: The data is guaranteed to be generated deterministically, by a well-determined (and logical) formula. This property makes them suitable to use when investigating whether a given model is capable of unraveling the underlying structure of the data.</p><p>(ii) Difficulty control: The user has direct access to the difficulty of the synthetic regression problem and can investigate the cases of simple linear regressions of the form y = ax + b, to more difficult problems such as Friedman #2, a highly non-linear function used for benchmarking:</p><formula xml:id="formula_0">y = (x 2 1 + (x 2 • x 3 - 1 x 2 • x 4</formula><p>)<ref type="foot" target="#foot_0">foot_0</ref> )</p><p>(iii) Data availability: Lastly, synthetic datasets present the advantage of allowing the user to generate novel data in large(r) quantities. Additionally, it ensures that models are less likely to have been previously exposed to these specific problems.</p><p>Formally, let D n be a dataset consisting of n input-output examples: D n = {(x 1 , y 1 ), . . . , (x n , y n )}, where x i ∈ R d , with 1 ≤ d ≤ 20 typically. We have y i = f (x i ), where f : R d → R and y i ∈ R. We do not put any restrictions on f and study functions ranging from simple linear predictions (i.e., f (x) = ax + b) to more complex and highly non-linear functions (e.g., f (x) = x + 10sin( 5πx 100 ) + 10cos( 6πx 100 )). We study how well various models such as LLMs (e.g., , traditional supervised models (e.g., Random Forest), and unsupervised baselines (e.g., random prediction) are capable of predicting y n+1 when given access to n input-output examples (i.e., D n ) and x n+1 .</p><p>tOur study shows that pre-trained large language models (LLMs) display a surprisingly good performance on various regression tasks. For example, in Figure <ref type="figure">1</ref>, without any parameter update, Claude 3 approaches the performance of a Linear Regression model and largely outperforms other supervised methods such as Random Forest or Gradient Boosting on a randomly generated linear regression dataset, with one informative variable out of two.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Experimental Setup</head><p>We describe the models and the datasets we use in our experiments below.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Datasets</head><p>We experiment with 3 types of datasets: (1) linear regression, (2) non-linear regression, and (3) regression datasets with non-numerical inputs. We describe each below.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.1">Linear Regression Datasets</head><p>We experiment with linear regression tasks of the form y = wx + b, where w, x ∈ R d , b ∈ R, and y ∈ R, with 1 ≤ d ≤ 10. We vary both d, the dimension of the input x, and the number of informative variables (i.e., the number of non-zero elements in w).</p><p>When generating a dataset, we sample the input x from N (0, 1). We sample the weight vector w from Uni f orm(0, 100). 2</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.2">Non-Linear Regression Datasets</head><p>For non-linear regression problems, we use the three problems introduced by Friedman, called Friedman #1, Friedman #2, and Friedman #3 <ref type="bibr" target="#b22">(Friedman, 1991;</ref><ref type="bibr" target="#b11">Breiman, 1996)</ref>. For example, Friedman #1 is defined as follows: y(x) = 10 * sin(x 0 x 1 π) + 20(x 2 -0.5) 2 + 10x 3 + 5x 4 + ϵ * N(0, 1) Where y ∈ R, x ∼ Uni f orm(0, 1) d and ϵ ∈ R. We have 5 ≤ d. When d &gt; 5, the extra dimensions are ignored for the computation of y.</p><p>While we create these datasets with different random seeds, resulting in different D n , making a particular D n very unlikely to have been seen by the LLMs during training, it is still possible that they have seen different D n originating from the same generator function f . In an attempt to mitigate this risk, we created 5 new non-linear datasets. We describe them in the Appendix C. For example, one of these functions is: y(x) = x + 10sin( 5πx 100 ) + 10cos( 6πx 100 ), where x ∼ Uni f orm(0, 100) (plotted in Figure <ref type="figure" target="#fig_3">5</ref>).</p><p>To supplement the non-linear regression datasets and following <ref type="bibr" target="#b24">Garg et al. (2022)</ref>, we create datasets using randomly initialized neural networks. We explore the outputs of 2 types of neural networks: (1) a sequence of simple linear layers with ReLU non-linearity in-between, and (2) the output of a randomly initialized transformer encoder block.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.3">Regression With Non-Numerical Inputs</head><p>To further investigate whether the models are able to learn abstract tasks beyond those subsumed by numerical regression <ref type="bibr" target="#b52">(Razeghi et al., 2022)</ref>, we design the following tasks. We (randomly) map symbols (i.e., characters) to numbers (e.g., a → 1). We then randomly sample a subset of these symbols in order to keep the context size manageable and to not need a large number of examples. We map the symbols to a numerical value by sampling a weight vector w ∈ R d and doing a dot product between it and the corresponding values of each symbol. We use lowercase ASCII letters as our symbols (i.e., a . . . z). We randomly sample 5 symbols which will serve as our vocabulary. We include the pseudocode in Appendix C.11.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Models</head><p>We experiment with three types of models: (1) large language models such as GPT-4, (2) supervised models such as Random Forest, and (3) heuristic-based unsupervised models such as random sampling. All models have access to the same train data and are evaluated on the same test partition. They have access to an input dataset D n and are asked to predict the y n+1 corresponding to the x n+1 . The train partition is used for in-context exemplars for LLMs and supervised training for supervised methods. Due to budget constraints and the context size limitations of the LLMs, we round input values to two decimal places. <ref type="foot" target="#foot_1">3</ref> We repeat each experiment with different random seeds.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>LLMs:</head><p>We use a total of 12 large language models (LLMs), both open and private. Specifically, we use Mistral7B, Mixtral8x7B, CodeLlama70B, Llama2 70B, Yi 34B, DBRX (weights available) and ChatGPT, GPT-4 (OpenAI) and Claude 3 Opus, Claude 3 Sonnet <ref type="bibr">(Anthropic)</ref>, Gemini Pro (Google), and Mistral Medium (Mistral) (weights not available). The models we use cover a wide range of parameters, from 7B or less (Mistral) to 132B or more (DBRX). <ref type="foot" target="#foot_2">4</ref> Unless otherwise specified, we interact with the models only through prompting and in-context exemplars. We use the same prompt for all models and do not do any prompt tuning. The prompt is of the form Feature 1: &lt;number&gt;\nFeature 2: &lt;number&gt;\nOutput: &lt;number&gt;. Incontext exemplars are separated with two new lines "\n\n". For the test example, the model is asked to predict the number corresponding to the Output variable. We observed that some models tend to provide additional explanations, before outputting the final number. To prevent this behavior, we add an additional text in the beginning, instructing the LLM to only output the number. We give a complete example in Appendix D.1.1. Additionally, we analyze the explanations provided by the models in Appendix L, finding that there is sometimes a discrepancy between the rationale given for their predictions and the actual predicted values. Unless otherwise specified, we use a temperature of 0.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Supervised Baselines:</head><p>We use a total of 10 traditional supervised models, available in most statistical learning packages. We use: Linear Regression (4 versions: (i) no regularization, (ii) Ridge regularization, (iii) Lasso Regularization, and (iv) no regularization and with polynomial features), Multi-Layer Perceptron (6 versions, 3 versions with different widths <ref type="bibr" target="#b15">(Cybenko, 1989;</ref><ref type="bibr" target="#b30">Hornik et al., 1989</ref>) and 3 versions with different depths <ref type="bibr" target="#b38">(Lu et al., 2017)</ref>), Random Forest, Bagging, Gradient Boosting, AdaBoost, SVM, KNN, Kernel Ridge, and Splines. Similar to the LLM case, we do not tune any hyperparameters and use the defaults available in sklearn. It is important to note that these supervised baselines are very strong: (1) many of them are the results of algorithms specifically designed for regression (e.g., Splines);</p><p>(2) all perform parameter updates (unlike an LLM with ICL); and (3) the default hyperparameters, as set in widely-used statistical packages, have been refined over time to offer reliable and generally strong performance across a variety of scenarios.</p><p>Unsupervised Baselines: In order to contextualize the performance of the LLMs and to evaluate their effectiveness relative to basic heuristics, we incorporated the following series of heuristic-based unsupervised baseline:</p><p>1. Average: Predicts the next value, y n+1 , as the mean of all preceding outcomes: y n+1 = 1 n ∑ n i=1 y i . 2. Last: Uses the most recent tuple (x n , y n ) for prediction, such that y n+1 = y n . 3. Random: Predicts y n+1 by randomly selecting from the set of prior observations {y 1 , . . . , y n }. The final prediction is thus y n+1 = sample([y 1 , . . . , y n ])</p><p>Additional details on the models are provided in Appendix D. We include results with additional models, such as the latest release of GPT-4 at the time of submission <ref type="bibr">(gpt-4-2024-04-09)</ref> or Mixtral Mixture of Experts 8x22B in Appendix G, where we present the average rank obtained by each model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Large Language Models Can Do Linear Regression</head><p>Our first experiment intends to capture how well LLMs can do linear regression when given only in-context examples. To this end, we experiment with 4 different types of regression problems, varying the number of total variables and the number of informative variables. We provide a total of 50 tuples D 50 = {(x, y) i |i = 1 . . . 50} as in-context exemplars and ask the model to generate y 51 , corresponding to x 51 . We repeat the experiments with 100 different random seeds and present the average and 95% confidence intervals.</p><p>We present two bar plots in Figure <ref type="figure" target="#fig_0">2</ref>, corresponding to two different datasets: (1) a dataset consisting of three variables, with a single informative variable (Regression NI 1/3), and</p><p>(2) one dataset containing two random variables, where both variables are informative (Regression NI 2/2). For LLMs, we selected Claude 3 Opus (Claude 3), GPT-4, and Gemini Pro, as they are the flagship closed-source models currently available, and Mixtral8x7B (Mixtral), Llama2 70B (Llama 2), Yi 34B (Yi) and DBRX (DBRX) as the flagship open-weights models. Traditional supervised models in our analysis included Linear Regression (LR), Multi-Layer Perceptron (MLP), Random Forests (RF), and Gradient Boosting (GB). Additionally, we include a fifth supervised method, the one resulting in the best performance. <ref type="foot" target="#foot_3">5</ref>We would like to remark that this is a very strong baseline, as it highlights the best performance obtainable with hindsight information. For the unsupervised baselines we included (i) Average, and (ii) Random Sampling. We draw the following observations from this experiment:</p><p>First, LLMs, when given in-context examples of input-output pairs, exhibit a (perhaps surprisingly) good overall performance. When compared with unsupervised baselines, the large language models always outperform them, indicating that the underlying mechanism at play is more sophisticated than such simple heuristics.</p><p>Second, we remark that LLMs in some cases outperform even supervised methods. For example, for the regression task with one informative variable out of a total of 3 (Regression NI 1/3), Claude 3 ranks 3 out of a total number of 31 models, only (slightly) behind Linear Regression and Linear Regression + Poly. For example, when averaging the mean absolute error across all runs, Claude 3 obtains 0.14, while Linear Regression obtains 0.12. It largely outperforms other supervised methods such as Random Forest or Gradient Boosting, even though it no gradient updates were performed, nor it was specifically designed for linear regression.<ref type="foot" target="#foot_4">foot_4</ref> </p><p>Lastly, we remark that this strong performance is not only specific to the current closedsource flagship models. For example, Mixtral outperforms supervised methods such as Random Forest or Gradient Boosting on the Regression NI 2/2 dataset.</p><p>Alongside the two bar plots, we include a heatmap in Figure <ref type="figure" target="#fig_1">3</ref> to show how each model ranks across different datasets. We show the datasets vertically and the models horizontally. Overall, these results reveal that large language models, whether closed-source (e.g., Claude 3, GPT-4) or open-weights (e.g., DBRX, Mixtral 8x7B), are capable of performing linear regression tasks using in-context exemplars composed of (x, y) pairs, all without the necessity for gradient updates. While the performance across these models varies, it consistently outperforms that of unsupervised baselines, suggesting that the underlying mechanism at play is more sophisticated than these simple heuristics. Moreover, specific LLMs (e.g., Claude 3, GPT-4) consistently exceed the performance of strong supervised baselines such as Random Forests, Gradient Boosting, or KNN.</p><p>We present extended results, encompassing a wider array of models and datasets, in Appendix E.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Large Language Models Can Do Non-Linear Regression</head><p>We extend our previous analysis to non-linear regression problems.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Friedman Benchmarks</head><p>We use the 3 synthetic regression benchmarks introduced by <ref type="bibr" target="#b22">Friedman (1991)</ref>. Below, we provide the definition of the Friedman #2 dataset, with complete definitions for all datasets available in Appendix C.</p><formula xml:id="formula_1">f (x) = x 2 1 + x 2 • x 3 - 1 x 2 • x 4 2 + ϵ • N (0, 1)<label>(1)</label></formula><p>where ϵ represents noise added to the system, modeled as a Gaussian distribution N (0, 1), and the variables x 1 , x 2 , x 3 , and x 4 are drawn from uniform distributions as follows:</p><p>x 1 ∼ U (0, 100), x 2 ∼ U (40π, 560π), x 3 ∼ U (0, 1), and x 4 ∼ U (1, 11).</p><p>Our findings for the Friedman #1, #2, and #3 benchmarks are presented in Figure <ref type="figure" target="#fig_2">4</ref>. The selection of methods follows to the same procedure used in Section 3: three leading closedsource LLMs, four leading open-weights LLMs, and five conventional supervised modelsincluding the best performing model-and two unsupervised baselines. We remark that the strong performance of LLMs persists in the non-linear case as well. For example, Claude 3 outperforms all but the Linear Regression with Polynomial Features (LR + Poly) on Friedman #2. In an effort to mitigate the potential familiarity of models with pre-existing datasets encountered during their pretraining phase, we experiment with two new non-linear regression datasets which are unlikely to have been part of the pre-training phase. Our methodology is as follows. Our first novel dataset (called Original #1), plotted in Figure <ref type="figure" target="#fig_3">5</ref>, is created to resemble a line with oscillations:</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">New Regression Datasets</head><formula xml:id="formula_2">y = x + 10sin( 5πx 100 ) + 10cos( 6πx 100 ) (2)</formula><p>Where x ∼ U (0, 100).</p><p>For the next dataset (called Original #2), we draw inspiration from the datasets introduced by Friedman, but we modify the domain of x and change the operands (e.g., 2 → 4 ). We provide an example below:</p><formula xml:id="formula_3">y = (x 4 1 + (x 2 • x 3 - 2 √ x 2 • √ x 4 ) 2 ) 3 4</formula><p>(3)</p><p>It is important to underscore that the primary goal of these novel datasets is not to construct inherently difficult challenges for the LLMs, but rather to minimize the probability of Published as a conference paper at COLM 2024 evaluating them on datasets they could have already seen during their training phase. We provide additional details on these datasets in Appendix C, along with additional datasets.</p><p>For an in-depth analysis of potential data contamination concerns, including additional experiments conducted to address these issues, please refer to Appendix P.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Discussion</head><p>We summarize all our results in the form of a heatmap in Figure <ref type="figure">6</ref>. For each dataset, we record the relative rank of each method with respect to all the others. For example, Claude 3 Opus performs the best on Original 1 (rank=1). We structure our results in 3 blocks: (1) LLMs (left), (2) Traditional Supervised Methods (middle), and (3) Unsupervised Methods (right). We make the following observations:</p><p>First, on Original 1 (see Figure <ref type="figure" target="#fig_3">5</ref>), LLMs largely outperform traditional supervised methods.</p><p>Remarkably, eight out of the ten highest-ranking methods in this context are LLMs. This strong performance on this dataset is exhibited by both private and open-weights models.</p><p>For example, DBRX outperforms all traditional supervised methods, despite no gradient update.</p><p>Second, we remark that the LLMs show a strong performance on all datasets introduced by Friedman (Friedman #1, Friedman #2, Friedman #3) and on all datasets introduced by us (Original #1, Original #2).</p><p>Overall, our results show that LLMs with ICL are capable of performing non-linear regression. For example, Claude 3 Opus outperforms Gradient Boosting and KNN on all 5 datasets. We present extended results, encompassing a wider array of models and datasets, in Appendix F. We observed that LLMs struggle on the datasets generated with randomly initialized neural networks (e.g., Simple NN #1, Transformer #1), although they remain, generally, better than the unsupervised methods. Due to space constraints, we included in Appendix M an analysis of the performance of LLMs on non-numerical regression datasets. We found that even in this regime, LLMs outperform the unsupervised baselines. Borrowing from the Online Learning community, we empirically analyze how the cumulative regret (i.e., cumulative loss) grows with respect to the time step (number of examples in context) <ref type="bibr" target="#b44">(Orabona, 2019)</ref>. Ideally, a good model should, over time, approach the quality of decisions that the best fixed strategy, informed by hindsight, would have made. In other words, the cumulative regret should, ideally, grow sub-linearly over time. To empirically estimate how the regret grows, we fit 3 curves: (1) Linear Fit: a * x + b, (2) Sqrt Fit: a * sqrt(x) + b and (3) Log fit: a * log(x) + b. <ref type="foot" target="#foot_5">7</ref> We then use the R 2 coefficient to determine which curve fit is better. We show two qualitative plots in Figure <ref type="figure">7</ref>. We summarize the results in Table <ref type="table" target="#tab_0">1</ref>, recording the curve fit with the highest R 2 coefficient for each model. Since simply picking the best curve fit according to the R 2 score might tell an incomplete story, we include additional plots in Appendix H, covering multiple models and all seven datasets. We draw the following observations. First, the performance of large language models improves with the number of examples, suggesting the mechanism at play is capable of effectively leveraging more data. Second, we remark that very capable LLMs, such as Claude 3 or GPT-4 can obtain sub-linear regret, meaning that the predictions made by the LLM approach the quality of decisions that the best algorithm would have made, leading to near-optimal performance in the long run.</p><p>We remark that there are differences between our empirical analysis and online learning. Firstly, while online learning often focuses on establishing theoretical regret bounds, our approach is empirical, we only empirically show that the regret of certain LLMs grow sub-linearly by using curve fitting and R 2 . To address potential concerns of overfitting and enhance the robustness of our empirical findings, we repeated the experiment 3 times and averaged the cumulative regret. Second, our results are only for finite (and relatively small) time steps, diverging from the online learning norm of analyzing behavior as T approaches infinity. To provide further evidence that the results are not an artifact of small T, we performed the following experiment. We used GPT-4 and recorded its performance across multiple training dataset sizes, ranging from 20 to 500. We have observed that the performance of GPT-4 continues to improve as the number of in-context exemplars increases, suggesting that, our results are not an artifact of limited time steps. We include the associated plots in Appendix Q.</p><p>Following the empirical evidence that LLMs are very capable regressors, despite not being trained for it, we hypothesize that (very capable) LLMs emerge from their training as very good online meta-learners <ref type="bibr" target="#b21">(Finn et al., 2019;</ref><ref type="bibr" target="#b41">Mirchandani et al., 2023)</ref>. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Related Work</head><p>Many previous papers studied in-context learning <ref type="bibr" target="#b40">(Min et al., 2022;</ref><ref type="bibr" target="#b16">Dai et al., 2023;</ref><ref type="bibr" target="#b46">Pan et al., 2023;</ref><ref type="bibr" target="#b34">Kossen et al., 2024)</ref>, either from a more theoretical standpoint <ref type="bibr" target="#b65">(von Oswald et al., 2022;</ref><ref type="bibr" target="#b69">Xie et al., 2022;</ref><ref type="bibr" target="#b68">Wies et al., 2023;</ref><ref type="bibr" target="#b2">Ahn et al., 2023;</ref><ref type="bibr" target="#b64">Vladymyrov et al., 2024)</ref> or from a more empirical one <ref type="bibr" target="#b24">(Garg et al., 2022;</ref><ref type="bibr" target="#b4">Aky ürek et al., 2023;</ref><ref type="bibr" target="#b72">Zhang et al., 2023)</ref>. For a more general discussion of in-context learning, we refer the reader to <ref type="bibr" target="#b18">Dong et al. (2023)</ref>. Our work fits into the empirical camp, showing through experiments that large language models pre-trained for next-token prediction on web-scale datasets are capable of doing regression when shown input-output examples in their context, sometimes with performance rivalling that of supervised methods such as Gradient Boosting or Random Forests. Previous studies Garg et al. (2022); Bai et al. (2023); Guo et al. (2024); Bhattamishra et al. (2024) have explicitly demonstrated the capacity of transformers to be trained for in-context learning, enabling them to implement a wide range of algorithms when provided with relevant examples. For example, it has been shown that transformers can be trained to in-context learn linear functions, with performance similar to that of optimal least squares (Garg et al., 2022; Zhang et al., 2023). Bai et al. (2023) extended this, showing that transformers can implement a broad class of standard machine learning algorithms in context when pre-trained for it. Li et al. (2023) proved generalization bounds for ICL under specific conditions. Different from this line of work, we do not train any model specifically for in-context learning or regression. Instead, we simply use large, powerful models (e.g., Claude 3, GPT-3, Llama2) and empirically show that they are capable of performing linear and non-linear regression when given in-context examples, despite not being specifically trained for it.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Conclusion</head><p>In this paper, we examined the extent to which large language models such as Claude 3, GPT-4, or DBRX are capable of performing the task of regression, when given input-output pairs as in-context examples, without any gradient updates.</p><p>We showed that large language models are capable of doing both linear and non-linear regression, with performance rivaling that of supervised methods such as Linear Regression or Gradient Boosting. We then analyzed how their performance approaches that of the best possible fixed strategy as the number of in-context examples grows, showing how very capable models such as Claude 3 Opus or GPT-4 are capable of approaching the quality of decisions that the best algorithm in hindsight would have made. Our results demonstrate that large language models are capable of doing regression when given incontext examples of (input, output) pairs, despite not being explicitly trained to do so. We leave the exploration of augmenting LLMs' training with synthetic regression and math datasets, during either pre-training or fine-tuning, to future work. We release our code and results at <ref type="url" target="https://github.com/robertvacareanu/llm4regression">https://github.com/robertvacareanu/llm4regression</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">Ethics Statement</head><p>In this work we explored the extent to which large language models (LLMs) are able to perform regression tasks. We did not perform any additional training. We do not envision any negative impact of our results.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="9">Limitations</head><p>This study focuses primarily on regression tasks, including an exploration into regressionlike scenarios where inputs are symbolic rather than numeric, yet the outputs remain numeric.</p><p>A second limitation is the reliance on several large language models, including proprietary ones whose performance may change over time, potentially affecting reproducibility. To address this, we also included leading open-weight models in our analysis, though we note that their performance is generally behind that of private models. Additionally, we release our intermediate results.</p><p>Third, the issue of data contamination poses a challenge, given the opaque nature of training datasets for many LLMs. We have taken several steps to mitigate this risk: (i) Our analysis spans multiple LLMs, reducing the likelihood of all models being contaminated in the same way; (ii) We evaluated models with multiple random seeds on newly introduced datasets (alongside known ones like Friedman #1). In this way, we diminish the chance that these models have been directly exposed to the exact datasets during training; (iii) We included results with Falcon 40B, whose training data is publicly available (please see Appendix P for more details). We acknowledge that these measures do not eliminate the potential for data contamination entirely.</p><p>Fourth, while we showed empirical evidence that large language models are capable to perform regression tasks, we did not provide theoretical explanations to support these observations. <ref type="bibr" target="#b40">Min et al. (2022)</ref> shows that GPT-3 retains a strong performance even when the labels of the in-context exemplars are random. On the other hand, recent work <ref type="bibr" target="#b29">(Hendel et al., 2023;</ref><ref type="bibr" target="#b37">Liu et al., 2023)</ref> investigated how in-context learning creates task vectors, which can then be applied to produce the output. Another question investigated in recent work is where does the in-context learning (ICL) emerges from (Chan et al., 2022; Xie et al., 2022; Han et al., 2023). For example, Chan et al. (2022) shows that in-context learning appears when the training data has particular properties. Xie et al. (2022) analyzes in-context learning through a small scale synthetic dataset (GINC). Han et al. (2023) identified a subset of the pre-training data that supports incontext learning, showing how continuing pretraining on this subset increases the model's ICL abilities. Another line of research, which is close to our work, is that of investigating what types of "functions" can be learned through in-context learning (Garg et al., 2022; Zhang et al., 2023; Xing et al., 2024). Notably, all these works do not use pre-trained LLMs, but specifically train a transformer for the task. Garg et al. (2022) shows empirically that standard transformers can be trained from scratch to perform in-context learning of linear functions. Guo et al. (2024) investigates more complex function classes. Wei et al. (2023) shows that larger language models are able to overcome their semantic priors when shown input-label mappings. Zhang et al. (2023) train transformers with a single linear self-attention layer to in-context learn linear regression tasks, showing that transformers are capable of obtaining a performance competitive with the best linear predictor. Bhattamishra et al. (2024) experiment with training various models to in-context learn boolean functions.</p><p>Although not the main focus of their work, they also experiment with pre-trained models such as Llama 2 and GPT-4, showing that they obtain a performance similar to nearest-neighbor baselines for boolean functions. A post on the AI Alignment Forum (Pesut) also explored the types of models that GPT-3 can fit in-context. While their focus was primarily on classification, they did examine regression scenarios as well.</p><p>While in this work we focus on in-context learning, there are other previous works that designed specific neural network modules (or cells) for arithmetic computations <ref type="bibr" target="#b61">(Trask et al., 2018;</ref><ref type="bibr" target="#b28">Heim et al., 2020;</ref><ref type="bibr" target="#b42">Mistry et al., 2022)</ref>.</p><p>Different from previous work, we investigate how pre-trained models, such as GPT-4 or Claude 3, without any gradient updates, can learn various linear and non-linear function classes when given examples in-context and thoroughly compare them against multiple traditional supervised methods <ref type="bibr" target="#b54">(Ruppert, 2004</ref>) such as Gradient Boosting <ref type="bibr" target="#b56">(Schapire, 1989;</ref><ref type="bibr" target="#b23">Friedman, 2001)</ref> or Random Forests <ref type="bibr" target="#b10">(Breiman, 2001)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C Datasets</head><p>We provide the formulas for all datasets used below. We set the noise to 0 for all datasets.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C.1 Linear Regression</head><p>In order to generate the linear regression datasets, we use the function make regression, available in sklearn <ref type="bibr" target="#b47">(Pedregosa et al., 2011)</ref>.</p><formula xml:id="formula_4">C.2 Friedman # 1 f (x) = 10 • sin(x 0 x 1 π) + 20(x 2 -0.5) 2 + 10x 3 + 5x 4 + ϵ • N (0, 1) Where x 0 , x 1 , x 2 , x 3 , x 4 ∼ U(0, 1) C.3 Friedman # 2 f (x) = x 2 1 + x 2 • x 3 - 1 x 2 • x 4 2 + ϵ • N (0, 1)</formula><p>Where</p><formula xml:id="formula_5">x 1 ∼ U (0, 100) x 2 ∼ U (40π, 560π) x 3 ∼ U (0, 1) x 4 ∼ U (1, 11) C.4 Friedman # f (x) = arctan x 1 x 2 -1 x 1 x 3 x 0 + ϵ • N (0, 1).</formula><p>Where</p><formula xml:id="formula_6">x 1 ∼ U (0, 100) x 2 ∼ U (40π, 560π) x 3 ∼ U (0, 1) x 4 ∼ U (1, 11) C.5 Original # y = x + 10sin( 5πx 100 ) + 10cos( 6πx 100 )<label>(4)</label></formula><p>Where</p><formula xml:id="formula_7">x ∼ U (0, 100)<label>(5)</label></formula><formula xml:id="formula_8">C.6 Original # y = (x 4 1 + (x 2 • x 3 - 2 √ x 2 • √ x 4 ) 2 ) 3 4</formula><p>Where</p><formula xml:id="formula_9">x 0 ∼ U (0, 3) x 1 ∼ U (4π, 56π) x 2 ∼ U (0, 2) x 3 ∼ U (1, 11) C.7 Original # y = e x 0 + x 1 • x 2 √ x 3 + (x 0 • x 3 ) C.8 Original # 4 y = x 1 10 • sin(x 0 ) + x 0 10 • cos(x 1 ) + √ x 0 log(x 1 ) √ x 1 log(x 0 ) Where x 0 , x 1 ∼ U (2, 100)</formula><p>C.9 Original # 5</p><formula xml:id="formula_10">y = 100 * max(so f tmax( x<label>10</label></formula><p>))</p><p>Where</p><formula xml:id="formula_11">x 0 , x 1 , x 2 ∼ U (-25, 25)</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C.10 Neural Network Induced</head><p>For the random datasets induced by neural networks, we randomly initialize a neural network and create a dataset by feeding random data to it. The dataset Simple Random NN 1 was created by using a neural network with one hidden layer with ReLU non-linearities. The dataset Transformer 1 was created by a randomly initialized Transformer encoder block.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C.11 Non-Numerical Regression</head><p>We provide the code to generate the non-numerical regression datasets in the Listing 1.</p><p>Essentially, we assign a random number (0 to 26) to each lowercase letter. Then we sample a weight vector. The expected output is generated by doing a dot product between the underlying assigned value of each character and the generated weight vector.</p><p>Listing 1: The python code to generate non-numerical regression datasets import random import numpy as np import s t r i n g max num vars = 5 n samples = 51 def g e t c h a r a c t e r r e g r e s s i o n ( random state = 1 ) : r = random . Random ( random state ) a l p h a b e t = l i s t ( s t r i n g . </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C.12 Real-World Datasets</head><p>We also experimented with several real-world datasets: (i) Liver Disorders (UCI, 1990), (ii) Real Estate Valuation <ref type="bibr" target="#b71">(Yeh, 2018)</ref>, (iii) Diabetes <ref type="bibr" target="#b20">(Efron et al., 2004)</ref>, (iv) Servo <ref type="bibr" target="#b63">(Ulrich, 1993)</ref>, (v) Movies <ref type="bibr" target="#b1">(Ahmed, 2017)</ref>. The corresponding results are presented in Section I.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D Models</head><p>In the following, we provide additional details of the models we used for our main experiments and how we used them. We used three different types of models, as follows:</p><p>(a) Large Language Models, (b) Traditional Supervised Methods, and (c) Heuristic-Based Unsupervised Methods. We describe them bellow.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D.1 LLM</head><p>This section outlines the 12 Large Language Models (LLMs) featured in our main experiments, which include a mix of open-weights and private models. We also include additional models, such as the newest GPT-4 version (gpt-4-20240409), multiple Claude variants, and the most powerful model released by Cohere, Cohere Command R Plus. We tried with Cohere Command R and Cohere Command and observed their performance to be lower, albeit still the unsupervised baselines (except for Cohere Command).</p><p>In Table <ref type="table">2</ref>, we categorize the models by their names, availability of weights, and developers, dividing them into two distinct sections. The first section lists the models featured in the main paper's experiments (referenced in Sections 3, 4, and 5). The second section introduces additional models that were utilized for the extended analysis included in the Appendix.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Model Name Weights Availability</head><p>Developer <ref type="bibr">GPT-4 (Achiam et al., 2023)</ref> Not available OpenAI Chat GPT <ref type="bibr" target="#b45">(Ouyang et al., 2022)</ref> Not available OpenAI Claude 3 Opus <ref type="bibr">(Anthropic)</ref> Not available Anthropic Claude 3 Sonnet <ref type="bibr">(Anthropic)</ref> Not available Anthropic Gemini Pro <ref type="bibr" target="#b58">(Team et al., 2023)</ref> Not available Google Mistral Medium Not Available Mistral Mixtral Mixture of Experts 8x7B (Jiang et al., 2024) Available Mistral Mistral 7B (Jiang et al., 2023) Available Mistral Llama2 70B (Touvron et al., 2023) Available Meta Code Llama2 70B (Rozière et al., 2023) Available Meta Yi 34B (AI et al., 2024) Available 01.ai DBRX # Available Databricks GPT-4 (20240409) (Achiam et al., 2023) Not available OpenAI GPT-3 Davinci (Brown et al., 2020) Not available OpenAI GPT-3 Babbage (Brown et al., 2020) Not available OpenAI Claude 3 Haiku (Anthropic) Not available Anthropic Claude v2.1 † Not available Anthropic Claude v2.0 † Not available Anthropic Claude v1.2 ‡ Not available Anthropic Cohere Command R Plus • Available Cohere Mixtral Mixture of Experts 8x22B Available Mistral Falcon 40B Almazrouei et al. (2023) Available TII Falcon 40B Instruct Almazrouei et al. (2023) Available TII RWKV v4 14B Peng et al. (2023) Available Various * StripedHyena Nous 7B Poli et al. (2023b) Available TogetherAI † <ref type="url" target="https://www.anthropic.com/news/claude-2">https://www.anthropic.com/news/claude-2</ref> ‡ <ref type="url" target="https://www.anthropic.com/news/releasing-claude-instant-1-2">https://www.anthropic.com/news/releasing-claude-instant-1-2</ref> # <ref type="url" target="https://www.databricks.com/blog/introducing-dbrx-new-state-art-open-llm">https://www.databricks.com/blog/introducing-dbrx-new-state-art-open-llm</ref> • <ref type="url" target="https://cohere.com/command">https://cohere.com/command</ref> * Developed collaboratively by numerous contributors across 29 different affiliations Table <ref type="table">2</ref>: Details of the large language models (LLMs) used in our study, divided into two sections. The first section contains the LLMs used for the experiments from the main body of the paper, while the second section includes additional models explored in the extended results presented in the Appendix.</p><p>We list in Table <ref type="table" target="#tab_4">3</ref> the models we used through OpenAI, together with their corresponding model code.<ref type="foot" target="#foot_7">foot_7</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Model Name API Model Code</head><p>GPT-4 gpt-4-0125-preview Chat GPT gpt-3.5-turbo-1106</p><p>GPT-4 (20240409) gpt-4-turbo-2024-04-09 GPT-3 Davinci davinci-002 GPT-3 Babbage babbage-002 Figure <ref type="figure">9</ref>: The prompt we use for all LLMs. Concretely, we use an initial instruction to prevent the models from explaining their prediciton, something which we observed to happen for some models (e.g., Claude 3 Opus). Then, we give each input-output pair and finally ask the model to predict the value corresponding to the test input.</p><p>For the experiments performed with 100 random seeds and 50 random input-output tuples (i.e., D 50 ), we simply skip the invalid generations. This is not problematic because it rarely occurs. For example, it has never occurred for the any of the experiments showed in Section 3 and Section 4. Moreover, given that we run each experiment with 100 random seeds, skipping the invalid generations will still leave us with enough samples to estimate the statistics. For example, out of the results presented in Section 3 and 4, the largest number of invalid generations for a given dataset was 11, by Mistral Medium on Regression NI 1/2. Claude 3 Opus produced only 2 invalid generations, for Friedman #2, and GPT-4 did not produce any invalid generations. One exception is for the results shown in Appendix J, as we observed that Claude 2.0 and Claude 2.1 produced invalid generations very often. For example, Claude 2.1 generated invalid generations for the dataset Regression 1/1 in 71% of the cases. The reason for invalid generations was usually because Claude 2.1 refused to give "potentially misleading numerical estimates without proper context". A second exception is for Striped Hyena Nous 7B (Appendix R). We add a cross (×) to the cell in the rank heatmap for every model-dataset pair where the number of valid generations is under 20.</p><p>For the experiments where we investigated how the performance of the models scale with the number of examples, we average 3 random runs for each dataset size. In this set of experiments, only Llama 70B generated invalid outputs a total of 3 times, for Original #2 and Friedman #2. We skip the random runs with invalid generations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D.2 Traditional Supervised Models</head><p>We use a total of 11 traditional supervised methods, resulting in over 20 different configurations. Specifically, we used the following models:</p><p>1. Linear Regression: We used 4 variants of Linear Regression: (i) standard linear regression (Linear Regression), (ii) ridge (Ridge), (iii) lasso (Lasso), and (iv) Linear</p><p>Regression with Polynomial Features (Linear Regression + Poly), where we used polynomial features of degree 2 2. Multi-Layer Perceptron: We used 6 variants of multi-layer preceptrons: 3 with different widths (MLP Wide 1, MLP Wide 2, MLP Wide 3) and 3 with different depths (MLP Deep 1, MLP Deep 2, MLP Deep 3) 3. Random Forest 4. Bagging 5. Gradient Boosting 6. AdaBoost 7. SVM: We used both a single SVM and an SVM paired with a Scaler (SVM + Scaler) 8. KNN: We used multiple variants of KNN, where we vary the number of neighbors, the type of distance used, and the power parameter for the Minkowski metric; We distinguish between them with a v{index} 9. Kernel Ridge 10. Spline</p><p>We used the sklearn implementation for each model.<ref type="foot" target="#foot_11">foot_11</ref> Similar to the LLM case, we do not tune any hyperparameters. We use the default hyperparameters available in sklearn. We remark that these supervised baselines are very strong, as (1) many of them are the results of algorithms specifically designed for regression (e.g., Spline), (2) all perform parameter updates, and (3) the default hyperparameters, as set in widely-used statistical packages, have been refined over time to offer a reliable and generally strong performance across a variety of scenarios.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D.3 Unsupervised Models</head><p>We use three heuristic inspired unsupervised models:</p><p>1. Average: Predicts the next value, y n+1 , as the mean of all preceding outcomes: y n+1 = 1 n ∑ n i=1 y i 2. Last: Uses the most recent observation tuple (x n , y n ) for prediction, such that y n+1 = y n 3. Random: Predicts y n+1 by randomly selecting from the set of prior observations {y 1 , . . . , y n }. The final prediction is thus y n+1 = sample([y 1 , . . . , y n ])</p><p>The goal of these unsupervised models is to better put the performance obtained by LLMs into perspective.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>E Large Language Models Can Do Linear Regression (Expanded)</head><p>We expand the barplots shown in Figure <ref type="figure" target="#fig_0">2</ref> with more models and more datasets. In particular, we show in <ref type="bibr">Figures 10,</ref><ref type="bibr">11,</ref><ref type="bibr">12,</ref><ref type="bibr">13,</ref><ref type="bibr">14,</ref><ref type="bibr">15</ref> the performance of the models on six datasets for linear regression. Specifically, we used the following datasets:</p><p>1. Regression 1/1, a linear regression with only 1 variable, which is informative 2. Regression 1/2, a linear regression with 2 variables, and only 1 informative variable 3. Regression 1/3, a linear regression with 3 variables, and only 1 informative variable 4. Regression 2/2, a linear regression with 2 variables, both which are informative 5. Regression 2/3, a linear regression with 3 variables, and only 2 informative variables 6. Regression 3/3, a linear regression with 3 variables, all which are informative</p><p>We included the corresponding rank heatmap in Figure <ref type="figure">16</ref>.</p><p>We make the following observations. First, Claude 3 Opus performs among the best for the linear regression case where there is only one informative variable (Regression 1/1, Regression 1/2, Regression 1/3), ranking among top 3 best performing models. The performance drops when there are more informative variables.</p><p>Second, we remark that all large language models perform better than all the unsupervised methods on all datasets.</p><p>Third, we remark that the large language models display a good overall performance. For example, there are 4 LLMs (i.e., Claude 3 Opus, Claude 3 Sonnet, GPT-4, DBRX) which perform better than all 3 variants of KNN over all the datasets used.</p><p>Fourth, there are specific LLMs which always perform better than Gradient Boosting, such as Claude 3 Opus and GPT-4. We remark that DBRX and Code Llama 70B outperform Gradient Boosting in 4 out of 6 datasets. 13 13 In order to see how the performance of LLMs scale with more variables, we additionally experimented with Claude 3 Opus on Regression NI 1/10, 3/10, and 5/10 respectively. For example, in NI 5/10, Claude 3 Opus outperforms methods like Gradient Boosting or Random Forest but lags behind methods like Logistic Regression, which is expected given the nature of the datasets. For NI 3/10, Claude 3 Opus is outperformed by Random Forest and Gradient Boosting. Overall, we observed the performance to be similar to the performance on NI 2/3 from Figure <ref type="figure">16</ref>. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>F Large Language Models Can Do Non-Linear Regression (Expanded)</head><p>We expand the barplots shown in Figure <ref type="figure" target="#fig_2">4</ref> with more models and more datasets. In particular, we show in <ref type="bibr">Figures 17,</ref><ref type="bibr">18,</ref><ref type="bibr">19,</ref><ref type="bibr">20,</ref><ref type="bibr">21,</ref><ref type="bibr">22,</ref><ref type="bibr">23,</ref><ref type="bibr">and 24</ref> the performance of the models on the eight datasets for non-linear regression.</p><p>Additionally, we include in Figures <ref type="figure" target="#fig_9">25</ref> and <ref type="figure" target="#fig_0">26</ref> the performance of the models on datasets generated by randomly initialized neural networks, similar to the methodology of <ref type="bibr" target="#b24">Garg et al. (2022)</ref>. We can see that the performance of the LLMs decreases on the datasets created using the neural networks, although it (generally) remains above that of the unsupervised baselines.</p><p>Similar to Figure <ref type="figure">6</ref>, we include the corresponding rankings in Figure <ref type="figure" target="#fig_0">27</ref>.</p><p>We would like to remark that Claude 3 Opus obtains an average rank of 7.7, the best out of all models we have investigated. The next best is Gradient Boosting, with 8.1. The next best LLM is Claude 3 Sonnet, with 9.3, then GPT-4 with 12.7.  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>G Average Model Ranks</head><p>To provide a comprehensive overview of model performance across a diverse array of datasets, this section aggregates the average ranks obtained by each model. In this section we show the average ranks obtained by each model across: (1) all linear regression datasets (Linear), (2) all original benchmarking datasets introduced by us (Original), (3) all benchmarking datasets introduced by Friedman (Friedman), (4) all neural network induced datasets (NN), (5) all non-linear datasets (Non-Linear), (6) all datasets (Overall).</p><p>We show our results in Table <ref type="table">7</ref>. We divide the table into three blocks, separated by horizontal lines, corresponding to the results for (1) LLMs (e.g., GPT-4), (2) Traditional Supervised Methods (e.g., Gradient Boosting), and (3) Unsupervised Baselines (e.g., Average). We remark that LLMs obtain, overall, a strong performance. For example, Claude 3 Opus ranks second overall, outperforming methods such as Gradient Boosting, KNN, or multi-layer perceptrons. Overall, this strong performance is present in both private and open models. For example, DBRX and Mixtral 8x22B achieve average ranks that surpass conventional methods including AdaBoost, KNN, or Random Forests.</p><p>Model Linear Original Friedman NN Non-Linear Overall Claude 3 Opus 7.67 ± 5.89 7.2 ± 12.76 4.00 ± 3.61 17.00 ± 2.83 8.2 ± 9.99 8.00 ± 8.45 Claude 3 Sonnet 13.33 ± 4.89 7.4 ± 10.41 5.67 ± 6.35 21.5 ± 0.71 9.7 ± 9.82 11.06 ± 8.31 Claude 3 Haiku 13.33 ± 7.69 18.00 ± 8.63 19.00 ± 10.44 29.5 ± 0.71 20.6 ± 8.92 17.88 ± 8.98 GPT-4 12.83 ± 4.07 11.4 ± 8.02 11.33 ± 11.85 22.5 ± 0.71 13.6 ± 9.05 13.31 ± 7.4 GPT-4 (20240409) 13.5 ± 3.73 12.00 ± 9.41 11.33 ± 10.21 25.00 ± 1.41 14.4 ± 9.7 14.06 ± 7.83 Chat GPT 29.5 ± 3.33 30.6 ± 9.42 24.67 ± 12.9 39.00 ± 2.83 30.5 ± 10.23 30.12 ± 8.17 Davinci 002 26.17 ± 6.27 21.8 ± 9.2 23.33 ± 5.03 36.00 ± 1.41 25.1 ± 8.77 25.5 ± 7.72 Babbage 002 40.17 ± 1.83 25.8 ± 6.06 39.67 ± 0.58 35.5 ± 4.95 31.9 ± 7.92 35.00 ± 7.47 Gemini Pro 16.5 ± 7.4 15.2 ± 10.92 21.33 ± 7.09 26.5 ± 0.71 19.3 ± 9.3 18.25 ± 8.49 Mistral Medium 23.17 ± 6.71 20.6 ± 7.7 20.33 ± 5.13 27.5 ± 0.71 21.9 ± 6.4 22.38 ± 6.32 Mixtral 8x22B 20.5 ± 5.65 12.4 ± 4.51 16.67 ± 11.72 23.5 ± 0.71 15.9 ± 7.71 17.62 ± 7.18 Mixtral 8x7B 27.17 ± 4.92 22.4 ± 6.66 26.00 ± 9.54 29.00 ± 1.41 24.8 ± 6.91 25.69 ± 6.17 Mistral 7Bv2 35.00 ± 2.53 31.6 ± 4.72 26.33 ± 7.64 43.5 ± 2.12 32.4 ± 7.96 33.38 ± 6.47 Mistral 7B 37.33 ± 2.66 35.2 ± 4.97 36.67 ± 7.57 41.5 ± 0.71 36.9 ± 5.49 37.06 ± 4.52 DBRX 18.67 ± 1.51 15.00 ± 8.0 15.67 ± 13.43 25.00 ± 0.0 17.2 ± 9.25 17.75 ± 7.25 Cohere Command R Plus 25.00 ± 6.16 26.4 ± 8.79 24.67 ± 10.07 39.00 ± 1.41 28.4 ± 9.43 27.12 ± 8.3 Llama2 70B Chat HF 31.83 ± 3.92 32.8 ± 7.22 28.67 ± 3.51 40.5 ± 3.54 33.1 ± 6.79 32.62 ± 5.76 Code Llama 70B 24.5 ± 2.88 21.2 ± 4.87 23.67 ± 11.59 30.00 ± 1.41 23.7 ± 7.27 24.00 ± 5.89 Yi 34B Chat 28.00 ± 2.76 21.2 ± 9.36 25.00 ± 3.46 33.00 ± 2.83 24.7 ± 8.04 25.94 ± 6.64 Gradient Boosting 24.83 ± 7.41 9.6 ± 7.33 8.67 ± 5.51 8.5 ± 0.71 9.1 ± 5.57 15.00 ± 9.94 AdaBoost 29.00 ± 8.63 17.6 ± 4.62 16.00 ± 4.58 14.00 ± 0.0 16.4 ± 4.03 21.12 ± 8.62 Bagging 27.00 ± 6.48 14.6 ± 4.93 12.00 ± 8.19 10.5 ± 0.71 13.00 ± 5.37 18.25 ± 8.96 KNN 32.67 ± 5.05 23.6 ± 10.21 27.33 ± 8.96 11.00 ± 1.41 22.2 ± 10.11 26.12 ± 9.86 KNN v2 29.67 ± 4.84 18.2 ± 12.87 25.67 ± 8.39 10.00 ± 1.41 18.8 ± 11.07 22.88 ± 10.53 KNN v3 28.67 ± 5.28 18.2 ± 14.62 27.33 ± 10.79 15.5 ± 0.71 20.4 ± 12.04 23.5 ± 10.65 Linear Regression 1.17 ± 0.41 25.8 ± 13.85 16.00 ± 5.57 10.00 ± 4.24 19.7 ± 11.84 12.75 ± 13.04 Lasso 13.5 ± 7.66 24.8 ± 14.86 30.67 ± 15.7 33.5 ± 0.71 28.3 ± 12.94 22.75 ± 13.22 Ridge 15.33 ± 7.28 25.00 ± 14.47 16.33 ± 4.04 8.5 ± 4.95 19.1 ± 12.1 17.69 ± 10.44 Linear Regression + Poly 2.5 ± 0.84 16.00 ± 15.87 3.00 ± 2.65 8.00 ± 7.07 10.5 ± 12.49 7.5 ± 10.48 MLP Deep 1 5.67 ± 3.39 16.00 ± 12.88 31.33 ± 20.11 11.5 ± 9.19 19.7 ± 15.51 14.44 ± 14.05 MLP Deep 2 8.83 ± 4.17 18.8 ± 13.37 28.67 ± 20.98 6.00 ± 0.0 19.2 ± 15.68 15.31 ± 13.42 MLP Deep 3 11.00 ± 3.35 16.2 ± 14.77 29.00 ± 19.16 7.5 ± 0.71 18.3 ± 15.66 15.56 ± 12.81 MLP Wide 1 4.67 ± 1.75 18.00 ± 14.2 21.67 ± 14.29 9.00 ± 9.9 17.3 ± 12.95 12.56 ± 11.9 MLP Wide 2 7.83 ± 1.83 25.2 ± 11.3 25.00 ± 19.16 3.00 ± 1.41 20.7 ± 15.02 15.88 ± 13.34 MLP Wide 3 6.33 ± 1.21 24.4 ± 11.72 27.67 ± 23.86 1.00 ± 0.0 20.7 ± 17.25 15.31 ± 15.19 Random Forest 31.5 ± 7.04 17.2 ± 9.58 14.33 ± 6.81 17.00 ± 0.0 16.3 ± 7.27 22.00 ± 10.3 Kernel Ridge 14.17 ± 6.91 30.00 ± 15.72 26.33 ± 18.23 34.00 ± 19.8 29.7 ± 15.33 23.88 ± 14.74 SVM 44.83 ± 2.04 32.8 ± 14.57 29.67 ± 12.01 11.00 ± 11.31 27.5 ± 14.77 34.00 ± 14.4 SVM + Scaler 45.5 ± 1.76 33.4 ± 15.39 24.33 ± 16.65 12.00 ± 11.31 26.4 ± 15.99 33.56 ± 15.68 Spline 14.00 ± 3.95 29.00 ± 6.75 10.33 ± 7.77 19.5 ± 2.12 21.5 ± 10.38 18.69 ± 9.16 Average 48.5 ± 1.38 34.2 ± 17.43 43.00 ± 1.73 33.5 ± 0.71 36.7 ± 12.44 41.12 ± 11.32 Random 51.17 ± 0.98 44.8 ± 3.42 46.67 ± 3.21 47.00 ± 0.0 45.8 ± 2.94 47.81 ± 3.56 Last 51.33 ± 0.52 45.00 ± 4.3 47.00 ± 2.65 47.00 ± 1.41 46.00 ± 3.33 48.00 ± 3.72</p><p>Table <ref type="table">7</ref>: We show the average rank of each model we investigated, across multiple types of datasets. We divide the table into three blocks, separated by horizontal lines, corresponding to the results for (1) large language models (e.g., GPT-4), (2) Traditional Supervised Methods (e.g., Gradient Boosting), and (3) Unsupervised Baselines (e.g., Average). Overall, the large language models (LLMs) obtain a strong performance. For example, Claude 3 Opus ranks second overall, outperforming very strong methods like Gradient Boosting or multi-layer perceptron. This strong performance is present in both private (e.g., Claude 3 Opus, GPT-4) and open-weights models (e.g., DBRX, Mixtral 8x22B).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>H How Fast Do Large Language Models Adapt? (Expanded)</head><p>We expand Table <ref type="table" target="#tab_0">1</ref> to include more models. We show the corresponding results in Table <ref type="table" target="#tab_7">8</ref>.</p><p>Additionally, we include curve fit plots for models. To keep the number of plots to a manageable amount, we selected a subset of the models as follows. We selected Claude 3 Opus and GPT-4, as they are the flagship closed-source models. We selected Yi 34B Chat for the open-weights model. Lastly, we selected Gradient Boosting, Linear Regression, and Linear Regression + Poly. We present the corresponding plots in Figure <ref type="figure" target="#fig_10">28</ref> and 29. Since in these experiments we vary the number of in-context examples starting from 1, we could not include variants of KNN that uses more than one neigbhors for their prediction. We included KNN v4 which uses only one neighbor. Additionally, we included KNN v5, where we use a small number of neighbors when the amount of data is small, then gradually increase it. We can see that their performance is much worse than that of the LLMs, suggesting that the LLMs are doing something more than what KNN do.   </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>I Performance on Real-World Datasets</head><p>In the following, we include the performance of GPT-4 and Claude 3 Opus on real-world datasets. Nevertheless, our aim in this work has not been to suggest that LLMs should replace (at least currently) traditional regression methods. <ref type="foot" target="#foot_12">14</ref> We evaluate on the following datasets:</p><p>1. Liver Disorders (UCI id=60 (UCI, 1990)</p><p>2. Real Estate Valuation (UCI id=477 <ref type="bibr" target="#b71">(Yeh, 2018))</ref> 3. Diabetes (sklearn <ref type="bibr" target="#b20">(Efron et al., 2004</ref>))<ref type="foot" target="#foot_13">foot_13</ref> </p><p>4. Servo (UCI id=87 <ref type="bibr" target="#b63">(Ulrich, 1993)</ref>)</p><p>5. Movies (UCI id=424 <ref type="bibr" target="#b1">(Ahmed, 2017)</ref>)</p><p>We evaluated the following models:</p><p>• LLMs: GPT-4, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku;</p><p>• Traditional Supervised Methods: AdaBoost, Bagging, Gradient Boosting, KNN, KNN v2, KNN v3, Kernel Ridge, Lasso, Linear Regression, Linear Regression + Poly, MLP Deep 1, MLP Deep 2, MLP Deep 3, MLP Wide 1, MLP Wide 2, MLP Wide 3, Random Forest, Ridge, SVM, SVM + Scaler, Spline;</p><p>• Unsupervised Methods: Average, Last, Random.</p><p>We show our results in Tables 9, 10, 11, 12, and 13. In order to keep the tables easy to read, we selected: (i) two LLMs, Claude 3 Opus and GPT-4; (ii) three traditional supervised methods, Gradient Boosting, Random Forest, and Linear Regression with Polynomial Features (LR + Poly); and (iii) three unsupervised methods, Average, Last, and Random. We show both the mean absolute error (MAE) and the rank. The rank is shown against all the methods ran. For example, on Liver Disorders ( Table 13: Results on the Movies dataset (scaled by 1e+07), sorted by the MAE (↓)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>J Claude Performance</head><p>Following the (perhaps surprisingly) strong performance of the Claude family of large language models on various regression tasks (e.g., Figure <ref type="figure" target="#fig_0">27</ref>, when averaging the ranks of each model over each dataset, Claude 3 Opus performs the best), we provide results with additional models from the Claude family, namely: Claude 1.2, Claude 2.0, Claude 2.1, and Claude 3 Haiku. We include a rank heatmap for all the models from the Claude family currently available in Figure <ref type="figure" target="#fig_12">30</ref>. For comparison, we also included the corresponding performance of two strong models with open-weights: DBRX and Mixtral 8x7B. Claude 2.0 and Claude 2.1 were sometimes generating invalid outputs (e.g., "I apologize, upon reflection I do not feel comfortable providing output values without context. Could we have a constructive discussion about the meaning and implications of this exercise?"). Therefore, we omit those problematic configurations. For all the other cases, the average performance is the result of at least 20 runs. <ref type="foot" target="#foot_14">16</ref> We note that the performance of Claude 3 models is much better than that of older models. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>K Costs</head><p>We estimate the total cost for all our experiments to under $1200. We spent approximately $300 on OpenRouter. We spent approximately $600 on OpenAI. The cost for OpenAI is higher because we used it in our preliminary experiments. Additionally, the preliminary experiments used gpt-4, which is more expensive than gpt-4-0125-preview. We switched to gpt-4-0125-preview after we added the additional text to the prompt, instructing the model to only output their best estimate.<ref type="foot" target="#foot_15">foot_15</ref> </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>L LLMs Justifying Their Prediction</head><p>Without adding the prefix instruction text (see prompt in Appendix D.1.1), which instructed the models to output only its best estimate, some LLMs (e.g., Claude 3 Opus) started to provide explanations, in an attempt to justify their prediction. <ref type="foot" target="#foot_16">18</ref> Analyzing these "explanations" revealed that there is a discrepancy between their explanation and their prediction. For example, for a non-linear regression problem, Claude 3 Opus suggests to train a Linear Regression model and gives the code to do so. Then it elaborates on how to use it for inference and gives the output. However, manually running the code suggested by the model results in a very different output. We provide some examples in <ref type="bibr">Figures 31,</ref><ref type="bibr">32,</ref><ref type="bibr">,</ref><ref type="bibr">33,</ref><ref type="bibr">and 34</ref>. We describe each one below.</p><p>To find the output for a given Feature 0 value, we need to determine the relationship between Feature 0 and the Output. Looking at the provided data points, it appears that the Output is approximately equal to Feature 0 multiplied by a constant value.</p><p>Let's calculate this constant value using a few data points:</p><p>For Feature 0 = -2.</p><p>06, Output = -81.93 Constant = Output / Feature 0 = -81.93 / -2.06 ≈ 39.77 For Feature 0 = 1.46, Output = 58.14 Constant = Output / Feature 0 = 58.14 / 1.46 ≈ 39.82 The constant values are very close, so we can assume that the relationship is: Output = Feature 0 • 39.8 (rounded to one decimal place) Now, for Feature 0 = 1.62, we can calculate the Output: Output = 1.62 • 39.8 ≈ 64.48 Therefore, when Feature 0 is 1.62, the Output should be approximately 64.48. Figure 31: Claude 3 Opus justifying its output on Regression NI 1/1. In this dataset, the final output is constructed by multiplying the input feature with a constant value. Claude 3 correctly identified the constant. The answer is very close to the correct one (differences might appear due to rounding). To predict the output for the given input features, I'll calculate the average output for the two nearest neighbors in the training data. Input: Feature 0: 0.7, Feature 1: -2.03 Calculating Euclidean distances to all training examples: 1. (0.7 -(-1.06)) 2 + (-2.03 -(-0.91)) 2 = 2.27 2. (0.7 -0.37) 2 + (-2.03 -1.36) 2 = 3.45 ... 49. (0.7 -(-0.38)) 2 + (-2.03 -0.07) 2 = 2.35 50. (0.7 -1.17) 2 + (-2.03 -(-2.34)) 2 = 0.62 51. (0.7 -(-0.46)) 2 + (-2.03 -0.35) 2 = 2.76 52. (0.7 -(-0.75)) 2 + (-2.03 -0.01) 2 = 2.64 53. (0.7 -0.38) 2 + (-2.03 -(-0.22)) 2 = 1.88 54. (0.7 -(-0.4)) 2 + (-2.03 -(-1.38)) 2 = 1.41 The two nearest neighbors are examples 50 and 54, with distances 0.62 and 1.41. Example 50 output: 31.76 Example 54 output: -49.65 Predicted output = (31.76 + (-49.65)) / 2 = -8.945 So for input features 0.7 and -2.03, the predicted output using 2-nearest neighbors is -8.945. Figure 34: Claude 3 Opus justifying its output on Regression NI 2/2, a linear regression dataset with two variables, where both are informative. However, the dataset given as in-context exemplars to Claude contains only 50 data points, while the solution generated by Claude involves taking the examples 50 and 54. Those examples are non-existent.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>M Beyond Numerical Regression</head><p>Our investigation has centered on conventional regression tasks characterized by inputs and outputs represented as numerical values. However, the performance on these tasks might be influenced by the quality of numerical token embeddings, which can serve as a confounding factor <ref type="bibr" target="#b52">Razeghi et al. (2022)</ref>. To address this and broaden our analysis, we shift our focus to datasets generated following the methodology outlined in Section 2.1.3. This allows us to evaluate the models' capabilities in contexts where inputs are symbolic rather than numerical.</p><p>Specifically, we define an input vocabulary V, consisting of a small number of (random) symbols. 19 Each symbol is randomly assigned a number {1, . . . , 26}. We map the symbols to a numerical value by sampling a weight vector w ∈ R d and doing a dot product between it and the corresponding values of each symbol. We present our results in Figure <ref type="figure">8</ref>. The large language model display, once again, a performance superior to that of unsupervised models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>N Effects of Rounding</head><p>Due to computational budgets and context limits,<ref type="foot" target="#foot_18">foot_18</ref> we rounded both the input and the output to two decimals. To validate that our conclusions are not an artifact of the rounding mechanism, we re-ran GPT-4 on Friedman #2 and Friedman #3, rounding to five decimals. We selected GPT-4 because it obtained overall strong results and offers a good latency. We selected Friedman #2 and Friedman #3 because LLMs obtained generally good performance. We also ran the traditional supervised methods. We include the updated results in Figure <ref type="figure" target="#fig_3">35</ref>.</p><p>Comparing it with Figure <ref type="figure" target="#fig_0">27</ref>, we can see that the performance of GPT-4 remains strong. This time it even outperforms Gradient Boosting on Friedman #3 and ranks first. The performance on Friedman #3 is only under Linear Regression + Poly, similar to Figure <ref type="figure" target="#fig_0">27</ref>. All in all, the strong performance we observed is unlikely to be just an artifact of rounding.</p><p>Figure <ref type="figure" target="#fig_3">35</ref>: The ranks of the models when rounding to five decimals. The performance of GPT-4 remains strong, ranking above many traditional supervised methods. This is in line with our previous observations, where we rounded to two decimals. (best viewed in color)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>O Is It Just Better KNN?</head><p>We can see from Appendix E and F that the performance of certain LLMs is almost always better than that of all three variants of KNN presented. For example, in the case of linear regression, Claude 3 Opus, Claude 3 Sonet and GPT-4 always perform better than the three variants of KNN we used. Similar, in the case of non-linear regression, only for Simple NN 1 and Transformer 1 is any of the KNN variants outperforming Claude 3 Opus. Moreover, from Table <ref type="table" target="#tab_7">8</ref>, which records the best curve fit over the cumulative regret, we can see that both variants of KNN perform worse than Claude 3 Opus or GPT-4. We summarize our results in Figure <ref type="figure" target="#fig_13">36</ref>. To keep the plot comprehensible, we chose the best-performing KNN configuration for each dataset. However, the ranking considers the performance of all models. We draw the following conclusions.</p><p>First, we remark that except on Friedman #1, for every other dataset, the top 9 best performing models are all LLMs. In other words, both closed-source models (e.g., Claude 3 Opus, GPT-4) and open-weights models (e.g., DBRX, Mixtral) outperform all KNN models on all the datasets except Friedman #1. This suggests that the mechanism implemented by in-context learning might be something more complex than KNN.</p><p>Last, we remark that for Friedman #1, only Claude 3 Opus and Claude 3 Sonnet outperform the KNN variants. Moreover, Claude 3 Opus and Claude 3 Sonnet outperform all KNN variants we experimented with on all datasets.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>P Could It Be Just Contamination?</head><p>The very large datasets that are used to train contemporary large language models (LLMs) raise concerns about potential contamination <ref type="bibr" target="#b55">(Sainz et al., 2023;</ref><ref type="bibr" target="#b25">Golchin &amp; Surdeanu, 2024)</ref>.</p><p>In our study, we have attempted to mitigate this as follows. First, we used many different random seeds. However, this does not nullify the risk that the LLM has seen similar data (e.g., data from Friedman #1, but with other random seeds). To mitigate this, we explored the performance of the models on regression functions of our own creation. This makes it unlikely that the model has seen data coming from the exact same function. For example, To further analyze the data contamination issue, we perform two additional experiments. We provide results with Falcon, an LLM whose training data is publicly available. Second, we perform an experiment similar to the approach proposed in <ref type="bibr" target="#b25">Golchin &amp; Surdeanu (2024)</ref>, where we compare the performance of LLMs with and without knowing the dataset where the data comes from.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>P.1 LLMs With Known Training Data</head><p>In this section we expand our analysis to include Falcon 40B and Falcon 40B Instruct, comparing their performance with both traditional statistical methods and other LLMs. To keep the figures comprehensible, we added only the following LLMs: Claude 3 Opus, Chat GPT, Mixtral 8x7B, and Mistral 7B.</p><p>We remark that the Falcon LLM team has released their training data, <ref type="foot" target="#foot_19">21</ref> offering further insights into how the training environments of contemporary LLMs can result into LLMs being capable of regression. Due to the context size limitations of Falcon,<ref type="foot" target="#foot_20">foot_20</ref> we only evaluated it on the linear regression datasets and on the Original #1 dataset. The other datasets have a larger number of input variables (e.g., Friedman #2 has 5 input variables) and we could not fit 50 in-context examples. We show our results on four datasets, Regression NI 1/1, Regression NI 1/2, Regression NI 2/2, Original #1 in Figures 37, 38, 39 and 40. Additionally, we include the corresponding rank heatmap in Figure <ref type="figure" target="#fig_2">41</ref>.</p><p>We make the following observations. First, Falcon 40B outperforms our unsupervised baselines. Second, Falcon 40B outperforms Gradient Boosting and Random Forests on Regression NI 1/1.</p><p>Overall, Falcon 40B displays, as well, the capability of doing regression when given incontext examples, albeit to a smaller degree than when compared to more powerful (and newer) models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>P.2 Performance When Knowing The Dataset Name</head><p>To further investigate potential data contamination, we conducted an experiment inspired by the methodology described in <ref type="bibr" target="#b25">Golchin &amp; Surdeanu (2024)</ref>. This involves assessing model performance under two conditions: with and without explicit knowledge of the dataset being evaluated. Specifically, we modify the prompt shown in Figure <ref type="figure">9</ref> to mention the name of the dataset (e.g., Friedman #1, Friedman #2, Friedman #3), as detailed in Figure <ref type="figure" target="#fig_2">42</ref>. This approach allows us to discern the impact of dataset awareness on the model's predictive accuracy, providing insights into the extent of potential contamination in the training data.</p><p>We present the comparative results in Table <ref type="table" target="#tab_0">14</ref>, which shows the average absolute error under conditions of dataset awareness versus unawareness. Notably, the mean absolute errors (↓) remain closely matched across all scenarios. To statistically substantiate these observations, we performed paired t-tests for each dataset comparison. Given the multiplicity of tests performed, it became imperative to apply an adjustment for multiple comparisons to our p-values <ref type="bibr" target="#b19">(Dunn, 1961;</ref><ref type="bibr" target="#b8">Benjamini &amp; Hochberg, 1995)</ref>. Following this adjustment, none of the p-values remained below the (typically used) 0.05 threshold, suggesting that the knowledge of the dataset name does not significantly affect model performance. Prior to adjustment, in two cases the resulting p-value was under 0.05: GPT-4 on Friedman #3 (p-value 0.045) and Claude 3 Sonnet on Friedman #3 (p-value 0.018). Note, however, that only in the case of GPT-4 was the performance corresponding to the Dataset Aware setting better. This analysis indicates that, within the bounds of statistical significance, there is no substantial evidence to suggest that the performance of the models is influenced by explicit knowledge of the dataset name, something which has been linked to contamination <ref type="bibr" target="#b25">(Golchin &amp; Surdeanu, 2024)</ref>. <ref type="foot" target="#foot_21">23</ref>The task is to provide your best estimate for "Output" (Friedman #1). Please provide that and only that, without any additional text.</p><p>Feature 0: . . .</p><p>Figure <ref type="figure" target="#fig_2">42</ref>: The prompt we use to further investigate whether the large language models have seen instances of the datasets we tested them on. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>R Beyond Transformer-Based LLMs</head><p>In our study, we initially focused on transformer-based large language models (LLMs).</p><p>To broaden our scope, we explore the capabilities of non-transformer LLMs, including a RWKV-based 14B LLM <ref type="bibr" target="#b48">(Peng et al., 2023)</ref> and with StripedHyena <ref type="bibr">(Poli et al., 2023a;</ref><ref type="bibr" target="#b47">b)</ref>, a 7B LLM. The performance rankings for these models, along with the transformer-based Mistral 7B for comparison, are illustrated in the heatmap provided in Figure <ref type="figure" target="#fig_16">48</ref>. We tried running Falcon 7B as well, but it produced invalid outputs for almost all examples and all datasets, therefore we skip it. StripedHyena also encountered difficulties, producing invalid outputs in certain scenarios, such as 98% invalid responses for the Friedman #2 dataset. Consequently, we omitted Friedman #2 and Original #2 from its evaluation. However, it is important to highlight that the other models evaluated did not exhibit these issues and were able to generate valid outputs consistently. We make the following observations.</p><p>First, we remark that performance-wise, RWKV is worse than traditional transformer-based LLMs, although it generally remains better than our unsupervised baselines, with the exception on two linear regression datasets: Regression NI 1/3 and Regression NI 2/3. Nevertheless, we remark that on Original #1, RWKV outperforms many MLP variants, despite no gradient updates.</p><p>Second, we remark that the performance of Striped Hyena 7B is generally lower than than some of our unsupervised baselines. We note that there is a notable exception for Original #1. For this dataset, KNN approaches work well, as evident by the good performance obtained by nearest neighbor approaches. </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 2 :</head><label>2</label><figDesc>Figure2: The performance, as measured by the Mean Absolute Error (↓), across large language models (LLM), traditional supervised models and unsupervised models on two different random regression tasks: (a) sparse linear regression, where only 1 out of a total of 3 variables is informative, and (b) linear regression with two informative variables. The results are averages with 95% confidence intervals from 100 runs with varied random seeds. All LLMs perform better than the unsupervised models, suggesting a more sophisticated underlying mechanism at play in ICL. Furthermore, some LLMs (e.g., Claude 3) even outperform traditional supervised methods such as Random Forest or Gradient Boosting.</figDesc><graphic coords="4,108.00,81.86,198.01,72.52" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: The rank of each method investigated over all four linear regression datasets. Rankings are visually encoded with a color gradient, where green means better performance (higher ranks) and red indicates worse performance (lower ranks). Notably, very strong LLMs such as Claude 3 and GPT-4 consistently outperform traditional supervised methods such as Gradient Boosting, Random Forest, or KNN. (best viewed in color)</figDesc><graphic coords="5,108.00,81.86,396.00,141.40" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: The performance of large language models (LLM), traditional supervised models and unsupervised models on Friedman #1, #2, and #3. The results represent the averages with 95% confidence intervals over 100 different runs.</figDesc><graphic coords="6,139.68,437.28,332.64,126.57" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: An example of one of our new nonlinear regression functions. The function was designed to mimic a linear trend with oscillations.</figDesc><graphic coords="7,298.49,430.45,198.42,148.03" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 6 :Figure 7 :</head><label>67</label><figDesc>Figure 6: Rank of each model investigated on the non-linear regression datasets. LLMs are capable of non-linear regression. For example, for Original #1, eight out of the ten highest-ranking methods are LLMs. (best viewed in color)</figDesc><graphic coords="8,108.00,421.38,395.98,200.17" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><figDesc>Figure 8: Performance Comparison between LLMs and unsupervised baselines on a nonnumeric regression dataset. LLMs are outperforming our unsupervised heuristics even in this regime.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure</head><figDesc>Figure 10: Regression 1/1</figDesc><graphic coords="27,108.00,169.11,396.00,99.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>FigureFigure 15 :</head><label>15</label><figDesc>Figure 13: Regression 2/2</figDesc><graphic coords="28,108.00,127.24,396.00,99.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><head>Figure 17 :</head><label>17</label><figDesc>Figure 17: Extended results on the Friedman #1 dataset</figDesc><graphic coords="30,108.00,267.74,396.00,99.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_9"><head>Figure 25 :</head><label>25</label><figDesc>Figure 25: Results on a random regression dataset generated using a randomly initialized Neural Network</figDesc><graphic coords="32,108.00,176.43,396.00,99.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_10"><head>Figure 28 :</head><label>28</label><figDesc>Figure 28: Curve Fits for Claude 3 Opus, GPT-4, and Yi 34B on seven (linear and non-linear) datasets.</figDesc><graphic coords="36,108.00,576.40,128.70,64.35" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_11"><head>Figure 29 :</head><label>29</label><figDesc>Figure 29: Curve Fits for Linear Regression (LR), Gradient Boosting (GB), and Linear Regression with Polynomial Features (LR + Poly) on seven (linear and non-linear) datasets.</figDesc><graphic coords="37,108.00,576.40,128.70,64.35" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_12"><head>Figure 30 :</head><label>30</label><figDesc>Figure 30: The rank of each model from the Claude family currently available. For comparison, we also included the ranks of two (strong) models with open-weights: DBRX and Mixtral 8x7B. (best viewed in color)</figDesc><graphic coords="40,108.00,193.28,395.98,167.17" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_13"><head>Figure 36 :</head><label>36</label><figDesc>Figure 36: Comparison between the ranks of LLMs and the ranks of best KNN on each dataset. (best viewed in color)</figDesc><graphic coords="47,108.00,81.86,396.00,196.80" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_14"><head>Figure 37 :</head><label>37</label><figDesc>Figure 37: Falcon performance on the Regression NI 1/1 #2 dataset</figDesc><graphic coords="48,108.00,81.86,395.99,99.73" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_15"><head>Figure 43 :</head><label>43</label><figDesc>Figure 43: Performance comparison between GPT-4 and three traditional supervised models on the Friedman #1 dataset. The performance of GPT-4 remains good, outperforming Random Forest. (best viewed in color)</figDesc><graphic coords="52,108.00,88.69,396.01,264.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_16"><head>Figure 48 :</head><label>48</label><figDesc>Figure 48: The ranks of RWKV V4 14B and (RWKV Architecture) and StripedHyena Nous 7B (Hyena Architecture) compared with traditional supervised method. We included Mistral 7B for comparison, as it is a model similar in size. Notably, RWKV's performance, while generally lower than that of transformer-based LLMs, still surpasses our unsupervised baselines. (best viewed in color)</figDesc><graphic coords="55,108.00,273.33,395.99,200.78" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="22,108.00,81.86,396.01,199.47" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="29,167.40,134.46,277.20,514.80" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="33,167.40,134.46,277.20,514.80" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="49,108.00,504.95,396.00,188.09" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="53,108.00,91.56,396.01,264.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="53,108.00,414.04,396.01,264.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="54,108.00,81.86,396.01,264.00" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>We show which curve-fit obtained the highest R 2 for multiple models and datasets. The slower the growth of the function, the better (i.e., log &gt; sqrt &gt; linear). (best viewed in color)</figDesc><table><row><cell>Model \Dataset</cell><cell cols="7">Friedman 1 Friedman 2 Friedman 3 Original 1 Original 2 Regression NI 1/3 Regression NI 2/2</cell></row><row><cell>Claude 3 Opus</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>log</cell><cell>sqrt</cell><cell>log</cell><cell>log</cell></row><row><cell>GPT-4</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>log</cell><cell>sqrt</cell><cell>log</cell><cell>sqrt</cell></row><row><cell>Gemini Pro</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>log</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>Yi 34B Chat</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>Mixtral 8x7B</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell></row><row><cell>Mistral 7B</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell></row><row><cell>DBRX</cell><cell>linear</cell><cell>log</cell><cell>linear</cell><cell>log</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>AdaBoost</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>Gradient Boosting</cell><cell>sqrt</cell><cell>sqrt</cell><cell>linear</cell><cell>log</cell><cell>sqrt</cell><cell>log</cell><cell>sqrt</cell></row><row><cell>Linear Regression</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>log</cell><cell>log</cell></row><row><cell cols="2">Linear Regression + Poly sqrt</cell><cell>log</cell><cell>log</cell><cell>linear</cell><cell>log</cell><cell>log</cell><cell>log</cell></row><row><cell>Random Forest</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell><cell>linear</cell></row><row><cell>KNN</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>log</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 3 :</head><label>3</label><figDesc>The specific model used for each model family through the OpenAI API.The task is to provide your best estimate for "Output". Please provide that and only that, without any additional text.</figDesc><table><row><cell>Feature 0: -2.06</cell></row><row><cell>Output: -81.93</cell></row><row><cell>Feature 0: -0.64</cell></row><row><cell>Output: -25.33</cell></row><row><cell>Feature 0: 1.62</cell></row><row><cell>Output:</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_7"><head>Table 8 :</head><label>8</label><figDesc>We show which curve-fit obtained the highest R 2 for multiple models and datasets, expanding on Table1. The slower the growth of the function, the better (i.e., log &gt; sqrt &gt; linear). (best viewed in color)</figDesc><table><row><cell>Model \Dataset</cell><cell cols="7">Friedman 1 Friedman 2 Friedman 3 Original 1 Original 2 Regression NI 1/3 Regression NI 2/2</cell></row><row><cell>Claude 3 Opus</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>log</cell><cell>sqrt</cell><cell>log</cell><cell>log</cell></row><row><cell>Claude 3 Sonnet</cell><cell>linear</cell><cell>log</cell><cell>linear</cell><cell>log</cell><cell>log</cell><cell>log</cell><cell>sqrt</cell></row><row><cell>GPT-4</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>log</cell><cell>sqrt</cell><cell>log</cell><cell>sqrt</cell></row><row><cell>Chat GPT</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>Gemini Pro</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>log</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>Mistral Medium</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>Llama2 70B Chat HF</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell></row><row><cell>Code Llama 70B</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>linear</cell><cell>sqrt</cell></row><row><cell>Mistral 7B</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell></row><row><cell>Mixtral 8x7B</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell></row><row><cell>Yi 34B Chat</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>DBRX</cell><cell>linear</cell><cell>log</cell><cell>linear</cell><cell>log</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>AdaBoost</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>Bagging</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>log</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>Gradient Boosting</cell><cell>sqrt</cell><cell>sqrt</cell><cell>linear</cell><cell>log</cell><cell>sqrt</cell><cell>log</cell><cell>sqrt</cell></row><row><cell>Linear Regression</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>log</cell><cell>log</cell></row><row><cell>Lasso</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>log</cell><cell>log</cell></row><row><cell cols="2">Linear Regression + Poly sqrt</cell><cell>log</cell><cell>log</cell><cell>linear</cell><cell>log</cell><cell>log</cell><cell>log</cell></row><row><cell>MLP Deep 1</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>log</cell><cell>log</cell></row><row><cell>MLP Deep 2</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>log</cell><cell>log</cell></row><row><cell>MLP Deep 3</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>sqrt</cell><cell>log</cell><cell>log</cell></row><row><cell>MLP Wide 1</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>log</cell><cell>log</cell></row><row><cell>MLP Wide 2</cell><cell>sqrt</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>log</cell><cell>log</cell></row><row><cell>MLP Wide 3</cell><cell>sqrt</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>log</cell><cell>log</cell></row><row><cell>Random Forest</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell><cell>sqrt</cell><cell>linear</cell></row><row><cell>Ridge</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>log</cell><cell>log</cell></row><row><cell>SVM</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell></row><row><cell>Kernel Ridge</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>log</cell><cell>log</cell></row><row><cell>SVM + Scaler</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>sqrt</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell></row><row><cell>KNN v4</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>log</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>KNN v5</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>log</cell><cell>linear</cell><cell>sqrt</cell><cell>sqrt</cell></row><row><cell>Average</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell></row><row><cell>Last</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell></row><row><cell>Random</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell><cell>linear</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_9"><head>Table 9 )</head><label>9</label><figDesc>, SVM ranks first.</figDesc><table><row><cell>Model</cell><cell>MAE</cell><cell>Rank</cell></row><row><cell>GPT-4</cell><cell>2.55±2.49</cell><cell>6</cell></row><row><cell>Gradient Boosting</cell><cell>2.57±1.95</cell><cell>8</cell></row><row><cell>Random Forest</cell><cell>2.62±1.57</cell><cell>12</cell></row><row><cell cols="2">Linear Regression + Poly 2.67±1.61</cell><cell>19</cell></row><row><cell>Average</cell><cell>2.79±1.60</cell><cell>22</cell></row><row><cell>Claude 3 Opus</cell><cell>3.04±2.13</cell><cell>24</cell></row><row><cell>Random</cell><cell>3.23±2.71</cell><cell>26</cell></row><row><cell>Last</cell><cell>3.46±2.82</cell><cell>27</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_10"><head>Table 9 :</head><label>9</label><figDesc>Results on the Liver Disorders dataset, sorted by the MAE (↓)</figDesc><table><row><cell>Model</cell><cell>MAE</cell><cell>Rank</cell></row><row><cell>Gradient Boosting</cell><cell>4.30±4.91</cell><cell>1</cell></row><row><cell>Claude 3 Opus</cell><cell>5.08±5.35</cell><cell>4</cell></row><row><cell>GPT-4</cell><cell>5.25±5.88</cell><cell>6</cell></row><row><cell cols="2">Linear Regression + Poly 5.38±5.78</cell><cell>7</cell></row><row><cell>Random Forest</cell><cell>5.72±5.32</cell><cell>10</cell></row><row><cell>Average</cell><cell>11.12±7.69</cell><cell>26</cell></row><row><cell>Random</cell><cell>14.39±10.05</cell><cell>27</cell></row><row><cell>Last</cell><cell>15.27±11.67</cell><cell>28</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_11"><head>Table 10 :</head><label>10</label><figDesc>Results on the Real Estate Valuation dataset, sorted by the MAE (↓)</figDesc><table><row><cell>Model</cell><cell>MAE</cell><cell>Rank</cell></row><row><cell>Random Forest</cell><cell>41.31±27.68</cell><cell></cell></row><row><cell>Gradient Boosting</cell><cell>47.95±28.36</cell><cell></cell></row><row><cell>GPT-4</cell><cell>50.26±45.25</cell><cell></cell></row><row><cell>Claude 3 Opus</cell><cell>54.13±39.71</cell><cell></cell></row><row><cell cols="2">Linear Regression + Poly 55.84±52.87</cell><cell></cell></row><row><cell>Average</cell><cell>68.02±37.57</cell><cell></cell></row><row><cell>Random</cell><cell>94.34±63.17</cell><cell></cell></row><row><cell>Last</cell><cell>103.96±69.57</cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_12"><head>Table 11 :</head><label>11</label><figDesc>Results on the Diabetes dataset, sorted by the MAE (↓)</figDesc><table><row><cell>Model</cell><cell>MAE</cell><cell>Rank</cell></row><row><cell>Gradient Boosting</cell><cell>0.25±0.29</cell><cell>2</cell></row><row><cell>Claude 3 Opus</cell><cell>0.27±0.46</cell><cell>4</cell></row><row><cell>GPT-4</cell><cell>0.44±0.62</cell><cell>10</cell></row><row><cell>Random Forest</cell><cell>0.45±0.44</cell><cell>11</cell></row><row><cell cols="2">Linear Regression + Poly 0.62±0.38</cell><cell>13</cell></row><row><cell>Average</cell><cell>1.43±1.27</cell><cell>24</cell></row><row><cell>Last</cell><cell>1.61±1.56</cell><cell>26</cell></row><row><cell>Random</cell><cell>1.77±1.74</cell><cell>27</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_13"><head>Table 12 :</head><label>12</label><figDesc>Results on the Servo dataset, sorted by the MAE (↓)</figDesc><table><row><cell>Model</cell><cell>MAE (1e+07) Rank</cell></row><row><cell>Random Forest</cell><cell>3.02±2.48</cell></row><row><cell>Gradient Boosting</cell><cell>3.03±2.51</cell></row><row><cell>Claude 3 Opus</cell><cell>4.51±6.20</cell></row><row><cell>GPT-4</cell><cell>5.48±7.21</cell></row><row><cell>Average</cell><cell>6.20±4.85</cell></row><row><cell cols="2">Linear Regression + Poly 6.40±7.10</cell></row><row><cell>Random</cell><cell>8.17±10.9</cell></row><row><cell>Last</cell><cell>8.26±6.22</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_0"><p>We used sklearn. Please see make regression for more details.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>We provide extra experiments without rounding in Appendix N to show that the strong results we observed are not an artifact of rounding.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_2"><p>Since the number of parameters for some models is not disclosed, it is possible that certain closed models may have fewer than 7B or more than 132B parameters.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_3"><p>If this method coincides with one previously selected, the subsequent best performer is chosen.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_4"><p>Comparatively, Random Forest obtains 5.32, Gradient Boosting obtains 2.58, and GPT-4 obtains 2.26.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="7" xml:id="foot_5"><p>The choice of linear, square root, and logarithmic fits is motivated by their common appearance in theoretical regret bounds within the online learning literature.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_6"><p>2Wherex 0 ∼ U (1, 3) x 1 ∼ U (1, 10) x 2 ∼ U (0, 10) x 3 ∼ U (1, 20)</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="8" xml:id="foot_7"><p>https://openai.com/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="9" xml:id="foot_8"><p>https://openrouter.ai</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="10" xml:id="foot_9"><p>https://deepinfra.com</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="11" xml:id="foot_10"><p>https://fireworks.ai/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="12" xml:id="foot_11"><p>We used sklearn 1.4.1.post1.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="14" xml:id="foot_12"><p>Although we can foresee some interesting advantages for LLMs, such as allowing for natural language description of what each feature represents.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="15" xml:id="foot_13"><p>https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load diabetes. html</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="16" xml:id="foot_14"><p>These invalid outputs are specific to Claude 2.0 and Claude 2.1. For example, for Claude 3 Opus, there exist only 2 instances where it does not generate a valid output, out of a total of over 1000 runs.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="17" xml:id="foot_15"><p>We did not need this additional instruction in our initial experiments. We added it when we expanded the number of LLMs used, as some of them (e.g., Claude 3) would provide justifications before giving the final output. All models use the same prompt.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="18" xml:id="foot_16"><p>We hypothesize that this is because their system prompt instructs them to provide explanations.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="19" xml:id="foot_17"><p>We used 5 symbols, in the form of letters (e.g., a)</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="20" xml:id="foot_18"><p>For example, Llama2 context size is only 4096.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="21" xml:id="foot_19"><p>https://huggingface.co/datasets/tiiuae/falcon-refinedweb</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="22" xml:id="foot_20"><p>The context size of Falcon is 2048.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="23" xml:id="foot_21"><p>We investigated why the performance of Claude 3 Sonnet degraded on Friedman #2 when given the dataset name. We found that it is (mostly) because of an outlier: the absolute difference between the model's prediction and expected output is &gt; 300.</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgments</head><p>This work was partially supported by the <rs type="funder">Defense Advanced Research Projects Agency (DARPA)</rs> under the ASKEM and Habitus programs. <rs type="person">Mihai Surdeanu</rs> declares a financial interest in lum.ai. This interest has been properly disclosed to the <rs type="institution">University of Arizona Institutional Review Committee</rs> and is managed in accordance with its conflict of interest policies.</p></div>
+			</div>
+			<listOrg type="funding">
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Appendix Structure</head><p>We organized this appendix as follows.</p><p>In Appendix B we expand on the related work discussion.</p><p>In Appendix C we provide additional details of the datasets we used, including their underlying formulas.</p><p>In Appendix D we provide additional details of the models we used, together with their exact API code.</p><p>In Appendix E, we provide additional experiments and results to complement Section 3: Large Language Models Can Do Linear Regression.</p><p>In Appendix F, we provide additional experiments and results to complement Section 4: Large Language Models Can Do Non-Linear Regression.</p><p>In Appendix G, we show the average ranks obtain by each model across different dataset types.</p><p>In Appendix H, we provide additional experiments and results to complement Section 5: How Fast Do Large Language Models Adapt?</p><p>In Appendix I, we provide additional experiments and results on real-world datasets.</p><p>In Appendix J, we provide results with more models from the Claude family.</p><p>In Appendix K we detail the total costs of running all the large language models.</p><p>In Appendix L we detail how LLMs provided justifications for their prediction.</p><p>In Appendix M we include another experiment: regression task with non-numerical inputs.</p><p>In Appendix N we analyze the effects of rounding.</p><p>In Appendix O we analyze whether the performance of LLMs is similar with KNNs or not.</p><p>In Appendix P we analyze whether the results we have seen could be the effect of data contamination.</p><p>In Appendix Q we analyze whether the performance of LLMs plateaus after a given number of in-context examples or not.</p><p>In Appendix R we analyze the performance of LLMs whose backbone architecture is different from Transformers.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Related Work (Expanded)</head><p>The in-context learning capability of large language models has garnered significant attention <ref type="bibr" target="#b12">Brown et al. (2020)</ref>. How this capability emerges during a standard next-token prediction pretraining and how it operates is still up for debate. A substantial body of research is dedicated to exploring the parallels between in-context learning mechanisms and traditional algorithms like gradient descent <ref type="bibr" target="#b4">(Aky ürek et al., 2023;</ref><ref type="bibr" target="#b65">von Oswald et al., 2022;</ref><ref type="bibr" target="#b16">Dai et al., 2023;</ref><ref type="bibr" target="#b2">Ahn et al., 2023;</ref><ref type="bibr" target="#b14">Cheng et al., 2023;</ref><ref type="bibr" target="#b39">Mahankali et al., 2024;</ref><ref type="bibr" target="#b64">Vladymyrov et al., 2024)</ref>. For example, Aky ürek et al. ( <ref type="formula">2023</ref>) and von Oswald et al. ( <ref type="formula">2022</ref>) prove that transformers could theoretically implement gradient descent. <ref type="bibr" target="#b7">Bai et al. (2023)</ref> shows that the transformer architecture can implement more complex in-context learning procedures, involving algorithm selection. <ref type="bibr" target="#b14">Cheng et al. (2023)</ref> argue that non-linear transformers learn to implement gradient descent in function spaces. von <ref type="bibr" target="#b66">Oswald et al. (2023)</ref> suggests that performance of transformer-based models may be due to an architectural bias towards mesa-optimizaiton. Nonetheless, the extent to which pre-trained transformers actually implement gradient descent when given in-context examples remains a topic of debate <ref type="bibr" target="#b43">(Natan et al., 2023;</ref><ref type="bibr" target="#b57">Shen et al., 2023)</ref>.</p><p>Other lines of work investigate the convergence of in-context learning <ref type="bibr" target="#b68">(Wies et al., 2023;</ref><ref type="bibr" target="#b31">Huang et al., 2023)</ref>. <ref type="bibr" target="#b35">Li et al. (2024)</ref> analyzes the training dynamics of transformers with nonlinear attention and nonlinear MLP, expanding upon previous work which considered simpler transformer-based architectures <ref type="bibr" target="#b31">(Huang et al., 2023;</ref><ref type="bibr" target="#b59">Tian et al., 2023)</ref>. However, for natural language tasks such as sentiment analysis, it is unclear how much learning occurs with in-context examples <ref type="bibr" target="#b40">(Min et al., 2022;</ref><ref type="bibr" target="#b46">Pan et al., 2023;</ref><ref type="bibr" target="#b34">Kossen et al., 2024)</ref>. For example, Published as a conference paper at COLM 2024</p><p>We list in  We list in Table <ref type="table">5</ref> the models we used through DeepInfra, together with their corresponding model code. 10</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Model Name API Model Code</head><p>Mixtral Mixture of Experts 8x7B</p><p>mistralai/Mixtral-8x7B-Instruct-v0.1</p><p>Table <ref type="table">5</ref>: The specific model used for each model family through the DeepInfra API.</p><p>We list in Table <ref type="table">6</ref> the models we used through Fireworks, together with their corresponding model code. 11</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Model Name API Model Code</head><p>DBRX accounts/fireworks/models/dbrx-instruct</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Mixtral 8x22B</head><p>accounts/fireworks/models/mixtral-8x22b</p><p>Table <ref type="table">6</ref>: The specific model used for each model family through the Fireworks API.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D.1.1 Prompt</head><p>We show the prompt we used in Figure <ref type="figure">9</ref>. Importantly, we used the same prompt for all large language models. We did not tune the prompt.</p><p>We encountered cases where the large language model would not produce a valid output.</p><p>For instance, some models would occasionally output an empty string (i.e., ""). In the following, we detail the way we handled them across the experiments we showed in this paper.</p><p>Published as a conference paper at COLM 2024</p><p>In Figure <ref type="figure">31</ref>, Claude 3 correctly identifies that the output is generated by multiplying the input with a constant. Then, it calculates the constant and gives the final output.</p><p>In Figure <ref type="figure">32</ref> In Figure <ref type="figure">33</ref>, we can see that Claude 3 suggests that there is a strong linear relationship (please refer to Figure <ref type="figure">5</ref> for a plot of the data). Then, Claude 3 fits a linear regression y = mx + b and gives the approximate values: m = 0.9102 and b = 12.1615. However, manually fitting a linear regression model on the corresponding data yields the following values m = 0.97 and b = 2.94. Then, Claude 3 calculates the final output. The calculation is correct, however it is far off from the true value of: 30.86. We would like to remark that instructing the model to give its best estimate without any additional information gives a much better prediction: 30.91.</p><p>In Figure <ref type="figure">34</ref>, the solution generated by Claude 3 involves calculating the nearest neighbor. The problem in this approach is that the dataset given in-context contain only 50 examples, while the solution generated Claude involves taking the examples 50 and 54, which are non-existent.</p><p>All in all, we remark that the explanations provided by the model are not always faithful. We also remark that the predictions of the model in two cases: (i) when it outputs an explanation and (ii) when it does not output an explanation can vary.</p><p>To predict the output value, I'll use a linear regression model with the given features. The model is:</p><p>First, I'll calculate the mean of each feature and the output:   However, this calculation is wrong. The output of that equation is 4070.70. However, we would like to remark that what the model generated (wrongly, from a mathematical point of view), is actually much closer to the true value of 434.54. In other words, the explanation offered by the model was not faithful, even though the final prediction was good.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Published as a conference paper at COLM 2024</head><p>To find the relationship between the input Feature 0 and the Output, let's plot the data points and see if there's a clear pattern or trend.</p><p>Plotting the data, it appears there is a strong linear relationship between Feature 0 and Output. As Feature 0 increases, the Output also tends to increase in a fairly straight line.</p><p>To quantify this linear relationship, we can calculate the line of best fit using linear regression. The equation for a line is typically written as: Figure <ref type="figure">33</ref>: Claude 3 Opus justifying its output on Original #1. In this dataset, the final output is constructed as follows: f (x) = 10x + sin(5πx) + cos(6πx). The solution proceeds by fitting a linear regression and giving the approximate values. However, manually fitting a linear regression model yields the following values: m = 0.97 and b = 2.94. Then, the model proceeds by calculating the final output. The calculation is correct, but the final value is far off from the true value, which is 30.86. We would like to remark that instructing the model to give its best estimate without any additional information or explanation gives a much better prediction: 30.91.   </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Q Does The Performance Plateau?</head><p>In the following, we investigate whether the performance of LLMs continues to improve as the number of in-context exemplars increases. Because this experiment is dependent on the context size of the LLM, this imposes additional constraints on which LLMs we can use. To this end, we experimented with the following dataset sizes: <ref type="bibr">{20, 50, 60, 70, 80, 90, 100, 150, 200, 250, 300, 400, 500}.</ref> We experiment with ChatGPT and GPT-4. For GPT-4, we found that the performance keeps improving with the number of in-context exemplars at least until 500. We present our results in <ref type="bibr">Figures 43,</ref><ref type="bibr">44,</ref><ref type="bibr">45,</ref><ref type="bibr">46,</ref><ref type="bibr">47.</ref> We repeated each experiment 20 times for each dataset size. We report the mean and 95% confidence.</p><p>Aggregating the results, we observed that GPT-4 performed better than Random Forest in 92% of the cases, better than Gradient Boosting in 51% of the cases, and better than Linear Regression with Polynomial Features (Linear Regression + Poly) in 40% of the cases, across all 5 datasets and all dataset sizes.</p><p>For example, from Figure <ref type="figure">44</ref> we can observe that while Linear Regression + Poly performs much better than GPT-4 in small data regimes, this performance gap decreases as the number of examples increases, suggesting that the model is indeed capable of leveraging a larger number of examples. </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">Josh</forename><surname>Openai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Adler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lama</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ahmad</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/CorpusID:257532815" />
+		<title level="m">Gpt-4 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">CSM (Conventional and Social Media Movies) Dataset</title>
+		<author>
+			<persName><forename type="first">Mehreen</forename><surname>Ahmed</surname></persName>
+		</author>
+		<idno type="DOI">10.24432/C5SP5T</idno>
+		<ptr target="https://doi.org/10.24432/C5SP5T" />
+	</analytic>
+	<monogr>
+		<title level="m">UCI Machine Learning Repository</title>
+		<imprint>
+			<date type="published" when="2014">2014. 2015. 2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Transformers learn to implement preconditioned gradient descent for in-context learning</title>
+		<author>
+			<persName><forename type="first">Kwangjun</forename><surname>Ahn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hadi</forename><surname>Daneshmand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suvrit</forename><surname>Sra</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=LziniAXEI9" />
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-seventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Open foundation models by 01</title>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bei</forename><surname>Young</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chao</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengen</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ge</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guanwei</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhang</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">What learning algorithm is in-context learning? investigations with linear models</title>
+		<author>
+			<persName><forename type="first">Ekin</forename><surname>Aky Ürek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Andreas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tengyu</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum" />
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>id=0g0X4H8yN4I</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">The falcon series of open language models</title>
+		<author>
+			<persName><forename type="first">Ebtesam</forename><surname>Almazrouei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hamza</forename><surname>Alobeidli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abdulaziz</forename><surname>Alshamsi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alessandro</forename><surname>Cappelli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruxandra-Aimée</forename><surname>Cojocaru</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Hesslow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julien</forename><surname>Launay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quentin</forename><surname>Malartic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniele</forename><surname>Mazzotta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Badreddine</forename><surname>Noune</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Pannier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guilherme</forename><surname>Penedo</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2311.16867</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page">265466629</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">The claude 3 model family: Opus, sonnet, haiku</title>
+		<author>
+			<persName><surname>Anthropic</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+		<imprint>
+			<biblScope unit="page">268232499</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Transformers as statisticians: Provable in-context learning with in-context algorithm selection</title>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fan</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caiming</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Song</forename><surname>Mei</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=vlCG5HKEkI" />
+	</analytic>
+	<monogr>
+		<title level="m">Workshop on Efficient Systems for Foundation Models @ ICML2023</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Controlling the false discovery rate: A practical and powerful approach to multiple testing</title>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Benjamini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yosef</forename><surname>Hochberg</surname></persName>
+		</author>
+		<ptr target="http://www.jstor.org/stable/2346101" />
+	</analytic>
+	<monogr>
+		<title level="j">Journal of the Royal Statistical Society. Series B (Methodological)</title>
+		<idno type="ISSN">00359246</idno>
+		<imprint>
+			<biblScope unit="volume">57</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="289" to="300" />
+			<date type="published" when="1995">1995</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Understanding incontext learning in transformers and LLMs by learning to learn discrete functions</title>
+		<author>
+			<persName><forename type="first">Satwik</forename><surname>Bhattamishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arkil</forename><surname>Patel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phil</forename><surname>Blunsom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Varun</forename><surname>Kanade</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=ekeyCgeRfC" />
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Random forests</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Breiman</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+	</analytic>
+	<monogr>
+		<title level="m">Machine Learning</title>
+		<imprint>
+			<date type="published" when="2001">2001</date>
+			<biblScope unit="volume">45</biblScope>
+			<biblScope unit="page">89141</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Bagging predictors</title>
+		<author>
+			<persName><forename type="first">Leo</forename><surname>Breiman</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/BF00058655</idno>
+		<ptr target="http://dx.doi.org/10.1007/BF00058655" />
+	</analytic>
+	<monogr>
+		<title level="m">Machine Learning</title>
+		<imprint>
+			<date type="published" when="1996">1996</date>
+			<biblScope unit="volume">24</biblScope>
+			<biblScope unit="page" from="123" to="140" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateusz</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<ptr target="https://proceedings.neurips.cc/" />
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Larochelle</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Ranzato</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Hadsell</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><forename type="middle">F</forename><surname>Balcan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Lin</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+	<note>paper files/paper/2020/ file/1457c0d6bfcb4967418bfb8ac142f64a-Paper.pdf</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Data distributional properties drive emergent in-context learning in transformers</title>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">Y</forename><surname>Stephanie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Chan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">K</forename><surname>Santoro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jane</forename><forename type="middle">X</forename><surname>Lampinen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaditya</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><forename type="middle">H</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jay</forename><surname>Richemond</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felix</forename><surname>Mcclelland</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hill</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Transformers implement functional gradient descent to learn non-linear functions in context</title>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxin</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suvrit</forename><surname>Sra</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2312.06528</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID:266162320" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Approximation by superpositions of a sigmoidal function</title>
+		<author>
+			<persName><forename type="first">George</forename><forename type="middle">V</forename><surname>Cybenko</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+	</analytic>
+	<monogr>
+		<title level="j">Mathematics of Control, Signals and Systems</title>
+		<imprint>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page">3958369</biblScope>
+			<date type="published" when="1989">1989</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Why can GPT learn in-context? language models secretly perform gradient descent as metaoptimizers</title>
+		<author>
+			<persName><forename type="first">Damai</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yutao</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yaru</forename><surname>Hao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuming</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhifang</forename><surname>Sui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Furu</forename><surname>Wei</surname></persName>
+		</author>
+		<idno>doi: 10.18653</idno>
+		<ptr target="1/2023.findings-acl" />
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: ACL 2023</title>
+		<editor>
+			<persName><forename type="first">Anna</forename><surname>Rogers</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jordan</forename><surname>Boyd-Graber</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Naoaki</forename><surname>Okazaki</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023-07">July 2023</date>
+			<biblScope unit="page" from="4005" to="4019" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<ptr target="https://aclanthology.org/2023.findings-acl.247" />
+		<title level="m">URL</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title level="m" type="main">A survey for in-context learning</title>
+		<author>
+			<persName><forename type="first">Qingxiu</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Damai</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ce</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiyong</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baobao</forename><surname>Chang</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2301.00234</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page">263886074</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Multiple comparisons among means</title>
+		<author>
+			<persName><forename type="first">Olive</forename><surname>Jean Dunn</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/CorpusID:122009246" />
+	</analytic>
+	<monogr>
+		<title level="j">Journal of the American Statistical Association</title>
+		<imprint>
+			<biblScope unit="volume">56</biblScope>
+			<biblScope unit="page" from="52" to="64" />
+			<date type="published" when="1961">1961</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Least angle regression</title>
+		<author>
+			<persName><forename type="first">Bradley</forename><surname>Efron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Trevor</forename><surname>Hastie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iain</forename><surname>Johnstone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Tibshirani</surname></persName>
+		</author>
+		<idno type="DOI">10.1214/009053604000000067</idno>
+		<ptr target="https://doi.org/10.1214/009053604000000067" />
+	</analytic>
+	<monogr>
+		<title level="j">The Annals of Statistics</title>
+		<imprint>
+			<biblScope unit="volume">32</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="407" to="499" />
+			<date type="published" when="2004">2004</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Online meta-learning</title>
+		<author>
+			<persName><forename type="first">Chelsea</forename><surname>Finn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aravind</forename><surname>Rajeswaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sham</forename><surname>Kakade</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergey</forename><surname>Levine</surname></persName>
+		</author>
+		<ptr target="https://proceedings.mlr.press/v97/finn19a.html" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 36th International Conference on Machine Learning</title>
+		<editor>
+			<persName><forename type="first">Kamalika</forename><surname>Chaudhuri</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ruslan</forename><surname>Salakhutdinov</surname></persName>
+		</editor>
+		<meeting>the 36th International Conference on Machine Learning</meeting>
+		<imprint>
+			<date type="published" when="2019-06">Jun 2019</date>
+			<biblScope unit="volume">97</biblScope>
+			<biblScope unit="page" from="9" to="15" />
+		</imprint>
+	</monogr>
+	<note>Proceedings of Machine Learning Research</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Multivariate Adaptive Regression Splines</title>
+		<author>
+			<persName><forename type="first">Jerome</forename><forename type="middle">H</forename><surname>Friedman</surname></persName>
+		</author>
+		<idno type="DOI">10.1214/aos/1176347963</idno>
+		<ptr target="https://doi.org/10.1214/aos/1176347963" />
+	</analytic>
+	<monogr>
+		<title level="j">The Annals of Statistics</title>
+		<imprint>
+			<biblScope unit="volume">19</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="1" to="67" />
+			<date type="published" when="1991">1991</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Greedy function approximation: A gradient boosting machine</title>
+		<author>
+			<persName><forename type="first">Jerome</forename><forename type="middle">H</forename><surname>Friedman</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+	</analytic>
+	<monogr>
+		<title level="j">Annals of Statistics</title>
+		<imprint>
+			<biblScope unit="volume">29</biblScope>
+			<biblScope unit="page">39450643</biblScope>
+			<date type="published" when="2001">2001</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">What can transformers learn in-context? a case study of simple function classes</title>
+		<author>
+			<persName><forename type="first">Shivam</forename><surname>Garg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dimitris</forename><surname>Tsipras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gregory</forename><surname>Valiant</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2208.01066</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page">251253368</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Time travel in LLMs: Tracing data contamination in large language models</title>
+		<author>
+			<persName><forename type="first">Shahriar</forename><surname>Golchin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mihai</forename><surname>Surdeanu</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=2Rwq6c3tvr" />
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">How do transformers learn in-context beyond simple functions? a case study on learning with representations</title>
+		<author>
+			<persName><forename type="first">Tianyu</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Song</forename><surname>Mei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caiming</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Silvio</forename><surname>Savarese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Bai</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=ikwEDva1JZ" />
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Understanding in-context learning via supportive pretraining data</title>
+		<author>
+			<persName><forename type="first">Xiaochuang</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Simig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Todor</forename><surname>Mihaylov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yulia</forename><surname>Tsvetkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Asli</forename><surname>Celikyilmaz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianlu</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.acl-long.708</idno>
+		<ptr target="https://aclanthology.org/2023.acl-long.708" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<editor>
+			<persName><forename type="first">Anna</forename><surname>Rogers</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jordan</forename><surname>Boyd-Graber</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Naoaki</forename><surname>Okazaki</surname></persName>
+		</editor>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics<address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023-07">July 2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="12660" to="12673" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Neural power units</title>
+		<author>
+			<persName><forename type="first">Niklas</forename><surname>Heim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tomas</forename><surname>Pevny</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vasek</forename><surname>Smidl</surname></persName>
+		</author>
+		<ptr target="https://proceedings.neurips.cc/" />
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Larochelle</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Ranzato</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Hadsell</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><forename type="middle">F</forename><surname>Balcan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Lin</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="6573" to="6583" />
+		</imprint>
+	</monogr>
+	<note>paper files/paper/2020/file/ 48e59000d7dfcf6c1d96ce4a603ed738-Paper.pdf</note>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Association for Computational Linguistics</title>
+		<author>
+			<persName><forename type="first">Roee</forename><surname>Hendel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mor</forename><surname>Geva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Globerson</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.findings-emnlp.624</idno>
+		<ptr target="https://aclanthology.org/2023.findings-emnlp.624" />
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2023</title>
+		<editor>
+			<persName><forename type="first">Houda</forename><surname>Bouamor</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Juan</forename><surname>Pino</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Kalika</forename><surname>Bali</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Singapore</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2023-12">December 2023</date>
+			<biblScope unit="page" from="9318" to="9333" />
+		</imprint>
+	</monogr>
+	<note>In-context learning creates task vectors</note>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Multilayer feedforward networks are universal approximators</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Hornik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Stinchcombe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>White</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Neural Netw</title>
+		<idno type="ISSN">0893-6080</idno>
+		<imprint>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="issue">5</biblScope>
+			<biblScope unit="page" from="359" to="366" />
+			<date type="published" when="1989-07">jul 1989</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title level="m" type="main">In-context convergence of transformers</title>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yingbin</forename><surname>Liang</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2310.05249</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID:263829335" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">Mixtral of experts</title>
+		<author>
+			<persName><forename type="first">Albert</forename><forename type="middle">Q</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Sablayrolles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Roux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Blanche</forename><surname>Savary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Bamford</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2401.04088</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID:266844877" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<author>
+			<persName><forename type="first">Albert Qiaochu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Sablayrolles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Bamford</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2310.06825</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID:263830494" />
+		<title level="m">Devendra Singh Chaplot, and Diego de Las Casas et al. Mistral 7b</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">In-context learning learns label relationships but is not conventional learning</title>
+		<author>
+			<persName><forename type="first">Jannik</forename><surname>Kossen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yarin</forename><surname>Gal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Rainforth</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=YPIA7bgd5y" />
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title level="m" type="main">Training nonlinear transformers for efficient in-context learning: A theoretical learning and generalization analysis</title>
+		<author>
+			<persName><forename type="first">Hongkang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Songtao</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pin-Yu</forename><surname>Chen</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2402.15607</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Transformers as algorithms: generalization and stability in in-context learning</title>
+		<author>
+			<persName><forename type="first">Yingcong</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">Emrullah</forename><surname>Ildiz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dimitris</forename><surname>Papailiopoulos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Samet</forename><surname>Oymak</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th International Conference on Machine Learning, ICML&apos;23</title>
+		<meeting>the 40th International Conference on Machine Learning, ICML&apos;23</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<title level="m" type="main">In-context vectors: Making in context learning more effective and controllable through latent space steering</title>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Xing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><forename type="middle">Y</forename><surname>Zou</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2311.06668</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page">265149781</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">The expressive power of neural networks: A view from the width</title>
+		<author>
+			<persName><forename type="first">Zhou</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongming</forename><surname>Pu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Feicheng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiqiang</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liwei</forename><surname>Wang</surname></persName>
+		</author>
+		<ptr target="https://proceedings.neurips.cc/paperfiles/paper/2017/file/32" />
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">I</forename><surname>Guyon</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">U</forename><surname>Von Luxburg</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Bengio</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Wallach</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Fergus</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Vishwanathan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Garnett</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+	<note>cbf687880eb1674a07bf717761dd3a-Paper.pdf</note>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">One step of gradient descent is provably the optimal in-context learner with one layer of linear self-attention</title>
+		<author>
+			<persName><forename type="first">Arvind</forename><forename type="middle">V</forename><surname>Mahankali</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tatsunori</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tengyu</forename><surname>Ma</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum" />
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note>id=8p3fu56lKc</note>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">Rethinking the role of demonstrations: What makes in-context learning work</title>
+		<author>
+			<persName><forename type="first">Sewon</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinxi</forename><surname>Lyu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikel</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannaneh</forename><surname>Hajishirzi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.emnlp-main.759</idno>
+		<ptr target="https://aclanthology.org/2022.emnlp-main.759" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing</title>
+		<editor>
+			<persName><forename type="first">Yoav</forename><surname>Goldberg</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Zornitsa</forename><surname>Kozareva</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Yue</forename><surname>Zhang</surname></persName>
+		</editor>
+		<meeting>the 2022 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Abu Dhabi, United Arab Emirates</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022-12">December 2022</date>
+			<biblScope unit="page" from="11048" to="11064" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Large language models as general pattern machines</title>
+		<author>
+			<persName><forename type="first">Suvir</forename><surname>Mirchandani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pete</forename><surname>Florence</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danny</forename><surname>Driess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Montserrat</forename><surname>Gonzalez Arenas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kanishka</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dorsa</forename><surname>Sadigh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>Zeng</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=RcZMI8MSyE" />
+	</analytic>
+	<monogr>
+		<title level="m">7th Annual Conference on Robot Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">A primer for neural arithmetic logic modules</title>
+		<author>
+			<persName><forename type="first">Bhumika</forename><surname>Mistry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katayoun</forename><surname>Farrahi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathon</forename><surname>Hare</surname></persName>
+		</author>
+		<ptr target="http://jmlr.org/papers/v23/21-0211.html" />
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">23</biblScope>
+			<biblScope unit="issue">185</biblScope>
+			<biblScope unit="page" from="1" to="58" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<monogr>
+		<title level="m" type="main">In-context learning and gradient descent revisited</title>
+		<author>
+			<persName><forename type="first">Tomer</forename><surname>Bar Natan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gilad</forename><surname>Deutch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nadav</forename><surname>Magar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guy</forename><surname>Dar</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2311.07772</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<monogr>
+		<title level="m" type="main">A modern introduction to online learning</title>
+		<author>
+			<persName><forename type="first">Francesco</forename><surname>Orabona</surname></persName>
+		</author>
+		<idno>ArXiv, abs/1912.13213</idno>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carroll</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename></persName>
+		</author>
+		<ptr target="https://proceedings.neurips.cc/" />
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Koyejo</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Mohamed</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">A</forename><surname>Agarwal</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">D</forename><surname>Belgrave</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">K</forename><surname>Cho</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">A</forename><surname>Oh</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="27730" to="27744" />
+		</imprint>
+	</monogr>
+	<note>paper files/paper/2022/ file/b1efde53be364a73914f58805a001731-Paper-Conference.pdf</note>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">What in-context learning &quot;learns&quot; incontext: Disentangling task recognition and task learning</title>
+		<author>
+			<persName><forename type="first">Jane</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyu</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Howard</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danqi</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.findings-acl.527</idno>
+		<ptr target="https://aclanthology.org/2023.findings-acl.527" />
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: ACL 2023</title>
+		<editor>
+			<persName><forename type="first">Anna</forename><surname>Rogers</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jordan</forename><surname>Boyd-Graber</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Naoaki</forename><surname>Okazaki</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023-07">July 2023</date>
+			<biblScope unit="page" from="8298" to="8319" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<analytic>
+		<title level="a" type="main">Scikit-learn: Machine learning in Python</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Pedregosa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Varoquaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gramfort</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Michel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Thirion</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Grisel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Blondel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Prettenhofer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Weiss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Dubourg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Vanderplas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Passos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Cournapeau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Brucher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Perrot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Duchesnay</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">12</biblScope>
+			<biblScope unit="page" from="2825" to="2830" />
+			<date type="published" when="2011">2011</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">RWKV: Reinventing RNNs for the transformer era</title>
+		<author>
+			<persName><forename type="first">Bo</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Alcaide</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quentin</forename><surname>Anthony</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alon</forename><surname>Albalak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Samuel</forename><surname>Arcadinho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stella</forename><surname>Biderman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huanqi</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leon</forename><surname>Derczynski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xingjian</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matteo</forename><surname>Grella</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kranthi</forename><surname>Gv</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuzheng</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haowen</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Przemyslaw</forename><surname>Kazienko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Kocon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaming</forename><surname>Kong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bartłomiej</forename><surname>Koptyra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hayden</forename><surname>Lau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaju</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Krishna</forename><surname>Sri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ipsit</forename><surname>Mantri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ferdinand</forename><surname>Mom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Atsushi</forename><surname>Saito</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guangyu</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangru</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johan</forename><surname>Wind</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stanisław</forename><surname>Woźniak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhenyuan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qinghua</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui-Jie</forename><surname>Zhu</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.findings-emnlp.936</idno>
+		<ptr target="https://aclanthology.org/2023.findings-emnlp.936" />
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2023</title>
+		<editor>
+			<persName><forename type="first">Houda</forename><surname>Bouamor</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Juan</forename><surname>Pino</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Kalika</forename><surname>Bali</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Singapore</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023-12">December 2023</date>
+			<biblScope unit="page" from="14048" to="14077" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<monogr>
+		<title level="m" type="main">Who models the models that model models? an exploration of gpt-3&apos;s in-context model fitting ability</title>
+		<author>
+			<persName><forename type="first">Lovre</forename><surname>Pesut</surname></persName>
+		</author>
+		<ptr target="https://www.alignmentforum.org/posts/c2RzFadrxkzyRAFXa/" />
+		<imprint/>
+	</monogr>
+	<note>who-models-the-models-that-model-models-an-exploration-of? utm campaign=post share&amp;utm source=link</note>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">Hyena hierarchy: Towards larger convolutional language models</title>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Poli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefano</forename><surname>Massaroli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><forename type="middle">Q</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">Y</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tri</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><forename type="middle">A</forename><surname>Baccus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoshua</forename><surname>Bengio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefano</forename><surname>Ermon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Ré</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/CorpusID:257050308" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning, 2023a</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<monogr>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Poli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jue</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefano</forename><surname>Massaroli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Quesnelle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Carlow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Armin</forename><surname>Thomas</surname></persName>
+		</author>
+		<ptr target="https://github.com/togethercomputer/stripedhyena" />
+		<title level="m">StripedHyena: Moving Beyond Transformers with Hybrid Signal Processing Models, 12 2023b</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">Impact of pretraining term frequencies on few-shot numerical reasoning</title>
+		<author>
+			<persName><forename type="first">Yasaman</forename><surname>Razeghi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><forename type="middle">V</forename><surname>Robert L Logan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matt</forename><surname>Gardner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sameer</forename><surname>Singh</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.findings-emnlp.59</idno>
+		<ptr target="https://aclanthology.org/2022.findings-emnlp.59" />
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2022</title>
+		<editor>
+			<persName><forename type="first">Yoav</forename><surname>Goldberg</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Zornitsa</forename><surname>Kozareva</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Yue</forename><surname>Zhang</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Abu Dhabi, United Arab Emirates</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022-12">December 2022</date>
+			<biblScope unit="page" from="840" to="854" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<monogr>
+		<title level="m" type="main">Code llama: Open foundation models for code</title>
+		<author>
+			<persName><forename type="first">Jonas</forename><surname>Baptiste Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabian</forename><surname>Gehring</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sten</forename><surname>Gloeckle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Itai</forename><surname>Sootla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoqing</forename><surname>Gat</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Tan</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2308.12950</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID:261100919" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<analytic>
+		<title level="a" type="main">The elements of statistical learning: Data mining, inference, and prediction</title>
+		<author>
+			<persName><forename type="first">David</forename><surname>Ruppert</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/CorpusID:118901444" />
+	</analytic>
+	<monogr>
+		<title level="j">Journal of the American Statistical Association</title>
+		<imprint>
+			<biblScope unit="volume">99</biblScope>
+			<biblScope unit="page" from="567" to="567" />
+			<date type="published" when="2004">2004</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b55">
+	<analytic>
+		<title level="a" type="main">NLP evaluation in trouble: On the need to measure LLM data contamination for each benchmark</title>
+		<author>
+			<persName><forename type="first">Oscar</forename><surname>Sainz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jon</forename><surname>Campos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iker</forename><surname>García-Ferrero</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julen</forename><surname>Etxaniz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oier</forename><surname>Lopez De Lacalle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eneko</forename><surname>Agirre</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.findings-emnlp.722</idno>
+		<ptr target="https://aclanthology.org/2023.findings-emnlp.722" />
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2023</title>
+		<editor>
+			<persName><forename type="first">Houda</forename><surname>Bouamor</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Juan</forename><surname>Pino</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Kalika</forename><surname>Bali</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023-12">December 2023</date>
+			<biblScope unit="page" from="10776" to="10787" />
+		</imprint>
+	</monogr>
+	<note>Singapore</note>
+</biblStruct>
+
+<biblStruct xml:id="b56">
+	<analytic>
+		<title level="a" type="main">The strength of weak learnability</title>
+		<author>
+			<persName><forename type="first">Robert</forename><forename type="middle">E</forename><surname>Schapire</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/CorpusID:6207294" />
+	</analytic>
+	<monogr>
+		<title level="m">Machine Learning</title>
+		<imprint>
+			<date type="published" when="1989">1989</date>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="page" from="197" to="227" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b57">
+	<monogr>
+		<title level="m" type="main">Do pretrained transformers really learn in-context by gradient descent?</title>
+		<author>
+			<persName><forename type="first">Lingfeng</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aayush</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Khashabi</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2310.08540</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page">268499126</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b58">
+	<monogr>
+		<author>
+			<persName><forename type="first">Gemini</forename><surname>Team</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rohan</forename><surname>Anil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghui</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jean-Baptiste</forename><surname>Alayrac</surname></persName>
+		</author>
+		<title level="m">A family of highly capable multimodal models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b59">
+	<analytic>
+		<title level="a" type="main">Scan and snap: Understanding training dynamics and token composition in 1-layer transformer</title>
+		<author>
+			<persName><forename type="first">Yuandong</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiping</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Beidi</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Shaolei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Du</forename></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=l3HUgVHqGQ" />
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-seventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b60">
+	<monogr>
+		<title level="m" type="main">Llama 2: Open foundation and fine-tuned chat models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><forename type="middle">R</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amjad</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2307.09288</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID:259950998" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b61">
+	<analytic>
+		<title level="a" type="main">Neural arithmetic logic units</title>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Trask</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felix</forename><surname>Hill</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><forename type="middle">E</forename><surname>Reed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Rae</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Dyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phil</forename><surname>Blunsom</surname></persName>
+		</author>
+		<ptr target="https://proceedings.neurips.cc/" />
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Bengio</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Wallach</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Larochelle</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">K</forename><surname>Grauman</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">N</forename><surname>Cesa-Bianchi</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Garnett</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">31</biblScope>
+		</imprint>
+	</monogr>
+	<note>paper files/paper/2018/ file/0e64a7b00c83e3d22ce6b3acf2c582b6-Paper.pdf</note>
+</biblStruct>
+
+<biblStruct xml:id="b62">
+	<monogr>
+		<title level="m" type="main">Liver Disorders. UCI Machine Learning Repository</title>
+		<author>
+			<persName><surname>Uci</surname></persName>
+		</author>
+		<idno type="DOI">10.24432/C54G67</idno>
+		<ptr target="https://doi.org/10.24432/C54G67" />
+		<imprint>
+			<date type="published" when="1990">1990</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b63">
+	<monogr>
+		<title level="m" type="main">UCI Machine Learning Repository</title>
+		<author>
+			<persName><forename type="first">Karl</forename><surname>Ulrich</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Servo</surname></persName>
+		</author>
+		<idno type="DOI">10.24432/C5Q30F</idno>
+		<ptr target="https://doi.org/10.24432/C5Q30F" />
+		<imprint>
+			<date type="published" when="1993">1993</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b64">
+	<monogr>
+		<title level="m" type="main">Linear transformers are versatile in-context learners</title>
+		<author>
+			<persName><forename type="first">Max</forename><surname>Vladymyrov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Johannes Von Oswald</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rong</forename><surname>Sandler</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ge</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2402.14180</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b65">
+	<analytic>
+		<title level="a" type="main">Transformers learn in-context by gradient descent</title>
+		<author>
+			<persName><forename type="first">Eyvind</forename><surname>Johannes Von Oswald</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Niklasson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">João</forename><surname>Randazzo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Sacramento</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrey</forename><surname>Mordvintsev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Max</forename><surname>Zhmoginov</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Vladymyrov</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page">254685643</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b66">
+	<analytic>
+		<title level="a" type="main">Uncovering mesa-optimization algorithms in transformers</title>
+		<author>
+			<persName><forename type="first">Eyvind</forename><surname>Johannes Von Oswald</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maximilian</forename><surname>Niklasson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Seijin</forename><surname>Schlegel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nicolas</forename><surname>Kobayashi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nino</forename><surname>Zucchet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nolan</forename><surname>Scherrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Miller</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Sandler</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2309.05858</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Blaise Ag üera y Arcas, Max Vladymyrov, Razvan Pascanu, and João Sacramento</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b67">
+	<monogr>
+		<title level="m" type="main">Larger language models do in-context learning differently</title>
+		<author>
+			<persName><forename type="first">Jerry</forename><forename type="middle">W</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dustin</forename><surname>Tran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yifeng</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyun</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hanxiao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Da</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tengyu</forename><surname>Ma</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2303.03846</idno>
+		<ptr target="https://api.semanticscholar.org/CorpusID" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page">257378479</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b68">
+	<analytic>
+		<title level="a" type="main">The learnability of in-context learning</title>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Wies</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoav</forename><surname>Levine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amnon</forename><surname>Shashua</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=f3JNQd7CHM" />
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-seventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b69">
+	<analytic>
+		<title level="a" type="main">An explanation of in-context learning as implicit bayesian inference</title>
+		<author>
+			<persName><forename type="first">Sang</forename><surname>Michael Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditi</forename><surname>Raghunathan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tengyu</forename><surname>Ma</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=RdJVFCHjUMI" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b70">
+	<monogr>
+		<title level="m" type="main">Benefits of transformer: In-context learning in linear regression tasks with unstructured data</title>
+		<author>
+			<persName><forename type="first">Yue</forename><surname>Xing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaofeng</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Namjoon</forename><surname>Suh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qifan</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guang</forename><surname>Cheng</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2402.00743</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b71">
+	<monogr>
+		<title level="m" type="main">Real Estate Valuation. UCI Machine Learning Repository</title>
+		<author>
+			<persName><forename type="first">I-Cheng</forename><surname>Yeh</surname></persName>
+		</author>
+		<idno type="DOI">10.24432/C5J30W</idno>
+		<ptr target="https://doi.org/10.24432/C5J30W" />
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b72">
+	<analytic>
+		<title level="a" type="main">Trained transformers learn linear models in-context</title>
+		<author>
+			<persName><forename type="first">Ruiqi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Spencer</forename><surname>Frei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Bartlett</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=MpDSo3Rglq" />
+	</analytic>
+	<monogr>
+		<title level="m">R0-FoMo:Robustness of Few-shot and Zero-shot Learning in Large Foundation Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

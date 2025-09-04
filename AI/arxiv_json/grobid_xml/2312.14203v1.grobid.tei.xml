@@ -1,0 +1,1207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">SHAI: A LARGE LANGUAGE MODEL FOR ASSET MAN-AGEMENT</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-12-21">21 Dec 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Zhongyang</forename><surname>Guo</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">China Asset Management Co., Ltd</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Guanran</forename><surname>Jiang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">China Asset Management Co., Ltd</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Zhongdan</forename><surname>Zhang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">China Asset Management Co., Ltd</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Peng</forename><surname>Li</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">China Asset Management Co., Ltd</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Zhefeng</forename><surname>Wang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">China Asset Management Co., Ltd</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yinchun</forename><surname>Wang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">China Asset Management Co., Ltd</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">SHAI: A LARGE LANGUAGE MODEL FOR ASSET MAN-AGEMENT</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-12-21">21 Dec 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">1CFE18DAB715550698EC94808BEC0137</idno>
+					<idno type="arXiv">arXiv:2312.14203v1[q-fin.PM]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:33+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>This paper introduces "Shai" a 10B level large language model specifically designed for the asset management industry, built upon an open-source foundational model. With continuous pre-training and fine-tuning using a targeted corpus, Shai demonstrates enhanced performance in tasks relevant to its domain, outperforming baseline models. Our research includes the development of an innovative evaluation framework, which integrates professional qualification exams, tailored tasks, open-ended question answering, and safety assessments, to comprehensively assess Shai's capabilities. Furthermore, we discuss the challenges and implications of utilizing large language models like GPT-4 for performance assessment in asset management, suggesting a combination of automated evaluation and human judgment. Shai's development, showcasing the potential and versatility of 10Blevel large language models in the financial sector with significant performance and modest computational requirements, hopes to provide practical insights and methodologies to assist industry peers in their similar endeavors.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">INTRODUCTION</head><p>Recent advancements in Large Language Models (LLMs) have resulted in breakthroughs, with 100B-level models like GPT-4 <ref type="bibr" target="#b0">[1]</ref>, LLaMa2 <ref type="bibr" target="#b1">[2]</ref>, ChatGLM <ref type="bibr" target="#b2">[3]</ref>, BLOOM <ref type="bibr" target="#b3">[4]</ref>, Falcon <ref type="bibr" target="#b4">[5]</ref> and PaLM2 <ref type="bibr" target="#b5">[6]</ref> leading the way in natural language processing (NLP) capabilities. These models have shown an exceptional ability to generate natural and coherent text, understand complex contexts, and adapt to a wide variety of tasks and scenarios. Besides the general LLM development, domain specific LLM development is also flourishing, where the domains span from law <ref type="bibr">[7; 8; 9]</ref> to health care <ref type="bibr">[10; 11; 12; 13]</ref> and finance <ref type="bibr">[14; 15; 16; 17]</ref> etc. The domain specific LLM has its unique value due to the focused and private data which provides domain and task related knowledge.</p><p>In this work, we introduce Shai, a large language model focusing on asset management(AM) area. As a special area in finance, asset management has its special industry compliance and service knowledge, most of which are professional and accessible only within the company. Though opensource finance LLMs have shown great potential, the need for domain-specific adaptation for practical AM applications remains.</p><p>Our endeavor for building an AM LLM are as follows:</p><p>• First, we pick up and define several NLP tasks for a typical asset management company, and build the corresponding task dataset for training and evaluation.</p><p>• Second, we conduct continuous pretraining and supervised finetuning on a 10B-level base LLM model, providing an optimal balance between performance and inference cost.</p><p>• Third, we conduct evaluation covering our proposed AM tasks. These evaluations include financial professional examination questions, open Q&amp;As based on real-world scenarios, specific tasks designed for asset management scenarios, and safety assessments, providing a comprehensive and objective evaluation. To gain valuable insights into the relative performance of these models in the specific context of asset management, we notably bring Shai into direct comparison with mainstream 10B-level open-source models, such as baichuan2 <ref type="bibr" target="#b17">[18]</ref>, Qwen <ref type="bibr" target="#b18">[19]</ref>, InterLM <ref type="bibr" target="#b19">[20]</ref>, and Xverse <ref type="bibr" target="#b20">[21]</ref>, on our proprietary dataset. This approach allows us to provide a comprehensive and objective evaluation while highlighting the comparative strengths of Shai in the asset management domain.</p><p>Our contributions are: 1) As far as we know, we are the first to build a 10B level LLM for asset management, which achieve the best performance comparing to the mainstream 10B-level LLMs.</p><p>2) We share our detailed construction process consisting of continuous training and SFT. 3) We present a few interesting findings: The LLM model, which appears to be associated with task-related pre-training strategies, exhibits an advantage in downstream tasks; The evaluation based on GPT4 has bias on input position and text length. Asset Management is a specialized field that offers well-rounded financial solutions to both individual and institutional investors. Its primary goal is to achieve wealth growth and optimal returns for clients, adjusted for risk, through meticulous management of funds and investment portfolios. This field incorporates several key processes such as investment and market research, formulating investment strategies, optimizing investment portfolios, risk management, customer service, and other support and operational tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">LLMS IN ASSET MANAGEMENT</head><p>The complex and multifaceted nature of asset management has amplified the demand for advanced AI solutions. With the fast-paced advancements in big data and AI technology, the use of Large Language Models (LLMs) in asset management has been expanding. LLMs play a crucial role in optimizing business workflows, enhancing efficiency, and improving the quality of decision-making.</p><p>In investment research, for instance, LLMs can assist asset management firms in quickly and accurately extracting key information from a vast array of market data, financial reports, and macroeconomic indicators. They can analyze and summarize this complex information, enabling faster data collation and reducing errors that can occur due to human intervention.</p><p>In the realm of risk management, LLMs can aid asset management companies in predicting and evaluating various types of risks via sophisticated data analysis and pattern recognition. For example, when it comes to assessing the market volatility of a particular asset class, LLMs can swiftly analyze historical trends and relevant news reports, providing both quantitative and qualitative support to the risk assessment process.</p><p>In customer service and consultation, the application of LLMs has significantly improved the user interaction experience. They can comprehend the specific needs and situations of customers, providing targeted responses or recommendations, which greatly enhances customer satisfaction.</p><p>In the context of regulatory compliance, LLMs can interpret complex regulatory documents, assisting asset management companies in ensuring that their business operations meet a variety of legal requirements. For instance, when new financial regulations are introduced, LLMs can quickly summarize the main changes and potential impacts, helping the company adapt swiftly to changes in the legal environment. Figure <ref type="figure" target="#fig_0">1</ref> illustrates some specific tasks in the asset management field where LLMs can be applied.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">DATA</head><p>The quality and relevance of data play a crucial role in the successful training of large language models. In our process, our primary goal was to feed our model high-quality data from the asset management sector. However, solely focusing on domain-specific training could result in "catastrophic forgetting", a scenario where the model loses its grasp on previously acquired knowledge while learning new domain-specific information. To mitigate this, we included a blend of generic content in our training data.  It is worth mentioning that we incorporated exclusive datasets from the asset management area.This includes reports and opinions offered by experts covering macroeconomic factors, market trends, industry analysis and company evaluation and so on, which enriching the model with abundant professional knowledge and unique industry insights. Moreover, we included industry compliance and legal regulation documents. These documents serve as a reflection of ethical standards, laws and regulations within asset management company. In addition, we utilized knowledge bases on risk management and customer service, that equipping the model with comprehensive industry insights and specialized knowledge.</p><p>However, we must acknowledge the potential errors during data processing, as both data parsing abilities and OCR systems may make mistakes. Moreover, online information can contain low-value content. To ensure the quality of our training data, we employed a text cleaning solution based on the ChatGPT Prompt project to remove data with low informational value, biased positions, or parsing errors.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">SUPERVISED FINETUNING DATA</head><p>Our data for Supervised Fine-tuning was divided into four parts: general dialogue, financial vertical Q&amp;A, asset management tasks, and proprietary industry data.</p><p>• For the general dialogue portion, we utilized open-source data from Alpaca <ref type="bibr" target="#b21">[22]</ref>, RefGPT <ref type="bibr" target="#b22">[23]</ref>, and sharegpt <ref type="bibr" target="#b23">[24]</ref>. The Alpaca and RefGPT data have high accuracy and were used directly. The sharegpt data consists of user-submitted ChatGPT conversations, which were re-answered by GPT-4 to select the higher quality answer.</p><p>• In the asset management field Q&amp;A portion, we generated a series of question-answer pairs by having GPT-4 read materials from the financial field. We chose questions and generated answers through three different methods: direct answering by GPT-4, answering by GPT-4 based on the original material, and answering by GPT-4 based on material found through a search system. The best answer was selected by GPT-4 for training data.</p><p>• We also designed specific financial tasks for the asset management field to enhance the model's abilities in understanding, extraction, analysis, and logical reasoning. For each task, we prepared 10 to 20 different expressions and had GPT-4 select the best answer for self-validation.</p><p>• Lastly, we use proprietary natural dialogue data within our company. After anonymization and information quality and accuracy screening, this data proved instrumental in training the model to understand and respond to questions related to the asset management industry.</p><p>After all of the processing, we had approximately 75k samples for Supervised Fine-tuning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">TRAINING</head><p>In the training phase of our study, we adopted a flexible approach, selecting an open-source language model as our foundational model, with the understanding that this choice may evolve based on future developments. We found that some open-source models are capable of generating content that aligns perfectly with the format of actual test questions during their text completion tasks, as shown in Table <ref type="table" target="#tab_0">1</ref>. We infer that these models probably have taken the task related corpus during pre-training instead of using only general unsupervised text. Based on previous studies and our own experiments with the foundation models, we believe that using task pre-training may play an important role for superior performance against rivals, though it is not officially stated or emphasized. Our model adopts a structure that utilizes a ChatML <ref type="bibr" target="#b24">[25]</ref> template. This approach uses natural language along with special characters to denote the question-answer relationship between the user and the AI. To enhance this, we implement the concept of prompt-tuning <ref type="bibr">[26; 27]</ref>, increasing the number of special characters to 10. This enhancement allows our model to better understand and respond to complex queries.</p><p>During the pre-training phase, we used a natural Q&amp;A corpus from the internet, particularly from zhihu.com. These natural dialogues were structured in the same format as the SFT stage, allowing these specific characters to learn and comprehend these relationships during pre-training. This approach aids in minimizing the adaptation cost between pre-training and SFT stages.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">EVALUATIONS</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">EVALUATIONS TASKS</head><p>To comprehensively assess the performance of large language models in the asset management industry, we have constructed a multi-faceted evaluation dataset. This dataset is divided into four major components, each designed to test the model's performance in a specific aspect.</p><p>• Firstly, we employ financial professional examination questions to evaluate the model's financial knowledge. These questions cover a broad range of financial concepts and theories, allowing us to understand the model's depth of financial cognition.</p><p>• Secondly, open Q&amp;A sessions related to asset management business are used to evaluate the model's ability to understand complex queries and generate knowledgeable responses. This component allows us to assess the model's understanding and application of financial knowledge in a more dynamic and practical context. • Thirdly, we have designed specific tasks for asset management scenarios. These tasks test the model's capabilities in understanding, extracting, analyzing, and summarizing information. In essence, they assess the model's practical application skills and its analytical and execution abilities. • Lastly, we conduct safety assessments to evaluate the model's capabilities in adhering to economic safety and compliance standards within the asset management field. This ensures that the model's application remains safe, ethical, and within the boundaries of legal requirements.</p><p>Figure <ref type="figure">3</ref>: Asset management domain large language model evaluation framework</p><p>These four parts of data constitute a comprehensive and rigorous assessment framework for large language models within the context of asset management. Through the utilization of this unique dataset, our aim is to highlight the real-world utility and possible limitations of large language models in asset management operations. This will in turn provide valuable guidance for the enhancement and application of future models. In total, we devised 6377 evaluation questions spanning 24 sub-tasks.</p><p>Table <ref type="table">2</ref> provides an detailed overview of these specific tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">SCORING METHODS</head><p>To ensure the fairness and objectivity of the evaluation, we adopted the Zero-Shot mode for all evaluation questions. In this mode, the model directly answers the questions without relying on any previous examples. This method helps to examine the model's understanding and answering ability of unknown questions, thereby providing a more accurate measure of its practical performance. To reduce the impact of randomness in the evaluation process, we conducted five independent evaluations</p><p>Task Description Investment Research Q&amp;A Q&amp;A related to investment research, including macroeconomics, industry, company, etc. Investment Advisory Q&amp;A Q&amp;A related to investment advisory issues, including investment portfolio, asset allocation, investment consulting, investment management, etc. Legal Regulation Q&amp;A Q&amp;A related to financial regulations, including various laws and policies. Risk Management Q&amp;A Q&amp;A related to risk control case analysis and rule interpretation. Customer Service Q&amp;A Q&amp;A related to real customer service questions. Mathematical Questions(FMQ) Perform financial mathematical calculations, including interest rate, valuation calculation, etc. Financial Data Q&amp;A(FD-Q&amp;A) Answer questions based on background information. Financial Indicator analysis(FIA) Perform calculations based on background information and financial data. Review Sentiment Analysis(CSA) Classify the sentiment of financial user comments. News Sentiment Analysis(NSA) Classify the sentiment of financial news headlines. Event Information Ext(EIE) Extract financial events and all related information. Financial Indicator Ext(FIE) Extract all financial indicators and values. Investment Viewpoint Ext(IVE) Extract investment opinions and tendencies. Causal Event Reasoning(FCER) Extract investment causal logic and events. News Summary(NS) Summarize and generate headlines for financial news. Financial Nouns Explain(FNE) Explain advanced professional financial vocabulary. General Safety General safety issues, including prejudice, discrimination, crime, network safety and other areas. Economic safety Economic safety includes economic system, financial market, sustainable development, etc.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>AM compliance</head><p>Compliance mainly refers to the internal code of conduct and ethical standards of asset management companies.</p><p>Table <ref type="table">2</ref>: The detailed description of the evaluation task (As financial professional exams consist of standard multiple-choice questions, which are not further elaborated here).</p><p>for each model, averaging the scores to determine the final score. This repeated evaluation method helps to smooth out the errors caused by accidental factors, making the evaluation results more stable and reliable. For scoring objective questions, we primarily employed accuracy as the evaluation metric.</p><p>In the open Q&amp;A part, we initially explored GPT-4's scoring ability. We adopted a multi-dimensional evaluation system, including accuracy, comprehensiveness, professionalism, and straightforwardness, to comprehensively and objectively evaluate the quality of the model's answer. However, during the actual scoring process, we found that GPT-4 has many limitations, and we recorded these in the hope of providing insights for other works.</p><p>• Position Bias: Building on the discussion in previous research like Wang's <ref type="bibr" target="#b27">[28]</ref> about the effect of answer order in large models, we carried out an investigation to validate this order effect and proposed a more refined approach for determining the winner. To verify this hypothesis, we applied the Wilcoxon <ref type="bibr" target="#b28">[29]</ref> signed-rank test to analyze the impact of order changes on model scores. The test results showed an effect size r value of -0.6941187, clearly indicating that the order of answers plays a substantial role in scoring. In addition, we explored the impact of varying score difference threshold settings on scoring consistency. We found that the higher the score difference threshold, the higher the consistency of scoring results (shown in figure <ref type="figure">4</ref>). Therefore, when determining the final winner, it may be inadequate to simply rely on the highest score without considering the score difference. We suggest that a significant winner can only be affirmed when the score difference between two models surpasses a specific threshold. This method enhances the accuracy of our differentiation of performance disparities between models.</p><p>• Length Bias: Our study indicates that GPT-4 seems to favor longer answers during the scoring process, which is consistent with previous findings on verbosity bias in large language models <ref type="bibr">[30; 31]</ref>. However, the influence of length on scoring is subtle and multifaceted. To further investigate this phenomenon, we conducted two sets of experiments.</p><p>Figure <ref type="figure">4</ref>: Score difference thresholds and score consistency relationship. Consistency refers to whether the victor chosen in two rounds of scoring remains the same with reversed order. If the victor is consistent across both rounds, we consider the scoring to be consistent. Score difference threshold implies that a winner between two models is only determined if the difference in their scores exceeds this threshold; otherwise, the outcome is regarded as a tie. Our findings indicate that a higher threshold for determining the winner correlates with increased scoring consistency.</p><p>In the first experiment, we explored the overall impact of length on scoring, not just focusing on this single variable. We generated 10 different answers for each of the 50 questions using the same model, then divided the answers into two groups based on their length. We then had GPT-4 score these responses and applied the Wilcoxon signed-rank test to analyze the effect of answer length on scoring. The results showed a significant difference between the two groups (p &lt; 0.001), with longer answers receiving higher average scores (9.67) than shorter ones <ref type="bibr">(9.13)</ref>. This might suggest a certain bias towards longer answers in GPT-4's scoring system.</p><p>In the second experiment, we controlled for the amount of information in the answers and focused on exploring the impact of verbosity. We intentionally selected pairs of answers that contained the same information but differed in their level of verbosity. Here, we found that the concept of verbosity itself is quite complex and that different types of verbosity can have varying impacts on scoring. We identified three types of verbosity: a) repetitive information, b) filler words that don't add any substantial information, and c) additional information that doesn't relate to the question. Our results showed that GPT-4's scoring was not significantly affected by verbosity types a) and b). However, for type c), GPT-4 tended to assign higher scores to the more redundant answers, with an average score difference of 1.14 points. • Domain-Specific Knowledge Limitations: GPT-4 showed a certain error rate in evaluating queries within the asset management domain, signifying its limitations in knowledge acquisition and application in this specific area. As shown in the example below, GPT-4 misunderstood the concept of "日光基" (a term describing a very popular fund that can be sold out in one day), leading to an incorrect judgment during the evaluation. Given the necessity for high levels of accuracy and expertise within the financial sector, expert evaluation is indispensable. We assembled a team of specialists to assess open Q&amp;A, which served as the ultimate evaluation criterion.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3">EVALUATION RESULT</head><p>We assessed the performance of financial exam questions using two distinct evaluation methods: Chain of Thought (COT) <ref type="bibr" target="#b31">[32]</ref> and Answer Only (AOT). We found that the COT method didn't significantly enhance the model's performance (refer to the appendix). This might be because financial professional exams typically focus on particular knowledge areas and skills rather than requiring extensive reasoning. Given that the prompts can vary greatly in real-world applications and we don't impose any specific format for prompts, we chose to use the top score from either method as the final score for the task to accommodate this diversity. In comparison to other models of a Task Shai-14B Qwen-14B Baichuan 2-13B InternLM-20B XVERSE-13B GPT-3.5 Gpt 4 Fund 75.5 75.5 75.5 69.6 53.2 54.3 54.3 52.1 72.0 Securities 78.0 78.0 78.0 74.6 63.0 59.4 60.5 62.0 79.9 Banking 78.5 78.5 78.5 72.4 58.9 56.0 58 57.6 77.9 Futures 59.3 59.3 59.3 53.8 44.8 38.3 44.0 43.9 62.4 CFA 53.9 53.9 53.9 52.3 43.9 46.4 44.2 49.7 62.3</p><p>Table 3: Scores for financial exam tasks(the maximum value in AOT and COT)</p><p>When evaluating specific task practices in asset management scenarios, our model displayed a strong practical application ability. It excelled notably in financial reasoning tasks which included complex activities such as mathematical computations and financial report analyses. In addition, in tasks that have been executed in asset management companies, such as investment viewpoint extraction, announcement time extraction, and investment causality analysis, our model displayed robust command execution and knowledge application skills, outperforming other comparable models. These results not only highlight the model's proficiency in understanding and resolving intricate financial issues, but also encourage further exploration of large language models' applications in the asset management domain.</p><p>However, in some application scenarios that do not have significant financial characteristics, such as news summary generation, our model did not exhibit particularly outstanding performance. At the same time, despite showing strong performance among models of the same level, our model still has a significant gap compared to GPT-4. These findings point out the limitations of the model in some areas, and also provide a direction for future improvements and development.</p><p>Regarding safety, all the assessed models demonstrated substantial efficacy in general safety metrics such as discrimination, propensity towards violence, health data management, fairness, and network safety. Significantly, our model, following an intensive learning process rooted in the economic and financial landscape specific, displayed superior performance in the domain of economic safety. This has notably contributed to the maintenance and sustainable progression of the stability of the national financial market. Beyond mere adherence to societal values, our model exhibited remarkable adeptness in aligning with industry regulations, suggesting its potential to generate content congruent with industry norms in practical applications, thus playing an instrumental and positive directive role.</p><p>In subjective Q&amp;A questions, after evaluation by the expert team, our model emerged as the top performer amongst comparable models.</p><p>We found that our model has effectively assimilated a broad spectrum of financial knowledge via the pre-training phase, thereby enriching its foundational knowledge base. This broad knowledge base allows the model to give more accurate and reliable answers, greatly reducing the the risk of disseminating inaccurate information or generating hallucinations. For instance, concerning the concept of "北向资金" some large language models incorrectly interpret it as "funds flowing from</p><p>Task Shai-14B Qwen-14B Baichuan 2-13B InternLM-20B XVERSE-13B GPT-3.5 GPT-4 FMQ 37.7 36.7 33.4 31.1 24.6 39.7 39.7 39.7 57.6 FD-Q&amp;A 95.5 95.5 95.5 93.5 90.8 83.5 83.8 94.5 97.5 FIA 50.5 33.8 36.4 20.7 16.7 59.1 59.1 59.1 75.4 CSA 76.7 77.3 77.3 77.3 72.0 64.0 54.0 72.0 84.7 NSA 95.2 95.2 95.2 95.2 95.2 95.2 78.4 86.4 92.8 82.0 97.6 EIE 83.7 83.7 83.7 71.6 64.6 68.2 56.0 79.8 91.9 FIE 88.2 88.2 88.2 84.9 74.4 77.3 82.3 77.1 95.8 IVE 75.3 75.3 75.3 68.6 70.2 66.9 64.7 73.7 87.9 FCER 88.4 88.4 88.4 77.5 81.4 62.2 59.7 87.3 93.1 NS 75.3 66.3 77.16 56.8 79.7 79.7 79.7 -85.3 FNE 83.0 83.0 83.0 79.3 74.0 54.7 61.3 77.7 89.3 Table 5: Scores for safety tasks mainland China into Hong Kong." However, our model accurately identifies and logically elucidates this concept.   or financial consumers, the model can generate responses that are aptly suited to their particular requirements. As illustrated in Figure <ref type="figure">8</ref> and Figure <ref type="figure">9</ref> , this flexible capability significantly enhances the model's practicality and effectiveness in real-world applications, enabling it to excel in complex financial analysis tasks, while also playing a crucial role in customer service. After comprehensive assessment, our model displayed significant accomplishments and capabilities.</p><p>In the financial examination component, the model performed admirably, indicating its extensive knowledge base. In practical tasks, the model showed excellent ability to execute commands and apply its knowledge, proving to be a reliable tool for asset management professionals. In the business Q&amp;A section, the model also displayed a high level of accuracy and logical consistency, as evaluated by our expert panel. Importantly, following safety training, the model showed strong capabilities in the area of economic safety, further enhancing its reliability for applications within the financial domain.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">CONCLUSION</head><p>In this research, we have developed "Shai", a 10B level language model specifically designed for asset management, leveraging advanced training techniques and a diverse array of financial data. Shai extends beyond the capabilities of existing open-source models, offering enhanced precision and expertise in the financial realm.</p><p>Our evaluation framework, specifically designed for this sector, combines financial exams, openended question-answering, practical tasks, and rigorous safety assessments. This comprehensive approach allows us to thoroughly gauge Shai's performance and its applicability in real-world asset management scenarios.</p><p>The results demonstrate that Shai excels not only in financial examinations and practical tasks but also in critical safety aspects, such as economic security and adherence to ethical standards. These achievements underscore its reliability and high value for the asset management industry.</p><p>In summary, our study highlights the significant potential of large language models like Shai in the field of asset management. Moving forward, our efforts will concentrate on refining Shai's functionality and exploring broader applications, thereby enriching the role of AI in asset management and advancing the field towards a more intelligent and data-driven future.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Asset management business scenarios</figDesc><graphic coords="2,130.72,248.52,350.55,144.59" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>3. 1</head><label>1</label><figDesc>PRE-TRAINING DATADuring the pre-training phase, we selected a diverse range of data sources for model training, including textbooks from the financial and economic sector, research reports, interview records of fund managers, articles from official Chinese media outlets, and content from encyclopedias, books from various fields, and corpose from online forums.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Data distribution</figDesc><graphic coords="3,110.56,338.39,390.88,206.64" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: GPT-4 misrating case</figDesc><graphic coords="8,110.81,81.86,390.40,88.76" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 6 :</head><label>6</label><figDesc>Figure 6: Case 1 of open Q&amp;A Our model also exhibited exceptional proficiency in financial reasoning. The responses it generates are not only logically coherent but also exhibit professional depth. Specifically, in the domain of risk control in asset management, the model excelled at conducting comprehensive case analyses, providing in-depth and insightful reasoning.</figDesc><graphic coords="9,108.00,422.56,396.68,89.55" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 7 :</head><label>7</label><figDesc>Figure 7: Case 2 of open Q&amp;A Moreover, our model has exhibited an impressive capacity for flexibility. It can fluidly adjust its responses based on the distinct styles and needs of various inquiries, providing more context-specific and targeted answers. Thus, whether responding to queries from professional financial analysts</figDesc><graphic coords="9,110.17,599.64,391.65,67.20" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 8 :Figure 9 :</head><label>89</label><figDesc>Figure 8: Case 3 of open Q&amp;A</figDesc><graphic coords="10,108.00,223.34,397.58,103.95" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="5,108.00,358.84,397.10,186.20" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="7,114.00,81.86,384.00,159.30" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Comparison of generation outcomes between a model trained with task related corpus and a model trained with general unsupervised text.</figDesc><table><row><cell>Prompt</cell><cell>在间接标价法下，当外汇远期汇率出现贴水现象，它会</cell></row><row><cell>Model 1 (with task</cell><cell>( )。A.提高进口成本 B.降低进口成本 C.提高出口收益 D.降低</cell></row><row><cell>related corpus )</cell><cell>出口收益\n\n B 在间接标价法下，当外汇远期汇率出现贴水现象，</cell></row><row><cell></cell><cell>说明远期汇率低于即期汇率，这会使进口成本降低。</cell></row><row><cell>Model 2 (with gen-</cell><cell>促使进口商或出口商进行套期保值交易。在直接标价法下，当外汇</cell></row><row><cell>eral unsupervised</cell><cell>远期汇率出现升水现象，它会促使进口商或出口商进行套期保值交</cell></row><row><cell>text)</cell><cell>易。\n \n远期汇率#远期汇率的作用\n远期汇率是外汇市场上的一种</cell></row><row><cell></cell><cell>重要的金融工具，它为外汇的买卖双方提供了规避汇率风险的手段</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 4 :</head><label>4</label><figDesc>Scores for AM scenario application tasks (The scoring method for ns tasks is to calculate the non-negative ratio compared to gpt3.5, so gpt3.5 does not show the score.)</figDesc><table><row><cell>Safety</cell><cell>Shai-</cell><cell>Qwen-</cell><cell>Baichuan</cell><cell>InternLM-</cell><cell>XVERSE-</cell><cell>GPT-</cell><cell>GPT-</cell></row><row><cell>Task</cell><cell>14B</cell><cell>14B</cell><cell>2-13B</cell><cell>20B</cell><cell>13B</cell><cell>3.5</cell><cell>4</cell></row><row><cell>General</cell><cell>96.8 96.8 96.8</cell><cell>93.7</cell><cell>96.4</cell><cell>96.0</cell><cell>93.7</cell><cell>90.4</cell><cell>94.7</cell></row><row><cell>Economic</cell><cell>98.0 98.0 98.0</cell><cell>94.4</cell><cell>87.3</cell><cell>95.0</cell><cell>91.0</cell><cell>71.8</cell><cell>82.0</cell></row><row><cell>Compli-</cell><cell>82.5 82.5 82.5</cell><cell>76.5</cell><cell>63.4</cell><cell>67.3</cell><cell>72.0</cell><cell>62.2</cell><cell>79.8</cell></row><row><cell>ance</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_7"><head>Table 6 :</head><label>6</label><figDesc>Scores for open Q&amp;A tasks</figDesc><table><row><cell>Mo-</cell><cell>Shai-</cell><cell>Qwen-</cell><cell>Baichuan</cell><cell>InternLM-</cell><cell>XVERSE-</cell><cell>GPT-</cell><cell>GPT-</cell></row><row><cell>dle</cell><cell>14B</cell><cell>14B</cell><cell>2-13B</cell><cell>20B</cell><cell>13B</cell><cell>3.5</cell><cell>4</cell></row><row><cell>Score</cell><cell>74.7 74.7 74.7</cell><cell>72.6</cell><cell>66.4</cell><cell>37.9</cell><cell>48.4</cell><cell>71.1</cell><cell>84.3</cell></row></table></figure>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title/>
+	</analytic>
+	<monogr>
+		<title level="j">OpenAI. Gpt-4 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Llama 2: Open foundation and fine-tuned chat models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amjad</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolay</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prajjwal</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shruti</forename><surname>Bhosale</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">Aohan</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengxiao</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zihan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hanyu</forename><surname>Lai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuoyi</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yifan</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wendi</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Xia</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.02414</idno>
+		<title level="m">Glm-130b: An open bilingual pre-trained model</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<author>
+			<persName><forename type="first">Bigscience</forename><surname>Workshop</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">:</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Teven</forename><surname>Le Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angela</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Akiki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellie</forename><surname>Pavlick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suzana</forename><surname>Ilić</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Hesslow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roman</forename><surname>Castagné</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandra</forename><surname>Sasha Luccioni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">François</forename><surname>Yvon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Gallé</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Tow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><forename type="middle">M</forename><surname>Rush</surname></persName>
+		</author>
+		<title level="m">A 176b-parameter open-access multilingual language model</title>
+		<meeting><address><addrLine>Bloom</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Falcon-40b: an open large language model with state-of-the-art performance</title>
+		<author>
+			<persName><forename type="first">Ebtesam</forename><surname>Almazrouei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hamza</forename><surname>Alobeidli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abdulaziz</forename><surname>Alshamsi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alessandro</forename><surname>Cappelli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruxandra</forename><surname>Cojocaru</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Merouane</forename><surname>Debbah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Etienne</forename><surname>Goffinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Heslow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julien</forename><surname>Launay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quentin</forename><surname>Malartic</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+		<respStmt>
+			<orgName>Technology Innovation Institute</orgName>
+		</respStmt>
+	</monogr>
+	<note type="report_type">Technical report</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">Rohan</forename><surname>Anil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Orhan</forename><surname>Firat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melvin</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dmitry</forename><surname>Lepikhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Passos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siamak</forename><surname>Shakeri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emanuel</forename><surname>Taropa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paige</forename><surname>Bailey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhifeng</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.10403</idno>
+		<title level="m">Palm 2 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Chatlaw: Open-source legal large language model with integrated external knowledge bases</title>
+		<author>
+			<persName><forename type="first">Jiaxi</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zongjian</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bohua</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Yuan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.16092</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ha-Thanh</forename><surname>Nguyen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.05729</idno>
+		<title level="m">A brief report on lawgpt 1.0: A virtual legal assistant based on gpt-3</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">Quzhe</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mingxu</forename><surname>Tao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhenwei</forename><surname>An</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chen</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cong</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhibin</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zirui</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yansong</forename><surname>Feng</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.15062</idno>
+		<title level="m">Lawyer llama technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Doctorglm: Fine-tuning your chinese doctor is not a herculean task</title>
+		<author>
+			<persName><forename type="first">Honglin</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yitao</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zihao</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxiao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qian</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dinggang</forename><surname>Shen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.01097</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><forename type="first">Haochun</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chi</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nuwa</forename><surname>Xi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zewen</forename><surname>Qiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sendong</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bing</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ting</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Huatuo</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.06975</idno>
+		<title level="m">Tuning llama model with chinese medical knowledge</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Soulchat: Improving llms&apos; empathy, listening, and comfort abilities through fine-tuning with multi-turn empathy conversations</title>
+		<author>
+			<persName><forename type="first">Yirong</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaofen</forename><surname>Xing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingkai</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huimin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhenyu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qi</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangmin</forename><surname>Xu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.00273</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Bianque: Balancing the questioning and suggestion ability of health llms with multi-turn health conversations polished by chatgpt</title>
+		<author>
+			<persName><forename type="first">Yirong</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhenyu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaofen</forename><surname>Xing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhipei</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Fang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junhong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sihang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jieling</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qi</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangmin</forename><surname>Xu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.15896</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<author>
+			<persName><forename type="first">Shijie</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ozan</forename><surname>Irsoy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vadim</forename><surname>Dabravolski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Dredze</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prabhanjan</forename><surname>Kambadur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Rosenberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gideon</forename><surname>Mann</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.17564</idno>
+		<title level="m">Bloomberggpt: A large language model for finance</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Xuanyuan 2.0: A large chinese financial chat model with hundreds of billions parameters</title>
+		<author>
+			<persName><forename type="first">Xuanyu</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qing</forename><surname>Yang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 32nd ACM International Conference on Information and Knowledge Management</title>
+		<meeting>the 32nd ACM International Conference on Information and Knowledge Management</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="4435" to="4439" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hongyang</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiao-Yang</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christina</forename><forename type="middle">Dan</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.06031</idno>
+		<title level="m">Fingpt: Open-source financial large language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiushi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zefei</forename><surname>Long</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xianyin</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhongtian</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bingxuan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiarong</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuanjing</forename><surname>Huang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.15205</idno>
+		<title level="m">Disc-finllm: A chinese financial large language model based on multiple experts fine-tuning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<author>
+			<persName><forename type="first">Aiyuan</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bin</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bingning</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Borong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chao</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenxu</forename><surname>Lv</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Da</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dian</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dong</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fan</forename><surname>Yang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.10305</idno>
+		<title level="m">Open large-scale language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">2</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jinze</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuai</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunfei</forename><surname>Chu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zeyu</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Dang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenbin</forename><surname>Ge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Huang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.16609</idno>
+		<title level="m">Qwen technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title level="m" type="main">Internlm: A multilingual language model with progressively enhanced capabilities</title>
+		<author>
+			<persName><forename type="first">Internlm</forename><surname>Team</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<ptr target="https://github.com/xverse-ai/XVERSE-13B" />
+		<title level="m">Xverse-13b: A multilingual large language model developed by xverse technology inc</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<author>
+			<persName><forename type="first">Rohan</forename><surname>Taori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ishaan</forename><surname>Gulrajani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yann</forename><surname>Dubois</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuechen</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carlos</forename><surname>Guestrin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tatsunori B</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<ptr target="https://crfm.stanford.edu/2023/03/13/alpaca.html" />
+		<title level="m">Stanford alpaca: an instruction-following llama model</title>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page">3</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Refgpt: Reference-to-dialogue by gpt and for gpt</title>
+		<author>
+			<persName><forename type="first">Dongjie</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruifeng</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuantao</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yifei</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zili</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shusen</forename><surname>Wang</surname></persName>
+		</author>
+		<ptr target="https://github.com/ziliwangnlp/RefGPT" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Judging llm-as-a-judge with mt-bench and chatbot arena</title>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Lin</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhanghao</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghao</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zi</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuohan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dacheng</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Xing</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.05685</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Chatml</surname></persName>
+		</author>
+		<ptr target="https://github.com/openai/openai-python/blob/" />
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note>e389823ba013a24b4c32ce38fa0bd87e6bccae94/chatml.md</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">Prefix-tuning: Optimizing continuous prompts for generation</title>
+		<author>
+			<persName><forename type="first">Lisa</forename><surname>Xiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Liang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2101.00190</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Ptuning: Prompt tuning can be comparable to fine-tuning across scales and tasks</title>
+		<author>
+			<persName><forename type="first">Xiao</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kaixuan</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yicheng</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weng</forename><surname>Tam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengxiao</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhilin</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Tang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Short Papers</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="61" to="68" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">Peiyi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liang</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dawei</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Binghuai</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yunbo</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qi</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyu</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhifang</forename><surname>Sui</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.17926</idno>
+		<title level="m">Large language models are not fair evaluators</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">A wilcoxon-type test for trend</title>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Cuzick</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Statistics in medicine</title>
+		<imprint>
+			<biblScope unit="volume">4</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="87" to="90" />
+			<date type="published" when="1985">1985</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">Verbosity bias in preference labeling by large language models</title>
+		<author>
+			<persName><forename type="first">Keita</forename><surname>Saito</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Akifumi</forename><surname>Wachi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Koki</forename><surname>Wataoka</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Youhei</forename><surname>Akimoto</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.10076</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">Judging llm-as-a-judge with mt-bench and chatbot arena</title>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Lin</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhanghao</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghao</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zi</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuohan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dacheng</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Xing</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.05685</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="24824" to="24837" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">APPENDIX* Question 宣传的时候业绩都特别好，为什么一买就亏? Shai-14B 首先,宣传中的业绩是基于历史数据,过去的业绩并不能准确预测未来的业绩。其次,股票 市场有其固有的风险,市场的波动是不可预测的,投资并非总是能够盈利。尽管我们尽最 大努力确保客户了解投资的风险和潜在收益,但投资的回报仍取决于多种因素,包括市场 行情、经济环境和公司的经营状况等。最好的投资策略是基于长期的投资目标,多样化 投资,定期评估和调整投资组合,以适应市场变化。消费者应该理性看待宣传信息，不要 盲目相信宣传，在做出投资决策之前,您可能需要寻求专业的投资建议,了解投资产品和 市场风险, 做出明智的投资决策。</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<title level="m" type="main">Qwen-14B -13B 在销售或宣传过程中,产品或服务可能会被过度夸大其优点或者预期收益,让消费者产生 购买的决定。但实际上,当消费者真正购买并使用时,他们可能会发现与之前所听说的不 同,从而导致不满意或者亏损。这是一种常见的销售策略,也就是所谓的</title>
+		<imprint/>
+	</monogr>
+	<note>宣传误导</note>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Xverse-13b</forename><surname>即付年金是一种保险形式</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">在购买时一次性支付一笔年度保费。这种类型的保险主要</forename><surname>针对退休人群</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">旨在为他们提供稳定的收入流。当保单持有人达到一定年龄或保单期满 时</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">保险公司开始每年向其支付保费</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">直到他们去世或保单期满。这使得保单持有人可以</forename><surname>在退休后获得稳定的收入</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">而不必担心未来可能出现的经济问题</forename></persName>
+		</author>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title level="m" type="main">即付年金是一种保险产品，指的是在购买保险时一次性支付全部保费，并在一定的保 险期限内，每年按照约定的金额获得固定的年金收益。即付年金通常用于退休规划， 保证投保人在退休后能够获得稳定的收入。投保人可以根据自己的需求选择保险期限 和年金金额，以满足个人的退休生活需求。</title>
+		<idno>GPT-3.5</idno>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<title level="m" type="main">GPT-4 即付年金，又称即时年金，是一种年金保险产品。它是指投保人向保险公司一次性交 付保费后，保险公司立即按照约定的频率向投保人或者受益人支付年金，直到投保人 或者受益人死亡为止。这种年金支付方式可以为投保人提供稳定的收入来源，常被用 于养老金规划中。 Table 8: Case of Open Q&amp;A for All Models Task Shai-14B Qwen-14B Baichuan 2-13B InternLM-20B</title>
+		<idno>XVERSE- 13B GPT- 3.5 GPT- 4</idno>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title/>
+	</analytic>
+	<monogr>
+		<title level="j">AOT Fund</title>
+		<imprint>
+			<biblScope unit="volume">75</biblScope>
+			<biblScope unit="issue">5</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<monogr>
+		<title level="m" type="main">Scores for Financial Exam Tasks</title>
+		<imprint>
+			<publisher>AOT and COT</publisher>
+			<biblScope unit="volume">9</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

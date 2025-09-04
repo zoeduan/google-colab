@@ -1,0 +1,1106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Bactrainus: Optimizing Large Language Models for Multihop Complex Question Answering Tasks</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Iman</forename><surname>Barati</surname></persName>
+							<email>iman_barati@comp.iust.ac.ir</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Iran University of Science &amp; Technology</orgName>
+								<address>
+									<settlement>Tehran</settlement>
+									<country key="IR">Iran</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Arash</forename><surname>Ghafouri</surname></persName>
+							<email>aghafuri@comp.iust.ac.ir</email>
+							<affiliation key="aff1">
+								<orgName type="institution">Iran University of Science &amp; Technology</orgName>
+								<address>
+									<settlement>Tehran</settlement>
+									<country key="IR">Iran</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Behrouz</forename><surname>Minaei-Bidgoli</surname></persName>
+							<affiliation key="aff2">
+								<orgName type="institution">Iran University of Science &amp; Technology</orgName>
+								<address>
+									<settlement>Tehran</settlement>
+									<country key="IR">Iran</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Bactrainus: Optimizing Large Language Models for Multihop Complex Question Answering Tasks</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">C1D96432594A470D9B639D7FD76533DC</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:42+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Large Language Models</term>
+					<term>Multi-hop Question Answering</term>
+					<term>Task Decomposition</term>
+					<term>Knowledge Distillation</term>
+					<term>HotpotQA</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>In recent years, the use of large language models (LLMs) has significantly increased, and these models have demonstrated remarkable performance in a variety of general language tasks. However, the evaluation of their performance in domain-specific tasks, particularly those requiring deep natural language understanding, has received less attention.</p><p>In this research, we evaluate the ability of large language models in performing domain-specific tasks, focusing on the multi-hop question answering (MHQA) problem using the HotpotQA dataset. This task, due to its requirement for reasoning and combining information from multiple textual sources, serves as a challenging benchmark for assessing the language comprehension capabilities of these models.</p><p>To tackle this problem, we have designed a two-stage selector-reader architecture, where each stage utilizes an independent LLM. In addition, methods such as Chain of Thought (CoT) and question decomposition have been employed to investigate their impact on improving the model's performance.</p><p>The results of the study show that the integration of large language models with these techniques can lead to up to a 4% improvement in F1 score for finding answers, providing evidence of the models' ability to handle domain-specific tasks and their understanding of complex language.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Introduction</head><p>In recent years, LLMs have become one of the most significant achievements in natural language processing, demonstrating exceptional performance in a wide range of general language tasks, such as translation, summarization, and text generation. These models leverage attention-based architectures, an enormous number of parameters, and training on diverse and extensive datasets, offering capabilities beyond traditional natural language processing methods, such as instruction following and in-context learning.</p><p>However, existing evaluations are often based on general benchmarks and employ zero-shot or few-shot approaches.</p><p>While these methods showcase the overall capabilities of the models, they do not provide a thorough and in-depth analysis of their performance on specific tasks. In other words, these evaluations do not compare the models' capabilities to traditional methods or models optimized for a particular task. Therefore, investigating how to improve the performance of language models on domain-specific tasks and identifying their limitations remains an important and underexplored research gap.</p><p>The goal of this paper is to evaluate the performance of large language models on a specific task. In this context, we have chosen to examine MHQA, which is one of the most complex tasks in natural language understanding. This task requires the extraction and reasoning of information from multiple sources and, due to its complexity, provides a comprehensive evaluation of a model's capabilities.</p><p>To address this challenge, we have employed a two-stage selector-reader architecture called Bactrainus. In the selector stage, the model's ability to retrieve and extract relevant information is evaluated, while in the reader stage, the model's ability to reason and perform in-context learning is assessed. Additionally, we explore whether dividing the task into smaller sub-tasks and assigning each to a separate language model can help improve performance. Furthermore, we investigate the effects of knowledge distillation. To this end, we employ question decomposition in the selector stage and chain of thought in the reader stage to assess how these techniques can impact the reasoning and answering process.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Related Works</head><p>Given the focus of this research-multi-hop question answering (QA) using LLMs-a wide range of previous studies could be deemed relevant. However, to maintain clarity and concentrate on essential aspects, this section covers only those works that are methodologically close to our approach or offer a deeper understanding of the topic. We begin with a review of QA datasets, especially those emphasizing multi-hop scenarios, then move on to the main components of open-domain QA systems, and finally discuss LLM-based methods for multi-hop QA.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>QA Datasets</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.1.">Single-hop QA Datasets</head><p>In the early stages of machine reading comprehension MRC, most work featured single-hop QA data in which the answer was located within a short paragraph. Examples include: CNN/Daily Mail <ref type="bibr" target="#b3">(Hermann et al., 2015)</ref>, one of the first large-scale datasets, which overcame the data-scarcity challenge by automatically generating multiple questions from news articles.</p><p>SQuAD <ref type="bibr" target="#b1">(Rajpurkar et al., 2016)</ref> introduced over 100,000 human-written questions based on Wikipedia articles and later strengthened supervised learning by adding unanswerable questions <ref type="bibr" target="#b4">(Rajpurkar et al., 2018)</ref>.</p><p>SQuADopen <ref type="bibr">(Chen et al., 2017)</ref> expanded SQuAD1.1 for evaluation in an open-domain QA setting-omitting an explicit paragraph so that a model must locate the relevant document.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.2.">Multi-hop QA Datasets</head><p>With the emergence of multi-hop QA, the challenge of chaining information from multiple documents or paragraphs became central. Notable datasets include:</p><p>HotpotQA <ref type="bibr" target="#b2">(Yang et al., 2018)</ref>, which not only provides multi-step questions (bridge and comparison) but also introduces a distractor configuration that mixes irrelevant paragraphs, requiring more rigorous reasoning.</p><p>2WikiMultihopQA <ref type="bibr" target="#b6">(Ho et al., 2020)</ref> merges structured and unstructured data to create inferential and comparative questions, while similarly adding distractor paragraphs.</p><p>MuSiQue <ref type="bibr" target="#b7">(Trivedi et al., 2021)</ref>, which forms more complex multi-hop questions (2-4 hops) and increases the diversity of reasoning graphs, making simple single-step approaches insufficient.</p><p>HybridQA <ref type="bibr" target="#b8">(Chen et al., 2020)</ref> and OpenBookQA <ref type="bibr" target="#b9">(Mihaylov et al., 2018)</ref> integrate table-based or scientific knowledge with text to enable multi-step reasoning.</p><p>QASC <ref type="bibr" target="#b10">(Khot et al., 2020)</ref> focuses on scientific facts, demanding high-quality retrieval and fact composition.</p><p>Additionally, works such as MultiRC <ref type="bibr" target="#b11">(Khashabi et al., 2018)</ref> and MultiHop-RAG <ref type="bibr" target="#b12">(Tang &amp; Yang, 2024)</ref> strive to develop datasets that require true multi-step inference in domains like news or other specialized corpora.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Main Components of Open-Domain QA Systems</head><p>Open-domain QA systems must retrieve relevant documents from a large repository rather than relying on a single, explicit paragraph. The pivotal architecture came from <ref type="bibr">Chen et al. (2017)</ref>, who introduced two modules-a retriever and a reader-later adopted by systems like DrQA <ref type="bibr">(Chen et al., 2017)</ref>. In DrQA, a classic retrieval technique (e.g., TF-IDF) narrows down the candidate documents, and a neural reading model (initially a convolutional network)</p><p>pinpoints the precise answer.</p><p>With the rise of pre-trained language models such as BERT <ref type="bibr" target="#b0">(Devlin et al., 2019)</ref> and ELECTRA <ref type="bibr" target="#b14">(Clark et al., 2020)</ref>, both the retriever and reader modules evolved. Dense retrievers <ref type="bibr" target="#b16">(Karpukhin et al., 2020;</ref><ref type="bibr" target="#b17">Das et al., 2019;</ref><ref type="bibr" target="#b18">Lee et al., 2019)</ref> achieve deeper semantic alignment between question and text. Adaptive retrieval <ref type="bibr" target="#b15">(Kratzwald &amp; Feuerriegel, 2018)</ref> aims to select an optimal number of documents based on each query, while answer verification <ref type="bibr" target="#b19">(Zhang et al., 2020)</ref> handles invalid or unanswerable questions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Large Language Models in Multi-hop QA</head><p>Recent developments in large language models (LLMs)-such as GPT variants, T5, or BART-have introduced novel methods beyond the traditional retriever-reader paradigm:</p><p>• LLM-Enhanced Retrieval: Sometimes LLMs summarize lengthy passages and select relevant segments <ref type="bibr" target="#b20">(Nair et al., 2023)</ref>. A primary constraint is the limited context window size.</p><p>• Chain of Thought: Studies <ref type="bibr" target="#b21">(Han et al., 2022;</ref><ref type="bibr" target="#b22">Zelikman et al., 2022;</ref><ref type="bibr" target="#b23">Wang et al., 2019;</ref><ref type="bibr" target="#b24">Saparov &amp; He, 2023)</ref> show that prompting an LLM to generate step-by-step reasoning can improve multi-hop QA. Projects like PathFiD <ref type="bibr" target="#b25">(Yavuz et al., 2022)</ref> and IRCoT <ref type="bibr" target="#b26">(Trivedi et al., 2023)</ref> rely on iterative evidence construction.</p><p>• Question Decomposition: Several approaches <ref type="bibr" target="#b27">(Khot et al., 2023;</ref><ref type="bibr" target="#b28">Zhou et al., 2023;</ref><ref type="bibr" target="#b29">Zhou et al., 2022;</ref><ref type="bibr" target="#b30">Deng et al., 2022;</ref><ref type="bibr" target="#b31">Wu et al., 2024)</ref> break down a complex question into simpler sub-questions, often with LLMdriven generation or refinement, facilitating multi-step inference.</p><p>• Retrieval-Augmented Generation (RAG): In some frameworks <ref type="bibr" target="#b12">(Tang &amp; Yang, 2024)</ref>, a generative model (usually an LLM) composes multi-step answers with the help of retrieved evidence, iterating between retrieval and reasoning.</p><p>From multi-hop datasets and classic retriever-reader systems to modern LLM-based strategies-like chain-ofthought prompting, RAG, and question decomposition-the field has continued to refine multi-step QA. Our proposed method leverages these developments to address current limitations and aims to present an efficient, optimized solution for multi-hop question answering.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Experimental Setup</head><p>This section details the dataset and its preparation, followed by model configurations and implementation specifics.</p><p>Finally, the hardware specifications and utilization strategy are presented to ensure reproducibility.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Dataset</head><p>We utilize the HotpotQA dataset under the Distractor setting to evaluate model performance in MHQA. In this configuration, each question is accompanied by 10 candidate paragraphs, 2 of which are gold paragraphs that directly contribute to the answer. The key challenge is to accurately identify the supporting facts from the irrelevant information. To align this dataset with LLMs, the training samples are converted into the Alpaca format (designed for Supervised Fine-tuning).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Implementation Details</head><p>There are two primary approaches for examining the impact of different settings on model performance. In the first approach, each model is individually tuned with specialized hyperparameters and a system prompt, and the final results are compared. In the second approach, all models operate under a single, uniform configuration to enable a fair comparison under consistent conditions. In this study, we adopt the second approach and only introduce limited modifications to the system prompt in certain experiments .</p><p>Since the primary objective in multi-hop QA is to obtain precise and coherent answers, the following configurations are applied to generate model outputs:</p><p>• Temperature = 0.01</p><p>• Top-p = 0.8 A low temperature biases the model toward more probable tokens, while a high Top-p prevents the exclusion of potentially important tokens. Consequently, the model yields focused, accurate answers that align with the goals of this research.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Hardware</head><p>All experiments were conducted on a server equipped with 4 A100 GPUs (80 GB memory each). In some cases requiring larger models or extensive parallelization, all four GPUs were utilized; however, for most experiments, no more than two GPUs were necessary. This computational infrastructure significantly reduced training and inference time and enabled experimentation with larger-scale models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Methodology</head><p>This section describes the main architecture adopted for multi-hop question answering, followed by the proposed knowledge distillation techniques aimed at enhancing model performance. The primary goal is to improve accuracy and reliability by dividing the complex task into manageable sub-modules and leveraging high-level knowledge transfer.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Selector-Reader Architecture</head><p>To systematically investigate the model's performance, We utilize a two-stage selector-reader architecture, as illustrated in Figure <ref type="figure" target="#fig_0">1</ref>. This design comprises two main components:</p><p>• Selector: Identifies and extracts the supporting facts from among multiple candidate paragraphs (including the "gold paragraphs" and distractors).</p><p>• Reader: Utilizes the selector's output (i.e., the chosen paragraphs or sentences) to answer the main question. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Selector Reader</head><p>Supporting facts</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Answer</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Multi-hop Question Documents</head><p>In other words, the selector focuses on retrieving relevant text from extensive contexts, requiring the ability to understand inter-document relationships and the chaining of information for multi-step queries. Subsequently, the reader component leverages multi-hop reasoning and in-context learning techniques to synthesize the extracted evidence and derive the final, correct answer.</p><p>We hypothesize that separating the complex QA task into two independent sub-tasks can lead to improved performance. This separation allows each component to concentrate on its respective objective without entangling both tasks. The effectiveness of this assumption is evaluated in the Results and Evaluation section.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Knowledge Distillation</head><p>A key strategy for improving multi-hop QA performance is knowledge distillation, which posits that high-level reasoning or step-by-step logic can be transferred from one large language model (Teacher) to another (Student). In this study, we explore two main approaches for knowledge distillation:</p><p>• Distilling Knowledge During Fine-tuning:</p><p>In this approach, additional outputs containing step-by-step reasoning or auxiliary information (e.g., a chain of thought) are produced by a more capable model and presented as targets during training. As the student model attempts to reproduce this detailed reasoning, it internalizes higher-level knowledge.</p><p>• Distilling Knowledge at Inference Time:</p><p>Here, supplementary hints or step-by-step explanations are directly appended to the model's input during inference, providing immediate guidance on how to approach the solution. This additional context aids the student model in generating more accurate answers.</p><p>In our implementation, the "chain of thought" in the reader component and "question decomposition" in the selector component play pivotal roles:</p><p>Reader Component: The chain of thought-representing the stepwise logic linking relevant evidence is appended to the model's output during fine-tuning. This enables the model to learn the structure of reasoning and produce more precise answers.</p><p>Selector Component: Complex, multi-step questions are decomposed into simpler sub-questions by a separate language model. These sub-questions are then fed into the selector, enhancing its ability to pinpoint and retrieve supporting paragraphs more efficiently. Consequently, the workload on the reader is reduced, leading to improved final accuracy.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Experiments and Results</head><p>In this section, each component of the proposed Selector-Reader architecture is evaluated independently to demonstrate its contribution to multi-hop question answering. Subsequently, these components are integrated to address the primary objective of the HotpotQA dataset-namely, determining both the correct answer and its associated supporting facts for complex multi-hop questions.</p><p>Evaluating the Reader Component</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.1.">Zero-Shot prompt</head><p>To assess the performance of a LLM acting as the "reader," we first assume that a perfect "selector" has already provided the necessary supporting facts with no errors. In other words, we have a guaranteed set of correct supporting evidence for each question. This setup allows us to isolate and measure the LLM's intrinsic ability to perform multihop inference and extract an answer from the given text.</p><p>Initially, we evaluate several prominent models in a zero-shot configuration. In this scenario, the model does not Table <ref type="table">1</ref> summarizes the Exact Match (EM) and F1 scores of the models tested in the reader component under zeroshot prompting. Models are grouped into categories by parameter count and whether they are closed-or open-source.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Analysis of Results:</head><p>• Among all models tested, GPT-4o yields the highest Exact Match (67.54) and F1 (83.44). However, due to its closed-source nature, limited access for fine-tuning, and high associated costs, it was excluded from subsequent experiments.</p><p>• Among models with fewer than 10 billion parameters, Llama3.1 8B Instruct achieves the best performance (EM = 60.11, F1 = 74.52).</p><p>• For models exceeding 10 billion parameters, Llama3.1 70B Instruct produces notably strong results (EM = 65.60, F1 = 80.04).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Models</head><p>Measure Exact Match F1 Score Close-Source LLMs GPT-4o 67.54 83.44 Claude 3.5 sonnet 67.12 83.07 gemini-1.5-pro 65.52 80.91 GPT-4 Turbo 66.98 82.62 GPT-4o-mini 62.71 78.65 gemini-1.5-flash 62.53 77.96 GPT-3.5 Turbo 47.28 63.17 Open-Source LLMs (&lt;10B Params) Llama3.1 8B Instruct 60.11 74.52 Llama3 8B Instruct 58.09 73.27 Aya23 7B* 57.53 71.91 Gemma2 9B 57.12 71.04 Qwen2-7B-Instruct 51.63 63.02 phi3-mini-4k-instruct 46.82 62.18 phi3-medium-4k-instruct 50.34 63.92 Mistral 7b v2 22.19 52.01 Mistral 7b v3 24.23 54.86 Open-Source LLMs (Between 10B and 70B Params) Aya23 35B* 64.97 80.09 Gemma2 27B 58.63 75.13 Command r 55.32 71.43 Mixtral 7x8 41.39 61.8 Open-Source LLMs (~70B Params) Qwen 2 72B 65.14 79.96 Llama 3 70B Instruct 64.81 79.1 Llama 3.1 70B Instruct 65.6 80.04 Open-Source LLMs (&gt;70B Params) Mixral 7x22 50.12 67.23 Command r plus 59.64 74.81 Llama 3.1 405b Instruct 67.46 82.56</p><p>Table <ref type="table">1</ref>. Zero-shot performance of various large language models on the reader component *Note: Aya23 were partially fine-tuned on the HotpotQA dataset during their SFT phase, so direct comparisons to other models may not be entirely fair.</p><p>Based on these observations, Llama3.1 8B Instruct (representing a smaller model category) and Llama3.1 70B Instruct (representing a larger model category) were selected for further investigation. Subsequent experiments will explore various fine-tuning and optimization strategies to enhance their performance in a multi-hop QA setting.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.2.">Effect of the Number of Supporting Facts</head><p>To gain deeper insights into how the reader performance of LLMs might be influenced by the complexity of questions,</p><p>we examine the number of supporting facts associated with each sample in HotpotQA. Intuitively, questions with more supporting facts are often presumed to require more multi-hop reasoning, suggesting they could be more challenging. Here, we test that assumption by analyzing model accuracy across varying numbers of supporting facts. HotpotQA. This visualization reveals how many questions require two, three, or four (and above) pieces of evidence to reach the correct answer.</p><p>To further investigate this phenomenon, we selected five representative models of varying sizes and types. Table <ref type="table">2</ref> reports their EM and F1 scores when questions are grouped by the number of supporting facts. We also summarize the results in Figure <ref type="figure" target="#fig_3">3</ref>, showing how each model's performance changes as the required number of facts increases.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Models</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Number of Supporting Facts</head><p>Tow Three Four or More EM F1 EM F1 EM F1 GPT-4o 67.66 83.50 66.57 83.05 69.28 84.06 Llama 3.1 405B Instruct 67.87 82.47 65.63 82.41 69.34 83.67 Llama 3.1 70B Instruct 66.01 79.92 63.19 79.20 69.11 83.28 Aya23 35B* 65.65 80.43 62.85 79.08 65.52 80.22 Llama 3.1 8B Instruct 60.82 75.09 58.11 73.29 60.06 73.46 Table 2. Analyzing the impact of the number of supporting facts on the performance of the reader necessarily yield lower performance. Some models achieve better results when faced with four or more supporting facts. Notably, however, the performance gap between smaller and larger models tends to widen at higher numbers of supporting facts, suggesting that larger models have a stronger capacity for complex multi-hop reasoning.</p><p>For instance, when there are two supporting facts, the difference in EM between Llama 3.1 8B Instruct and Llama 3.1 405B Instruct is only about 7%, but for four or more supporting facts, this gap increases to over 9%, indicating that larger models can aggregate and reason over multiple pieces of evidence more effectively.</p><p>These findings suggest that while having more supporting facts does not automatically make a question harder, it may amplify the advantage of larger LLMs in handling multi-hop reasoning. This trend could inform future model development and dataset curation, where model size and complexity of evidence are both critical variables.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.3.">Investigating Model Dependence on Supporting Facts and Input Size</head><p>Having selected Llama 3.1 8B Instruct and Llama 3.1 70B Instruct as our primary reader models, we explore two key questions:</p><p>1) Does the language model inherently "know" the answer without any supporting facts, or does it genuinely rely on these facts?</p><p>2) In other words, can the model answer HotpotQA questions with only the question text, or must it derive the solution from the supporting facts?</p><p>How does the amount of provided text (beyond supporting facts) influence reader performance?</p><p>Specifically, if we supply additional paragraphs-some of which may be irrelevant-to the model instead of only the minimal supporting facts, will accuracy be affected?</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Performance in the "Question Only" Setting</head><p>To address the first question, we designed an experiment where the model is given only the question with no supporting context.</p><p>Table <ref type="table">3</ref> reports the outcomes for these input configurations. As shown, the "Question Only" scenario yields a notable drop in performance. The model can handle only a few cases correctly-often yes/no questions or binary choicespotentially solvable by random guessing or general knowledge. When even partial relevant content (such as gold paragraphs) is provided, performance improves significantly.</p><p>Table <ref type="table">3</ref>. Effect of varying input conditions on the reader performance of two Llama 3.1 models</p><p>This outcome underscores that neither model possesses adequate internal knowledge to answer most HotpotQA questions. Instead, they rely substantially on the provided supporting evidence.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Effect of Input Size on In-Context Learning</head><p>Next, to address the second question regarding input size, we conducted four experiments differing only in how much text is fed to the model:</p><p>1) Supporting facts only (baseline)</p><p>2) Gold paragraphs 3) Gold paragraphs + 2 distractors</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>4) All paragraphs in HotpotQA</head><p>To select the two distractor paragraphs, we employed the sentence transformer gte-large-en-v1.5 calculating similarity between the question and all non-gold paragraphs, then choosing the two most semantically similar paragraphs as distractors (Figure <ref type="figure">4</ref>).</p><p>The final results, shown in Table <ref type="table">3</ref> (above) and Figure <ref type="figure">5</ref>, indicate that transitioning from "Supporting Facts Only" to "Gold Paragraphs" does not drastically alter the scores, implying these paragraphs are not substantially different or misleading. However, adding two distractor paragraphs leads to a noticeable performance decline, and using all</p><p>All Paragraphs Gold + 2 Distractors Gold Only Supporting Facts Question Model F1 EM F1 EM F1 EM F1 EM F1 EM 57.20 45.21 65.53 52.48 72.44 58.29 74.52 60.11 29.76 21.66 Llama 3.1 8B Instruct 58.61 46.50 70.96 57.31 79.23 64.74 80.04 65.60 41.85 31.02 Llama 3.1 70B Instruct paragraphs yields the most significant drop. Hence, the model cannot effectively isolate the necessary evidence when large amounts of irrelevant text are present, and the lengthy input confuses the in-context learning process. Validating the Initial Hypothesis: Splitting the QA task into independent sub-tasks (selector and reader) and allocating each to a separate LLM appears beneficial, at least in zero-shot settings.</p><p>Multi-hop Question answer Golden paragraphs Llama reader tow distractor paragraphs Multi-hop Question Distractor paragraphs Sentence transformer</p><p>Model Capacity Constraints: Providing excessively large or misleading inputs significantly reduces accuracy, highlighting the importance of accurate document selection to prevent confusion in multi-hop reasoning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.4.">Impact of Few-Shot Prompting and Chain of Thought</head><p>To further explore how multi-hop question answering might be enhanced by large language models (LLMs), we investigate two additional factors:</p><p>• Few-shot prompting: Does providing multiple examples (e.g., one, two, four, or eight shots) help the model better understand and respond to complex questions?</p><p>• Chain of Thought: Can explicitly showing step-by-step reasoning in the provided examples boost the model's multi-hop inference capabilities?</p><p>We first examine the effect of varying the number of examples in the prompt-ranging from zero-shot to one-shot, two-shot, four-shot, and eight-shot-for two Llama 3.1 models with 8B and 70B parameters. These examples were selected from high-difficulty questions in HotpotQA, ensuring coverage of both "bridge" and "comparison" types. Table 4. Few-shot results (no chain of thought) for Llama 3.1 reader models Observing Table 4, the one-shot configuration yields the best performance in both models. Providing a single example helps orient the model towards the task requirements; however, adding more examples does not consistently improve accuracy. In some cases (e.g., two-shot), performance even dips, possibly due to overfitting to the examples or confusion arising from multiple demonstrations. After two-shot, performance recovers slightly with four and eight</p><p>examples but remains near or below the one-shot peak (Figure <ref type="figure" target="#fig_6">6</ref>).</p><p>In the second experiment, we repeated the above few-shot variations but appended chain-of-thought explanations to the prompt examples. These step-by-step rationales were generated by Llama 3.1 70B itself. Specifically, the model was given a question, supporting facts, and the final answer, then asked to describe how it arrived at that answer. Llama-3.1-8B-instruct 60.11 74.52 63.24 77.50 61.42 75.55 62.56 76.65 62.78 76.93</p><p>Llama-3.1-70B-instruct 65.60 80.04 68.18 82.66 65.32 79.83 66.44 80.99 66.93 81.41</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Table 5. Few-shot results with chain of thought</head><p>For the 8B model, incorporating a chain of thought slightly degrades performance, suggesting that walking through the reasoning step-by-step introduces complexity for a smaller model. Meanwhile, the 70B model shows a modest benefit from chain-of-thought prompts at higher shot counts (two or more). Nonetheless, the best overall performance remains one-shot without a chain of thought, as depicted in Figure <ref type="figure" target="#fig_6">6</ref>. Chain of Thought: For the smaller (8B) model, chain-of-thought prompts slightly impair performance, but for the larger (70B) model at higher shot counts, they yield a minor improvement.</p><p>Overall Insight: While few-shot prompting and step-by-step reasoning can help in certain scenarios, they may also introduce noise or complexity. The type, number, and quality of examples need careful tuning to achieve consistent gains.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.5.">Fine-tuning</head><p>Following the zero-shot and few-shot experiments, we now aim to fully leverage the potential of Llama 3.1 Instruct 8B and Llama 3.1 Instruct 70B for multi-hop question answering by performing fine-tuning on the HotpotQA dataset.</p><p>To do this, we convert the training data into an instructional format and apply the LoRA approach (due to limited computational resources) to efficiently fine-tune the models.</p><p>Table 6. Hyperparameters for fine-tuning the reader component Setting Reader Bactrainus 8B Bactrainus 8B + CoT 8B Bactrainus 8B + CoT 70B Bactrainus 70B Base Model Llama 3.1 Instruct 8B Llama 3.1 Instruct 8B Bactrainus 8B (1 epoch) Llama 3.1 Instruct 70B Number of Training Data Points 90,564 90,564 15,661 90,564 Training Steps 2 2 1 1 Batch Size 8 4 4 1 Gradient Accumulation Steps 32 16 16 8 Maximum Learning Rate 1.00E-04 1.00E-04 1.00E-04 1.00E-04 Learning Rate Scheduler Type Cosine Cosine Cosine Cosine Warm-Up Ratio 0.03 0.03 0.1 0.03 Maximum Sequence Length 512 1024 1024 512 LoRA Rank 64 64 64 16 LoRA Alpha 128 128 32 16 Trainable LoRA Weights QKVO, MLP QKVO, MLP QKVO, MLP QKVO, MLP Fully Trainable Layer lm-head lm-head lm-head -LoRA Dropout 0.05 0.05 0.05 0.05</p><p>We created an instruction-based format where the question and supporting facts serve as input, and the answer is the target output. In some configurations, a chain of thought is also included in the output. The key hyperparameters of this procedure are listed in Table <ref type="table">6</ref>. Upon completion, each fine-tuned model is referred to as Bactrainus.</p><p>As suggested in Section 4-2, generating auxiliary reasoning traces (chain of thought) via another large language model can facilitate knowledge transfer. We explore two main scenarios:</p><p>• Chain of Thought from an 8B Model</p><p>Here, Llama 3.1 8B is provided with the question, supporting facts, and final answer, then asked to outline the stepby-step reasoning process. The reader model (also 8B) is fine-tuned to reproduce both the final answer and the chain of thought (Figure <ref type="figure" target="#fig_7">7</ref>).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>• Chain of Thought from a 70B Model</head><p>In this scenario, Llama 3.1 70B generates reasoning traces for the more challenging samples of the training set. The 8B reader-previously fine-tuned only on direct answers-undergoes continual fine-tuning with these newly generated traces from the 70B model.  8B + CoT 70B), whereas using an 8B-generated chain of thought leads to a minor performance drop. This trend supports the notion that larger models can produce higher-quality reasoning traces for knowledge transfer.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>The Selector Component</head><p>In MHQA, having a capable reader alone is insufficient. The system must also identify which paragraphs or sentences contain the supporting facts needed to answer the query. This stage is referred to as the selector. Its primary goal is to determine which subset of the documents are relevant and, within those, which sentences constitute the supporting evidence.</p><p>Most previous studies have employed traditional information retrieval (IR) methods or encoder-only architectures for the selector. In contrast, we leverage LLMs to handle the selection of supporting facts, given that the HotpotQA dataset contains a limited number of candidate documents for each question. The central hypothesis is that the deep textual understanding and in-context learning capabilities of an LLM can potentially outperform standard IR solutions in identifying relationships between complex questions and relevant documents.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.1.">Fine-tuning the Selector</head><p>Because LLMs are generally not trained for retrieval, and because the selector's output must conform to highly specific and rigid evaluation metrics, standard zero-shot or few-shot prompts alone are inadequate to enforce the strict output format required. Consequently, we adopt a fine-tuning (supervised) approach. We convert the HotpotQA dataset into an instruction-based format, wherein the model takes a multi-hop question plus all associated documents as input and is trained to produce the supporting facts or gold paragraphs.</p><p>As with the reader module, we refer to each fine-tuned model in the selector stage as Bactrainus. Due to hardware constraints, we employed only Llama 3.1 Instruct 8B in this component.</p><p>Like the reader component, we use LoRA to fine-tune LLMs, allowing selective training of certain parameters. Table <ref type="table" target="#tab_8">8</ref> outlines the hyperparameters for four key scenarios: Sentence Selector: Assuming the gold paragraphs are already known, the model filters the key sentences (supporting facts) within them.</p><p>Question Decomposer: The model splits the multi-hop query into simpler sub-questions to facilitate subsequent fact selection.</p><p>We evaluate each fine-tuned selector model on two types of outputs:</p><p>Gold Paragraphs: Accuracy in identifying which paragraphs are indeed the gold paragraphs required for answering the question.</p><p>Supporting Facts: Accuracy in isolating the key sentences (supporting facts) from the identified paragraphs.</p><p>Table <ref type="table">9</ref> shows the results, EM and F1 scores.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Model</head><p>Gold Paragraphs Supporting Facts EM F1 EM F1 Single-stage Selector 96.83 98.37 65.74 89.27 Paragraph Selector 96.64 98.24 --Sentence Selector (assuming gold paragraphs) --66.01 89.93 Two-stage Selector (Paragraph + Sentence) 96.64 98.24 65.55 89.21 Two-stage + Sub-question 96.64 98.24 65.93 89.63 Table 9. Performance of fine-tuned selector models Single-stage Selector achieves strong paragraph-level performance (EM=96.83, F1=98.37) but is less accurate at pinpointing individual sentences (EM=65.74, F1=89.27).</p><p>Paragraph Selector excels at identifying gold paragraphs but does not isolate supporting sentences.</p><p>Sentence Selector (with paragraphs known) attains (EM=66.01, F1=89.93), indicating that extracting key sentences remains a more challenging problem.</p><p>Two-stage Selector (paragraph + sentence) does not significantly outperform the single-stage approach. This lack of improvement might stem from the high interdependence between paragraph-and sentence-level selection.</p><p>Adding sub-questions (see the last row) offers a slight improvement in identifying supporting facts (EM=65.93, F1=89.63), though it does not yield a marked breakthrough.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.2.">Two-stage Architecture</head><p>Given that the single-stage model performs quite well for paragraph-level selection but leaves room for improvement in sentence-level retrieval, we explore a two-stage approach:</p><p>• Paragraph Selector: Identifies which paragraphs are gold.</p><p>• Sentence Selector: Extracts supporting facts from among the selected paragraphs.</p><p>Figure <ref type="figure">8</ref> illustrates the overall two-stage design, and Figure <ref type="figure" target="#fig_8">9</ref> depicts the fine-tuning procedure for training two separate models. Contrary to initial expectations, the results in Table <ref type="table">9</ref> show no major gains over the single-stage method-likely because splitting the task removes some valuable cross-information that exists between the paragraph and sentence levels. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.3.">Question Decomposer</head><p>To enhance sentence-level accuracy, we introduce auxiliary sub-questions:</p><p>After identifying gold paragraphs, sub-questions are generated (especially for more difficult queries) by a larger LLM (e.g., Llama 70B). These sub-questions, along with the original question, are fed into an 8B question-decomposer model fine-tuned to interpret them, thereby helping the sentence selector isolate the supporting facts more effectively.</p><p>Finally, as shown in Figure <ref type="figure" target="#fig_9">10</ref>, these sub-questions are supplied to the sentence selector. Table <ref type="table">9</ref> indicates a moderate improvement in identifying supporting facts (EM=65.93, F1=89.63), but not a major leap.</p><p>The single-stage approach using Llama 3.1 Instruct 8B demonstrates near state-of-the-art results in paragraph selection, suggesting that LLMs can be effectively used for retrieval in limited-scale datasets. Supplying sub-questions offers a small performance boost but is not transformative. Future research could explore more sophisticated methods for generating sub-questions or employing even larger models to guide the sentence selector.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Bactrainus</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Integrating the Selector and Reader</head><p>Having examined the selector and reader components separately, we now combine them to solve the distractor setting of the HotpotQA dataset end-to-end. The goal is to identify both the supporting facts and the final answer for multihop questions, then compare the results to existing methods. Figure <ref type="figure" target="#fig_11">11</ref> illustrates six possible ways to integrate the selector and reader, each differing in how the outputs of one component feed into the other and in the detailed configuration of these modules. Additionally, in each scenario (except for the first), the reader can be any of the finetuned Bactrainus models described in Section 5-1.</p><p>1) Single-model Fine-tuning (All-in-one)</p><p>We fine-tune an 8B Llama model to simultaneously predict supporting facts and the final answer. This approach tests our initial hypothesis that dividing a complex task into smaller sub-tasks might improve overall performance.</p><p>Previously, the selector experiments indicated that splitting the selection process into two sub-tasks (paragraph-and sentence-level) did not yield a substantial improvement-sometimes even reducing performance.</p><p>Bactrainus Paragraph selector Supporting facts Multi-hop Question Documents Golden Paragraphs Bactrainus Sentence selector Bactrainus Question Decomposer Decomposed question</p><p>2) Single-stage Selector</p><p>The second scenario employs the single-stage selector, which identifies both gold paragraphs and supporting facts in one pass. We compare it to the two-stage approach to see if there are gains from separating paragraph and sentence selection.</p><p>3) Two-stage Selector (Paragraph + Sentence), feeding supporting facts to the reader Here, paragraph selection happens first; the selected paragraphs are passed to a sentence selector, which filters out the supporting facts. The reader receives these supporting facts as input.</p><p>4) Two-stage Selector (Paragraph + Sentence), feeding gold paragraphs to the reader This scenario also uses a two-stage approach, but the reader is given the entire gold paragraphs (instead of just supporting facts). Our zero-shot experiments suggested that providing paragraphs vs. supporting facts did not heavily impact certain performance metrics; however, we wanted to observe if this strategy might reduce the impact of selector errors on the reader.</p><p>5) Two-stage Selector (Paragraph + Sentence) + Sub-questions, feeding supporting facts to the reader Same as scenario 3, but sub-questions (generated by a secondary large language model) are injected into the sentence selector. This aims to improve sentence-level retrieval.</p><p>6) Two-stage Selector (Paragraph + Sentence) + Sub-questions, feeding gold paragraphs to the reader Same as scenario 4, but again, sub-questions are introduced to aid the sentence selector.</p><p>In every scenario except the first (the all-in-one approach), the reader can be one of three Bactrainus variants:</p><p>• Bactrainus 8B</p><p>• Bactrainus 8B + Chain of Thought (CoT) generated by a 70B model Table <ref type="table">11</ref> presents the outcomes of all six integration methods, enumerating the performance on supporting-fact retrieval <ref type="bibr">(Exact Match and F1)</ref>, final-answer correctness, and the joint of both.</p><formula xml:id="formula_0">• Bactrainus 70B</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Scenario</head><p>Reader Supporting Facts Answer joint EM F1 EM F1 EM F1 1 -63.42 88.50 71.24 83.31 47.93 75.96 2 Bactrainus 8B 65.74 89.27 73.24 85.41 50.84 77.90 2 Bactrainus 8B + CoT 70B 65.74 89.27 73.29 85.48 50.86 77.94 2 Bactrainus 70B 65.74 89.27 74.96 88.83 51.61 79.56 3 Bactrainus 8B 65.55 89.21 73.20 85.38 50.73 77.86 3 Bactrainus 8B + CoT 70B 65.55 89.21 73.22 85.41 50.74 77.88 3 Bactrainus 70B 65.55 89.21 74.92 88.80 51.54 79.53 4 Bactrainus 8B 65.55 89.21 71.18 82.92 48.28 76.41 4 Bactrainus 8B + CoT 70B 65.55 89.21 71.31 83.14 48.42 76.56 4 Bactrainus 70B 65.55 89.21 74.04 87.85 51.02 77.03 5 Bactrainus 8B 65.93 89.63 73.34 85.56 50.88 77.99 5 Bactrainus 8B + CoT 70B 65.93 89.63 73.36 85.60 50.91 78.02 5 Bactrainus 70B 65.93 89.63 75.07 89.01 51.73 79.70 6 Bactrainus 8B 65.93 89.63 71.18 82.92 48.28 76.41 6 Bactrainus 8B + CoT 70B 65.93 89.63 71.31 83.14 48.42 76.56 6 Bactrainus 70B 65.93 89.63 74.04 87.85 51.02 77.03 Table 11. Performance of different selector-reader integrations on HotpotQA (distractor setting)</p><p>Comparing scenario 1 (all-in-one fine-tuning) with others indicates that the single-model approach yields lower scores-by about two percentage points in both supporting-fact and answer retrieval. Hence, the hypothesis that dividing a complex QA task into simpler sub-tasks yields performance gains appears valid.</p><p>The effect of chain-of-thought prompts is best observed by comparing rows where the reader has no CoT vs. those with CoT 70B. Although the improvement is modest, a Bactrainus 8B reader generally performs slightly better when guided by chain-of-thought data from a 70B model.</p><p>Similarly, introducing sub-questions to the sentence selector (scenarios 5 and 6) yields better performance than the same configurations without sub-questions (scenarios 3 and 4), albeit with only a small gain.</p><p>While zero-shot tests earlier suggested minimal differences between providing gold paragraphs or just supporting facts to the reader, in these fully fine-tuned scenarios, the difference becomes more pronounced. Readers fine-tuned specifically on supporting-fact inputs may underperform when given entire paragraphs. Evidently, the reader's sensitivity to input format can significantly impact results.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3.1.">Comparison to State-of-the-Art</head><p>Finally, we benchmark the best of our proposed methods (scenario 5 with Bactrainus 70B, which provides the strongest results) against other leading approaches from the HotpotQA leaderboard. Table <ref type="table">12</ref> shows that our method outperforms the existing baselines in terms of supporting facts, final answers, and their intersection.</p><p>Table 12. Comparison of our best proposed method with previous state-of-the-art Across all metrics, Bactrainus 70B provides the strongest overall performance, confirming the utility of our multistage design (selector + reader), fine-tuned LLMs, and additional knowledge transfer steps. In short, these experiments validate both of our key hypotheses: Splitting the multi-hop QA task into smaller sub-tasks is beneficial. Distilling knowledge-via chain of thought or sub-question decomposition-can further improve answer quality, although the gains may be moderate. Model Supporting Facts Answer Joint EM F1 EM F1 EM F1 Bactrainus 70B 65.93 89.63 75.07 89.01 51.73 79.70 Bactrainus 8B + CoT 70B 65.93 89.63 73.36 85.60 50.91 78.02 Beam Retrieval (Zhang et al., 2023) 66.25 90.09 72.69 85.04 50.53 77.54 PipNet 63.71 89.41 72.26 84.86 48.76 76.69 Smoothing R3 (Yin et al., 2023) 65.44 89.55 72.07 84.34 49.73 76.69 FE2H on ALBERT (Li et al., 2023) 65.44 89.55 71.89 84.34 50.04 76.54</p><p>Dividing the Task: Splitting the retrieval and reasoning processes generally improves performance by around 2%</p><p>(supporting facts, final answers) compared to a single all-in-one approach.</p><p>Larger Models &amp; Knowledge Transfer: Employing a bigger model (70B) or chain-of-thought data from a 70B teacher model consistently yields slight but notable boosts.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Conclusion</head><p>This study examined the capabilities of LLMs for MHQA and proposed a multi-component system comprising a selector and a reader. We conducted comprehensive experiments on the HotpotQA dataset under the distractor setting, leading to the following key insights:</p><p>1) Effectiveness of LLMs as a Selector</p><p>Despite the conventional assumption that LLMs are not typically used for retrieval, our fine-tuned approaches demonstrated that they can effectively identify gold paragraphs and supporting sentences at near state-of-the-art levels.</p><p>Even the single-stage selector performed competitively, highlighting the strong inherent understanding these models possess and the natural interdependence between paragraph and sentence selection in multi-hop data.</p><p>2) Improving Reader Performance via Model Scale and Chain of Thought</p><p>Our experiments revealed that increasing model size (e.g., from 8B to 70B parameters) and adding CoT promptseither directly or through guidance from a larger teacher model-enhanced multi-hop reasoning and final accuracy.</p><p>While not every scenario showed dramatic gains, these findings confirm that knowledge transfer, in the form of structured step-by-step reasoning, can be crucial for elevating model performance on complex questions.</p><p>3) Advantages of a Modular Approach Over a Single-Model Setup</p><p>Comparing a single all-in-one model (handling both selection and reading jointly) with a modular design (separating the selector and reader sub-tasks) indicated that breaking down the multi-hop QA process generally yields around a 2% improvement in both supporting-fact identification and final answers. This underscores the benefit of task decomposition and separate optimization for each component (selector-reader), as opposed to a monolithic end-to-end method.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>4) Comparison with Prior Methods and Achieving Superior Results on HotpotQA</head><p>Our best configuration-a two-stage selector coupled with a 70B reader-outperformed advanced existing methods on HotpotQA, surpassing them in metrics for supporting-fact detection and answer accuracy. These outcomes illustrate the value of combining large language models with targeted fine-tuning and auxiliary cues (such as chain-of-thought reasoning or question decomposition). Indeed, this strategy not only rivals but often exceeds traditional retrieval-based or encoder-only approaches.</p><p>Overall, our findings suggest that a modular multi-hop solution-splitting the selector and reader while incorporating techniques like chain-of-thought and knowledge transfer-can significantly boost performance. Thus, leveraging large language models in multi-stage QA systems presents a promising avenue for tackling complex question-answering challenges.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Future Works</head><p>Although our results highlight the high potential of large language models in multi-hop question answering, there remain significant research challenges and open questions for further advancements. Some promising directions include:</p><p>1) Scalability and Computational Optimization Scaling models beyond 70B parameters or using ensembles of multiple models could significantly improve reasoning capabilities. Nevertheless, computational costs and hardware limitations pose major constraints. Exploring model compression, distributed computing, and cost-effective techniques (e.g., LoRA, Adapters) remains crucial.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>2) Generalization Across Languages and Domains</head><p>Our study primarily focused on English data from the HotpotQA dataset. Extending and adapting the proposed methods to other languages and question types-especially in specialized fields (e.g., legal or medical)-is vital for assessing the broader applicability of our approach.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>3) Interactive and Adaptive Learning Approaches</head><p>In practical QA systems, users may pose follow-up questions in a conversational format. Designing multi-hop models capable of integrating immediate user feedback and refining their answers dynamically is a compelling topic for future research.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>4) Enhanced Monitoring and Interpretation of Answers</head><p>While chain-of-thought reasoning and question decomposition provide partial transparency into a model's internal processes, ambiguities in logic persist. Developing interpretability mechanisms and integrating automated or humanin-the-loop evaluations can increase system reliability and trustworthiness.</p><p>5) Multi-Agent Approaches for Complex Multi-hop QA In many complex scenarios, a single agent may not optimally handle all sub-tasks. Instead, multi-agent systems could be employed, wherein each specialized agent focuses on a particular sub-task-such as document retrieval, multi-hop inference, or user interaction-and coordinates with the others. This design can enhance both performance and flexibility, offering a more modular and scalable solution better suited to real-world applications.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 .</head><label>1</label><figDesc>Figure 1. provides an overview of the two-stage selector-reader architecture.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>receive any additional in-context examples or fine-tuning instructions specifically designed for the multi-hop task. By comparing multiple closed-source and open-source LLMs, we identify the most promising candidates for further experiments.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 .</head><label>2</label><figDesc>Figure 2. Number of supporting facts in the training and evaluation datasets of the HotpotQA dataset</figDesc><graphic coords="10,159.75,273.98,292.50,288.46" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 3 .</head><label>3</label><figDesc>Figure 3. The diagram illustrates the impact of the number of supporting facts on the performance of large language models in the reader component</figDesc><graphic coords="11,72.00,340.28,467.92,185.50" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 4 .Figure 5 .</head><label>45</label><figDesc>Figure 4. The process of selecting two distractor paragraphs for the reader's input</figDesc><graphic coords="14,92.25,330.10,426.90,211.95" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 6 .</head><label>6</label><figDesc>Figure 6. The effect of the number of examples on few-shot prompting, without and with chain of thought</figDesc><graphic coords="16,91.50,325.78,428.75,212.95" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure 7 .</head><label>7</label><figDesc>Figure 7. Generating a chain of thought with the LLama model and using it in reader fine-tuning</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><head>FigureFigure 9 .</head><label>9</label><figDesc>Figure 8. Two-stage selector architecture</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_9"><head>Figure 10 .</head><label>10</label><figDesc>Figure 10. Using sub-questions in the two-stage selector architecture</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_11"><head>Figure 11 .</head><label>11</label><figDesc>Figure 11. Illustration of six ways to connect the reader and selector components</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 4</head><label>4</label><figDesc>presents the results.</figDesc><table><row><cell>Model</cell><cell>Zero-shot</cell><cell>1-shot</cell><cell>2-shot</cell><cell>4-shot</cell><cell>8-shot</cell></row><row><cell></cell><cell cols="5">EM F1 EM F1 EM F1 EM F1 EM F1</cell></row><row><cell cols="6">Llama-3.1-8B-instruct 60.11 74.52 63.24 77.50 61.42 75.55 62.56 76.65 62.78 76.93</cell></row><row><cell cols="6">Llama-3.1-70B-instruct 65.60 80.04 68.18 82.66 65.32 79.83 66.44 80.99 66.93 81.41</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 5</head><label>5</label><figDesc>summarizes the results.</figDesc><table><row><cell>Model</cell><cell cols="2">Zero-shot</cell><cell cols="2">1-shot</cell><cell cols="2">2-shot</cell><cell cols="2">4-shot</cell><cell cols="2">8-shot</cell></row><row><cell></cell><cell>EM</cell><cell>F1</cell><cell>EM</cell><cell>F1</cell><cell>EM</cell><cell>F1</cell><cell>EM</cell><cell>F1</cell><cell>EM</cell><cell>F1</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_7"><head>Table 7 . Results of fine-tuned reader models (with supporting facts) Knowledge</head><label>7</label><figDesc>Table7presents the outcomes of the Bactrainus reader models under the assumption that supporting facts are fully available. These models are fine-tuned for multi-hop reasoning tasks. As shown, the best results come from Bactrainus Reader 70B, achieving 75.73 EM and 90.01 F1.</figDesc><table><row><cell>Model</cell><cell cols="2">Measure</cell></row><row><cell></cell><cell>EM</cell><cell>F1 Score</cell></row><row><cell>Bactrainus Reader 8B</cell><cell>74.02</cell><cell>86.46</cell></row><row><cell>Bactrainus Reader 8B + Cot 8B</cell><cell>72.97</cell><cell>85.62</cell></row><row><cell>Bactrainus Reader 8B + Cot 70B</cell><cell>74.19</cell><cell>86.91</cell></row><row><cell>Bactrainus Reader 70B</cell><cell>75.73</cell><cell>90.01</cell></row></table><note><p>Transfer via Chain of Thought built by the 70B model slightly improves the 8B reader (Bactrainus Reader</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_8"><head>Table 8 . Hyperparameters for fine-tuning the selector models</head><label>8</label><figDesc>The model focuses on pinpointing only the gold paragraphs among all candidates.</figDesc><table><row><cell></cell><cell></cell><cell cols="2">Model</cell><cell></cell></row><row><cell>Setting</cell><cell>Single-stage</cell><cell>Paragraph</cell><cell>Sentence Selector</cell><cell>Question</cell></row><row><cell></cell><cell>Selector</cell><cell>Selector</cell><cell></cell><cell>Decomposer</cell></row><row><cell>Base Model</cell><cell>Llama 3.1 Instruct</cell><cell>Llama 3.1 Instruct</cell><cell>Llama 3.1 Instruct</cell><cell>Llama 3.1 Instruct 8B</cell></row><row><cell></cell><cell>8B</cell><cell>8B</cell><cell>8B</cell><cell></cell></row><row><cell>Number of Training</cell><cell>90564</cell><cell>90564</cell><cell>90564</cell><cell>90564</cell></row><row><cell>Data Points</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Training Steps</cell><cell>2</cell><cell>2</cell><cell>2</cell><cell>1</cell></row><row><cell>Batch Size</cell><cell>2</cell><cell>2</cell><cell>4</cell><cell>8</cell></row><row><cell>Gradient</cell><cell>8</cell><cell>8</cell><cell>16</cell><cell>32</cell></row><row><cell>Accumulation Steps</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Maximum Learning</cell><cell>1.00E-04</cell><cell>1.00E-04</cell><cell>2.00E-05</cell><cell>2.00E-05</cell></row><row><cell>Rate</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Learning Rate</cell><cell>cosine</cell><cell>cosine</cell><cell>cosine</cell><cell>cosine</cell></row><row><cell>Scheduler Type</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Warm-Up Ratio</cell><cell>0.03</cell><cell>0.03</cell><cell>0.03</cell><cell>0.03</cell></row><row><cell>Maximum Sequence</cell><cell>4096</cell><cell>4096</cell><cell>1024</cell><cell>2048</cell></row><row><cell>Length</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>LoRA Rank</cell><cell>64</cell><cell>64</cell><cell>64</cell><cell>64</cell></row><row><cell>LoRA Alpha</cell><cell>128</cell><cell>128</cell><cell>128</cell><cell>32</cell></row><row><cell>Trainable LoRA</cell><cell>QKVO, MLP</cell><cell>QKVO, MLP</cell><cell>QKVO, MLP</cell><cell>QKVO, MLP</cell></row><row><cell>Weights</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Fully Trainable Layer</cell><cell>lm-head</cell><cell>lm-head</cell><cell>lm-head</cell><cell>lm-head</cell></row><row><cell>LoRA Dropout</cell><cell>0.05</cell><cell>0.05</cell><cell>0.05</cell><cell>0.05</cell></row></table><note><p>Single-stage Selector: The model directly receives the multi-hop question and all candidate paragraphs, and must identify the supporting facts in a single pass.</p></note></figure>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0" />			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-W</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Toutanova</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference of the North American Chapter</title>
+		<meeting>the 2019 Conference of the North American Chapter</meeting>
+		<imprint>
+			<publisher>the Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">SQuAD: 100,000+ Questions for Machine Comprehension of Text</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Rajpurkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lopyrev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2016 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2016 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">HotpotQA: A Dataset for Diverse, Explainable Multi-hop Question Answering</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Qi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bengio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Cohen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Teaching Machines to Read and Comprehend</title>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">M</forename><surname>Hermann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Kocisky</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Grefenstette</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Espeholt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Kay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Suleyman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Blunsom</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems (NeurIPS)</title>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Know What You Don&apos;t Know: Unanswerable Questions for SQuAD</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Rajpurkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics (ACL)</title>
+		<meeting>the 56th Annual Meeting of the Association for Computational Linguistics (ACL)</meeting>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">2</biblScope>
+		</imprint>
+	</monogr>
+	<note>Short Papers</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Reading Wikipedia to Answer Open-Domain Questions</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fisch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Weston</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Bordes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 55th Annual Meeting of the Association for Computational Linguistics (ACL)</title>
+		<title level="s">Long Papers</title>
+		<meeting>the 55th Annual Meeting of the Association for Computational Linguistics (ACL)</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">1</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<author>
+			<persName><forename type="first">X</forename><surname>Ho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A.-K</forename><forename type="middle">D</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Sugawara</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Aizawa</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2011.01060</idno>
+		<title level="m">Constructing a Multihop QA Dataset for Comprehensive Evaluation of Reasoning Steps</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Trivedi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Balasubramanian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sabharwal</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2108.00573</idno>
+		<title level="m">MuSiQue: Multi-hop Questions via Single-hop Question Composition</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<title level="m">HybridQA: A Dataset of Multi-hop Question Answering over Tabular and Textual Data. Findings of the Association for Computational Linguistics: EMNLP 2020</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="1026" to="1036" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Can a Suit of Armor Conduct Electricity? A New Dataset for Open Book Question Answering</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Mihaylov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sabharwal</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">QASC: A Dataset for Question Answering via Sentence Composition</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Guerquin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Jansen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sabharwal</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="8082" to="8090" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Looking Beyond the Surface: A Challenge Set for Reading Comprehension over Multiple Sentences</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Khashabi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Chaturvedi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Roth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Upadhyay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Roth</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (NAACL-HLT)</title>
+		<meeting>the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (NAACL-HLT)</meeting>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="252" to="262" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2401.15391</idno>
+		<title level="m">MultiHop-RAG: Benchmarking Retrieval-Augmented Generation for Multi-hop Queries</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Reading Wikipedia to Answer Open-Domain Questions</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fisch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Weston</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Bordes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 55th Annual Meeting of the Association for Computational Linguistics (ACL)</title>
+		<meeting>the 55th Annual Meeting of the Association for Computational Linguistics (ACL)</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="1870" to="1879" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-T</forename><surname>Luong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 8th International Conference on Learning Representations (ICLR)</title>
+		<meeting>the 8th International Conference on Learning Representations (ICLR)</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Adaptive Document Retrieval for Deep Question Answering</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Kratzwald</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Feuerriegel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="576" to="581" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Dense Passage Retrieval for Open-Domain Question Answering</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Oguz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Edunov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">T</forename><surname>Yih</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="6769" to="6781" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Multi-step Retriever-Reader Interaction for Scalable Opendomain Question Answering</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zaheer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Dyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mccallum</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="2389" to="2399" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Latent Retrieval for Weakly Supervised Open Domain Question Answering</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-W</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Toutanova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">T</forename><surname>Yih</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics (ACL)</title>
+		<meeting>the 57th Annual Meeting of the Association for Computational Linguistics (ACL)</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="6086" to="6096" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Retrospective Reader for Machine Reading Comprehension</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Qi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="8625" to="8636" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<author>
+			<persName><forename type="first">I</forename><surname>Nair</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Somasundaram</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Saxena</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Goswami</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.13565</idno>
+		<title level="m">Drilling Down into the Discourse Structure with LLMs for Long Document Question Answering</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Schoelkopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Qi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Riddell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Benson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Sun</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2209.00840</idno>
+		<title level="m">FOLIO: Natural Language Reasoning with First-Order Logic</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<author>
+			<persName><forename type="first">E</forename><surname>Zelikman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Mu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">D</forename><surname>Goodman</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.14465</idno>
+		<title level="m">STaR: Bootstrapping Reasoning with Reasoning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Do Multi-hop Readers Dream of Reasoning Chains?</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Gao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2nd Workshop on Machine Reading for Question Answering</title>
+		<meeting>the 2nd Workshop on Machine Reading for Question Answering</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="91" to="97" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Language Models Are Greedy Reasoners: A Systematic Formal Analysis of Chain-of-Thought</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Saparov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>He</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations (ICLR)</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yavuz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">S</forename><surname>Keskar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Xiong</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2205.09226</idno>
+		<title level="m">Modeling Multi-hop Question Answering as Single Sequence Prediction</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">Interleaving Retrieval with Chain-of</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Trivedi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Balasubramanian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sabharwal</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.10509</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Thought Reasoning for Knowledge-Intensive Multi-Step Questions. arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<title level="m" type="main">Decomposed Prompting: A Modular Approach for Solving Complex Tasks</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Trivedi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Finlayson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Richardson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sabharwal</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.02406</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Least-to-Most Prompting Enables Complex Reasoning in Large Language Models</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Schärli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Scales</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Schuurmans</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations (ICLR)</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Richardson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Roth</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.16865</idno>
+		<title level="m">Learning to Decompose: Hypothetical Question Decomposition Based on Comparable Texts</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Interpretable AMR-Based Question Decomposition for Multi-hop Question Answering</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Deng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Witbrock</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Riddle</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Thirty-First International Joint Conference on Artificial Intelligence</title>
+		<meeting>the Thirty-First International Joint Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">22</biblScope>
+			<biblScope unit="page" from="4093" to="4099" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">F</forename><surname>Karlsson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Okumura</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.11166</idno>
+		<title level="m">GenDec: A Robust Generative Questiondecomposition Method for Multi-hop Reasoning</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Huang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.08973</idno>
+		<title level="m">Beam retrieval: General end-to-end retrieval for multihop question answering</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv Preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Rethinking label smoothing on multi-hop question answering</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Qiu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">China National Conference on Chinese Computational Linguistics</title>
+		<meeting><address><addrLine>Singapore</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer Nature</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="72" to="87" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">From easy to hard: Two-stage selector and reader for multi-hop question answering</title>
+		<author>
+			<persName><forename type="first">X.-Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-J</forename><surname>Lei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y.-B</forename><surname>Yang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">ICASSP 2023-2023 IEEE International Conference on Acoustics, Speech and Signal Processing</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="1" to="5" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

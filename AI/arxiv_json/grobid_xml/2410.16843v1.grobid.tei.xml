@@ -1,0 +1,2784 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Trustworthy Alignment of Retrieval-Augmented Large Language Models via Reinforcement Learning</title>
+				<funder>
+					<orgName type="full">Ant Group Research Fund</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">Supercomputing Center</orgName>
+				</funder>
+				<funder ref="#_8c6xBFE">
+					<orgName type="full">National Key R&amp;D Program of China</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">Youth Innovation Promotion Association CAS</orgName>
+				</funder>
+				<funder ref="#_yQQ6vJT">
+					<orgName type="full">National Natural Science Foundation of China</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-10-22">22 Oct 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Zongmeng</forename><surname>Zhang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Science and Technology of China</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yufeng</forename><surname>Shi</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Science and Technology of China</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Jinhua</forename><surname>Zhu</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Science and Technology of China</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Wengang</forename><surname>Zhou</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Science and Technology of China</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="department">Institute of Artificial Intelligence</orgName>
+								<address>
+									<settlement>Hefei</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xiang</forename><surname>Qi</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Peng</forename><surname>Zhang</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Houqiang</forename><surname>Li</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Science and Technology of China</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="department">Institute of Artificial Intelligence</orgName>
+								<address>
+									<settlement>Hefei</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Trustworthy Alignment of Retrieval-Augmented Large Language Models via Reinforcement Learning</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-10-22">22 Oct 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">C7298EA10F3047F954FF88D5136F8476</idno>
+					<idno type="arXiv">arXiv:2410.16843v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:41+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Trustworthiness is an essential prerequisite for the real-world application of large language models. In this paper, we focus on the trustworthiness of language models with respect to retrieval augmentation. Despite being supported with external evidence, retrieval-augmented generation still suffers from hallucinations, one primary cause of which is the conflict between contextual and parametric knowledge. We deem that retrievalaugmented language models have the inherent capabilities of supplying response according to both contextual and parametric knowledge. Inspired by aligning language models with human preference, we take the first step towards aligning retrievalaugmented language models to a status where it responds relying merely on the external evidence and disregards the interference of parametric knowledge. Specifically, we propose a reinforcement learning based algorithm TRUSTWORTHY-ALIGNMENT, theoretically and experimentally demonstrating large language models' capability of reaching a trustworthy status without explicit supervision on how to respond. Our work highlights the potential of large language models on exploring its intrinsic abilities by its own and expands the application scenarios of alignment from fulfilling human preference to creating trustworthy agents. Our code is available at <ref type="url" target="https://github.com/zmzhang2000/trustworthy-alignment">https://github.com/zmzhang2000/  trustworthy-alignment</ref>.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Introduction</head><p>Recent advancement in Large Language Models (LLMs) has significantly boosted the application of Artificial Intelligence (AI) systems across a wide range of fields, such as dialogue assistants <ref type="bibr">(OpenAI, 2023)</ref> and autonomous agents <ref type="bibr">(Wang et al., 2023a)</ref>. Researchers contend that one of the most powerful LLMs, i.e., GPT-4, could reasonably be viewed as a spark of Artificial General Intelligence (AGI) considering its capabilities in language, vision, mathematics, coding, etc <ref type="bibr" target="#b4">(Bubeck et al., 2023)</ref>. Despite these remarkable capabilities, the lack of trustworthiness is still a challenging obstacle to the application of LLMs. As probabilistic models, LLMs occasionally generate output which is plausible but deviating from source input <ref type="bibr" target="#b0">(Adlakha et al., 2023)</ref> or factual knowledge <ref type="bibr" target="#b32">(Min et al., 2023;</ref><ref type="bibr" target="#b34">Muhlgay et al., 2023;</ref><ref type="bibr">Li et al., 2023a)</ref>. This phenomenon is referred to as hallucination <ref type="bibr" target="#b31">(Maynez et al., 2020;</ref><ref type="bibr">Ji et al., 2023b)</ref>, which poses tangible risks to realworld application scenarios with low tolerance of error such as medical diagnosis <ref type="bibr" target="#b38">(Nori et al., 2023)</ref> and legal consultation <ref type="bibr" target="#b10">(Cui et al., 2023;</ref><ref type="bibr" target="#b37">Nguyen, 2023)</ref>.</p><p>A common and straightforward approach to mitigate hallucinations in LLMs is to leverage non-parametric knowledge source through Retrieval-Augmented Generation (RAG) <ref type="bibr" target="#b24">(Lewis et al., 2020;</ref><ref type="bibr" target="#b45">Shuster et al., 2021)</ref>. Specifically, RAG retrieves supporting evidence relevant to the source input from an external knowledge base through a retriever, and generates the output conditioning on both the source input and retrieved evidence. The retrieve-and-generate paradigm proves to significantly enhance the factuality and reliability of LLMs <ref type="bibr" target="#b24">(Lewis et al., 2020;</ref><ref type="bibr" target="#b2">Borgeaud et al., 2021;</ref><ref type="bibr" target="#b22">Lazaridou et al., 2022)</ref>.</p><p>However, incorporating retrieval into language generation encounters a new problem of knowledge conflicts <ref type="bibr" target="#b28">(Longpre et al., 2021)</ref> that still impedes the progress towards trustworthy language models. LLMs commonly learn from massive unsupervised data during pre-training and store the learned knowledge in their parameters. Conflict emerges as contextual knowledge in the retrieved evidence contrasting with the inner knowledge stored in LLMs' parameters, which triggers "hallucinations" if an LLM holds a strong belief in its parametric knowledge and produces response inconsistent with the provided context. This phenomenon is unexpected as the performance of RAG will be restricted by hallucinations if the retrieved evidence is not accurate and helpful enough <ref type="bibr" target="#b19">(Karpukhin et al., 2020;</ref><ref type="bibr" target="#b44">Shi et al., 2023;</ref><ref type="bibr" target="#b41">Ren et al., 2023;</ref><ref type="bibr" target="#b30">Mallen et al., 2023)</ref>. We focus our research on the retrieval-augmented generation setting where an LLM is deemed trustworthy if it answers questions based on contextual rather than parametric knowledge.</p><p>A wealth of studies <ref type="bibr" target="#b28">(Longpre et al., 2021;</ref><ref type="bibr" target="#b6">Chen et al., 2022;</ref><ref type="bibr" target="#b35">Neeman et al., 2023;</ref><ref type="bibr">Zhou et al., 2023)</ref> has been dedicated to this problem owing to its obstructive impact on trustworthy LLMs. These efforts have discovered LLMs' dilemma between the parameters and retrieved evidence. In other words, LLMs may have capabilities of responding according to both contextual and parametric knowledge, and struggles to determine which to rely on. The inherent capabilities conforms to the foundation of a recently emerged technology in the field of AI: alignment <ref type="bibr">(Ji et al., 2023a)</ref>, which aims at encouraging a instruction-following language model <ref type="bibr" target="#b54">(Wei et al., 2022)</ref> to behave in line with human intentions and values <ref type="bibr" target="#b23">(Leike et al., 2018)</ref> by reinforcement learning from human feedback (RLHF) <ref type="bibr" target="#b40">(Ouyang et al., 2022)</ref>. It is worth noting that alignment only "unlocks" capabilities LLMs already had, but does not teach new capabilities to the pretrained and instruction-tuned models <ref type="bibr">(Lowe &amp; Leike, 2022)</ref>.</p><p>Inspired by the success of aligning LLMs with human intentions and values, we take the first step towards aligning retrieval-augmented LLM to a trustworthy status where it supplies responses in accordance with merely the retrieved evidence and ignores the parametric knowledge. We hypothesize that LLMs have tendencies of generating response in line with both contextual and parametric knowledge. Based on this, we address the problem of knowledge conflicts by aligning retrieval-augmented LLMs to trustworthy status via reinforcement learning (TRUSTWORTHY-ALIGNMENT).</p><p>In particular, we elaborate our work by answering the following research questions:</p><p>(RQ 1 ) Does the hypothesis hold that retrieval-augmented LLMs have inherent capabilities of responding according to both contextual and parametric knowledge? (Section 2) (RQ 2 ) How can we design an algorithm that enhances the trustworthiness of retrieval-augmented LLMs by aligning them to a trustworthy status via reinforcement learning? (Section 3) (RQ 3 ) How does the proposed algorithm perform and what are the side effects of aligning retrievalaugmented LLMs to trustworthy status? (Section 4)</p><p>We demonstrate that when merely providing what to achieve, retrieval-augmented LLMs are capable of aligning itself to a status where it furnishes responses only relying on the contextual knowledge without explicit supervision on how to respond. Our work highlights the potential of LLMs on exploring its intrinsic capabilities by its own and expands the application scenarios of alignment from fulfilling human intention and values to creating trustworthy agents.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Preliminary Study</head><p>In this section, we first provide the background of TRUSTWORTHY-ALIGNMENT by formulating the task of retrieval-augmented generation, and discuss the problem of knowledge conflicts. Subsequently, we introduce answer probability, the proxy metric for model tendency analysis. Finally, we present the model tendency under different human-curated prompts, answering the prerequisite question of our work: (RQ 1 ) does the hypothesis hold that retrievalaugmented LLMs have inherent capabilities of responding according to both contextual and parametric knowledge?</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.">Retrieval-Augmented Generation</head><p>A language model is a parametric probabilistic model π θ conditioned on the input text. This paper focuses on the question answering (QA) task where the input text is a question q. The generation process is then formulated as sampling a response y from the language model:</p><formula xml:id="formula_0">y ∼ π θ (y|q) = T -1 t=0 π θ (y t |q, y &lt;t ),<label>(1)</label></formula><p>where both x and y are sequences of tokens, t is the token index, and T is the token number of the response.</p><p>Under the retrieval-augmented setting, we have an additional context c as a supporting evidence for answering the question, which is typically retrieved from a large knowledge base, e.g., Wikipedia. Following <ref type="bibr" target="#b3">Brown et al. (2020)</ref>, we formulate the retrieval-augmented generation task by reformatting the question q and context c as a natural language instruction using a prompting function f (q, c):</p><formula xml:id="formula_1">y ∼ π θ (y|q, c) = T -1 t=0 π θ (y t |f (q, c), y &lt;t ).</formula><p>(2)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.">Knowledge Conflicts</head><p>Ideally, a retrieval-augmented LLM responds faithfully in line with the knowledge from c. However, the reality falls short of expectations since we have no idea whether the contextual knowledge in c or the parametric knowledge in θ contributes more to LLM's decision. The knowledge conflict <ref type="bibr" target="#b28">(Longpre et al., 2021)</ref> emerges when contextual knowledge diverges from the parametric knowledge.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Llama-2-7b</head><p>Llama-2-7b-chat Vicuna-7b-v1.5</p><p>Instruction Opinion Instruction Opinion Instruction Opinion 0.0 0.1 0.2 0.3 0.4 0.5 0.6 Answer Probability p s p o p n Figure 1. Average answer probabilities of the substituted answer p s , original answer p o and none response p n for Llama-2-7b, Llama-2-7b-chat <ref type="bibr" target="#b50">(Touvron et al., 2023)</ref> and Vicuna-7b-v1.5 <ref type="bibr" target="#b59">(Zheng et al., 2023)</ref> with instruction-based and opinion-based prompting strategies. Generating tokens other than option codes is also feasible so that the sum of three probabilities is less than 1. Details of prompts are listed in Appendix E.</p><p>We simulate knowledge conflicts by constructing counterfactual data following the entity substitution framework in <ref type="bibr" target="#b28">Longpre et al. (2021)</ref>. Specifically, we have an original triplet (q, c o , y o ), where y o is the original right answer of question q and is included in the context c o so that it can be inferred from q and c o . For each sample, we detect the corresponding entity of y o and replace it with a another entity y s of the same type. Meanwhile, c o is transformed to a new context c s by replacing all of the answer entity mentions. We expect the language model to supply a response including the substituted answer y s given the counterfactual context c s .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.">Tendency Analysis</head><p>To validate the prerequisite of our work that retrievalaugmented LLMs have tendencies of delivering response according to both the contextual and parametric knowledge, we conduct tendency analysis on multiple prevalent pretrained LLMs. For a specific question q and the counterfactual context c s , we construct three candidate responses: the substituted answer y s , the original answer y o and a none response y n instantiated as "None of the above". Then we format the question answering problem to a multi-choice task where LLM selects the best response from y s , y o and y n given q and c s . We propose answer probability as a proxy for measuring whether the model relies more on contextual or parametric knowledge, computed by</p><formula xml:id="formula_2">π θ ([OPTION]|f multi-choice (q, c s , y s , y o , y n )),<label>(3)</label></formula><p>where <ref type="bibr">[OPTION]</ref> is the token of option code, i.e., [A], [B] or [C] in out setting. We denote the probabilities of y s , y o and y n corresponding to the options as p s , p o , p n , respectively.</p><p>We visualize the tendency of three pre-trained LLMs with two types of prompting strategies on the test set of Natural Questions <ref type="bibr" target="#b11">(Fisch et al., 2019)</ref> in Figure <ref type="figure">1</ref>. With both the instruction-based and opinion-based prompts, Llama-2-7b and Llama-2-7b-chat give almost the same probabilities for the substituted and original answer. Vicuna-7b-v1.5 shows maximum sum of the three probabilities, indicating strongest understanding of the multi-choice task. Even so, Vicuna-7b-v1.5 struggles to decisively choose the substituted answer and still has an likelihood around 0.25 to select the original answer. Hence we draw the conclusion that the hypothesis of LLMs having capabilities of responding according to both the contextual and parametric knowledge holds true.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Trustworthy Alignment</head><p>The inherent capabilities of responding according to the contextual and parametric knowledge afford the opportunity to control the LLMs' intention in the scenario of knowledge conflict. In this section, we address (RQ 2 ) by formulating the LLM as a Markov Decision Process (MDP), introducing TRUSTWORTHY-ALIGNMENT and providing theoretical analysis for the proposed algorithm.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.">LLM as an MDP</head><p>Typically, an MDP M ≜ ⟨S, A, r, P, ρ 0 , γ⟩ consists of the state space S, the action space A, a reward function r, the transition probability P, the initial state distribution ρ 0 and a discount factor γ. The generation process of an LLM is naturally an MDP where each state s ∈ S is the context comprising prompt tokens ã0:m and previously generated tokens a 0:t-1 . The initial state s is the sequence of prompt tokens ã0:m sampled from the distribution ρ 0 .<ref type="foot" target="#foot_0">foot_0</ref> Action space A is a finite vocabulary V = {1, . . . , |V|}. Given the current state s t = a 0:t-1 , the LLM selects an action a t from A, identically samples a token from the vocabulary V with the distribution π θ in an auto-regressive manner formulated as a t ∼ π θ (a t |s t ) = π θ (a t |a 0:t-1 ). The transition in LLM is deterministic as the next state s t+1 is definitely transformed into a 0:t after the action a t is selected. Afterward, a deterministic reward r t is given by the reward function: r t = r(s t , a t ). A state is regarded as terminated when a special end-of-text token is selected or the response reaches the max length. We define the state action value function</p><formula xml:id="formula_3">Q π θ (s, a) ≜ E P,π θ</formula><p>T -1 t=0 γ t r t |s 0 = s, a 0 = a , which represents the expected return following policy π θ after taking action a at the state s. The state value function is defined as</p><formula xml:id="formula_4">V π θ = E a∼π θ [Q π θ (s, a)],</formula><p>i.e., the expected return following π θ from state s. The primary objective of optimizing the LLM via reinforcement learning is to maximize the expectation of discounted cumulative reward:</p><formula xml:id="formula_5">J(π θ ) = E s∼ρ0 E a 0:T -1 ∼π θ T -1 t=0 γ t r t .</formula><p>(4)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.">Objective of Trustworthy-Alignment</head><p>We aim at aligning the language model to the trustworthy status where it supplies responses in accordance with merely the retrieved evidence and ignores the parametric knowledge.</p><p>To achieve this goal, we propose a simple yet effective reinforcement learning (RL) algorithm which rewards the model's reliance on contextual knowledge and penalizes its reliance on parametric knowledge. Specifically, given the question q and substituted context c s , we reward π θ as long as the counterfactual answer y s appears in the terminated response and penalize it if the original answer y o appears or neither answers are included, formulated as</p><formula xml:id="formula_6">r trust t =          +α 0 if s t+1 ends ∧ y s ⊆ s t+1 ∧ y o ⊈ s t+1 -α 1 if s t+1 ends ∧ y s ⊈ s t+1 ∧ y o ⊈ s t+1 -α 0 if s t+1 ends ∧ y o ⊆ s t+1 0 otherwise ,<label>(5)</label></formula><p>where α 0 and α 1 control absolute values of reward and penalty. Note that only the last generated token is rewarded so that this reward is on the sentence level.</p><p>Indispensably, a Kullback-Leibler (KL) divergence term is added to the reward following preceding works <ref type="bibr" target="#b16">(Jaques et al., 2019;</ref><ref type="bibr" target="#b47">Stiennon et al., 2020)</ref> to penalize the policy's deviation from the original supervised fine-tuned model π SFT , formulated as</p><formula xml:id="formula_7">r KL t = -α 2 log π θ (a t |s t ) π SFT (a t |s t ) ,<label>(6)</label></formula><p>where α 2 is a coefficient controlling the training trade-off between a model performing specific task and a model more like the original one.</p><p>Even with the regularization of KL divergence, LLMs are prone to falling into local optima in the training procedure of RL. For instance, pre-trained LLM may continually output the same repeated pattern when a short repetitive string like "\n\n\n" shows up in the prompt, which will be reinforced and overwhelm the cumulative r trust t in the subsequent training procedure by virtue of its low accumulative KL penalty.</p><p>To avoid this, we propose an additional collapse penalty to persuade the LLM from collapsed mode:</p><formula xml:id="formula_8">r col t = g(s t+1 ) = -α 3 if s t+1 ends and collapses 0 otherwise ,<label>(7)</label></formula><p>where α 3 controls the absolute value of r col t and the collapse detection algorithm is described in Appendix C.</p><p>Overall, the final reward function is formulated as</p><formula xml:id="formula_9">r(s t , a t ) = r trust t + r col t + r KL t .<label>(8)</label></formula><p>We train the policy with PPO algorithm <ref type="bibr" target="#b43">(Schulman et al., 2017)</ref>. We propose an annealing strategy to trade-off between exploration and exploitation in PPO training of LLMs, which is detailed in Appendix B due to space constraints.</p><p>The algorithm pipeline of TRUSTWORTHY-ALIGNMENT is described in Appendix C.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3.">Theoretical Analysis</head><p>In this subsection, we theoretically analyze the proposed TRUSTWORTHY-ALIGNMENT, ensuring the policy's convergence to the trustworthy status. Specifically, we demonstate that the optimal policy for the total reward r(s t , a t ) is consistent with the optimal policy for the task-specific reward r trust t , while r KL t and r col t do not affect the realization of the alignment. Actually, the purpose of designing these regular terms is to accelerate the model's learning procedure in practice <ref type="bibr" target="#b36">(Ng et al., 1999)</ref>.</p><p>Formally, we define an original MDP as M ≜ ⟨S, A, r, P, ρ 0 , γ⟩, where S, A, P, ρ 0 , γ share the same definitions as in Section 3.1. Both S and A are finite sets, and r is defined as r(s t , a t , s t+1 ) = r trust t .<ref type="foot" target="#foot_1">foot_1</ref> A transformed MDP is defined based on the original MDP M as M ′ ≜ ⟨S, A, r ′ , P, ρ 0 , γ⟩, which differs from M in that the reward function is defined as r ′ (s t , a t , s t+1 ) = r trust t + r col t + r KL t . The reward functions of both MDPs are bounded. We will show that the optimal π * ′ obtained on M ′ can be equivalent to the optimal π * obtained on M. Our analysis approach is similar to the Potential-based Reward Shaping theory <ref type="bibr" target="#b36">(Ng et al., 1999)</ref>. Firstly, we introduce the definition of the state potential function and provide a lemma. Definition 3.1. For any s ∈ S, define its potential function as follows:</p><formula xml:id="formula_10">Ψ(s) = g(s) -α 2 log P π θ (s) + α 2 log P π SFT (s),<label>(9)</label></formula><p>where P π (s) = π θ (a t |a 0:t-1 ) indicates the probability of state s generated from π. It can be known that Ψ(s t+1 ) -Ψ(s t ) = r ′ t -r t = r col t +r KL t , while the reward function r trust t cannot be decomposed into a subtraction of some potential function, as discussed in detail in Appendix A. Using the potential function, we can prove the following lemma about order-preserving properties. Lemma 3.2. (Order Preserving) There exists a potential function</p><formula xml:id="formula_11">Ψ(•) such that Ψ(s t+1 ) -Ψ(s t ) = r ′ t - r t .</formula><p>Given state s ∈ S and policy π, for any actions</p><formula xml:id="formula_12">a 1 , a 2 ∈ A, when γ = 1, if Q π M ′ (s, a 1 ) &gt; Q π M ′ (s, a 2 ), then Q π M (s, a 1 ) &gt; Q π M (s, a 2 ). Otherwise, assume Q π M is continuous function with respect to γ, when γ is suf- ficiently close to 1, if Q π M ′ (s, a 1 ) &gt; Q π M ′ (s, a 2 ), then Q π M (s, a 1 ) &gt; Q π M (s, a 2 ).</formula><p>The proof can be found in Appendix A. This lemma indicates that when γ is large enough, for the same policy, the relative numerical relationship of the Q-function of the transformed MDP M ′ is consistent with the original MDP M. Therefore, we can obtain the following consistency and convergence theorem. Theorem 3.3. (Consistency and Convergence) Assume Q π M is a continuous function with respect to γ, when γ is sufficiently close to 1, the optimal policy obtained in MDP M ′ is also the optimal policy in MDP M. The policy π ′ obtained from the training of the RL algorithm has the following error bounds with the optimal policy, where π * is the optimal policy on M,</p><formula xml:id="formula_13">ϵ = T Q π ′ M -Q π ′ M ∞</formula><p>, T is the Bellman Optimal Operator:</p><formula xml:id="formula_14">V π ′ M -V π * M ∞ ≤ 2γϵ 1 -γ . (<label>10</label></formula><formula xml:id="formula_15">)</formula><p>The proof is detailed in Appendix A. According to the theorem, we guarantee that LLMs trained with TRUSTWORTHY-ALIGNMENT converge to the trustworthy status.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">Experiments</head><p>In this section, we conduct experiments and analyze TRUSTWORTHY-ALIGNMENT to answer (RQ 3 ) how does the proposed algorithm perform and what are the side effects of aligning retrieval-augmented LLMs to trustworthy status.</p><p>We first detail the datasets, metrics and compared baselines.</p><p>Then we analyze the performance, generalization capability, alignment tax and human evaluation of TRUSTWORTHY-ALIGNMENT. Finally, we investigate the impact of individual components of TRUSTWORTHY-ALIGNMENT by carrying out ablation studies on annealing exploration, scaling law and critic model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.">Setup</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.1.">DATASETS</head><p>Following the setting of prior works <ref type="bibr" target="#b28">(Longpre et al., 2021;</ref><ref type="bibr" target="#b6">Chen et al., 2022)</ref>, we take the open-domain question answering task as a showcase of knowledge conflicts in the retrieval-augmented language model generation. We train TRUSTWORTHY-ALIGNMENT on the MRQA Workshop Shared Task's version<ref type="foot" target="#foot_2">foot_2</ref>  <ref type="bibr" target="#b11">(Fisch et al., 2019)</ref> of Natural Ques-tions <ref type="bibr" target="#b21">(Kwiatkowski et al., 2019)</ref>. To be specific, we create the counterfactual version of Natural Questions by replacing the answer and all of its mentions in the context with another same type entity from the same dataset, following the substitution framework in <ref type="bibr" target="#b28">Longpre et al. (2021)</ref>. The original and substituted version of training set is used for training while only substituted version of dev set is used for evaluation. Despite that the substituting framework is straightforward, Xie et al. (2023) argues that evidence synthesized by simply substituting entities in the context is too incoherent to convince LLMs. And thus they construct a more coherent and convincing dataset ConflictQA on top of an entitycentric QA dataset PopQA (Mallen et al., 2023) and a multistep reasoning dataset StrategyQA (Geva et al., 2021) by prompting LLMs to directly generate supporting evidence that contradicts the parametric memory. We evaluate the generalization capability of TRUSTWORTHY-ALIGNMENT by testing the performance of LLMs trained on Natural Questions on ConflictQA generated from GPT-4. Besides, to evaluate the alignment tax, we test performance change of the aligned model on Open LLM Leaderboard<ref type="foot" target="#foot_3">foot_3</ref> tasks, including grade-school science AI2 Reasoning Challenge (Clark et al., 2018), commonsense inference Hel-laSwag (Zellers et al., 2019), multitask language understanding MMLU (Hendrycks et al., 2021), truthful generation TruthfulQA (Lin et al., 2022), commonsense reasoning Winogrande (Sakaguchi et al., 2021) and multi-step mathematical reasoning GSM8k (Cobbe et al., 2021). 4.1.2. METRICS We evaluate the response of LLM given the question and substituted evidence. For free-form QA dataset Natural Questions, we report the average best subspan exact match (EM) indicating if the answer entity appears in the response. Samples in ConflictQA is transformed into multiple-choice QA format following Xie et al. ( <ref type="formula">2023</ref>) and thus we directly assess the accuracy (Acc) for this dataset.</p><p>Additionally, we adopt memorization ratio <ref type="bibr" target="#b28">(Longpre et al., 2021</ref>) M R = po po+ps to measure the LLM's capability of forgetting parametric knowledge, where p o and p s are the fractions of samples that model predicts the original answer and substituted answer, respectively. Note that p s is equivalent to average EM and Acc and an LLM is deemed as in trustworthy status if owning a small memorization ratio. Following <ref type="bibr" target="#b28">Longpre et al. (2021)</ref>, we narrow the evaluation on Natural Questions by only preserving samples that LLM can correctly respond the original answer in a closed-book setting, meaning that the knowledge is originally stored in its parameters. Nevertheless, we do not perform this filter on ConflictQA as multi-choice QA task is profoundly affected by the order of options <ref type="bibr" target="#b52">(Wang et al., 2018;</ref><ref type="bibr" target="#b20">Ko et al., 2020;</ref><ref type="bibr">Wang et al., 2023b;</ref><ref type="bibr" target="#b59">Zheng et al., 2023)</ref>, which renders the filtering unreliable.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.3.">BASELINES</head><p>• Closed-source Models. We experiment with two closed-source LLMs, ChatGPT (gpt-3.5-turbo-1106) and GPT-4 (gpt-4-1106-preview)<ref type="foot" target="#foot_4">foot_4</ref> , to present the stateof-the art performance under the zero-shot setting. • Open-source Models. We conduct experiments on Llama-2-7b and its fine-tuned version Llama-2-7b-chat that has been optimized for dialogue use cases <ref type="bibr" target="#b50">(Touvron et al., 2023)</ref>. Besides, we also evaluate Vicuna-7b-v1.5 <ref type="bibr" target="#b59">(Zheng et al., 2023)</ref> which is fine-tuned from Llama-2-7b with ChatGPT conversation data. • Prompt Engineering. We evaluate the zero-shot performance of these closed-source and open-source LLMs with prompt engineering. An instruction-based and an opinion-based prompting strategy are adopted for all models. All prompts are listed in Appendix E. • Supervised Fine-tuning. We perform supervised fine-tuning on open-source LLMs, which directly teaches the LLM how to respond by minimizing the cross entropy between the ground truth answer and output of LLM. Prompt template is fixed to instruction-based form in the supervised fine-tuning and TRUSTWORTHY-ALIGNMENT.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2.">Analyses</head><p>The proposed alignment algorithm significantly improves the trustworthiness of retrieval-augmented LLMs. We present the performance of TRUSTWORTHY-ALIGNMENT and compared baselines on Natural Questions in Table <ref type="table" target="#tab_2">1</ref>. From the results, we observe that with trainingfree prompt engineering approach, GPT-4 serves as the most effective model with respect to EM. The hand-crafted opinion-based prompt shows better EM and lower M R than instruction-based prompt on almost all of these model. The opinion-based prompt formulates the contextual information as somebody's opinion and thus LLM believes what is provided and ignores what is true in its parametric knowledge. However, GPT-4 memorizes more often than other models. We analyze the output of GPT-4, finding that it always presents not only facts in the opinion but also knowledge stored in its parameters, and thus shows highest memorization ratio. Examples are shown in Appendix F.</p><p>With TRUSTWORTHY-ALIGNMENT and supervised finetuning, all of three open-source models achieves significantly higher EM and lower M R . Notably, even without explicit supervision on how to respond, TRUSTWORTHY-ALIGNMENT achieves comparable performance to supervised fine-tuning and even surpasses it when using the stronger model Llama-2-7b-chat. Performance of TRUSTWORTHY-ALIGNMENT on Llama-2-7b and Vicuna-7b-v1.5 is inferior to supervised fine-tuning due to weaker instruction-following capability of base models, which will be discussed in the following subsection.   <ref type="figure" target="#fig_0">2</ref>, the performance displays a steep climb to a status with high training episodic reward and low evaluation M R . This phenomenon emphasizes the demand of inherent trustworthy status in pre-trained LLMs and exploration in the training process for TRUSTWORTHY-ALIGNMENT. Generally, the performance of all three models converges as the training carrying on, demonstrating the stability of the TRUSTWORTHY-ALIGNMENT algorithm with inherent trustworthy status in pre-trained LLMs.</p><p>The trustworthy aligned model generalizes well to out-ofdomain datasets. We evaluate the LLMs aligned with Natural Questions data on two additional datasets ConflictQA-PopQA and ConflictQA-StrategyQA, whose questions and contexts have never been seen and even the task is transformed from free-form QA to multi-choice QA. As shown in Table <ref type="table" target="#tab_2">1</ref>, TRUSTWORTHY-ALIGNMENT improves the accuracy of Llama-2-7b and Vicuna-7b-v1.5 on ConflictQA-PopQA and ConflictQA-StrategyQA over prompt engineering approaches. Meanwhile, TRUSTWORTHY-ALIGNMENT surpasses SFT with respect to the metric M R by a large margin for the Llama-2-7b and Vicuna-7b-v1.5 model on ConflictQA-StrategyQA, indicating its more significant suppressing effect on parametric memory. This verifies the favorable generalization capability of TRUSTWORTHY-ALIGNMENT to out-of-domain datasets.</p><p>Aligning LLMs via RL preserves language styles of original pre-trained models. A by-product of aligning LLMs via RL is that language styles of original pretrained models are preserved, while SFT changes them totally. We showcase responses of LLMs aligned via TRUSTWORTHY-ALIGNMENT and SFT in Appendix sentences. By contrast, Llama-2-13b-chat aligned with SFT provides barely answers, even without periods. This is a reasonable phenomenon as the demonstration data used in RL is actually collected from the LLM in the training process, which keeps the same language style with the pretrained model. The data used in SFT is labeled by human whose style distribution may be distinct from the original model. This phenomenon is also an evidence that the trustworthy status is an inherent ability of LLMs rather than assigned by external supervision data. Additionally, we provide human evaluation results on language style and fluency of TRUSTWORTHY-ALIGNMENT in Section 4.3 to further demonstrates that aligning via RL indeed helps.</p><p>Aligning LLMs to trustworthy status via RL enjoys preferential alignment tax treatment. <ref type="bibr" target="#b40">Ouyang et al. (2022)</ref> declare that training LLM with PPO suffers from "alignment tax", i.e., model's performance drops on several public NLP datasets after aligning the model. We evaluate trustworthy aligned LLMs on the Open LLM Leaderboard task set. As the results in Table <ref type="table" target="#tab_3">2</ref> show, the performance of aligned Vicuna-7b-v1.5 on these six datasets drops less than 1% while the supervised fine-tuning reduces the performance more. Unexpectedly, TRUSTWORTHY-ALIGNMENT enhances the Llama-2-7b-chat's performance on some of these out-of-domain datasets, like ARC, MMLU and Truth-fulQA. A possible explanation is that, TRUSTWORTHY-ALIGNMENT encourages Llama-2-7b-chat to concentrate more on the information in prompt, which is helpful for these improved datasets. We also find that whether it is TRUSTWORTHY-ALIGNMENT or supervised fine-tuning, both decline noticeably on GSM8k, though TRUSTWORTHY-ALIGNMENT surpasses supervised fine-tuning with all of three base models. This may be due to the limited error tolerance of mathematical reasoning task and thus more future works are needed to further mitigate the alignment tax. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3.">Human Evaluation</head><p>Despite that we do not intend to align LLMs with human preference via the proposed algorithm, human evaluation is an indispensable evaluation protocol for language generation. Thus, we conduct human evaluations for alignment tax and fluency of TRUSTWORTHY-ALIGNMENT. Specifically, we randomly select question-context pairs from the test set of Natural Questions, generate responses using pre-trained, supervised-finetuned and trustworthy aligned Llama-2-7bchat models for each pair. Human evaluators are asked to judge whether the response from supervised-finetuned or trustworthy aligned model is closer to the pre-trained model in terms of language style. Naturally, more similar language style with pre-trained model indicates lower alignment tax. Besides, we ask human evaluators to select their most preferred response out of these three models for measurement of fluency.</p><p>We collect feedback on 40 question-context pairs from 33 human evaluators, and compute the mean values and standard deviations of win rate for each model. According to the results shown in Figure <ref type="figure" target="#fig_1">3</ref>, the responses of TRUSTWORTHY-ALIGNMENT are significantly more analogous to the pre-trained model and more fluent than SFT model. These results are expected since the RL algorithm in TRUSTWORTHY-ALIGNMENT reinforces some of the intrinsic outputs of pre-trained LLM, while SFT forces the pre-trained LLM to follow the style of provided demonstration data.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4.">Ablation Studies</head><p>We carry out ablation studies on the annealing exploration strategy, scaling law and critic model in TRUSTWORTHY-ALIGNMENT to verify their impacts. Based on an aligned Llama-2-7b-chat with chat-opt-350m-reward<ref type="foot" target="#foot_5">foot_5</ref> as pre-trained critic model and annealing exploration strategy (Origin), we consider the following variants:</p><p>• We disable the annealing exploration strategy by training with a fixed temperature 1.0 (wo. Annealing).</p><p>• We investigate the scaling law of TRUSTWORTHY-ALIGNMENT by training with different actor model size, including a 1.3B model chat-opt-1.3b<ref type="foot" target="#foot_6">foot_6</ref> (1.3B) and a 13B model Llama-2-13b-chat (13B) • We replace critic model in TRUSTWORTHY-ALIGNMENT with a random initialized chat-opt-350m-reward (Random Critic) and a pre-trained Llama-2-7b-chat without head layer (Larger Critic)</p><p>As shown in Table <ref type="table" target="#tab_4">3</ref>, "wo. Annealing" obtains higher EM and M R than baseline, which indicates a much higher p o . These results are consistent with the expectation that exploration plays a crucial role in the whole aligning procedure discussed in Section 4.2. Without large temperature in the early stage of annealing exploration, LLMs generate less experience excluding the parametric knowledge, and thus is less penalized for memorizing.</p><p>Likewise, 1.3B model exhibits a much inferior performance resulting from lack of exploration on output including the contextual knowledge. The larger 13B model does not show markedly better performance than the original 7B model. We speculate that 7B model is enough for approaching the upper limit of our tasks so that the verification of scaling law for larger models may requires stronger benchmarks.</p><p>Results of "Random Critic" and "Larger Critic" indicate that neither the pre-training nor scaling up critic models in alignment via reinforcement learning exerts substantial influence on the performance, which is consistent with one of the conclusions in <ref type="bibr">Li et al. (2023b)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">Related Work</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.">Hallucination</head><p>Hallucination in LLMs is defined as generating content that is nonsensical or contradict to the source input and typically divided into extrinsic and intrinsic hallucinations <ref type="bibr">(Ji et al., 2023b</ref>). An LLM may present responses that cannot be verified from the source or generated content <ref type="bibr" target="#b31">(Maynez et al., 2020)</ref>, which is referred to as extrinsic hallucination.</p><p>Retrieval-Augmented Generation <ref type="bibr" target="#b24">(Lewis et al., 2020)</ref> attempts to tackle this type of hallucination by storing knowledge in an extra knowledge base, retrieve and relying on related knowledge during generation. Despite that verifiability is significantly enhanced, the conflict between parametric and contextual knowledge <ref type="bibr" target="#b28">(Longpre et al., 2021)</ref> triggers the intrinsic hallucination where LLMs generate outputs inconsistent with retrieved information <ref type="bibr" target="#b30">(Mallen et al., 2023)</ref>. <ref type="bibr" target="#b28">Longpre et al. (2021)</ref> and <ref type="bibr" target="#b35">Neeman et al. (2023)</ref> construct counterfactual data and utilize supervised fine-tuning to compel LLMs to focus on the retrieved context. <ref type="bibr" target="#b6">Chen et al. (2022)</ref> expand the study of knowledge conflicts to multiple evidence setting and proposes a recalibration method encouraging LLMs to abstain from answering questions in conflict. Prompt engineering is also proved to be effective for improving faithfulness in knowledge conflict situations <ref type="bibr">(Zhou et al., 2023;</ref><ref type="bibr" target="#b46">Si et al., 2023)</ref>. These dedicated efforts imply inherent capabilities of responding according to parametric and contextual knowledge in LLMs. Based on this, we take the first step towards encouraging LLMs to explore trustworthy status with reinforcement learning where only what to achieve is provided.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.">Alignment</head><p>Alignment was first introduced to create agents that behave in line with the intention of users <ref type="bibr" target="#b23">(Leike et al., 2018)</ref> and boomed in the era of LLMs due to the strong demand for AI assistants harmony with human values <ref type="bibr" target="#b47">(Stiennon et al., 2020;</ref><ref type="bibr" target="#b40">Ouyang et al., 2022)</ref>. Alignment is achieved by reinforcement learning from human feedback (RLHF) <ref type="bibr" target="#b7">(Christiano et al., 2017)</ref> that trains a reward model representing human preference and optimize an instruction-tuned model <ref type="bibr" target="#b54">(Wei et al., 2022)</ref> using the reward model. Beyond that, researchers extend the RLHF to reinforcement learning from AI feedback (RLAIF) <ref type="bibr" target="#b1">(Bai et al., 2022)</ref> and self-alignment <ref type="bibr" target="#b48">(Sun et al., 2023)</ref> that learn with feedback generated from language models to reduce the dependence of human annotations. Moreover, safe RL framework <ref type="bibr" target="#b12">(Garcıa &amp; Fernandez, 2015)</ref> is integrated into alignment to mitigate the conflict between helpfulness and harmless of LLMs. A grand vision of aligning future superhuman models with weak models <ref type="bibr" target="#b5">(Burns et al., 2023)</ref> confirms the long-term value of alignment technology in the development of AGI. Different from existing works that mainly focus on aligning agents with human intention and values, we expand the application scenarios of alignment to creating trustworthy agents.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.">Conclusion</head><p>In this work, we take the first step towards expanding the application scenarios of alignment technology from fulfilling human intentions to creating trustworthy agents that overcome knowledge conflicts. Specifically, we elaborate our work by verifying the prerequisite hypothesis, design a reinforcement learning algorithm and comprehensively investigate the performance and side effects of the proposed algorithm. We theoretically and experimentally demonstrate LLMs' capability of reaching a trustworthy status without explicit supervision on how to respond. We hope our work will provide insight into future research in the theory and applications of alignment technology.</p><p>Definition A.1. For any s ∈ S, define its potential function as follows, where P π (s) indicates the probability of generating state s using π:</p><formula xml:id="formula_16">Ψ(s) = g(s) -α 2 log P π θ (s) + α 2 log P πSFT (s).<label>(11)</label></formula><p>When s t+1 is a collapsed string, it is clear that s t cannot be a collapsed string, so there is g(s t+1 )-g(s t ) = g(s t+1 )-0 = r col t . Otherwise, neither s t+1 nor s t is a collapsed string, so there is g(s t+1 ) -g(s t ) = 0 -0 = r col t . According to Definition A.1, we have:</p><formula xml:id="formula_17">Ψ(s t+1 ) -Ψ(s t ) = g(s t+1 ) -g(s t ) -α 2 (log P π θ (s t+1 ) -log P π θ (s t ) -(log P πSFT (s t+1 ) -log P πSFT (s t ))) = r col t -α 2 log t k=0 π θ (a k |a 0:k-1 ) -log t-1 k=0 π θ (a k |a 0:k-1 ) -log t k=0 π SFT (a k |a 0:k-1 ) -log t-1 k=0 π SFT (a k |a 0:k-1 ) = r col t -α 2 t k=0 log π θ (a k |a 0:k-1 ) - t-1 k=0 log π θ (a k |a 0:k-1 ) - t k=0 log π SFT (a k |a 0:k-1 ) - t-1 k=0 log π SFT (a k |a 0:k-1 ) = r col t -α 2 (log π θ (a t |a 0:t-1 ) -log π SFT (a t |a 0:t-1 )) = r col t -α 2 (log π θ (a t |s t ) -log π SFT (a t |s t )) = r col t -α 2 log π θ (a t |s t ) π SFT (a t |s t ) = r col t + r KL t = r ′ (s t , a t , s t+1 ) -r(s t , a t , s t+1 ).</formula><p>(12) Equation ( <ref type="formula">12</ref>) shows that the rewards r col t and r KL t can be expressed as the difference between two neighboring state potential functions. Note that r trust t cannot be expressed as the difference between the potential functions of two neighboring states, since r trust t depends not only on the state s t+1 , but also on y s and y o . y s and y o can, however, be viewed as feedback following an MDP input action (i.e., an MDP input action a t outputs S t+1 , y s , y o , r trust t ). However, this feedback is not given directly, but rather in an indirect form as a reward r trust t . Since r trust t cannot be expressed as a difference of potential functions, based on to Potential-based Reward Shaping theory <ref type="bibr" target="#b36">(Ng et al., 1999)</ref>, it is known that that there exists a preferred optimal policy for the original MDP M (the preference policy guided by rewards in MDP M is the policy that produces trustworthy responses) and that there is no case where any policy without any preference is optimal. Lemma A.2. (Order Preserving) There exists a potential function Ψ(•) such that Ψ(s t+1 ) -Ψ(s t ) = r ′ t -r t . Given state s ∈ S and policy π, for any actions a 1 , a 2 ∈ A,</p><formula xml:id="formula_18">when γ = 1, if Q π M ′ (s, a 1 ) &gt; Q π M ′ (s, a 2 ), then Q π M (s, a 1 ) &gt; Q π M (s, a 2 ). Otherwise, assume Q π M is continuous function with respect to γ, when γ is sufficiently close to 1, if Q π M ′ (s, a 1 ) &gt; Q π M ′ (s, a 2 ), then Q π M (s, a 1 ) &gt; Q π M (s, a 2 ).</formula><p>Proof. According to the Bellman expectation equation of Q π M (s, a), we get the following equation by subtracting Ψ(s) from both sides simultaneously (Note that s ′ in the following equation is uniquely determined by s and a):</p><formula xml:id="formula_19">Q π M (s, a) -Ψ(s) = r(s, a, s ′ ) + γE a ′ ∼π Q π M (s ′ , a ′ ) -Ψ(s) = r(s, a, s ′ ) + Ψ(s ′ ) -Ψ(s) + γE a ′ ∼π Q π M (s ′ , a ′ ) -Ψ(s ′ ) + (γ -1)Ψ(s ′ ) = r ′ (s, a, s ′ ) + γE a ′ ∼π Q π M (s ′ , a ′ ) -Ψ(s ′ ) + (γ -1)Ψ(s ′ ).<label>(13)</label></formula><p>The Bellman Expectation equation for</p><formula xml:id="formula_20">Q π M ′ (s, a) is as follows: Q π M ′ (s, a) = r ′ (s, a, s ′ ) + γE a ′ ∼π Q π M ′ (s ′ , a ′ ) . (<label>14</label></formula><formula xml:id="formula_21">)</formula><p>1 • When γ = 1, equation 13 can be written in the following form:</p><formula xml:id="formula_22">Q π M (s, a) -Ψ(s) = r ′ (s, a, s ′ ) + γE a ′ ∼π Q π M (s ′ , a ′ ) -Ψ(s ′ ) . (<label>15</label></formula><formula xml:id="formula_23">)</formula><p>Compare equation 14 and equation 15, according to Potential-based Reward Shaping theory <ref type="bibr" target="#b36">(Ng et al., 1999)</ref>, it can be known that:</p><formula xml:id="formula_24">Q π M ′ (s, a) = Q π M (s, a) -Ψ(s).<label>(16)</label></formula><p>When Q π M ′ (s, a 1 ) &gt; Q π M ′ (s, a 2 ), then there is:</p><formula xml:id="formula_25">Q π M (s, a 1 ) -Q π M (s, a 2 ) = Q π M ′ (s, a 1 ) + Ψ(s) -Q π M ′ (s, a 2 ) + Ψ(s) = Q π M ′ (s, a 1 ) -Q π M ′ (s, a 2 ) &gt; 0. (<label>17</label></formula><formula xml:id="formula_26">)</formula><p>So there is Q π M (s, a 1 ) &gt; Q π M (s, a 2 ). 2 • According to equation 13 and equation 14,we can split the Q π M (s, a) -Ψ(s) into the following form:</p><formula xml:id="formula_27">Q π M (s, a) -Ψ(s) = E P,π ∞ t=0 γ t (r ′ (s t , a t , s t+1 ) + (γ -1)Ψ(s t+1 )) s 0 = s, a 0 = a = E P,π ∞ t=0 γ t r ′ (s t , a t , s t+1 ) s 0 = s, a 0 = a + (γ -1)E P,π ∞ t=0 γ t Ψ(s t+1 ) s 0 = s, a 0 = a = Q π M ′ (s, a) + (γ -1)E P,π ∞ t=0 γ t Ψ(s t+1 ) s 0 = s, a 0 = a . (18) Let q π (s, a) = E P,π [ ∞ t=0 γ t Ψ(s t+1 )| s 0 = s, a 0 = a],</formula><p>the following equation can be obtained:</p><formula xml:id="formula_28">Q π M (s, a 1 ) -Q π M (s, a 2 ) = Q π M (s, a 1 ) -Ψ(s) -Q π M (s, a 2 ) -Ψ(s) = Q π M ′ (s, a 1 ) -Q π M ′ (s, a 2 ) + (γ -1) q π (s, a 1 ) -q π (s, a 2 ) .<label>(19)</label></formula><p>Since</p><formula xml:id="formula_29">Q π M is continuous with respect to γ, then Q π M (s, a 1 ) -Q π M (s, a 2 ) is also continuous with respect to γ. When Q π M ′ (s, a 1 ) &gt; Q π M ′ (s, a 2</formula><p>), taking the limit on both sides of equation 19 has:</p><formula xml:id="formula_30">lim γ→1 -Q π M (s, a 1 ) -Q π M (s, a 2 ) = Q π M ′ (s, a 1 ) -Q π M ′ (s, a 2 ) &gt; 0. (<label>20</label></formula><formula xml:id="formula_31">)</formula><p>By the order-preserving nature of the limit it follows that there exists δ &gt; 0 such that when γ &gt; 1 -δ, there is</p><formula xml:id="formula_32">Q π M (s, a 1 ) &gt; Q π M (s, a 2 ) Theorem A.3. (Consistency and Covergence) Assume Q π</formula><p>M is continuous function with respect to γ, when γ is sufficiently close to 1, the optimal policy obtained in MDP M ′ is also the optimal policy in MDP M. The policy π ′ obtained from the training of the RL algorithm has the following error bounds with the optimal policy, where π * is the optimal policy on M,</p><formula xml:id="formula_33">ϵ = T Q π ′ M -Q π ′ M ∞</formula><p>, T is the Bellman Optimal Operator:</p><formula xml:id="formula_34">V π ′ M -V π * M ∞ ≤ 2γϵ 1 -γ . (<label>21</label></formula><formula xml:id="formula_35">)</formula><p>Proof. The same initialization policy is used to optimize the policy in each of the two MDPs using the Policy Improvement Theorem <ref type="bibr" target="#b49">(Sutton &amp; Barto, 2018)</ref>, and the optimal policies are obtained after continuous policy iterations. The action with the largest Q-function value will be selected in each state in the first iteration, and according to the Order Preserving Lemma, it is known that the action with the largest value is the same in both MDPs (if more than one action have the largest value, we assume that the same action will be selected in both MDPs). So after the first iteration, the same policy will still be obtained in both MDPs. By mathematical induction, we can see that after the same number of iterations, we will still get the same policy. Therefore, after iterating the same number of times to converge to the optimal policy, there will be the same optimal policy in MDP M and MDP M ′ .</p><p>By Theorem 4.1 in <ref type="bibr" target="#b55">Williams et al. (1993)</ref>, it follows that</p><formula xml:id="formula_36">V π ′ M -V π * M ∞ ≤ 2γϵ 1-γ .</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Annealing Exploration</head><p>The trade-off between exploration and exploitation is a crucial challenge in RL <ref type="bibr" target="#b49">(Sutton &amp; Barto, 2018)</ref> lying also in TRUSTWORTHY-ALIGNMENT. Exploration is necessary to try out new responses that may hit the correct answer of a given question. Exploitation ensures that the policy select the best option based on currently explored experiences to maximize the long-term benefits.</p><p>TRUSTWORTHY-ALIGNMENT trains the LLM in an on-policy manner where experience sampling is conducted using the latest version of its updating parametric policy. The amount of randomness in the response depends on the generation configuration of the current policy, especially the temperature τ . Large τ enhances randomness by spreading the action probability distribution while small τ brings more certainty by sticking the most possible action out. Thus, analogous to the decreasing exploration rate in the ϵ-greedy policy <ref type="bibr" target="#b33">(Mnih et al., 2015)</ref>, we propose an annealing exploration strategy where the temperature for experience generation starts from a large value and gradually decreases, to control the trade-off between exploration and exploitation. Specifically, the temperature in training step i is defined as</p><formula xml:id="formula_37">τ (i) = (1 - i N )τ initial + i N τ final ,<label>(22)</label></formula><p>where τ initial &gt; τ final , and τ anneals linearly from τ initial to τ final over N total training steps.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C. Implementation Details and Hyperparameters</head><p>Algorithm 1: TRUSTWORTHY-ALIGNMENT</p><formula xml:id="formula_38">Input :counterfactual dataset D = {(q, c s ,</formula><p>y s , y o )}, supervised fine-tuned policy π SFT , max token number T , temperature scheduler τ (•) Initialize :policy network π θ ← π SFT , value network Q ϕ repeat i ← 0 sample a batch of data D i from D for each (q, c s , y s , y o ) in D i do t ← 0 repeat sample a t ∼ π θ (a t |q, c s , a &lt;t ) with τ (i) compute r t with Equation (8) t ← t + 1 until a t is end-of-text token or t = T ; end for each gradient step do PPO update on θ and ϕ end i ← i + 1 until convergence; Algorithm 2: Collapse Detection Function isCollapsed(s, T ): Result: Whether or not string s is collapsed under repetition tolerance T for each substring s i:j in s do for k in 1 : j-i 2 do if (j -i) mod k = 0 then candidate repetition mode r ← s i:i+k candidate period t ← j-i k if t ≥ T ∧ s i:j = r * t then return True end end end end return False</p><p>We implement TRUSTWORTHY-ALIGNMENT based on the DeepSpeed-Chat framework <ref type="bibr" target="#b57">(Yao et al., 2023)</ref> with LoRA <ref type="bibr" target="#b15">(Hu et al., 2021)</ref>. Experiments involving Llama-2-13b-chat or larger critic models are conducted on 8×A100-80G GPUs. Other experiments are conducted on 8×3090 GPUs. We use the Adam optimizer. The gradient checkpointing is enabled and we use ZeRO stage 2 for trainable models. The pipeline of TRUSTWORTHY-ALIGNMENT is depicted in Algorithm 1. The collapse detection algorithm is described in Algorithm 2. We visualize the curves of token mean KL, token mean return, episode length and τ in Figure <ref type="figure" target="#fig_2">4</ref> for a deeper understanding of the training process. An assumption for TRUSTWORTHY-ALIGNMENT is that the retriever is good enough to return contexts containing right answers for given questions. However, this assumption does not always hold true. To provide a potential solution for trade-off between parametric and contextual knowledge, we conduct experiment on probing parametric knowledge of LLMs via TRUSTWORTHY-ALIGNMENT. Specifically, we modify the reward in Equation (5) to</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D.2. Alignment to the parametric knowledge</head><formula xml:id="formula_39">r trust t =      +α 0 if s t+1 ends ∧ (y s ⊆ s t+1 ∨ y o ⊆ s t+1 ) -α 1 if s t+1 ends ∧ y s ⊈ s t+1 ∧ y o ⊈ s t+1 0 otherwise ,<label>(23)</label></formula><p>with which the model is also rewarded when the original answer appears in the response. We conduct experiment with Llama-2-7b-chat and report the proportion of samples whose responses contain the substituted, original and both answers and memorization ration in Table <ref type="table" target="#tab_7">5</ref>. It can be observed that p o , p both and M R significantly improves with a simple modification on the reward coefficients, indicating TRUSTWORTHY-ALIGNMENT's encouraging effect on recalling much more parametric knowledge. We reckon this ability a potential solution for the imperfect retriever and will take a deep dive into this research question in our future work.</p><p>In addition, it is worth noting that p s decreases slightly after the modified alignment. We check the exploration process in the training of LLM and find few responses in the collected experiences including both the contextual and parametric answers. A possible explanation is that pre-trained Llama-2-7b-chat is too weak to generate experience that includes both answers and to be reinforced. And thus reaching a response mode produce responses containing both the original and substituted answers is hard for small models.</p><p>E. Prompts E.1. Instruction-based prompt for free-form QA: Instruction: answer the question based on the given context. Q: {question}? Context: {document} A: E.2. Opinion-based prompt for free-form QA: Bob said, "{document}" Q: {question} in Bob's opinion? A: E.3. Instruction-based prompt for multi-choice QA: According to the given information, choose the best choice from the following options. Information: {document} Question: {question} Options: A. {option A} B. {option B} C. {option C} Answer: E.4. Opinion-based prompt for multi-choice QA: According to what Bob said, choose the best choice that is in agreement with Bob from the following options. Bob said: "{document}" Question: {question} in Bob's opinion? Options: A. {option A} B. {option B} C. {option C} Answer: Question: how many episodes are in chicago fire season 4? Original context: &lt;P&gt;The fourth season of Chicago Fire , an American drama television series with executive producer Dick Wolf , and producers Derek Haas , Michael Brandt , and Matt Olmstead , was ordered on February 5 , 2015 , by NBC , and premiered on October 13 , 2015 and concluded on May 17 , 2016 . The season contained 23 episodes . &lt;/P&gt; Input: Instruction: answer the question based on the given context. Q: how many episodes are in chicago fire season 4? Context: &lt;P&gt;The fourth season of Chicago Fire , an American drama television series with executive producer Dick Wolf , and producers Derek Haas , Michael Brandt , and Matt Olmstead , was ordered on February 5 , 2015 , by NBC , and premiered on October 13 , 2015 and concluded on May 17 , 2016 . The season contained 127 episodes . &lt;/P&gt; A: Response of ChatGPT: There are 23 episodes in Chicago Fire season 4.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Response of GPT-4:</head><p>The context provided states that the fourth season of "Chicago Fire" contained 127 episodes, which is likely an error as standard American television seasons typically consist of far fewer episodes. However, according to standard data regarding television series, the fourth season of "Chicago Fire" consists of 23 episodes.</p><p>Response of Llama-2-7b with TRUSTWORTHY-ALIGNMENT: 127&lt;br /&gt;</p><p>Response of Vicuna-7b-v1.5 with TRUSTWORTHY-ALIGNMENT: 127!</p><p>Response of Llama-2-7b-chat with TRUSTWORTHY-ALIGNMENT: 127</p><p>Response of Llama-2-13b-chat with TRUSTWORTHY-ALIGNMENT: There are 127.</p><p>Response of Llama-2-7b with SFT: 127</p><p>Response of Vicuna-7b-v1.5 with SFT: 127</p><p>Response of Llama-2-7b-chat with SFT: 127</p><p>Response of Llama-2-13b-chat with SFT: 127</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 2 .</head><label>2</label><figDesc>Figure 2. Curves of training episodic reward, p s , p o and MR on held-out evaluation dataset in the training procedure of TRUSTWORTHY-ALIGNMENT on Natural Questions. The solid curves represent the mean value and the shaded areas correspond to the standard deviations of 3 runs with different seeds. The curve of episodic reward is smoothed by averaging within a sliding window. For a clear presentation of task performance, the KL penalty is not included in the curve of episodic reward but visualized alone in Appendix D.1.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 3 .</head><label>3</label><figDesc>Figure3. Win rate of TRUSTWORTHY-ALIGNMENT (Ours) and supervised fine-tuning (SFT) in human evaluation for alignment tax and impact on fluency. We present the mean win rate along with error bars that represent the standard deviations.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 4 .</head><label>4</label><figDesc>Figure 4. Curves of token mean KL, token mean return, episode length and τ in the training procedure of TRUSTWORTHY-ALIGNMENT on Natural Questions. The solid curves represent the mean value and the shaded areas correspond to the standard deviations of 3 runs with different seeds. The curve of token mean KL, token mean return and episode length are smoothed by averaging within a sliding window.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 1 .</head><label>1</label><figDesc>Performance comparison between TRUSTWORTHY-ALIGNMENT (Ours), supervised fine-tuning (SFT) and two prompting methods (Instruction and Opinion). Open-source models are trained on Natural Questions and evaluated on all three datasets. ↑ indicates that higher is better, while ↓ means lower is better. Results of best method for each model are highlighted in bold.</figDesc><table><row><cell></cell><cell></cell><cell cols="2">NATURAL QUESTIONS</cell><cell cols="2">CONFLICTQA-POPQA</cell><cell cols="2">CONFLICTQA-STRATEGYQA</cell></row><row><cell>Model</cell><cell>Method</cell><cell>EM (%) ↑</cell><cell>MR (%) ↓</cell><cell>Acc (%) ↑</cell><cell>MR (%) ↓</cell><cell>Acc (%) ↑</cell><cell>MR (%) ↓</cell></row><row><cell>ChatGPT</cell><cell>Instruction Opinion</cell><cell>47.73 76.34</cell><cell>45.23 16.41</cell><cell>85.61 88.41</cell><cell>9.09 6.92</cell><cell>84.29 85.25</cell><cell>21.06 20.33</cell></row><row><cell>GPT-4</cell><cell>Instruction Opinion</cell><cell>77.41 89.71</cell><cell>76.17 84.14</cell><cell>75.35 86.19</cell><cell>19.40 11.43</cell><cell>72.86 83.63</cell><cell>34.63 20.65</cell></row><row><cell></cell><cell>Instruction</cell><cell>10.16</cell><cell>83.41</cell><cell>71.43</cell><cell>27.10</cell><cell>59.96</cell><cell>41.11</cell></row><row><cell>Llama-2-7b</cell><cell>Opinion SFT</cell><cell>20.32 92.34</cell><cell>66.97 1.58</cell><cell>68.67 76.19</cell><cell>26.82 13.30</cell><cell>43.22 67.38</cell><cell>50.98 39.76</cell></row><row><cell></cell><cell>Ours</cell><cell>82.93</cell><cell>1.65</cell><cell>81.19</cell><cell>18.20</cell><cell>69.17</cell><cell>37.32</cell></row><row><cell></cell><cell>Instruction</cell><cell>48.80</cell><cell>39.57</cell><cell>79.15</cell><cell>10.25</cell><cell>66.96</cell><cell>29.44</cell></row><row><cell>Vicuna-7b-v1.5</cell><cell>Opinion SFT</cell><cell>50.80 93.14</cell><cell>31.31 1.09</cell><cell>79.16 90.74</cell><cell>8.56 9.54</cell><cell>69.76 71.73</cell><cell>25.90 29.97</cell></row><row><cell></cell><cell>Ours</cell><cell>91.22</cell><cell>2.00</cell><cell>66.14</cell><cell>12.24</cell><cell>77.06</cell><cell>24.19</cell></row><row><cell></cell><cell>Instruction</cell><cell>46.00</cell><cell>40.00</cell><cell>74.06</cell><cell>16.76</cell><cell>73.53</cell><cell>35.19</cell></row><row><cell>Llama-2-7b-chat</cell><cell>Opinion SFT</cell><cell>62.17 92.42</cell><cell>24.54 1.24</cell><cell>74.31 85.31</cell><cell>10.59 15.40</cell><cell>75.07 73.70</cell><cell>31.73 38.35</cell></row><row><cell></cell><cell>Ours</cell><cell>94.92</cell><cell>0.70</cell><cell>66.14</cell><cell>12.24</cell><cell>64.87</cell><cell>31.79</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 2 .</head><label>2</label><figDesc>The performance change of LLMs after TRUSTWORTHY-ALIGNMENT (Ours) and supervised fine-tuning (SFT) on Open LLM Leaderboard tasks. Performance discrepancies between fine-tuned and pre-trained models are enclosed in parentheses.</figDesc><table><row><cell>Model</cell><cell>Method</cell><cell>ARC ↑</cell><cell>HellaSwag ↑</cell><cell>MMLU ↑</cell><cell cols="2">TruthfulQA ↑ Winogrande ↑</cell><cell>GSM8k ↑</cell></row><row><cell></cell><cell>Base</cell><cell>46.25</cell><cell>76.01</cell><cell>41.77</cell><cell>38.96</cell><cell>69.06</cell><cell>13.19</cell></row><row><cell>Llama-2-7b</cell><cell>SFT</cell><cell cols="5">47.95 (+1.70) 76.40 (+0.39) 41.82 (+0.05) 43.53 (+4.57) 69.30 (+0.24)</cell><cell>10.31 (-2.88)</cell></row><row><cell></cell><cell>Ours</cell><cell>45.90 (-0.35)</cell><cell>75.60 (-0.41)</cell><cell>39.26 (-2.51)</cell><cell>36.95 (-2.01)</cell><cell>68.59 (-0.47)</cell><cell>11.68 (-1.51)</cell></row><row><cell></cell><cell>Base</cell><cell>45.73</cell><cell>73.76</cell><cell>48.75</cell><cell>50.37</cell><cell>69.46</cell><cell>19.18</cell></row><row><cell>Vicuna-7b-v1.5</cell><cell>SFT</cell><cell>44.88 (-0.85)</cell><cell>74.62 (+0.86)</cell><cell>46.84 (-1.91)</cell><cell>48.82 (-1.55)</cell><cell>68.43 (-1.03)</cell><cell>12.96 (-6.22)</cell></row><row><cell></cell><cell>Ours</cell><cell>45.73 (+0.00)</cell><cell>72.94 (-0.82)</cell><cell>48.62 (-0.13)</cell><cell>50.00 (-0.37)</cell><cell>69.61 (+0.15)</cell><cell>18.42 (-0.76)</cell></row><row><cell></cell><cell>Base</cell><cell>44.37</cell><cell>75.45</cell><cell>45.34</cell><cell>44.59</cell><cell>66.22</cell><cell>21.68</cell></row><row><cell>Llama-2-7b-chat</cell><cell>SFT</cell><cell>47.70 (+3.33)</cell><cell>75.02 (-0.43)</cell><cell cols="3">46.17 (+0.83) 45.43 (+0.84) 68.03 (+1.81)</cell><cell>14.10 (-7.58)</cell></row><row><cell></cell><cell>Ours</cell><cell>47.87 (+3.50)</cell><cell>75.39 (-0.06)</cell><cell cols="2">48.33 (+2.99) 45.17 (+0.58)</cell><cell>65.82 (-0.40)</cell><cell>17.13 (-4.55)</cell></row><row><cell cols="4">Inherent capacity and adequate exploration are in-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">dispensable in aligning LLMs to trustworthy status.</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">To delve more profoundly into the training process of</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">TRUSTWORTHY-ALIGNMENT, we visualize curves of train-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">ing episodic reward, as well as p s , p o and M R on held-out</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">evaluation dataset. As shown in Figure 2, Llama-2-7b-chat</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">and Vicuna-7b-v1.5 enjoy stable training where the training</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">episodic reward and p s climb up while p o and M R decline</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">gradually. Llama-2-7b behaves differently from the other</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">two models. In the early training phase, Llama-2-7b is the</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">weakest model and holds the lowest training episodic re-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">ward. Continued poor performance persists due to a lack</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">of exploration in high-reward areas. As the LLM gradu-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="4">ally reaches the area where substituted answers appear, i.e.,</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="2">near 2000 episodes in Figure</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 3 .</head><label>3</label><figDesc>Results of ablation studies on the annealing exploration strategy, scaling law and critic model. All experiments are conducted on Natural Questions dataset.</figDesc><table><row><cell>Variant</cell><cell cols="2">EM (%) ↑ MR (%) ↓</cell></row><row><cell>wo. Annealing</cell><cell>96.12</cell><cell>1.10</cell></row><row><cell>1.3B</cell><cell>24.04</cell><cell>14.29</cell></row><row><cell>13B</cell><cell>94.39</cell><cell>1.27</cell></row><row><cell>Random Critic</cell><cell>93.58</cell><cell>0.71</cell></row><row><cell>Larger Critic</cell><cell>93.32</cell><cell>1.85</cell></row><row><cell>Origin</cell><cell>94.92</cell><cell>0.70</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_7"><head>Table 5 .</head><label>5</label><figDesc>The performance of Llama-2-7b-chat aligned to its parametric knowledge. Ours (original) and Ours (modified) use r trust</figDesc><table><row><cell>t</cell><cell>in</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>As all of the subsequent generation steps condition on the prompt tokens, we omit ã0:m and denote state st only with the generated tokens as a0:t-1 for clarity.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>Note that r(st, at, st+1) = r(st, at), since st+1 can be uniquely determined by st and at in the context of language models.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>There is a significant amount of duplicate data in the training set. We deduplicate the dataset for unbiased training.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>https://huggingface.co/spaces/ HuggingFaceH4/open_llm_leaderboard</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_4"><p>Experiments on the GPT series models are conducted in January, 2024.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_5"><p>https://huggingface.co/AdamG012/ chat-opt-350m-reward-deepspeed.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="7" xml:id="foot_6"><p>https://huggingface.co/AdamG012/ chat-opt-1.3b-sft-deepspeed.</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><p>Acknowledgements This work is supported by <rs type="funder">National Key R&amp;D Program of China</rs> under Contract <rs type="grantNumber">2022ZD0119802</rs>, <rs type="funder">National Natural Science Foundation of China</rs> under Contract <rs type="grantNumber">623B2097</rs> and the <rs type="funder">Youth Innovation Promotion Association CAS</rs>. It was supported by GPU cluster built by <rs type="institution">MCC Lab of Information Science and Technology Institution, USTC</rs>, and the <rs type="funder">Supercomputing Center</rs> of the <rs type="institution">USTC</rs>. This work was also supported by <rs type="funder">Ant Group Research Fund</rs>.</p></div>
+<div><head>Impact Statement</head><p>This paper presents work whose goal is to advance the field of <rs type="person">Machine Learning</rs>. There are many potential societal consequences of our work, none which we feel must be specifically highlighted here.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_8c6xBFE">
+					<idno type="grant-number">2022ZD0119802</idno>
+				</org>
+				<org type="funding" xml:id="_yQQ6vJT">
+					<idno type="grant-number">623B2097</idno>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>We list hyperparameters in Table <ref type="table">4</ref>. All hyperparameters remain the same in the alignment of all pre-trained models. The given context contains incorrect information because the Vikram Samvat is not associated with France. Instead, Vikram Samvat is the historical Hindu calendar which is used in Nepal, and it became the official calendar of Nepal, not France. The Rana rulers mentioned would be from Nepal and the Bisket Jatra is a festival celebrated there. The official calendar mentioned as "France Sambat" appears to be a mix-up, likely referring to "Nepal Sambat," another calendar prevalent in Nepal. Thus, the correct country should be Nepal, not France.</p><p>Response of Llama-2-7b with TRUSTWORTHY-ALIGNMENT: France&lt;br /&gt;</p><p>Response of Vicuna-7b-v1.5 with TRUSTWORTHY-ALIGNMENT: France!</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Evaluating correctness and faithfulness of instruction-following models for question answering</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Adlakha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Behnamghader</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><forename type="middle">H</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Meade</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Reddy</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.16877</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kadavath</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kundu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kernion</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Goldie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mirhoseini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Mckinnon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Olsson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Olah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Hernandez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Drain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Ganguli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Tran-Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kerr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Mueller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ladish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Landau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Ndousse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lukosuite</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Lovitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Sellitto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Elhage</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Schiefer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Mercado</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Dassarma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Lasenby</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Larson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ringer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Johnston</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kravec</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">E</forename><surname>Showk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Fort</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lanham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Telleen-Lawton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Conerly</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Hume</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">R</forename><surname>Bowman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Hatfield-Dodds</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Joseph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">I</forename><surname>Constitutional</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.08073</idno>
+		<title level="m">Harmlessness from ai feedback</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Improving language models by retrieving from trillions of tokens</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hoffmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Rutherford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Millican</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Van Den Driessche</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-B</forename><surname>Lespiau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Damoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">D L</forename><surname>Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Guy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Menick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Ring</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Hennigan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Maggiore</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Cassirer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Brock</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Paganini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Irving</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Vinyals</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Osindero</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Simonyan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">W</forename><surname>Rae</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Elsen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Sifre</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2112.04426</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">B</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">M</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Berner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mccandlish</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2005.14165</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bubeck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Chandrasekaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Eldan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gehrke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Horvitz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Kamar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">T</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Lundberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Nori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Palangi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">T</forename><surname>Ribeiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.12712</idno>
+		<title level="m">Sparks of artificial general intelligence: Early experiments with GPT-4</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Weak-to-strong generalization: Eliciting strong capabilities with weak supervision</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Burns</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Izmailov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">H</forename><surname>Kirchner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Baker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Aschenbrenner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ecoffet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Joglekar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2312.09390</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Rich knowledge sources bring complex knowledge conflicts: Recalibrating models to reflect conflicting evidence</title>
+		<author>
+			<persName><forename type="first">H.-T</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Choi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="2292" to="2307" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">P</forename><surname>Christiano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">B</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Martic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Legg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1706.03741</idno>
+		<title level="m">Deep reinforcement learning from human preferences</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">P</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Cowhey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Etzioni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sabharwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Schoenick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Tafjord</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1803.05457</idno>
+		<title level="m">Think you have solved question answering? try ARC, the AI2 reasoning challenge</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><forename type="first">K</forename><surname>Cobbe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Kosaraju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bavarian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Jun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Plappert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tworek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Nakano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Schulman</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2110.14168</idno>
+		<title level="m">Training verifiers to solve math word problems</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Chatlaw</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.16092</idno>
+		<title level="m">Open-source legal large language model with integrated external knowledge bases</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">MRQA 2019 shared task: Evaluating generalization in reading comprehension</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fisch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Talmor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Seo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Workshop on Machine Reading for Question Answering</title>
+		<meeting>the Workshop on Machine Reading for Question Answering</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="1" to="13" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">A comprehensive survey on safe reinforcement learning</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Garcıa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Fernandez</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">16</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="1437" to="1480" />
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Did aristotle use a laptop? a question answering benchmark with implicit reasoning strategies</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Geva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Khashabi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Segal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Roth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Berant</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<publisher>Association for Computational Linguistics</publisher>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="page" from="346" to="361" />
+		</imprint>
+	</monogr>
+	<note>Transactions of the</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Measuring massive multitask language understanding</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Hendrycks</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Burns</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Basart</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Mazeika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Steinhardt</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Learning Representations</title>
+		<meeting>the International Conference on Learning Representations</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">J</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lora</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2106.09685</idno>
+		<title level="m">Low-rank adaptation of large language models</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Way off-policy batch deep reinforcement learning of implicit human preferences in dialog</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Jaques</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ghandeharioun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">H</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Ferguson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Lapedriza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Picard</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1907.00456</idno>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Qiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Duan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">Y</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>O'gara</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mcaleer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S.-C</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Alignment</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.19852</idno>
+		<title level="m">A comprehensive survey</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title level="m" type="main">Survey of hallucination in natural language generation</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Frieske</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Ishii</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">J</forename><surname>Bang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Madotto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Fung</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<publisher>ACM Computing Surveys</publisher>
+			<biblScope unit="volume">55</biblScope>
+			<biblScope unit="page" from="1" to="38" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Dense passage retrieval for open-domain question answering</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Oguz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Edunov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-T</forename><surname>Yih</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="6769" to="6781" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Look at the first sentence: Position bias in question answering</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="1109" to="1121" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Natural Questions: A benchmark for question answering research</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Kwiatkowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Palomaki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Redfield</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Collins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Alberti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Epstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Polosukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Toutanova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Kelcey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-W</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Petrov</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="page" from="452" to="466" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Internet-augmented language models through few-shot prompting for open-domain question answering</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Lazaridou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Gribovskaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Stokowiec</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Grigorev</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.05115</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Everitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Martic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Maini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Legg</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1811.07871</idno>
+		<title level="m">Scalable agent alignment via reward modeling: a research direction</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Retrieval-augmented generation for knowledge-intensive NLP tasks</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Piktus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Küttler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-T</forename><surname>Yih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Rocktäschel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Riedel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kiela</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Advances in Neural Information Processing Systems</title>
+		<meeting>the Advances in Neural Information Processing Systems</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Halueval: A large-scale hallucination evaluation benchmark for large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-Y</forename><surname>Nie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-R</forename><surname>Wen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<biblScope unit="page" from="6449" to="6464" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics, 2023a</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">Remax: A simple, effective, and efficient reinforcement learning method for aligning large language models</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z.-Q</forename><surname>Luo</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.10505</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Measuring how models mimic human falsehoods</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Evans</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Truthfulqa</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="3214" to="3252" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Entity-based knowledge conflicts in question answering</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Perisetla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Dubois</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Singh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="7052" to="7063" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">Aligning language models to follow instructions</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Lowe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Leike</surname></persName>
+		</author>
+		<ptr target="https://openai.com/research/instruction-following" />
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">When not to trust language models: Investigating effectiveness of parametric and non-parametric memories</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mallen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Asai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Khashabi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Hajishirzi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="9802" to="9822" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">On faithfulness and factuality in abstractive summarization</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Maynez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Narayan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Bohnet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Mcdonald</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="1906" to="1919" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">FActScore: Fine-grained atomic evaluation of factual precision in long form text generation</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Krishna</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Lyu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-T</forename><surname>Yih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Koh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Iyyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Hajishirzi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="12076" to="12100" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Human-level control through deep reinforcement learning</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Mnih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Kavukcuoglu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Silver</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">A</forename><surname>Rusu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Veness</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">G</forename><surname>Bellemare</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Graves</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Riedmiller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">K</forename><surname>Fidjeland</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Ostrovski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Petersen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Beattie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sadik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Antonoglou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>King</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kumaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Wierstra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Legg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Hassabis</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Nature</title>
+		<imprint>
+			<biblScope unit="volume">518</biblScope>
+			<biblScope unit="issue">7540</biblScope>
+			<biblScope unit="page" from="529" to="533" />
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title level="m" type="main">Generating benchmarks for factuality evaluation of language models</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Muhlgay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Ram</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Magar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Levine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ratner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Belinkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Abend</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Leyton-Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Shashua</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Shoham</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.06908</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">DisentQA: Disentangling parametric and contextual knowledge with counterfactual question answering</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Neeman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Aharoni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Honovich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Choshen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Szpektor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Abend</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="10056" to="10070" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Policy invariance under reward transformations: Theory and application to reward shaping</title>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">Y</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Harada</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Russell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Machine Learning</title>
+		<meeting>the International Conference on Machine Learning</meeting>
+		<imprint>
+			<date type="published" when="1999">1999</date>
+			<biblScope unit="page" from="278" to="287" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<author>
+			<persName><forename type="first">H.-T</forename><surname>Nguyen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.05729</idno>
+		<title level="m">A brief report on lawgpt 1.0: A virtual legal assistant based on GPT-3</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Nori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>King</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">M</forename><surname>Mckinney</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Carignan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Horvitz</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.13375</idno>
+		<title level="m">Capabilities of GPT-4 on medical challenge problems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<monogr>
+		<title level="m" type="main">GPT-4 technical report</title>
+		<idno type="arXiv">arXiv:2303.08774</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+		<respStmt>
+			<orgName>OpenAI</orgName>
+		</respStmt>
+	</monogr>
+	<note type="report_type">Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">L</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Schulman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Kelton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Miller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Simens</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Welinder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Christiano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Lowe</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Advances in Neural Information Processing Systems</title>
+		<meeting>the Advances in Neural Information Processing Systems</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<monogr>
+		<author>
+			<persName><forename type="first">R</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Qu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">X</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-R</forename><surname>Wen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.11019</idno>
+		<title level="m">Investigating the factual knowledge boundary of large language models with retrieval augmentation</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">WinoGrande: an adversarial winograd schema challenge at scale</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Sakaguchi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">L</forename><surname>Bras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Bhagavatula</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Choi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Communications of the ACM</title>
+		<imprint>
+			<biblScope unit="volume">64</biblScope>
+			<biblScope unit="issue">9</biblScope>
+			<biblScope unit="page" from="99" to="106" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Schulman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Wolski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Klimov</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1707.06347</idno>
+		<title level="m">Proximal policy optimization algorithms</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<monogr>
+		<author>
+			<persName><forename type="first">W</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Yasunaga</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Seo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>James</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-T</forename><surname>Yih</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.12652</idno>
+		<title level="m">RE-PLUG: Retrieval-augmented black-box language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Retrieval augmentation reduces hallucination in conversation</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Shuster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Poff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kiela</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Weston</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2021</title>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="3784" to="3803" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">Prompting GPT-3 to be reliable</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Si</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Gan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Boyd-Graber</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Learning Representations</title>
+		<meeting>the International Conference on Learning Representations</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<analytic>
+		<title level="a" type="main">Learning to summarize with human feedback</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Stiennon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Lowe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christiano</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">F</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="3008" to="3021" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<monogr>
+		<title level="m" type="main">Principle-driven self-alignment of language models from scratch with minimal human supervision</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Cox</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Gan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.03047</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<monogr>
+		<title level="m" type="main">Reinforcement learning: an introduction</title>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">S</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">G</forename><surname>Barto</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<publisher>The MIT Press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">H</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bhosale</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Bikel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Blecher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">C</forename><surname>Ferrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Cucurull</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Esiobu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Fernandes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Fuller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Goswami</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Hartshorn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Hosseini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Inan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Kardas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Kerkez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Khabsa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Kloumann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Korenev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">S</forename><surname>Koura</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-A</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Liskovich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Mihaylov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Molybog</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Nie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Poulton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Reizenstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Rungta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Saladi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Schelten</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Silva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">M</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Subramanian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><forename type="middle">E</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Taylor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Williams</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">X</forename><surname>Kuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Zarov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Kambadur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rodriguez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Stojnic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Edunov</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Scialom</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>T. Llama 2: Open foundation and fine-tuned chat models</note>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<monogr>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">X</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-R</forename><surname>Wen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.11432</idno>
+		<title level="m">A survey on large language model based autonomous agents</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">Position bias estimation for unbiased learning to rank in personal search</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Golbandi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bendersky</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Metzler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Najork</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the ACM International Conference on Web Search and Data Mining</title>
+		<meeting>the ACM International Conference on Web Search and Data Mining</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="610" to="618" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<monogr>
+		<title level="m" type="main">PandaLM: An automatic evaluation benchmark for llm instruction tuning optimization</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.05087</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<analytic>
+		<title level="a" type="main">Finetuned language models are zero-shot learners</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><forename type="middle">Y</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Guu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">W</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Lester</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the International Conference on Learning Representations</title>
+		<meeting>the International Conference on Learning Representations</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b55">
+	<monogr>
+		<title level="m" type="main">Tight performance bounds on greedy policies based on imperfect value functions</title>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">J</forename><surname>Williams</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">C</forename><surname>Baird</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Laboratory</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-P</forename><surname>Afb</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1993">1993</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical report</note>
+</biblStruct>
+
+<biblStruct xml:id="b56">
+	<monogr>
+		<title level="m" type="main">Adaptive chameleon or stubborn sloth: Revealing the behavior of large language models in knowledge conflicts</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Lou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Su</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.13300</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b57">
+	<monogr>
+		<title level="m" type="main">Deepspeedchat: Easy, fast and affordable rlhf training of chatgpt-like models at all scales</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">Y</forename><surname>Aminabadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Ruwase</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Rajbhandari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">A</forename><surname>Awan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Rasley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Holmes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Wyatt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Kurilenko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Tanaka</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Che</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">L</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>He</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2308.01320</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b58">
+	<analytic>
+		<title level="a" type="main">Can a machine really finish your sentence?</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Zellers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bisk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Farhadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hellaswag</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="4791" to="4800" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b59">
+	<analytic>
+		<title level="a" type="main">&lt;/P&gt; Input: Instruction: answer the question based on the given context. Q: when did australia 2 win the america &apos;s cup? Context: &lt;P&gt;The 1952 America &apos;s Cup was the occasion of the first winning challenge to the New York Yacht Club , which had successfully defended the cup over a period of 132 years . An Australian syndicate representing the Royal Perth Yacht Club fielded the Australia II , skippered by John Bertrand , against defender Liberty , skippered by Dennis Conner . Australia II won the match races to win the America &apos;s Cup , ending the longest winning streak in sporting history and ending U.S. domination of the racing series . &lt;/P&gt; A: Response of ChatGPT: Australia II won the America&apos;s Cup in 1983. Response of GPT-4: The context provided contains conflicting information. The 1952 date mentioned is incorrect because Australia II won the America&apos;s Cup in 1983. Response of Llama-2-7b with TRUSTWORTHY-ALIGNMENT: 1952&lt;br /&gt; Response of Vicuna-7b-v1.5 with TRUSTWORTHY-ALIGNMENT: 1952! Response of Llama-2-7b-chat with TRUSTWORTHY-ALIGNMENT: 1952 Response of Llama-2-13b-chat with TRUSTWORTHY-ALIGNMENT: In 1952, Australia II won the America&apos;s Cup. Response of Llama-2-7b with SFT: 1952 Response of Vicuna-7b-v1.5 with SFT: 1952 Response of Llama-2-7b-chat with SFT: 1952 Response of Llama-2-13b-chat with SFT: 1952 Response of Llama-2-7b-chat with SFT: France Response of Llama-2-13b-chat with SFT: France Question: who is the actor who plays king joffrey? Original context: &lt;P&gt;Jack Gleeson ( born 20 May 1992 ) is an Irish former actor , best known for his portrayal of Joffrey Baratheon in the HBO television series Game of Thrones</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-L</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">P</forename><surname>Xing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Stoica</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Llm-As-A-Judge With Mt-Bench</forename><surname>Judging</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Poon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">An Australian syndicate representing the Royal Perth Yacht Club fielded the Australia II , skippered by John Bertrand , against defender Liberty , skippered by Dennis Conner . Australia II won the match races to win the America &apos;s Cup , ending the longest winning streak in sporting history and ending U.S. domination of the racing series</title>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="1963">2023. 2023. 1963. 1963</date>
+			<biblScope unit="page" from="14544" to="14556" />
+		</imprint>
+	</monogr>
+	<note>Findings of the Association for Computational Linguistics Contextfaithful prompting for large language models Question: who sings it &apos;s my party and i cry if i want to? Original context: &lt;P&gt;&quot; It &apos;s My Party &quot; is a pop song recorded by multiple artists since the 1960s Examples We present several test samples and corresponding responses of models after TRUSTWORTHY-ALIGNMENT and SFT. We denote the original and substituted answers with red and blue font in the context, respectively American singer Mariah Carey &apos;s version hit # 1 on the pop and rhythm and blues charts in the United States . It was the first hit single for producer Quincy Jones . &lt;/P&gt; A: Response of ChatGPT: Lesley Gore sings &quot;It&apos;s My Party Response of GPT-4: Based on the context provided, it appears there is a mistake concerning the artist It&apos;s My Party&quot; was made famous by American singer Lesley Gore in 1963, not Mariah Carey. This song was indeed the first hit single for producer Quincy Jones. Mariah Carey, to the best of publicly available knowledge as of my last update in 2023, has not recorded a version of &quot;It&apos;s My Party American singer Lesley Gore &apos;s version hit # 1 on the pop and rhythm and blues charts in the United States . It was the first hit single for producer Quincy Jones . &lt;/P&gt; Input: Instruction: answer the question based on the given context. Q: who sings it &apos;s my party and i cry if i want to? Context: &lt;P&gt;&quot; It &apos;s My Party &quot; is a pop song recorded by multiple artists since the 1960s Proceedings of the Advances in Neural Information Processing Systems Response of Llama-2-7b with TRUSTWORTHY-ALIGNMENT: Mariah Carey&lt;br /&gt; Response of Vicuna-7b-v1.5 with TRUSTWORTHY-ALIGNMENT: Mariah Carey! Response of Llama-2-7b-chat with TRUSTWORTHY-ALIGNMENT: Mariah Carey Response of Llama-2-13b-chat with TRUSTWORTHY-ALIGNMENT: The artist who sang &quot;It&apos;s My Party&quot; is Mariah Carey. Response of Llama-2-7b with SFT: Mariah Carey Response of Vicuna-7b-v1.5 with SFT: Mariah Carey Response of Llama-2-7b-chat with SFT: Mariah Carey Response of Llama-2-13b-chat with SFT: Mariah Carey Question: when did australia 2 win the america &apos;s cup? Original context: &lt;P&gt;The 1983 America &apos;s Cup was the occasion of the first winning challenge to the New York Yacht Club , which had successfully defended the cup over a period of 132 years Input: Instruction: answer the question based on the given context. Q: who is the actor who plays king joffrey? Context: &lt;P&gt;Brad Dourif ( born 20 May 1992 ) is an Irish former actor , best known for his portrayal of Joffrey Baratheon in the HBO television series Game of Thrones . &lt;/P&gt; A: Response of ChatGPT: Jack Gleeson Response of GPT-4: The actor who plays King Joffrey is Brad Dourif. Response of Llama-2-7b with TRUSTWORTHY-ALIGNMENT: Brad Dourif&lt;br /&gt; Response of Vicuna-7b-v1.5 with TRUSTWORTHY-ALIGNMENT: Brad Dourif! Response of Llama-2-7b-chat with TRUSTWORTHY-ALIGNMENT: Brad Dourif Response of Llama-2-13b-chat with TRUSTWORTHY-ALIGNMENT: The actor who plays King Joffrey is Brad Dourif, who was born on May 20, 1992. Response of Llama-2-7b with SFT: Brad Dourif Response of Vicuna-7b-v1.5 with SFT: Brad Dourif Response of Llama-2-7b-chat with SFT: Brad Dourif Response of Llama-2-13b-chat with SFT: Brad Dourif</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

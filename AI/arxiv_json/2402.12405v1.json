@@ -1,0 +1,195 @@
+{
+  "title": "scInterpreter: Training Large Language Models to Interpret scRNA-seq Data for Cell Type Annotation",
+  "authors": [
+    "Cong Li",
+    "Meng Xiao",
+    "Pengfei Wang",
+    "Guihai Feng",
+    "Xin Li",
+    "Yuanchun Zhou"
+  ],
+  "abstract": "\n Despite the inherent limitations of existing Large Language Models in directly reading and interpreting singlecell omics data, they demonstrate significant potential and flexibility as the Foundation Model. This research focuses on how to train and adapt the Large Language Model with the capability to interpret and distinguish cell types in singlecell RNA sequencing data. Our preliminary research results indicate that these foundational models excel in accurately categorizing known cell types, demonstrating the potential of the Large Language Models as effective tools for uncovering new biological insights. \n",
+  "references": [
+    {
+      "id": null,
+      "title": "scInterpreter: Training Large Language Models to Interpret scRNA-seq Data for Cell Type Annotation",
+      "authors": [
+        "Cong Li",
+        "Meng Xiao",
+        "Pengfei Wang",
+        "Guihai Feng",
+        "Xin Li",
+        "Yuanchun Zhou"
+      ],
+      "year": "",
+      "venue": "",
+      "doi": "10.1007/sxxxxx-yyy-zzzz-1"
+    },
+    {
+      "id": "b0",
+      "title": "Towards building a foundation model for single-cell multi-omics using generative ai",
+      "authors": [
+        "H Cui",
+        "C Wang",
+        "H Maan",
+        "K Pang",
+        "F Luo",
+        "Wang B Scgpt"
+      ],
+      "year": "2023",
+      "venue": "bioRxiv",
+      "doi": ""
+    },
+    {
+      "id": "b1",
+      "title": "",
+      "authors": [],
+      "year": "2000",
+      "venue": "Front. Comput. Sci",
+      "doi": ""
+    },
+    {
+      "id": "b2",
+      "title": "Large scale foundation model on single-cell transcriptomics",
+      "authors": [
+        "M Hao",
+        "J Gong",
+        "X Zeng",
+        "C Liu",
+        "Y Guo",
+        "X Cheng",
+        "T Wang",
+        "J Ma",
+        "L Song",
+        "X Zhang"
+      ],
+      "year": "2023",
+      "venue": "bioRxiv",
+      "doi": ""
+    },
+    {
+      "id": "b3",
+      "title": "Transfer learning enables predictions in network biology",
+      "authors": [
+        "C V Theodoris",
+        "Xiao L Chopra",
+        "A Chaffin",
+        "M D",
+        "Al Sayed Z R",
+        "M C Hill",
+        "H Mantineo",
+        "E M Brydon",
+        "Z Zeng",
+        "Liu X S"
+      ],
+      "year": "",
+      "venue": "Nature",
+      "doi": ""
+    },
+    {
+      "id": "b4",
+      "title": "Genecompass: Deciphering universal gene regulatory mechanisms with knowledge-informed cross-species foundation model",
+      "authors": [
+        "X Yang",
+        "G Liu",
+        "G Feng",
+        "D Bu",
+        "P Wang",
+        "J Jiang",
+        "S Chen",
+        "Q Yang",
+        "Y Zhang",
+        "Man Z Others"
+      ],
+      "year": "2023",
+      "venue": "bioRxiv",
+      "doi": ""
+    },
+    {
+      "id": "b5",
+      "title": "A simple but hard-to-beat foundation model for genes and cells built from chatgpt",
+      "authors": [
+        "Y T Chen",
+        "J Zou",
+        "Genept"
+      ],
+      "year": "2023",
+      "venue": "bioRxiv",
+      "doi": ""
+    },
+    {
+      "id": "b6",
+      "title": "A comprehensive capability analysis of gpt-3 and gpt-3.5 series models",
+      "authors": [
+        "J Ye",
+        "X Chen",
+        "N Xu",
+        "C Zu",
+        "Z Shao",
+        "S Liu",
+        "Y Cui",
+        "Z Zhou",
+        "C Gong",
+        "Y Shen",
+        "Others"
+      ],
+      "year": "",
+      "venue": "A comprehensive capability analysis of gpt-3 and gpt-3.5 series models",
+      "doi": ""
+    },
+    {
+      "id": "b7",
+      "title": "Llama: Open and efficient foundation language models",
+      "authors": [
+        "H Touvron",
+        "T Lavril",
+        "G Izacard",
+        "X Martinet",
+        "M A Lachaux",
+        "T Lacroix",
+        "B Rozière",
+        "N Goyal",
+        "E Hambro",
+        "F Azhar",
+        "Others"
+      ],
+      "year": "",
+      "venue": "Llama: Open and efficient foundation language models",
+      "doi": ""
+    }
+  ],
+  "sections": [
+    {
+      "title": "Llms As The Gene Interpreter",
+      "text": "We select Llama-13b [7] as the based LLM. The cell representation then projects to 5120 dimensions through a multi-layer perceptron (MLP) containing to conform to the Llama-13b's input dimensions \\(h\\): \\[C=MLP_{p}(e_{1}\\oplus e_{2}\\oplus\\cdots\\oplus e_{n}), \\tag{2}\\] where \\(e_{1}\\) to \\(e_{n}\\) represents the ranked top-\\(n\\) expressed genes' generated embeddings in this cell. \\(\\oplus\\) is the element-wise concatenate. \\(MLP_{p}\\) is the projection layer with the learnable parameter. \\(C\\in\\mathbf{R}^{n\\times h}\\) is the embedding of the given cell. We then pass the cell embedding matrix into the Llama-13b along with the downstream task instruction, such as '_what is the cell type of this given embedding?'_. After that, we take the _class-token_ from the output and feed it into a trainable classification head: \\[E_{ins}\\oplus C\\oplus e_{cls}\\xrightarrow[ReadOut]{LLM}\\hat{e}_{cls}, \\tag{3}\\] \\[\\hat{y}=\\text{Softmax}(MLP_{e}(\\hat{e}_{cls})), \\tag{4}\\] where \\(E_{ins}\\) is the text embedding of the given instruction, \\(e_{cls}\\) is the embedding of the class-token. After fed into LLM, scInterpreter will _ReadOut_ the output. For the cell-type annotation task, we set the _ReadOut_ operation as directly taking the class-token embedding from the output. \\(\\hat{e}_{cls}\\) is the class-token embedding after the aggregation within the LLM. \\(\\hat{y}\\) is the model prediction. During the training process, the Llama model will be frozen. The projection layer, the classification head, and the _class-token_ token's embedding layer will be optimized by the cross-entropy loss."
+    },
+    {
+      "title": "3 Experiment",
+      "text": ""
+    },
+    {
+      "title": "Datasets Description",
+      "text": "We construct two scRNA-seq datasets. HUMAN-10k comprises 10,000 single-cell sequencing records with 61 different cell types, each having 23,111 genes gene representations. MOUSE-13k comprises 13,000 records with 37 different cell types, each having 27,443 gene representations."
+    },
+    {
+      "title": "Study Of The Cell-Type Annotation",
+      "text": "Figure 2 reported the classification performance of GenePT and scInterpreter on the HUMAN-10k and MOUSE-13k. We used four classification metrics, accuracy, precision, recall, and F1 score to evaluate two methods. We can observe that scInterpreter outperformed GenePT on two datasets with a huge margin. According to the fact that the two compared methods have the same initial gene embedding, we speculate that the common knowledge from the large language model Figure 1: The pipeline of scInterpreter. The model will first embed each input from the cell and downstream task-specific instruction. Then the cell embedding and instruction embedding will pass through the LLMs. After aggregating the knowledge and structural information of the given cell by LLMs, the model _ReadOut_ the representation and then conducts the downstream task. could provide a better-supervised signal for the downstream task training, thus resulting in a better performance. To step further, we reported the confusion matrix of each method on dataset MOUSE-13k, to show the difference between the prediction result and the true label. From the left part of Figure 3, we could observe that most prediction results were scattered across the matrix, indicating a high degree of misclassification. The lighter regions of the diagonal suggest that the model frequently confuses certain cell types with others, highlighting deficiencies in either feature representation or classification capability. In contrast, the right part of the matrix presents a starkly different scenario, where the majority of predictions align closely with the diagonal, thus reflecting a high concordance between predicted and actual labels. This phenomenon denotes a significant improvement in classification accuracy, attributable to the sophisticated feature encoding and contextual understanding afforded by the prompt-based training method employed with the large language model."
+    },
+    {
+      "title": "Study Of The Cell Embedding Visualization",
+      "text": "Figure 4 reported the UMAP visualization of the cell embedding from the initial state, GenePT, and sclInterpreter. In the initial state of the MOUSE-13k datasets, as observed on the left side of the visualization, each cell types cluster together, exhibiting poor separability. The middle visualization, i.e. GenePT, shows some improvement in terms of separability among different categories. However, several cell types remain interspersed. In contrast, the right visualization demonstrates a markedly superior clustering effect. Cells of the same type exhibit exceptional aggregative properties, suggesting a high degree of intra-class similarity and inter-class divergence. The underlying driver is that our proposed method leverages the broad, generalized knowledge inherent in LLMs to provide more effective supervisory signals, thereby enhancing the separability of learned cell embeddings."
+    },
+    {
+      "title": "4 Conclusion",
+      "text": "This study represents a preliminary stride in the application of LLMs for enhancing gene and cell-level representations. Our proposed sclInterpreter harnesses the expansive knowledge base and sophisticated understanding inherent in LLMs to interpret and categorize cell types in gene expression data. The superior performance of sclInterpreter over GenePT underscores the efficacy of integrating common knowledge from LLMs into the domain of gene expression analysis."
+    },
+    {
+      "title": "Acknowledgements.",
+      "text": "This work is partially supported by the Postdoctoral Fellowship Program of CPSF (No.GZC20232736), the China Postdoctoral Science Foundation Funded Project (No.2023M743565), the Young Elite Scientists Sponsorship Program by BAST, and the Special Research Assistant Funded Project of the Chinese Academy of Sciences. Cong Li and Meng Xiao contributed equally to this work."
+    },
+    {
+      "title": "References",
+      "text": "* [1] Cui H, Wang C, Maan H, Pang K, Luo F, Wang B. scgpt: Towards building a foundation model for single-cell multi-omics using generative ai. bioRxiv, 2023, 2023-04 Figure 4: The UMAP illustration of the cell representation from initialization, GenePT, and sclInterpreter on MOUSE-13k. Figure 3: The confusion matrix of each method on MOUSE-13k. Figure 2: The performance comparison between sclInterpreter and GenePT 2 Hao M, Gong J, Zeng X, Liu C, Guo Y, Cheng X, Wang T, Ma J, Song L, Zhang X. Large scale foundation model on single-cell transcriptomics. bioRxiv, 2023, 2023-05 * Theodoris C V, Xiao L, Chopra A, Chaffin M D, Al Sayed Z R, Hill M C, Mantino H, Brydon E M, Zeng Z, Liu X S, others. Transfer learning enables predictions in network biology. Nature, 2023, 1-9 * Yang X, Liu G, Feng G, Bu D, Wang P, Jiang J, Chen S, Yang Q, Zhang Y, Man Z, others. Genecompass: Deciphering universal gene regulatory mechanisms with knowledge-informed cross-species foundation model. bioRxiv, 2023, 2023-09 * Chen Y T, Zou J. Genept: A simple but hard-to-beat foundation model for genes and cells built from chatgpt. bioRxiv, 2023, 2023-10 * Ye J, Chen X, Xu N, Zu C, Shao Z, Liu S, Cui Y, Zhou Z, Gong C, Shen Y, others. A comprehensive capability analysis of gpt-3 and gpt-3.5 series models. arXiv preprint arXiv:2303.10420, 2023 * Touvron H, Lavril T, Izacard G, Martinet X, Lachaux M A, Lacroix T, Roziere B, Goyal N, Hambro E, Azhar F, others. Llama: Open and efficient foundation language models. arXiv preprint arXiv:2302.13971, 2023"
+    }
+  ]
+}

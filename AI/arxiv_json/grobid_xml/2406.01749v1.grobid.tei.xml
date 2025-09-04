@@ -1,0 +1,570 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Towards Harnessing Large Language Models for Comprehension of Conversational Grounding</title>
+				<funder ref="#_Ng2VVP2 #_caES3pv">
+					<orgName type="full">German Federal Ministry of Education and Research (BMBF) Software Campus</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">New Energy and Industrial Technology Development Organization</orgName>
+					<orgName type="abbreviated">NEDO</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-06-03">3 Jun 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Kristiina</forename><surname>Jokinen</surname></persName>
+							<email>kristiina.jokinen@aist.go.jp</email>
+						</author>
+						<author>
+							<persName><forename type="first">Phillip</forename><surname>Schneider</surname></persName>
+							<email>phillip.schneider@tum.de</email>
+						</author>
+						<author>
+							<persName><forename type="first">Taiga</forename><surname>Mori</surname></persName>
+							<email>mori-taiga@aist.go.jp</email>
+						</author>
+						<author>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">National Institute of Advanced Industrial Science and Technology</orgName>
+								<orgName type="institution" key="instit2">AI Research Center</orgName>
+								<address>
+									<country key="JP">Japan</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff1">
+								<orgName type="department">Department of Computer Science</orgName>
+								<orgName type="institution">Technical University of Munich</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<affiliation key="aff2">
+								<orgName type="institution" key="instit1">National Institute of Advanced Industrial Science and Technology</orgName>
+								<orgName type="institution" key="instit2">AI Research Center</orgName>
+								<address>
+									<country key="JP">Japan</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Towards Harnessing Large Language Models for Comprehension of Conversational Grounding</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-06-03">3 Jun 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">8417543CA26148E6F5EAD6721B85528A</idno>
+					<idno type="arXiv">arXiv:2406.01749v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:24+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Conversational grounding is a collaborative mechanism for establishing mutual knowledge among participants engaged in a dialogue. This experimental study analyzes information-seeking conversations to investigate the capabilities of large language models in classifying dialogue turns related to explicit or implicit grounding and predicting grounded knowledge elements. Our experimental results reveal challenges encountered by large language models in the two tasks and discuss ongoing research efforts to enhance large language model-based conversational grounding comprehension through pipeline architectures and knowledge bases. These initiatives aim to develop more effective dialogue systems that are better equipped to handle the intricacies of grounded knowledge in conversations.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Grounding has been one of the main concepts in dialogue modeling, natural language processing, and Cognitive Science since its introduction in the seminal works of Clark and Wilkes-Gibbs (1986) as well as <ref type="bibr" target="#b2">Clark and Schaefer (1989)</ref>. The concept was introduced in connection with the Presentation-Acceptance cycle, which models the speakers' cooperation in conversations to build a common ground, i.e., to share knowledge to enable a smooth conversation. It was further developed by <ref type="bibr" target="#b16">Traum (1994)</ref> and <ref type="bibr" target="#b9">Jokinen (1996)</ref> related to cooperation in communication, following the work by <ref type="bibr" target="#b0">Allwood et al. (1992)</ref>, and in cooperative planning <ref type="bibr" target="#b4">(Cohen and Levesque, 1990</ref>; <ref type="bibr" target="#b6">Grosz and Sidner, 1990)</ref> to analyze mutual knowledge and joint intentions. The large number of investigations on feedback strategies <ref type="bibr" target="#b10">(Katagiri and Shimojima, 2000;</ref><ref type="bibr" target="#b5">Den and Enomoto, 2007;</ref><ref type="bibr" target="#b12">Kontogiorgos et al., 2021</ref>; Udagawa and Aizawa, 2021), multimodal <ref type="bibr" target="#b8">(Ijuin et al., 2019;</ref><ref type="bibr" target="#b14">Mori et al., 2022)</ref> and multiparty <ref type="bibr" target="#b11">(Kawano et al., 2021)</ref> grounding has established the notion as a pertinent part of the general framework for dialogue modeling. In the field of robotics, grounding is also well-established <ref type="bibr" target="#b7">(Harnad, 1990;</ref><ref type="bibr" target="#b1">Cangelosi, 2010)</ref> as a necessary process to link the robot's known concepts to perceived objects in its scene representation. <ref type="foot" target="#foot_0">1</ref>Despite grounding being a wide and influential research topic, it has not been much studied in the context of large language models (LLMs). For instance, <ref type="bibr" target="#b18">Wilcock and Jokinen (2023)</ref> point out that the main problem in generative language models, besides their tendency to hallucinate and provide misleading information, is the lack of grounding of the generated sentences in real-world events. In particular, in human-robot interactions, knowledge of the shared context in which the communication takes place is vital to support cooperation as well as to understand the genuine intentions that the users wish to convey to the robot assistant through conversation.</p><p>In recent research on LLMs, the concept of "grounding" has emerged concerning retrieval-augmented generation (RAG), as introduced by Lewis et al. in 2020. In the RAG approach, relevant information is first retrieved from a database. This retrieved content is then integrated into the textual input of the LLM prompt to influence the generation of the output. This ensures that the resulting response is firmly anchored in external knowledge, offering a more reliable, current, and proprietary source of information, as opposed to relying solely on the limitations of the LLM's inherent knowledge.</p><p>The absence of grounding models poses a challenge in developing systems that are both reliable and explainable, especially as interactive assistants become integral to various practical applications. Conversational grounding is particularly crucial in exploratory search dialogues <ref type="bibr" target="#b15">(Schneider et al., 2023)</ref>, where users have openended goals and limited familiarity with the explored information landscape. In these search scenarios, the gradual construction of shared knowledge is essential to facilitate the progression of the information-seeking process. The interactive scenarios examined in our study are text-based exploratory search dialogues, where an information seeker engages in a dialogue with an information provider over a specific domain (e.g., geography or media). In this setting, the seeker aims to explore the provider's knowledge content, while the provider's role is to offer information derived from a tabular dataset.</p><p>In this paper, we delve into conversational grounding and cooperative knowledge sharing within the realm of LLMs, aiming to investigate their capacity to classify grounding-related dialogue acts and extract mutually grounded information while adhering to a predefined knowledge structure. To the best of our knowledge, we are the first to experiment with LLMs and knowledge grounding in exploratory search dialogues. Our study aims to shed light on the potential capabilities and limitations of LLMs, culminating in an overview of our ongoing research efforts regarding the development of LLM-augmented dialogue systems capable of effectively handling grounded knowledge in conversations.</p><p>The paper is structured as follows. Section 2 describes the pipeline architecture and gives a definition of grounding, while Section 3 describes the method related to experiments and data. Section 4 presents the results of the experiments and discusses LLM-based strategies for conversational grounding in a wider context. Section 5 concludes and points to future work.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Pipeline Approach for Conversational Knowledge Grounding</head><p>We define conversational grounding as a collaborative process to establish mutual knowledge among participants engaged in a dialogue. As conversations unfold, new concepts are introduced and clarified until a shared understanding is established.</p><p>The basis for our grounding model is in Clark and Schaefer's (1989) cognitive model of grounding, which we adapt for the practical, interactive application to predict grounding and construct shared knowledge given the listener feedback. We use LLMs and a suitable prompt design with examples to learn the grounding patterns and representation of the grounded knowledge elements. <ref type="bibr" target="#b2">Clark and Schaefer (1989)</ref> differentiate between three grounding types: explicit grounding, implicit grounding, and clarification. Explicit grounding corresponds to a partner asserting acceptance through verbal confirmation (e.g., "Okay!") or non-verbal expressions like smiling or nodding. Implicit grounding involves a partner moving forward with the dialogue by contributing a new idea or asking a question regarding a new topic, ensuring that the conversation partner shows no signs of confusion. Lastly, clarification occurs when a partner seeks additional information to enhance the mutual understanding of an already introduced concept before the conversation can proceed.</p><p>There are two main grounding tasks related to dialogue processing in general: the analysis and assessment of the input with respect to the listener's own knowledge and the generation of response in order to communicate the result of the assessment to the partner (if the partner's presentation was understood and accepted or not). Using a pipeline approach, grounding can be implemented as a sequence consisting of multiple task-specific natural language processing modules. A general natural language understanding (NLU) module provides the analysis of the user input, including the entities that represent the content of the utterance; an assessment module (AM) compares the extracted knowledge with the agent's knowledge base <ref type="foot" target="#foot_1">2</ref> and finds the connections between the entities, while a grounding module (GM) builds the knowledge structure based on the extracted entities and the existing knowledge structure. <ref type="foot" target="#foot_2">3</ref> Given that the agent will also provide a response acknowledging its understanding of the presented information, the natural language generation (NLG) module will decide on the type of the response, for example, to produce explicit feedback like "Thanks, got it.", or implicit feedback by continuing with a next question regarding a new topic. <ref type="foot" target="#foot_3">4</ref>Our experimental study focuses primarily on the GM, i.e., constructing a shared knowledge foundation based on the information extracted from the conversation but in the future, we plan to integrate the model into an interactive dialogue system.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Method</head><p>We carried out the experiments on a dialogue corpus with exploratory search conversations. The following paragraphs outline the data annotation process and the configuration details of the large language model. To ensure reproducibility, we publish our source code and dataset in a GitHub repository. <ref type="foot" target="#foot_4">5</ref>Dataset Annotation As an empirical data foundation for studying conversational grounding, we use an existing dialogue corpus of human conversations about exploring different domains which was collected by <ref type="bibr" target="#b15">Schneider et al. (2023)</ref>. This corpus contains 26 information-seeking conversations in English. All dialogues focus on discovering insights about a tabular dataset that stems from one out of five different domains: nutrition, history, sports, media, and geography. Each pair of conversational partners consisted of one person being an information seeker and the other acting as an information provider, where the communication happened through a text-based chatroom. Seekers were instructed to explore and acquire new information about the previously unknown dataset of their conversation partner. During the unfolding conversations, participants build up mutual knowledge about the tabular information by introducing new concepts and clarifying them until a shared understanding is reached in order for the exploratory search dialogue to progress. For the purpose of your preliminary analysis, we selected dialogues that showcase diverse nuances of conversational grounding. Two researchers annotated dialogue turns with labels for explicit or implicit grounding, as well as turns where clarification was necessary before the conversation could move forward. In addition, the annotators annotated these dialogue turns with the tabular knowledge elements that have been grounded by representing them in a JSON structure. In cases of disagreement on a given label, the annotators collaboratively resolved the discrepancies until reaching absolute agreement.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Model Configuration and Prompts</head><p>To test if large language models can help with identifying grounding-related dialogue turns and predicting knowledge elements that have been grounded, we decided to employ GPT-3.5-Turbo (ChatGPT) as a popular state-of-the-art model. It is optimized for dialogue interaction and has demonstrated remarkable zero-shot performance on various natural language processing tasks. Consequently, it is often used as a benchmark when comparing LLMs' performance. We conducted our conversational grounding experiments with the latest model version published in November 2023 (GPT-3.5-Turbo-1106). The following configurations were made before using the chosen LLM to classify grounding labels and extract grounded knowledge. We set the token limit to 256 and the temperature parameter to 0, maximizing deterministic generation by favoring tokens with the highest probability. The model is prompted in the chat completion format of Ope-nAI's API endpoint with a list of system, user, and assistant messages. The main instruction is given as a system message. The user message contains the complete conversation history up to the current dialogue turn. We also enrich the prompt with three in-context examples, resulting in two few-shot prompts. For the classification prompt, we include one short dialogue example for each of the three used grounding types (i.e., explicit, implicit, or clarification). The LLM must discern various textual signals within the dialogue to accurately identify the specific type of grounding that occurred. For the information extraction prompt, we provide three dialogue examples along with a JSON object containing the grounded knowledge. The full-length prompts are provided in Table <ref type="table">2</ref> in the Appendix.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Experimental Results and Discussion</head><p>Our experiments focus on two selected information-seeking conversations, exemplifying various aspects of conversational grounding, including explicit and implicit grounding, as well as clarification questions. We assess the ability of the chosen GPT-3.5-Turbo LLM to predict human-annotated grounding labels and extract grounded knowledge. The analysis informs a discussion on strategies to further enhance LLM-powered comprehension of conversational grounding. <ref type="table" target="#tab_0">1</ref> provides an overview comparing the model predictions and ground-truth labels for two dialogues (A and B). Each prediction is annotated as either semantically equivalent (=) or semantically not equivalent ( =) with the human annotations (e.g., the predicted column name "area in km2" is equivalent to the human label "area"), . When analyzing the conversational grounding labels from Table <ref type="table" target="#tab_0">1</ref>, it becomes evident that the model encounters challenges in predicting accurate labels in both dialogue samples. Implicit grounding achieved correct classification in only 1 out of 3 test cases, while clarification did not yield accurate results in any of the 2 cases. Notably, the LLM often fails to distinguish between clarification and implicit grounding, as both can involve questions, exemplified in turn 8 of Dialogue A or turn 2 of Dialogue B. Explicit grounding is correctly classified in 5 out of 6 test cases. Explicit grounding is easier to detect because of verbal utterances like "OK" or "good to know". However, there are two instances where the LLM predicts explicit grounding despite them being questions related to clarification or implicit grounding. One error may be attributed to explicit acknowledgments (e.g., "thanks") preceding a clarification question, as seen in turn 5 of Dialogue B. Another possible explanation is that the model struggled to focus on the last dialogue turns when the history is too long.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Analysis of Model Predictions Table</head><p>In contrast to predicting grounding labels, GPT-3.5-Turbo demonstrates better overall performance in information extraction of grounded knowledge. For instance, in turns 2 and 4 of sample Dialogue A, the LLM accurately gathers the relevant information but mixes up the attributes "table domain" and "table content", although they are highly similar from a semantic viewpoint, so this error may not be severe. A more significant error is observed in turn 8 of Dialogue A, where the model greedily extracts "type of work" as a column name from the seeker's clarifying question, even though it has not been confirmed by the provider yet and should not be considered grounded information. However, in the subsequent turn, the provider mentions the actual column name "category", and the LLM self-corrects by updating the list of column names, matching with human annotations.</p><p>In addition to its proficiency in extracting information about column names, the model adeptly handles numerical information, successfully determining the number of rows in a table or counts of unique values for specific columns (e.g., turn 17 in Dialogue A). Although the LLM consistently excels in extracting numerical information across both dialogue samples, the generally acknowledged limitation of LLMs in more complex numerical reasoning should be kept in mind.</p><p>Discussion Several interesting findings arise from our experiments on employing LLMs for comprehending conversational grounding. The tested GPT-3.5-Turbo model demonstrates good performance in generative information extraction. For almost all tested conversation turns, the LLM effectively utilized the in-context dialogue history to extract relevant knowledge elements and organize them into a predefined JSON structure, as instructed in the prompt. A promising strategy for further enhancing this task involves maintaining a knowledge base and using it as the input context for the LLM when new knowledge elements are about to be grounded. This stands in contrast to our experimental approach, where the model generated all knowledge from scratch for the entire dialogue history, but this may lead to inaccuracies as dialogue histories lengthen. When introducing a new concept to be grounded, another strategy involves retrieving only a subset of previously grounded knowledge that is semantically similar to this concept, as opposed to the entire knowledge base.</p><p>In addition, our findings underscore the challenging nature of determining how knowledge is grounded. While verbal utterances, being observable features in the text, facilitate the model's classification performance on explicit grounding, distinguishing between implicit grounding and clarifications proves to be a much more complex task. This challenge becomes especially critical, as observed in turn 8 of Dialogue A, where the LLM greedily extracts information from a seeker's clarifying question without recognizing that this information has not been confirmed by the provider yet. Therefore, it is not only crucial to extract information correctly but also imperative to correctly decide if mutual grounding has occurred at all. The intricate nature of implicit confirmations and clarifications arises from provider as-sumptions about the seeker's cognitive state and aligning these assumptions with the provider's knowledge. When utilizing LLMs, these implicit assumptions are usually not available in the dialogue history and prompt input. Linguistic phenomena like co-reference and ellipsis that are present in our sample information-seeking dialogues add another level of complexity to classifying these grounding acts.</p><p>In ongoing research, we aim to enhance LLMs' comprehension of grounded knowledge through the pipeline architecture introduced in Section 2 with multiple LLMs and rule-based validation mechanisms. Open-source tools like NVIDIA NeMo Guardrails, Microsoft Guidance, FastChat, and LangChain can support the development of such pipelines, offering programmable guardrails, logical validation patterns, and the chaining of multiple LLMs with different purposes.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>Our study investigated grounding in natural language conversations, experimenting with a state-of-the-art LLM to predict grounding-related information. Despite having difficulties with distinguishing implicit grounding and clarification questions, the LLM could extract grounded information from dialogue sequences with good reliability. We discussed strategies to further enhance LLM-based comprehension of grounded knowledge, introducing a pipeline model with an external knowledge base. These ongoing research initiatives are geared towards advancing the development of more effective dialogue systems capable of adeptly handling the complexities of conversational grounding.</p><p>Future work concerns enhancing the classification of grounding types, especially to distinguish implicit grounding and clarification questions, and extending the types to cover more complicated dialogue situations. For instance, error detection, repairs, and confirmations are pertinent for building mutual knowledge when misunderstandings or non-understandings occur among the participants. We will study ways to augment LLM methods and techniques with dialogue management strategies that are effectively used to remedy problematic dialogue situations to incorporate error recovery in the grounding model.</p><p>Another interesting future research direction for grounding concerns uncertainty in the speakers' knowledge and in the construction of common knowledge. This requires suitable measures to distinguish facts from opinions and to establish degrees of grounding depending on the speaker's beliefs. Incorporating uncertainty of the beliefs and related reasoning in generative models is a challenge that effectively brings us to probabilistic reasoning and to the early research on building mutual knowledge through cooperative communication and planning. While such studies are beyond our immediate research goals, we are convinced that the presented work, which launches explorations of how mutual knowledge can be constructed in interactions by integrating grounding and LLMs, will prove useful as a starting point for future research in the area of grounding.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1</head><label>1</label><figDesc>Results of model predictions for sample dialogues. Seeker (S) and provider (P) roles are abbreviated for each numbered turn. Explicit (E), implicit (I), and clarification (C) grounding labels and shortened grounded knowledge are denoted as follows: prediction (= ⊕ =) ground-truth.</figDesc><table><row><cell>Dialogue Utterances</cell><cell cols="4">Label Grounded Knowledge</cell><cell></cell><cell></cell></row><row><cell>Dialogue A</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>1 S: Hello, could you tell me what the media dataset is about?</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>2 P: Hi, yes sure.</cell><cell>C =E</cell><cell cols="4">{'table content': 'media dataset'} = {'table domain': 'media'}</cell><cell></cell></row><row><cell>3 P: The dataset contains data on time travel works of fiction, including novels,</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>short stories, films, and TV series.</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>4 S: How many rows are there in the dataset?</cell><cell>I=I</cell><cell cols="5">{'table domain': 'time travel works of fiction'} = {'table content':</cell></row><row><cell></cell><cell></cell><cell cols="2">'time travel works of fiction'}</cell><cell></cell><cell></cell><cell></cell></row><row><cell>5 P: 500</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>6 S: What are the attributes of the dataset?</cell><cell>E =I</cell><cell cols="3">{'row count': 500} = {'row count': 500}</cell><cell></cell><cell></cell></row><row><cell>7 P: year, title, author, short text description</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>8 S: Is there no column for the type of the work? How then can I determine if a</cell><cell>I =C</cell><cell cols="5">{'column names': ['year', 'title', 'author', 'short text description',</cell></row><row><cell>work is a novel or a film?</cell><cell></cell><cell cols="5">'type of work']} = {'column names': ['year', 'title', 'author', 'short</cell></row><row><cell></cell><cell></cell><cell>text description']}</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>9 P: oh, sorry one column was missed. I should correct it:</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>10 P: Attributes: year, title, author, short text description, category</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>11 S: ok got it</cell><cell>E=E</cell><cell cols="5">{'column names': ['year', 'title', 'author', 'short text description',</cell></row><row><cell></cell><cell></cell><cell cols="5">'category']} = {'column names': ['year', 'title', 'author', 'short text</cell></row><row><cell></cell><cell></cell><cell cols="2">description', 'category']}</cell><cell></cell><cell></cell><cell></cell></row><row><cell>12 P: :blush:</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>13 S: How many unique authors are there in the dataset?</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>14 P: it's a good question but takes time to get it. I try to answer it meanwhile</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>15 S: no worries</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>16 P: found it 417</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>17 S: great! good to know.</cell><cell>E=E</cell><cell>{'column name':</cell><cell>'author',</cell><cell>'distinct count':</cell><cell>417}</cell><cell>=</cell></row><row><cell></cell><cell></cell><cell cols="3">{'column name': 'author', 'distinct count': 417}</cell><cell></cell><cell></cell></row><row><cell>Dialogue B</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>1 S: I wanna know about the dataset "Geography"</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>dataset?</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>9 P: There are 98 rows in the dataset, corresponding to the 98 parks.</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>10 S: OK</cell><cell>E=E</cell><cell cols="3">{'row count': 98} = {'row count': 98}</cell><cell></cell><cell></cell></row><row><cell>11 S: how about the values? like the min and max of year and area of the parks?</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>12 P: The earliest dated park is Lüneburg Heath (Lüneburger Heide), established</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>in 1921. The most recent ones are Lahn-Dill Highlands and Zittau Mountains, both</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>established in 2007.</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>13 P: The smallest park is Siebengebirge at 48km2. The largest one is Southern</cell><cell>-</cell><cell>-</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Black Forest at 3940km2</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>14 S: Fine!</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table><note><p>2 P: What do you wanna know about it?. C =I {'table domain': 'Geography'} = {'table domain': 'geography'} 3 S: What is the dataset about in general? --4 P: The dataset contains information about 98 nature parks in Germany. You can find in this dataset the name of the park, its year of establishment, its area etc. --5 S: thanks, so if I understood correctly the dataset contains 3 columns, right? name of park, year, area E =C {'table content': 'information about 98 nature parks in Germany', 'column names': ['name of park', 'year', 'area']} = {'table content': 'nature parks in Germany', 'column names': ['park name', 'year', 'area']} 6 P: There are other attributes as well. Here are all the attributes: park name, the German state where the park is in, year of establishment, area in km2, and short text summary. --7 S: great! E=E {'column names': ['park name', 'German state', 'year of establishment', 'area in km2', 'short text summary']} = {'column names': ['park name', 'year', 'area', 'state', 'short text summary']} 8 S: could you tell me about the number of records in the E=E {'column name': 'year of establishment', 'min value': 1921, 'max value': 2007}, {'column name': 'area in km2', 'min value': 48, 'max value': 3940} = {'column name': 'year', 'min value': 1921, 'max value': 2007}, {'column name': 'area', 'min value': 48, 'max value': 3940}</p></note></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>In<ref type="bibr" target="#b18">Wilcock and Jokinen (2023)</ref>, the distinction is made between conversational and visual grounding, the former referring to the process of linking words to concepts, the latter of establishing links between words and their real-world referents. While the former is based on language input, the latter requires the visual capability of the agent to perceive the world.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>The entity comparison can result in several different outcomes: the presented knowledge may match or only partially match the agent's existing knowledge structure, it may be in conflict with the existing knowledge, or the agent may not have any prior knowledge on the new information.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>The different outcomes from the AM can be linked to a knowledge graph approach: match and partial match correspond to an existing node and its properties being instantiated, whereas mismatch and no prior knowledge lead to creating or removing nodes and links.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>In languages like Japanese, the different outcomes are accompanied by an elaborated set of response tokens, which convey the subtle differences by short vocalizations to the user in spoken interactions<ref type="bibr" target="#b5">(Den and Enomoto, 2007)</ref>. We will consider the generation of various listener responses in future work.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_4"><p>GitHub repository: https://github.com/aistairc/conversational-grounding-llm</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><p>Acknowledgements Phillip Schneider acknowledges the support by the <rs type="funder">German Federal Ministry of Education and Research (BMBF) Software Campus</rs> grant <rs type="grantNumber">01IS17049</rs>. <rs type="person">Taiga Mori</rs> and <rs type="person">Kristiina Jokinen</rs> acknowledge the support of Project <rs type="grantNumber">JPNP20006</rs> commissioned by the <rs type="funder">New Energy and Industrial Technology Development Organization (NEDO), Japan</rs>.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_Ng2VVP2">
+					<idno type="grant-number">01IS17049</idno>
+				</org>
+				<org type="funding" xml:id="_caES3pv">
+					<idno type="grant-number">JPNP20006</idno>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Appendix</head></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">On the semantics and pragmatics of linguistic feedback</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Allwood</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Nivre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Ahlsen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Semantics</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<date type="published" when="1992">1992</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Grounding language in action and perception: from cognitive agents to humanoid robots</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Cangelosi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Physics of Life Reviews</title>
+		<imprint>
+			<biblScope unit="page" from="139" to="151" />
+			<date type="published" when="2010">2010</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Contributing to discourse</title>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">H</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">F</forename><surname>Schaefer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Cognitive Science</title>
+		<imprint>
+			<biblScope unit="volume">13</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="259" to="294" />
+			<date type="published" when="1989">1989</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Referring as a collaborative process</title>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">H</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Wilkes-Gibbs</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Cognition</title>
+		<imprint>
+			<biblScope unit="volume">22</biblScope>
+			<biblScope unit="page" from="1" to="39" />
+			<date type="published" when="1986">1986</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Rational interaction as the basis for communication</title>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">R</forename><surname>Cohen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">J</forename><surname>Levesque</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Intentions in Communication</title>
+		<editor>
+			<persName><forename type="first">P</forename><forename type="middle">R</forename><surname>Cohen</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">J</forename><surname>Morgan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><forename type="middle">E</forename><surname>Pollack</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Cambridge, United States</addrLine></address></meeting>
+		<imprint>
+			<publisher>The MIT Press</publisher>
+			<date type="published" when="1990">1990</date>
+			<biblScope unit="page" from="221" to="256" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">A scientific approach to conversational informatics: Description, analysis, and modeling of human conversation</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Den</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Enomoto</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Conversational Informatics: An Engineering Approach</title>
+		<editor>
+			<persName><forename type="first">T</forename><surname>Nishida</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Hoboken, NJ</addrLine></address></meeting>
+		<imprint>
+			<publisher>John Wiley &amp; Sons</publisher>
+			<date type="published" when="2007">2007</date>
+			<biblScope unit="page" from="307" to="330" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Plans for discourse</title>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">J</forename><surname>Grosz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">L</forename><surname>Sidner</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Intentions in Communication</title>
+		<editor>
+			<persName><forename type="first">P</forename><forename type="middle">R</forename><surname>Cohen</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">J</forename><surname>Morgan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><forename type="middle">E</forename><surname>Pollack</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Cambridge, United States</addrLine></address></meeting>
+		<imprint>
+			<publisher>The MIT Press</publisher>
+			<date type="published" when="1990">1990</date>
+			<biblScope unit="page" from="417" to="444" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">The symbol grounding problem</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Harnad</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Physica D: Nonlinear Phenomena</title>
+		<imprint>
+			<biblScope unit="page" from="335" to="346" />
+			<date type="published" when="1990">1990</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Eye-gaze in social robot interactions -Grounding of information and eye-gaze patterns</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Ijuin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Jokinen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Kato</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yamamoto</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">JSAI</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Cooperative Response Planning in CDM: Reasoning about Communicative Strategies</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Jokinen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Twente Workshop Series in Language Technology</title>
+		<editor>
+			<persName><forename type="first">A</forename><surname>Nijholt</surname></persName>
+		</editor>
+		<imprint>
+			<date type="published" when="1996">1996</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Display acts in grounding negotiations</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Katagiri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Shimojima</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of Gotalog 2000, the 4th Workshop on the Semantics and Pragmatics of Dialogue</title>
+		<meeting>Gotalog 2000, the 4th Workshop on the Semantics and Pragmatics of Dialogue</meeting>
+		<imprint>
+			<date type="published" when="2000">2000</date>
+			<biblScope unit="page" from="195" to="198" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Dialogue Structure Parsing on Multi-Floor Dialogue Based on Multi-Task Learning</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kawano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Yoshino</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Traum</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Nakamura</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note>Presented at Robotdial Workshop</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Grounding behaviours with conversational interfaces: effects of embodiment and failures</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kontogiorgos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Pereira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gustafson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal on Multimodal User Interfaces</title>
+		<imprint>
+			<biblScope unit="volume">15</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="239" to="254" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Piktus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Küttler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Yih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Rocktäschel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Riedel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kiela</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 34th Conference on Neural Information Processing Systems</title>
+		<meeting>the 34th Conference on Neural Information Processing Systems<address><addrLine>Vancouver, Canada</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2020">2020. NeurIPS2020. 2020</date>
+			<biblScope unit="page" from="9459" to="9474" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Cognitive States and Types of Nods</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Mori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Jokinen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Den</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2nd Workshop on People in Vision, Language, and the Mind</title>
+		<meeting>the 2nd Workshop on People in Vision, Language, and the Mind</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="17" to="25" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Investigating Conversational Search Behavior For Domain Exploration</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Schneider</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Afzal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Vladika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Matthes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 45th European Conference in Information Retrieval (ECIR 2023)</title>
+		<meeting>the 45th European Conference in Information Retrieval (ECIR 2023)<address><addrLine>Dublin, Ireland</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">A Computational Theory of Grounding in Natural Language Conversation</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Traum</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1994">1994</date>
+		</imprint>
+		<respStmt>
+			<orgName>Computer Science Dept., U. Rochester</orgName>
+		</respStmt>
+	</monogr>
+	<note type="report_type">Technical Report 545 and Ph.D. Thesis</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Maintaining Common Ground in Dynamic Environments</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Udagawa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Aizawa</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="995" to="1011" />
+		</imprint>
+	</monogr>
+	<note>Transactions of the Association for Computational Linguistics 9</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">To err is robotic; to Earn Trust, Divine: Comparing ChatGPT and Knowledge Graphs for HRI</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Wilcock</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Jokinen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">32nd IEEE International Conference on Robot and Human Interactive Communication (ROMAN 2023)</title>
+		<meeting><address><addrLine>Busan, Korea</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

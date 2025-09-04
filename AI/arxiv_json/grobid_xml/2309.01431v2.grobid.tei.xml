@@ -1,0 +1,1655 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Benchmarking Large Language Models in Retrieval-Augmented Generation</title>
+				<funder>
+					<orgName type="full">CCF-BaiChuan-Ebtech Foundation Model Fund</orgName>
+				</funder>
+				<funder ref="#_p3rvvmZ #_xjFjVhV #_7wwvJYZ">
+					<orgName type="full">National Natural Science Foundation of China</orgName>
+				</funder>
+				<funder ref="#_pk5Dj9m">
+					<orgName type="full">CAS Project for Young Scientists in Basic Research</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-12-20">20 Dec 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Jiawei</forename><surname>Chen</surname></persName>
+							<email>jiawei2020@iscas.ac.cn</email>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Chinese Information Processing Laboratory</orgName>
+							</affiliation>
+							<affiliation key="aff2">
+								<orgName type="institution">University of Chinese Academy of Sciences</orgName>
+								<address>
+									<settlement>Beijing</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Hongyu</forename><surname>Lin</surname></persName>
+							<email>hongyu@iscas.ac.cn</email>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Chinese Information Processing Laboratory</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xianpei</forename><surname>Han</surname></persName>
+							<email>xianpei@iscas.ac.cn</email>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Chinese Information Processing Laboratory</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="department">State Key Laboratory of Computer Science Institute of Software</orgName>
+								<orgName type="institution">Chinese Academy of Sciences</orgName>
+								<address>
+									<settlement>Beijing</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><surname>Le Sun</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Chinese Information Processing Laboratory</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="department">State Key Laboratory of Computer Science Institute of Software</orgName>
+								<orgName type="institution">Chinese Academy of Sciences</orgName>
+								<address>
+									<settlement>Beijing</settlement>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Benchmarking Large Language Models in Retrieval-Augmented Generation</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-12-20">20 Dec 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">954AA2ACCBFF214F9A60E22A003064C8</idno>
+					<idno type="arXiv">arXiv:2309.01431v2[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:45+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Retrieval-Augmented Generation (RAG) is a promising approach for mitigating the hallucination of large language models (LLMs). However, existing research lacks rigorous evaluation of the impact of retrieval-augmented generation on different large language models, which make it challenging to identify the potential bottlenecks in the capabilities of RAG for different LLMs. In this paper, we systematically investigate the impact of Retrieval-Augmented Generation on large language models. We analyze the performance of different large language models in 4 fundamental abilities required for RAG, including noise robustness, negative rejection, information integration, and counterfactual robustness. To this end, we establish Retrieval-Augmented Generation Benchmark (RGB), a new corpus for RAG evaluation in both English and Chinese. RGB divides the instances within the benchmark into 4 separate testbeds based on the aforementioned fundamental abilities required to resolve the case. Then we evaluate 6 representative LLMs on RGB to diagnose the challenges of current LLMs when applying RAG. Evaluation reveals that while LLMs exhibit a certain degree of noise robustness, they still struggle significantly in terms of negative rejection, information integration, and dealing with false information. The aforementioned assessment outcomes indicate that there is still a considerable journey ahead to effectively apply RAG to LLMs.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Introduction</head><p>Recently, there have been impressive advancements in large language models (LLMs) like ChatGPT (OpenAI 2022) and ChatGLM <ref type="bibr">(THUDM 2023a)</ref>. Although these models have shown remarkable general abilities <ref type="bibr" target="#b1">(Bang et al. 2023;</ref><ref type="bibr" target="#b12">Guo et al. 2023)</ref>, they still suffer severely from challenges including factual hallucination <ref type="bibr" target="#b6">(Cao et al. 2020;</ref><ref type="bibr" target="#b28">Raunak, Menezes, and Junczys-Dowmunt 2021;</ref><ref type="bibr" target="#b18">Ji et al. 2023)</ref>, knowledge outdating (He, <ref type="bibr" target="#b13">Zhang, and Roth 2022)</ref>, and the lack of domainspecific expertise <ref type="bibr">(Li et al. 2023c;</ref><ref type="bibr" target="#b30">Shen et al. 2023)</ref>.</p><p>Incorporating external knowledge via information retrieval, i.e., Retrieval-Augmented Generation (RAG), has been regarded as a promising way to resolve the above challenges. <ref type="bibr" target="#b13">(Guu et al. 2020;</ref><ref type="bibr" target="#b19">Lewis et al. 2020;</ref><ref type="bibr" target="#b3">Borgeaud et al.</ref> formation. These challenges result in LLMs being unable to consistently generate reliable and accurate responses. Unfortunately, currently there lacks of comprehensive understanding on how these factors can influence RAG, and how could each model survives from these drawbacks and improvement their performance via information retrieval. As a result, there is a pressing need for a comprehensive evaluation of LLMs on their ability to effectively utilize retrieved information, as well as their ability to withstand the various drawbacks present in information retrieval.</p><p>To this end, this paper conducts a comprehensive evaluation of RAG for current LLMs. Specifically, we create a new Retrieval-Augmented Generation Benchmark, namely RGB, in both English and Chinese. In order to ensure that the internal knowledge of LLMs does not introduce bias into the evaluation results, RGB chooses to aggregate the latest news information and constructs queries based on the news information. Then, based on these queries, we use Search API to fetch relevant documents and select most relevant snippets from the content as external retrieved documents. Finally, based on different compositions of query and document-set pairs, we expand the corpus and divided it into 4 testbeds to evaluate the following basic abilities of LLMs according to the common challenges in RAG, as shown in Figure <ref type="figure">1:</ref> • Noise Robustness, which means a LLM can extract useful information from noisy documents. In this paper, we define noisy documents as those that are relevant to the question but do not contain any information of the answer. For the instance in Figure <ref type="figure">1</ref>, the noisy documents related to the question "Who was awarded the 2022 Nobel Prize in Literature" include reports about the 2021 Nobel Prize in Literature. To this end, the testbed for noise robustness contains instances whose external documents contain a certain number of noisy documents based on the desired noise ratio. • Negative Rejection, which means that a LLM should reject to answer the question when the required knowledge is not present in any retrieved document. The testbed for negative rejection contains instances whose external documents are only with noisy documents. LLMs are expected to indicate "insufficient information" or other rejection signals.</p><p>• Information Integration, which evaluates whether LLMs can answer complex questions that require integrating information from multiple documents. For the instance in Figure <ref type="figure">1</ref>, for the question "When were the Chat-GPT app for iOS and ChatGPT api launched?", LLMs are expected to provide information of the launch dates for both the ChatGPT iOS app and ChatGPT API. The testbed for information integration contains instances that can only be answered using multiple documents. • Counterfactual Robustness, which evaluates whether LLMs can identify risks of known factual errors in the retrieved documents when the LLMs are given warnings about potential risks in the retrieved information through instruction. The testbed for counterfactual robustness includes instances that can be answered directly by the LLMs, but the external documents contain factual errors.</p><p>Based on RGB, we conduct evaluation on 6 state-ofthe-art large language models including ChatGPT (Ope-nAI 2022), ChatGLM-6B (THUDM 2023a), ChatGLM2-6B (THUDM 2023b), Vicuna-7b <ref type="bibr" target="#b8">(Chiang et al. 2023)</ref>, Qwen-7B-Chat (QwenLM 2023), BELLE-7B (Yunjie Ji 2023). We found that even though RAG can improve the response accuracy of LLMs, they still suffer from the abovementioned challenges significantly. Specifically, we found that even though LLMs demonstrate some level of noise robustness, they tend to confuse similar information and frequently generate inaccurate answers when relevant information exists. For example, when faced with a question about the 2022 Nobel Prize in Literature, if there are noisy documents about the 2021 Nobel Prize in Literature in external documents, LLMs may become confused and provide inaccurate answers. Besides, LLMs frequently fail to reject answering and generate incorrect answers when none of the external documents contain relevant information. Furthermore, LLMs lack the ability to summarize from multiple documents, and therefore if multiple documents are needed to answer a question, LLMs often fail to provide accurate answer. Finally, we found that even when the LLMs contain the required knowledge and are given warnings about potential risks in the retrieved information through instruction, they still tend to trust and prioritize the retrieved information over their own existing knowledge. The experimental results mentioned above highlight the need for further resolution of important issues in the existing RAG method. Therefore, it is crucial to exercise caution and carefully design its usage.</p><p>Generally speaking, the contributions of this paper are<ref type="foot" target="#foot_0">foot_0</ref> :</p><p>• We proposed to evaluate four capabilities for retrievalaugmented generation of LLMs and created the Retrieval-Augmented Generation Benchmark in both English and Chinese. To best of our knowledge, it is the first benchmark designed to assess these four capabilities for retrieval-augmented generation of LLMs. • We evaluated the existing LLMs using RGB and found the limitations of them in the four different abilities. • We analyzed the responses of LLMs in RGB and identified their current shortcomings as well as suggested directions for improvement.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Related work</head><p>Retrieval-augmented models The knowledge stored in large language models is commonly out-of-date (He, Zhang, and Roth 2022) and they also sometimes generate hallucination <ref type="bibr" target="#b6">(Cao et al. 2020;</ref><ref type="bibr" target="#b28">Raunak, Menezes, and Junczys-Dowmunt 2021;</ref><ref type="bibr" target="#b18">Ji et al. 2023)</ref> i.e., they may generate irrelevant or factually incorrect contents. By using external knowledge as guidance, retrieval-augmented models can generate more accurate and reliable responses <ref type="bibr" target="#b13">(Guu et al. 2020;</ref><ref type="bibr" target="#b19">Lewis et al. 2020;</ref><ref type="bibr" target="#b3">Borgeaud et al. 2022;</ref><ref type="bibr" target="#b17">Izacard et al. 2022;</ref><ref type="bibr" target="#b31">Shi et al. 2023;</ref><ref type="bibr" target="#b29">Ren et al. 2023</ref>). Retrievalaugmented models have achieved remarkable results in various tasks such as open-domain QA <ref type="bibr" target="#b16">(Izacard and Grave 2021;</ref><ref type="bibr" target="#b33">Trivedi et al. 2023;</ref><ref type="bibr">Li et al. 2023a)</ref>, dialogue (Cai</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>News Collection</head><p>The 2022 Nobel Prize for Physiology and Medicine was awarded on Monday to Swedish scientist Svante Pä ä bo for sequencing the genome of the Neanderthal.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Data adjustment and filtering by Human</head><p>{ "Question": "Who was awarded the 2022 Nobel Prize for Physiology and Medicine?", "Answer": ['Svante Pä ä bo','Svante Paabo'] }</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Data generation by ChatGPT</head><p>Retrieve using search engine</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Rerank by dense retrieval model</head><p>We simulate the process of a user querying and obtaining information. Suppose the user retrieves a current event news, speculate the event that the user is concerned about and the question that he/she may want to know, and generate the key information corresponding to the answer to the question.</p><p>… … News: The 2022 Nobel Prize for Physiology and Medicine was … Related event: 2022 Nobel Prize for Physiology and Medicine Question: Who was awarded the 2022 Nobel Prize for Physiology and Medicine? Key information: Svante Pääbo and Svante Paabo gpt-3.5-turbo api Query: Who was awarded the 2022 Nobel Prize for Physiology and Medicine?", {"link": "<ref type="url" target="https://www.nobelprize.org/prizes/medicine/">https://www.nobelprize.org/prizes/medicine/</ref>", "title": "The Nobel Prize in Physiology or Medicine 2022", "snippet": "The Nobel Assembly..."}, ... Google Search API Chun2 Chunk Who was awarded the 2022 Nobel Prize for Physiology and Medicine?", Dense retrieval model Top1 Chunk Top30 Chunk Top2 Chunk …… …… Figure 2: The process of data generation. Firstly, we use models to extract (event, question, answer) from news articles. Next, we utilize search engines to retrieve relevant web pages. Finally, a dense retrieval model is employed to re-rank the content of these web pages. <ref type="bibr">et al. 2019a,b;</ref><ref type="bibr" target="#b26">Peng et al. 2023)</ref>, domain-specific question answering <ref type="bibr" target="#b9">(Cui et al. 2023</ref>) and code generation <ref type="bibr">(Zhou et al. 2023b</ref>). Recently, with the development of large models, a series of retrieval-enhanced tools and products have gained widespread attention, such as ChatGPT retrieval plugin, Langchain, New Bing, etc. However, in real-world scenarios, the retrieved text inevitably contains noise. Therefore, in this paper we conducted a systematic evaluation and analysis of retrieval-augmented generation in LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Evaluation of LLMs</head><p>Evaluating LLMs has received significant attention due to their remarkable general capability <ref type="bibr" target="#b7">(Chang et al. 2023)</ref>. It enables us to gain a deeper understanding of the specific abilities and limitations of LLMs, while also providing valuable guidance for future research. In the past, benchmarks such as GLUE <ref type="bibr">(Wang et al. 2019b)</ref> and SuperCLUE <ref type="bibr">(Wang et al. 2019a</ref>) primarily focused on evaluating NLP tasks, particularly in natural language understanding. However, these evaluations often fail to fully capture the capabilities of LLMs. MMLU <ref type="bibr" target="#b14">(Hendrycks et al. 2021)</ref> was then proposed to measure the knowledge acquired by language models when pre-training. Recently, with the development of LLMs, a series of general evaluation benchmarks have emerged, such as AGIEval (Zhong et al. 2023), C-Eval <ref type="bibr" target="#b15">(Huang et al. 2023)</ref>, AlpacaEval <ref type="bibr">(Li et al. 2023b</ref>), OpenLLM Leaderboard (Edward Beeching 2023), etc. In addition to general abilities, there are also specific benchmarks that focus on evaluating the capabilities of models. For example, CValues <ref type="bibr">(Xu et al. 2023a</ref>) focuses on the safety and responsibility of LLMs, M3Exam <ref type="bibr" target="#b38">(Zhang et al. 2023)</ref> focuses on human exam and ToolBench <ref type="bibr" target="#b27">(Qin et al. 2023)</ref> evaluates how well LLMs use external tools. Recently, <ref type="bibr" target="#b0">Adlakha et al. (2023)</ref> evaluate the RAG of LLMs in exist QA dataset. Different from their work, we focus on 4 required abilities of RAG and create Retrieval-Augmented Generation Benchmark to evaluate the LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Retrieval-Augmented Generation Benchmark</head><p>In this section, we first introduce the specific retrievalaugmented generation abilities we aim to evaluate. Next, we outline the process of constructing the RAG benchmark for evaluation. Lastly, we present the evaluation metrics.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Required abilities of RAG</head><p>External knowledge is the key to resolving the problems of LLMs such as hallucination and outdated knowledge, which can make LLMs generate more accurate and reliable responses through retrieval-augmented generation (RAG). However, LLMs cannot always response as expected with RAG. For one thing, there are numerous irrelevant documents and false information on the Internet. Incorporating these external documents into LLMs could have a detrimental effect. For anthoer, LLMs suffer from the unreliable generation challenge. The generation of LLMs is often unpredictable, and we cannot guarantee that they will utilize the useful information entailed in the external documents. Additionally, LLMs can easily be misled by incorrect information in the document. To this end, we build Retrieval-Augmented Generation Benchmark (RGB) to evaluate the retrieval-augmented generation of LLMs, and we concern about 4 specific abilities:</p><p>Noise Robustness is the robustness of LLMs in noisy documents. As retrievers are not perfect, the external knowledge they retrieve often contains a significant amount of noise, i.e., documents which are relevant to the question but do not contain any information about the answer. To effectively answer user questions, LLMs must be able to extract the necessary information from documents despite there are noisy documents.</p><p>Negative Rejection is a measure of whether LLMs can decline to answer a question when none of the contexts provide useful information. In real-world situations, the search engine often fails to retrieve documents containing the answers. In these cases, it is important for the model to have the capability to reject recognition and avoid generating misleading content.</p><p>Information Integration is a capacity to integrate answers from multiple documents. In many cases, the answer to a question may be contained in multiple documents. For example, for the question "Who are the champions of the U.S. Open 2022 men's and women's singles?", the two champions may be mentioned in different documents. In order to provide better answers to complex questions, it is necessary for LLMs to have the ability to integrate information.</p><p>Counterfactual Robustness refers to a capacity to handle errors in external knowledge. In the real world, there is an abundance of false information on the internet. Please note that we only evaluate the situation that LLMs are given warnings about potential risks in the retrieved information through instruction.</p><p>In real-world scenarios, it is not possible to obtain perfect documents with all the necessary external knowledge. Therefore, evaluating these four abilities of the model becomes essential in order to measure the RAG of LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Data construction</head><p>Inspired by previous benchmarks for LLMs, RGB utilizes a question-answering format for evaluation. We evaluate the LLMs by judging the retrieval-augmented responses of them to the questions. To simulate real-world scenarios, we construct question and answer data using actual news articles. Due to the abundance of knowledge contained within the LLMs there is a potential for bias when measuring the first three abilities. To mitigate this, the instances of RGB are constructed by latest news articles. Additionally, we retrieve external documents from Internet through search engines. Finally, we expand the corpus and divided it into 4 testbeds to evaluate the above basic abilities of LLMs. The overall procedure of our data construction is illustrated in Figure <ref type="figure">2</ref>.</p><p>QA instances generation. We first collect latest news articles and use prompts to make ChatGPT generate events, questions, and answers for each articles. For example, as shown in the Figure <ref type="figure">2</ref>, for a report about "The 2022 Nobel Prize", ChatGPT will generate corresponding event, question and provide key information for answering it. By generating events, the model is able to preliminarily filter out news articles that do not contain any events. After generation, we manually check the answer and filter out data that is difficult to retrieve through search engines.</p><p>Retrieve using search engine. For each query, we use Google's API to fetch 10 relevant web pages and extract corresponding snippets of text from them. Simultaneously, we read these web pages and convert their textual content into text chunks with a maximum length of 300 tokens. Using an existing dense retrieval model 2 , we select the top-30 text chunks that match the query most effectively. These retrieved text chunks, along with the snippets provided by the search API, will serve as our external documents. These documents will be divided into positive documents and negative documents based on whether they contain the answer.</p><p>Testbeds construction for each ability. We expand the corpus and divided it into 4 testbeds to evaluate the above basic abilities of LLMs. To evaluate the noise robustness, we sample varying numbers of negative documents according to the desired ratio of noises. For negative rejection, all the external documents are sampled from negative documents. For the information integration ability, we further construct data based on the above generated questions. This involves expanding or rewriting these questions so that their answers encompass multiple aspects. For example, the question "Who won the MVP of Super Bowl 2023?" can be rewrite as "Who won the MVPs of Super Bowl 2022 and 2023?". Consequently, answering such questions re-2 Chinese: <ref type="url" target="https://huggingface.co/moka-ai/m3e-base">https://huggingface.co/moka-ai/m3e-base</ref>; English: <ref type="url" target="https://huggingface.co/sentence-transformers/all-mpnet-base-v2">https://huggingface.co/sentence-transformers/all-mpnet-base-v2</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>System instruction</head><p>You are an accurate and reliable AI assistant that can answer questions with the help of external documents. Please note that external documents may contain noisy or factually incorrect information. If the information in the document contains the correct answer, you will give an accurate answer. If the information in the document does not contain the answer, you will generate 'I can not answer the question because of the insufficient information in documents.' If there are inconsistencies with the facts in some of the documents, please generate the response 'There are factual errors in the provided documents.' and provide the correct answer.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>User input Instruction</head><formula xml:id="formula_0">Document:\n{DOCS} \n\nQuestion:\n{QUERY} System instruction 你是一个准确和可靠的人工智能助手， 能够借助外部文档回答问题，请注意 外部文档可能存在噪声事实性错误。 如果文档中的信息包含了正确答案， 你将进行准确的回答。如果文档中的 信息不包含答案，你将生成"文档信 息不足，因此我无法基于提供的文档 回答该问题。"如果部分文档中存在 与事实不一致的错误，请先生成"提 供文档的文档存在事实性错误。"， 并生成正确答案。</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>User input Instruction 文档：\n{DOCS} \n\n问题：\n{QUERY}</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>English Chinese</head><p>Figure <ref type="figure">3</ref>: The instructions used in our experiments, which include a system instruction followed by a user input instruction. The "{DOCS}" and "{QUERY}" will be replaced by the external documents and the question.</p><p>quires utilizing information from various documents. Different from the first three abilities, the data of counterfactual robustness is constructed solely based on the internal knowledge of the model. Based on the aforementioned generated questions mentioned above, we adopt ChatGPT to automatically generate its known knowledge. Specifically, we use prompts to allow the model to generate both questions and answers that are already known. For example, based on the question "Who was awarded the 2022 Nobel Prize for Physiology and Medicine?", the model will generate the known question "Who was awarded the 2021 Nobel Prize in Literature?" and answer "Abdulrazak Gurnah". We then manually verified the generated answers, and retrieve relevant documents as described above. In order to make documents contain factual errors, we manually modify the answers and replace the corresponding parts in the document. Finally, we collect totally 600 base questions in RGB, and 200 additional questions for the information integration ability and 200 additional questions for counterfactual robustness ability. Half of the instances are in English, and the other half are in Chinese.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Evaluation metrics</head><p>The core of this benchmark is to evaluate whether LLMs can utilize the provided external documents to acquire knowledge and generate reasonable answers. We evaluate the responses of LLMs in order to measure above-mentioned four abilities of them.</p><p>Accuracy is used to measure noise robustness and information integration. We employ an exact matching approach where if the generated text contains an exact match to the answer, it is considered as a correct answer.</p><p>Rejection rate is used to measure negative rejection. When only noisy documents are provided, LLMs should output the specific content -"I can not answer the question because of the insufficient information in documents." (We use instructions to inform the model.). If the model generates this content, it indicates a successful rejection.</p><p>Error detection rate measures whether the model can detect the factual errors in the documents for counterfactual robustness. When the provided documents contain factual errors, the model should output the specific content -"There are factual errors in the provided documents." (We use in- Table 2: Error cases of noise robustness, and only one positive document and one negative document are shown. The responses are generated by ChatGLM2-6B. The blue text indicates the matching parts between the document and the question or answer, while the red text highlights the non-matching parts. structions to inform the model.). If the model generates this content, it indicates that the model has detected erroneous information in the document.</p><p>Error correction rate measures whether the model can provide the correct answer after identifying errors for counterfactual robustness. The model is asked to generate the correct answer after identifying the factual errors. If the model generates the correct answer, it indicates that the model is capable of correcting errors in the document.</p><p>Considering that the model may not fully adhere to instructions, for rejection rate and error detection rate, we also use ChatGPT to conduct additional evaluation of the answers. Specifically, we assess the model's responses by using instructions and demonstrations to determine if they can reflect information that is not present in the document or identify any factual errors.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Experiments</head><p>In this section, we evaluate the performance of various LLMs, analyze and discuss the results, summarizing the main challenges that existing LLMs encounter when using external knowledge.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Settings</head><p>Task formats. Due to contextual limitations, we provide 5 external documents for each question. In our experiments on noise robustness, we evaluate scenarios with noise ratios ranging from 0 to 0.8. To comprehensively evaluate the overall capabilities, we have adopted a unified instruction for each language, as shown in Figure <ref type="figure">3</ref>. The experiments were conducted using an NVIDIA GeForce RTX 3090.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Models</head><p>We conduct evaluation on 6 state-of-the-art large language models which can generate both English and Chinese including ChatGPT (OpenAI 2022)<ref type="foot" target="#foot_1">foot_1</ref> , ChatGLM-6B (THUDM 2023a), ChatGLM2-6B (THUDM 2023b), <ref type="bibr">Vicuna-7b-v1.3 (Chiang et al. 2023)</ref>, Qwen-7B-Chat (QwenLM 2023), BELLE-7B-2M (Yunjie Ji 2023).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Results on Noise Robustness</head><p>We evaluated the accuracy based on the different noise ratios in external documents, and the results are shown in Table <ref type="table" target="#tab_1">1</ref>. We can see that:</p><p>(1) RAG can effect improve the responses of LLMs. LLMs have shown strong performance even in the presence of noise, indicating that RAG is a promising way for LLMs to generate accurate and reliable responses.</p><p>(2) The increasing noise rate poses a challenge for RAG in LLMs. Specifically, when the noise ratio exceeds 80%, the accuracy decreases significantly at a significance level of 0.05. For example, the performance of ChatGPT has decreased from 96.33% to 76.00%, while the performance of ChatGLM2-6B has decreased from 91.33% to 57.33%.</p><p>Error Analysis. To better comprehend the negative impact of noise on model generation, we examined the incorrect answers and found that these errors typically originate from three reasons, as shown in Table <ref type="table">2</ref>.</p><p>(1) Long-distance information. LLMs often face difficulty in identifying the correct answer from external documents when the information related to the question is distant from the information related to the answer. This scenario is quite common as longer texts are frequently encountered on the internet. In such cases, it is typical for the question's information to be initially presented at the start of the document and subsequently referred to using pronouns. In Table 2, the question information ("Qatar Open 2022") is only mentioned once at the beginning and is far from where the answer text "Anett Kontaveit" appears. This situation may cause LLMs to depend on information from other documents and create false impressions, i.e., hallucination.</p><p>(2) Evidence uncertainty. Before highly anticipated events, like the release of new Apple products or the announcement of the Oscars, there is often a significant amount of speculative information circulating on the internet. Although the relevant documents explicitly state that it is uncertain or speculative content, they can still impact on the retrieval-augmented generation of LLMs. In Table <ref type="table">2</ref>, when the noise ratio increases, the content of erroneous documents is all about some people's predictions about the name of the headset ("Apple Reality Pro"). Even if there is a correct answer ("Vision Pro") in the relevant documents, LLMs can still be misled by uncertain evidences.</p><p>(3) Concept confusion. The concepts in external documents may be similar to, but different from, the concepts in the question. This can cause confusion for LLMs and make LLMs generate incorrect answers. In Table <ref type="table">2</ref>, the model answer focuses on the concept "automotive revenue" in the document rather than "revenue" in the question.</p><p>Based on the analysis above, we have identified certain limitations in LLMs regarding retrieval-augmented generation. To effectively handle the vast amount of noise present on the internet, further detailed enhancements are required for the model such as long documents modeling and precise concept comprehension.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Results on Negative Rejection testbed</head><p>We evaluated the rejection rate when only noise documents were provided. The results are shown in Table <ref type="table">3</ref>. In addition to evaluating the rejection rate through exact matching (Rej in Table <ref type="table">3</ref>), we also utilize ChatGPT to determine if the responses from the LLMs contain any rejection information (Rej * in Table <ref type="table">3</ref>). We can see that: Negative Rejection poses a challenge for RAG in LLMs. The highest rejection rates for LLMs in English and Chinese were only 45% and 43.33%, respectively. This suggests that LLMs can be easily misled by noisy documents, leading to incorrect answers.</p><p>In addition, through comparing Rej and Rej * , we found that LLMs fail to strictly follow instructions, and they often generate unpredictable responses, which make it hard to use them as state triggers (such as for recognizing rejection).</p><p>We conduct case studies in Table <ref type="table">4</ref>. The first error is because of Evidence uncertainty. Although the document only mentions contact with "Adam McKay" and does not explicitly state that he is the director of the movie, the model still concludes that he holds this role. The first error is because of Concept confusion. The information provided in the answer pertains to "the 2018 Winter Olympics" instead of "the 2022 Olympics" mentioned in the question. Retrieval-augmented generation poses a greater challenge of negative rejection compared to answer directly as it presents relevant documents that could potentially mislead the LLMs</p><p>Languages English Chinese Rej Rej * Rej Rej * ChatGPT 24.67 45.00 5.33 43.33 ChatGLM-6B 9.00 25.00 6.33 17.00 ChatGLM2  Table <ref type="table">3</ref>: The result of negative rejection. Rej means the rejection rate (%) and Rej * means the rejection rate evaluated by ChatGPT. We can see that negative rejection poses a challenge for RAG in LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Question</head><p>Answer Response who will direct Irredeemable film?</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Jeymes Samuel</head><p>The information provided in the document is that Fox has attached "</p><p>The Big Short" writer-director Adam McKay to its movie adaptation of "Irredeemable" from Boom! Comics. Therefore, the answer is Adam McKay. Which country won the most medals at the 2022 Winter Olympics? Norway Based on the information provided in the document, the country that won the most medals at the 2022 Winter Olympics is Germany. Germany has won a total of 31 medals, including 14 gold medals, 14 bronze medals, and 31 silver medals.</p><p>Table 4: Error cases of negative rejection generated by ChatGLM2-6B. The red text highlights the error answers.</p><p>and result in incorrect responses. In future developments, it will be crucial for LLMs to enhance their ability to accurately match questions with the appropriate documents.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Results on Information Integration testbed</head><p>We evaluated the accuracy based on the different noise ratios in external documents, and the results are shown in Table <ref type="table">5</ref>.</p><p>When comparing the model to Table <ref type="table" target="#tab_1">1</ref>, we observed that it has a weak information integration ability, which in turn affects its noise robustness. We can see that:</p><p>(1) Information integration poses a challenge for RAG in LLMs. Even without noise, the highest accuracy of LLMs can only reach 60% and 67% for English and Chinese, respectively. After adding noise, the highest accuracy decreases to 43% and 55%. These results suggest that LLMs struggle with integrating information effectively and are not well-suited for directly answering complex questions.</p><p>(2) Complex questions are more challenging for RAG with noisy documents. Performance decline becomes significant when the noise ratio is 0.4, but for simple problems, a significant decline occurs only at a noise ratio of 0.8 at a significance level of 0.05. This indicates that complex problems are more vulnerable to interference from noise. We speculate that this is because solving complex problems requires integrating information from multiple documents, and this information can be considered as noise to each other, making it harder for the model to extract relevant information from the documents.</p><p>Error Analysis. We conducted an error analysis on ChatGLM2-6B (noise ratio is 0). Apart from the similar errors founded in the noise robustness experiment (38% of the total), there are also three types of unique errors. We have presented these cases in Table <ref type="table">6</ref>.</p><p>Table <ref type="table">6</ref>: Error cases of information integration, the responses are generated by ChatGLM2-6B. The blue and red texts represent the answers to two sub-questions.</p><p>(1) Merging Error (28% of the total). The model sometimes merges the answers of the two sub-questions, resulting in an error. It mistakenly uses the answer from one question to address both two questions. At this point, the model will disregard any documents related to one sub-question. For example, in Table <ref type="table">6</ref>, it incorrectly states that Group D is the World Cup group for both France and Germany, while in fact Germany is actually assigned to Group E.</p><p>(2) Ignoring Error (28% of the total). Sometimes, the model may ignore one of the sub-questions and only answer the other. This error occurs when the model lacks a complete understanding of the problem and fails to recognize that it consists of multiple sub-problems. As a result, the model only considers relevant documents for one sub-problem in order to generate an answer, disregarding the question posed by another sub-problem. For example, in Table <ref type="table">6</ref>, the model only provides the answer for the MVP of Super Bowl 2022 and does not consider 2023.</p><p>(3) Misalignment Error (6% of the total). Sometimes, the model incorrectly identifies the documents for one subquestion as the documents for another sub-question, leading to misaligned answers. For example, in Table <ref type="table">6</ref>, the third answer has two errors: an ignoring error and a misalignment error. Firstly, the model only mentioned the Best Picture of the 2023 (95th) Academy Awards, completely disregarding the 2022 awards. Additionally, it incorrectly stated that "CODA" is the Best Picture of 2023 when it was actually awarded as the Best Picture in 2022.</p><p>The errors mentioned above are primarily caused by the limited understanding of complex questions, which hinders the ability to effectively utilize information from different sub-problems. The key lies in improving the model's reasoning capability. One possible solution is to use a chain-of-</p><p>Acc Acc doc ED ED * CR ChatGPT-zh 91 17 1 3 33.33 Qwen-7B-Chat-zh 77 12 5 4 25.00 ChatGPT-en 89 9 8 7 57.14</p><p>Table 7: The result of counterfactual robustness. ACC is the accuracy (%) of LLMs without external documents. ACC doc is the accuracy (%) of LLMs with counterfactual documents. ED and ED * are error detection rates evaluated by exact matching and ChatGPT, respectively. CR is the error correction rate.</p><p>thought approach to break down complex problems <ref type="bibr">(Zhou et al. 2023a;</ref><ref type="bibr">Xu et al. 2023b;</ref><ref type="bibr" target="#b10">Drozdov et al. 2023</ref>). However, these methods slow down the inference speed and cannot provide timely responses.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Results on Counterfactual Robustness testbed</head><p>In order to ensure that LLMs possess relevant knowledge, we assess their performance by directly asking them questions. However, we found that most LLMs struggle to answer them correctly. To ensure a more reasonable evaluation, we only consider LLMs that have an accuracy rate of over 70% as this threshold is relatively high and encompasses more LLMs. The results are shown in Table <ref type="table">7</ref>. We present the following metrics: accuracy without any documents, accuracy with counterfactual documents, error detection rates, and error correction rates. We can see that It is hard for LLMs to identify and correct factual errors in the documents. This suggests that the model can be easily misled by documents containing incorrect facts.</p><p>It is important to note that retrieval-augmented generation is not designed to automatically address factual errors within a given context, as this contradicts the underlying assumption that the model lacks knowledge and relies on retrieved documents for additional information. However, this issue is crucial in practical applications due to the abundance of fake news on the internet. Existing LLMs do not have a safeguard to handle inaccurate responses caused by misinformation. In fact, they heavily depend on the information they retrieve. Even when LLMs contain the internal knowledge about the questions, they often trust false information that is retrieved. This presents significant a challenge for the future development of RAG in LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Conclusion</head><p>In this paper, we evaluated four abilities of retrievalaugmented generation in LLMs: noise robustness, negative rejection, information integration, and counterfactual robustness. To conduct the evaluation, we built Retrieval-Augmented Generation Benchmark (RGB). The instances of RGB are generated from latest news articles and the external documents obtained from search engines. The experimental results suggest that current LLMs have limitations in the 4 abilities. This indicates that there is still a significant amount of work needed to effectively apply RAG to LLMs. To ensure accurate and reliable responses from LLMs, it is crucial to exercise caution and carefully design for RAG.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>The experimental result of noise robustness measured by accuracy (%) under different noise ratios. We can see that the increasing noise rate poses a challenge for RAG in LLMs.Swiatek entered into the Qatar Open ... In the final, she won ... Anett Kontaveit ...</figDesc><table><row><cell></cell><cell></cell><cell></cell><cell cols="2">English</cell><cell></cell><cell></cell><cell></cell><cell cols="2">Chinese</cell><cell></cell></row><row><cell></cell><cell>Noise Ratio</cell><cell>0</cell><cell>0.2</cell><cell>0.4</cell><cell>0.6</cell><cell>0.8</cell><cell>0</cell><cell>0.2</cell><cell>0.4</cell><cell>0.6</cell><cell>0.8</cell></row><row><cell></cell><cell>ChatGPT (OpenAI 2022)</cell><cell cols="10">96.33 94.67 94.00 90.00 76.00 95.67 94.67 91.00 87.67 70.67</cell></row><row><cell></cell><cell>ChatGLM-6B (THUDM 2023a)</cell><cell cols="10">93.67 90.67 89.33 84.67 70.67 94.33 90.67 89.00 82.33 69.00</cell></row><row><cell></cell><cell>ChatGLM2-6B (THUDM 2023b)</cell><cell cols="10">91.33 89.67 83.00 77.33 57.33 86.67 82.33 76.67 72.33 54.00</cell></row><row><cell></cell><cell cols="11">Vicuna-7B-v1.3 (Chiang et al. 2023) 87.67 83.33 86.00 82.33 60.33 85.67 82.67 77.00 69.33 49.67</cell></row><row><cell></cell><cell>Qwen-7B-Chat (QwenLM 2023)</cell><cell cols="10">94.33 91.67 91.00 87.67 73.67 94.00 92.33 88.00 84.33 68.67</cell></row><row><cell></cell><cell>BELLE-7B-2M (Yunjie Ji 2023)</cell><cell cols="10">83.33 81.00 79.00 71.33 64.67 92.00 88.67 85.33 78.33 67.68</cell></row><row><cell></cell><cell>Long-distance information.</cell><cell></cell><cell></cell><cell cols="3">Evidence uncertainty.</cell><cell></cell><cell></cell><cell cols="3">Concept confusion.</cell></row><row><cell>Question</cell><cell cols="6">Who did Iga Swiatek defeat to win the Qatar Open 2022? What is the name of Apple's headset?</cell><cell></cell><cell cols="4">What was Tesla's revenue in Q1 2022?</cell></row><row><cell>Answer</cell><cell>Anett Kontaveit</cell><cell></cell><cell>Vision Pro</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell>18.76 billion</cell><cell></cell><cell></cell></row><row><cell></cell><cell>Positive document</cell><cell></cell><cell cols="2">Positive document</cell><cell></cell><cell></cell><cell></cell><cell cols="2">Positive document</cell><cell></cell></row><row><cell>Documents</cell><cell>In February, Negative document</cell><cell></cell><cell cols="5">Apple (AAPL.O) on Monday unveiled a costly augmented-reality headset called the Vision Pro ... Negative document</cell><cell cols="4">Tesla, Inc. (TSLA) reported Q1 FY 2022 earnings results ... detailed revenues of $18.76 billion ... Negative document</cell></row><row><cell></cell><cell cols="2">This time, she defeated Ons Jabeur 6-2, 7-6(5) to win</cell><cell cols="4">... is what Gurman believes will be called</cell><cell></cell><cell cols="3">...first-quarter earnings for 2022 ...</cell></row><row><cell></cell><cell>the 2022 US Open, ...</cell><cell></cell><cell cols="2">Apple Reality Pro. ...</cell><cell></cell><cell></cell><cell></cell><cell cols="4">...Automotive revenue reached $16.86 billion...</cell></row><row><cell>Responses</cell><cell cols="2">Iga Swiatek defeated Ons Jabeur in the second round of the Qatar Open 2022 to win the tournament.</cell><cell cols="5">According to the document, the name of Apple's headset is Apple Reality Pro.</cell><cell cols="4">According to the financial results provided in the article, Tesla's revenue in Q1 2022 was $16.86 billion.</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>Our code&amp;data: https://github.com/chen700564/RGB.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>We use gpt-3.5-turbo api in the experiments.</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgements</head><p>This research work is supported by the <rs type="funder">National Natural Science Foundation of China</rs> under Grants no. <rs type="grantNumber">62122077</rs>, <rs type="grantNumber">62106251</rs>, <rs type="grantNumber">62306303</rs>, the <rs type="funder">CAS Project for Young Scientists in Basic Research</rs> under Grant No.<rs type="grantNumber">YSBR-040</rs>. <rs type="person">Xianpei Han</rs> is sponsored by <rs type="funder">CCF-BaiChuan-Ebtech Foundation Model Fund</rs>.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_p3rvvmZ">
+					<idno type="grant-number">62122077</idno>
+				</org>
+				<org type="funding" xml:id="_xjFjVhV">
+					<idno type="grant-number">62106251</idno>
+				</org>
+				<org type="funding" xml:id="_7wwvJYZ">
+					<idno type="grant-number">62306303</idno>
+				</org>
+				<org type="funding" xml:id="_pk5Dj9m">
+					<idno type="grant-number">YSBR-040</idno>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0" />			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">V</forename><surname>Adlakha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Behnamghader</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><forename type="middle">H</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Meade</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Reddy</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.16877</idno>
+		<title level="m">Evaluating Correctness and Faithfulness of Instruction-Following Models for Question Answering</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Cahyawijaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Wilie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lovenia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Do</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Fung</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.04023</idno>
+		<title level="m">A Multitask, Multilingual, Multimodal Evaluation of ChatGPT on Reasoning, Hallucination, and Interactivity</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">N</forename><surname>Bian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Sun</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.04812</idno>
+		<title level="m">A Drop of Ink Makes a Million Think: The Spread of False Information in Large Language Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">S</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hoffmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Rutherford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Millican</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Van Den Driessche</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-B</forename><surname>Lespiau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Damoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>De Las Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Guy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Menick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Ring</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Hennigan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Maggiore</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Cassirer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Brock</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Paganini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Irving</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Vinyals</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Osindero</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Simonyan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">W</forename><surname>Rae</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Elsen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Sifre</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2112.04426</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note>Improving language models by retrieving from trillions of tokens</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Skeleton-to-Response: Dialogue Generation Guided by Retrieval Memory</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Bi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Tu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Lam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Shi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<title level="s">Long and Short Papers</title>
+		<meeting>the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies<address><addrLine>Minneapolis, Minnesota</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1219" to="1228" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Retrieval-guided Dialogue Response Generation via a Matching-to-Generation Framework</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Bi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Tu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Shi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)<address><addrLine>Hong Kong, China</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="1866" to="1875" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Factual Error Correction for Abstractive Summarization Models</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">C K</forename><surname>Cheung</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Online: Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="6251" to="6258" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Yi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">S</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Xie</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.03109</idno>
+		<title level="m">A Survey on Evaluation of Large Language Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">W.-L</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Stoica</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">P</forename><surname>Xing</surname></persName>
+		</author>
+		<title level="m">Vicuna: An Open-Source Chatbot Impressing GPT-4 with 90%* ChatGPT Quality</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Chat-Law: Open-Source Legal Large Language Model with Integrated External Knowledge Bases</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Yuan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.16092</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Compositional Semantic Parsing with Large Language Models</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Drozdov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Schärli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Akyürek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Scales</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Bousquet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<author>
+			<persName><forename type="first">Edward</forename><surname>Beeching</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">H S H N L N R O S L T T W</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clémentine</forename><surname>Fourrier</surname></persName>
+		</author>
+		<ptr target="https://huggingface.co/spaces/HuggingFaceH4/openllmleaderboard" />
+		<title level="m">Open LLM Leaderboard</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">B</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Nie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.07597</idno>
+		<title level="m">How Close is ChatGPT to Human Experts? Comparison Corpus, Evaluation, and Detection</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">REALM: Retrieval-Augmented Language Model Pre-Training</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Guu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Tung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Pasupat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-W</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Roth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.00303</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 37th International Conference on Machine Learning, ICML&apos;20</title>
+		<meeting>the 37th International Conference on Machine Learning, ICML&apos;20</meeting>
+		<imprint>
+			<date type="published" when="2020">2020. 2022</date>
+		</imprint>
+	</monogr>
+	<note>Rethinking with Retrieval: Faithful Large Language Model Inference</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Measuring Massive Multitask Language Understanding</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Hendrycks</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Burns</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Basart</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Mazeika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Steinhardt</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Lv</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>He</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.08322</idno>
+		<title level="m">C-Eval: A Multi-Level Multi-Discipline Chinese Evaluation Suite for Foundation Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Leveraging Passage Retrieval with Generative Models for Open Domain Question Answering</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Grave</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 16th Conference of the European Chapter</title>
+		<meeting>the 16th Conference of the European Chapter</meeting>
+		<imprint>
+			<publisher>Online: Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="874" to="880" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<author>
+			<persName><forename type="first">G</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lomeli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Hosseini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Schick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Dwivedi-Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Riedel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Grave</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2208.03299</idno>
+		<title level="m">Atlas: Few-shot Learning with Retrieval Augmented Language Models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Survey of Hallucination in Natural Language Generation</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Frieske</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Ishii</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">J</forename><surname>Bang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Madotto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Fung</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">ACM Comput. Surv</title>
+		<imprint>
+			<biblScope unit="issue">12</biblScope>
+			<biblScope unit="page">55</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Piktus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Küttler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-T</forename><surname>Yih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Rocktäschel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Riedel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kiela</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 34th International Conference on Neural Information Processing Systems, NIPS&apos;20</title>
+		<meeting>the 34th International Conference on Neural Information Processing Systems, NIPS&apos;20<address><addrLine>Red Hook, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Curran Associates Inc</publisher>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Large Language Models with Controllable Working Memory</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">S</forename><surname>Rawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zaheer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lukasik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Veit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kumar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: ACL 2023</title>
+		<meeting><address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="1774" to="1793" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Dubois</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Taori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Gulrajani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Guestrin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">B</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<ptr target="https://github.com/tatsu-lab/alpacaeval" />
+		<title level="m">Al-pacaEval: An Automatic Evaluator of Instruction-following Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Are ChatGPT and GPT-4 General-Purpose Solvers for Financial Text Analytics? An Examination on Several Typical Tasks</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Shah</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.05862</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">F</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.09848</idno>
+		<title level="m">Evaluating Verifiability in Generative Search Engines</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">On Faithfulness and Factuality in Abstractive Summarization</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Maynez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Narayan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Bohnet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Mcdonald</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 58th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Online: Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="1906" to="1919" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">Chatgpt: Optimizing language models for dialogue</title>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<ptr target="https://openai.com/blog/chatgpt" />
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<author>
+			<persName><forename type="first">B</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Galley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Liden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.12813</idno>
+		<title level="m">Check Your Facts and Try Again: Improving Large Language Models with External Knowledge and Automated Feedback</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Cong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Gerstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Sun</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.16789.QwenLM.2023</idno>
+		<ptr target="https://github.com/QwenLM/Qwen-7B" />
+		<title level="m">ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page">7</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">The Curious Case of Hallucinations in Neural Machine Translation</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Raunak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Menezes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Junczys-Dowmunt</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</meeting>
+		<imprint>
+			<publisher>Online: Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="1172" to="1183" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<author>
+			<persName><forename type="first">R</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Qu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">X</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-R</forename><surname>Wen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.11019</idno>
+		<title level="m">Investigating the Factual Knowledge Boundary of Large Language Models with Retrieval Augmentation</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<author>
+			<persName><forename type="first">X</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Backes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.08979</idno>
+		<title level="m">ChatGPT We Trust? Measuring and Characterizing the Reliability of ChatGPT</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<author>
+			<persName><forename type="first">W</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Yasunaga</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Seo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>James</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Yih</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.12652</idno>
+		<ptr target="https://github.com/THUDM/ChatGLM-6B" />
+		<title level="m">RE-PLUG: Retrieval-Augmented Black-Box Language Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>THUDM. 2023a. ChatGLM-6B</note>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Thudm</surname></persName>
+		</author>
+		<ptr target="https://github.com/THUDM/ChatGLM2-6B" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="2" to="6" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Trivedi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Balasubramanian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Sabharwal</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics<address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="10014" to="10037" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<author>
+			<persName><forename type="first">A</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Pruksachatkun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Nangia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Michael</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Hill</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">R</forename><surname>Bowman</surname></persName>
+		</author>
+		<title level="m">Stickier Benchmark for General-Purpose Language Understanding Systems</title>
+		<meeting><address><addrLine>Red Hook, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Curran Associates Inc</publisher>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">GLUE: A Multi-Task Benchmark and Analysis Platform for Natural Language Understanding</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Michael</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Hill</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">R</forename><surname>Bowman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Si</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Yi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Sang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09705</idno>
+	</analytic>
+	<monogr>
+		<title level="m">CValues: Measuring the Values of Chinese Large Language Models from Safety to Responsibility</title>
+		<imprint>
+			<date type="published" when="2019">2019. 2023</date>
+		</imprint>
+	</monogr>
+	<note>International Conference on Learning Representations</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Pang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T.-S</forename><surname>Chua</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.14732</idno>
+		<title level="m">Search-in-the-Chain: Towards Accurate, Credible and Traceable Large Language Models for Knowledgeintensive Tasks</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yunjie</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">G Y P Q N B M X L</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>Deng</surname></persName>
+		</author>
+		<ptr target="https://github.com/LianjiaTech/BELLE" />
+		<title level="m">BELLE: Bloom-Enhanced Large Language model Engine</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">M3Exam: A Multilingual, Multimodal, Multilevel Benchmark for Examining Large Language Models</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">M</forename><surname>Aljunied</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">K</forename><surname>Chia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Bing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Saied</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Duan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.06364</idno>
+	</analytic>
+	<monogr>
+		<title level="m">AGIEval: A Human-Centric Benchmark for Evaluating Foundation Models</title>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">2023a. Least-to-Most Prompting Enables Complex Reasoning in Large Language Models</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Schärli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Scales</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Bousquet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">H</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">U</forename><surname>Alon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><forename type="middle">F</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Neubig</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>DocPrompting: Generating Code by Retrieving the Docs The Eleventh International Conference on Learning Representations</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

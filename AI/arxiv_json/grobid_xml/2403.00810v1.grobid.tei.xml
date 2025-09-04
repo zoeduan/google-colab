@@ -1,0 +1,1353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Bootstrapping Cognitive Agents with a Large Language Model</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-02-25">25 Feb 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Gavin</forename><surname>Zhu</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Carnegie Mellon University</orgName>
+							</affiliation>
+						</author>
+						<author role="corresp">
+							<persName><forename type="first">Reid</forename><surname>Simmons</surname></persName>
+							<email>rsimmons@andrew.cmu.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Carnegie Mellon University</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Bootstrapping Cognitive Agents with a Large Language Model</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-02-25">25 Feb 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">6A90C4EBAF6975115FE8288DA0A38690</idno>
+					<idno type="arXiv">arXiv:2403.00810v1[cs.AI]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:19+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large language models contain noisy general knowledge of the world, yet are hard to train or fine-tune. On the other hand cognitive architectures have excellent interpretability and are flexible to update but require a lot of manual work to instantiate. In this work, we combine the best of both worlds: bootstrapping a cognitive-based model with the noisy knowledge encoded in large language models. Through an embodied agent doing kitchen tasks, we show that our proposed framework yields better efficiency compared to an agent based entirely on large language models. Our experiments indicate that large language models are a good source of information for cognitive architectures, and the cognitive architecture in turn can verify and update the knowledge of large language models to a specific domain.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Introduction</head><p>Large language models (LLM) such as <ref type="bibr">GPT-4 (OpenAI 2023)</ref>, have shown emerging capabilities after training on internet-scale text data with human feedback, and have been employed in robot planning <ref type="bibr" target="#b9">(Huang et al. 2022)</ref>, animal behavior analysis <ref type="bibr" target="#b37">(Ye et al. 2023)</ref>, human proxies <ref type="bibr" target="#b38">(Zhang and Soh 2023)</ref>, and many more. However, they have also been criticized for being susceptible to adversarial attacks <ref type="bibr" target="#b40">(Zou et al. 2023)</ref>, hallucination <ref type="bibr" target="#b4">(Casper et al. 2023)</ref>, and having diminishing returns for scaling <ref type="bibr">(OpenAI 2023)</ref>.</p><p>Cognitive architectures are another approach in the pursuit of artificial general intelligence that attempt to unify all aspects of human cognition computationally <ref type="bibr" target="#b23">(Newell 1994)</ref>. Despite the variety of architectures developed, most of them share the same central components, consisting of declarative memory reflecting knowledge of the world, procedural memory dictating the agent's behavior given certain scenarios, and short-term working memory that assists reasoning and planning <ref type="bibr" target="#b16">(Laird, Lebiere, and Rosenbloom 2017)</ref>.</p><p>The procedural memory is represented by a set of production rules, each with a precondition and an effect. Agents operate in perceive-plan-act cycles, dynamically matching relevant features of the environment to the production rules and applying their effects. Unlike operators in symbolic planning, production rules do not represent alternative actions, but instead reflect different contextual knowledge <ref type="bibr" target="#b14">(Laird 2022)</ref>. These rules can be reinforced and modified throughout the agent's learning process. Despite some pioneering work on data-driven cognitive model creation <ref type="bibr" target="#b8">(Hake, Sibert, and Stocco 2022)</ref>, almost all previous work generate their initial set of production rules manually, limiting their application to simple environments such as blocks world or psychology experiments <ref type="bibr" target="#b24">(Park et al. 2023)</ref>.</p><p>In this work we combine the two approaches in a complementary fashion (Figure <ref type="figure" target="#fig_0">1</ref>). LLMs encode the common sense knowledge of the world <ref type="bibr" target="#b20">(Madaan et al. 2022</ref>) that can be used in place of human labor for constructing agents in the cognitive architecture. And the reasoning and learning capabilities in the cognitive architecture can identify and filter the noise in LLMs, while converting the knowledge in language to actionable productions of an embodied agent.</p><p>This combined framework separates knowledge generation and knowledge application, and this modularity is the key to generalization. The LLM is responsible only for generating general knowledge, such as "if the task is to find an object, the agent should explore the places where that object is commonly stored". Since such knowledge can be applied to almost all objects and environments, the LLM needs to generate these only once, and it is the role of the cognitive architecture to dynamically match the environment to the generated knowledge. This is significantly different from using LLMs to generate plans directly, as the plans are grounded to the specific instance of the task (e.g., finding a specific object in the specific environment), and are non-trivial to generalize to novel environments without re-generation.</p><p>The contribution of this paper is threefold: 1) we propose an agent framework that combines LLMs with customized cognitive architecture, 2) we demonstrate how it can learn to perform various kitchen tasks from bootstrapping, and 3) we show that, when applied to new environments, it requires significantly fewer tokens than querying LLM for actions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Related Work Learning Through Program Synthesis</head><p>Interactive Task Learning (ITL) <ref type="bibr">(Laird et al. 2017</ref>) aims at teaching robots new skills in a one-shot fashion. Previous work implements this in the SOAR cognitive architecture and has shown effective task and environment transferability in domains such as board games <ref type="bibr" target="#b10">(Kirk and Laird 2019)</ref> and embodied agents <ref type="bibr" target="#b22">(Mininger and Laird 2022)</ref>. To reduce the need for extensive human input, recent research explores using LLM as the knowledge source <ref type="bibr" target="#b17">(Lindes and Peter 2023;</ref><ref type="bibr" target="#b11">Kirk et al. 2023)</ref>, shifting human labor from specifying the goal conditions to answering yes/no questions. In contrast, our approach uses strategic prompting and self-reflection mechanisms to eliminate the need for human supervision.</p><p>Our work shares some high-level ideas with DreamCoder <ref type="bibr" target="#b7">(Ellis et al. 2021)</ref>, which learns to solve new problems by program generation and reflection. Instead of formulating it as an informed search problem, we accelerate this process by querying LLMs for their existing knowledge. <ref type="bibr" target="#b20">Madaan et al. (2022)</ref> extract common sense knowledge from LLMs into code form similar to how we extract productions. But they only address the general task decomposition, not applying the information to an embodied agent.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Large Language Model for Embodied Agents</head><p>Many studies have explored using LLMs to generate code that performs robotics tasks <ref type="bibr">(Liang et al. 2023;</ref><ref type="bibr" target="#b26">Singh et al. 2023;</ref><ref type="bibr" target="#b31">Vemprala et al. 2023</ref>) and game environments <ref type="bibr" target="#b32">(Wang et al. 2023)</ref>, which is similar to the procedural memory in the cognitive architectures. In addition to script-based code, other works explored generating PDDL specifications <ref type="bibr">(Liu et al. 2023a;</ref><ref type="bibr" target="#b36">Xie et al. 2023)</ref>. Unlike the situation-grounded code produced by these methods, our approach generates parameterized productions with learnable weights. This allows more generalization capabilities and choosing the best plan among multiple applicable plans.</p><p>Others let LLMs select the action directly <ref type="bibr" target="#b5">(Di Palo et al. 2023;</ref><ref type="bibr" target="#b31">Vemprala et al. 2023)</ref> with the help of other auxiliary components such as affordance evaluation <ref type="bibr" target="#b0">(Ahn et al. 2022</ref><ref type="bibr">), memory stream (Park et al. 2023)</ref>, visual summarization <ref type="bibr" target="#b25">(Qiu et al. 2023)</ref>, and knowledge base <ref type="bibr" target="#b39">(Zhu et al. 2023)</ref>. Some others explored multi-modal foundation models tailored for embodied agents <ref type="bibr" target="#b6">(Driess et al. 2023;</ref><ref type="bibr" target="#b35">Xiang et al. 2023)</ref>. As LLMs are non-trivial to update from a single instance, using more explicit production systems in our approach enables persistent one-shot updates and more interpretability. As we will show in our experiments, relying on LLMs for every action is also not very cost-effective.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Method Architecture Overview</head><p>Figure <ref type="figure" target="#fig_0">1</ref> illustrates the architecture and workflow of the agent. The agent has four main components. A world knowledge base that contains general knowledge, such as "Tomatoes are commonly stored in the Fridge". An environment knowledge that reflects what the agent knows about the environment from past observations, including both information about the agent itself (e.g., the gripper is empty) and about the external world (e.g., the table is clear). These two components form the declarative memories of the agent.</p><p>Another essential component is the procedural memory that contains all the production rules. In our work, however, we integrate the working memory into each production by exploiting the Python class structure, so there is no centralized working memory. And finally inspired by the goal module of ACT-R <ref type="bibr" target="#b1">(Anderson 2009</ref>) and the impasse mechanism of SOAR <ref type="bibr" target="#b14">(Laird 2022)</ref>, the agent manages a stack of tasks.</p><p>At each time step, the agent searches in its procedural memory for any applicable production rule, considering the current task and environment knowledge. If there is no production applicable, the agent will summarize the current knowledge and query an LLM for both an action suggestion, and a corresponding production rule, such that the agent knows what to do in similar scenarios in the future. When at least one production applicable, it will sample an applicable production rule, based on its utility, and execute the proposed action, which can be either in the environment or internally, such as adding a subtask to its task stack.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Bootstrapping Procedures</head><p>The bootstrapping process starts with a curriculum. We took inspiration from <ref type="bibr" target="#b32">(Wang et al. 2023)</ref>, which uses an LLM to automatically construct the curriculum for the game of Minecraft. As the simulator we are using is not as popular as Minecraft, and the robot has some very specific affordance model (e.g., can only hold one object at a time), we find it better to specify the curriculum manually.</p><p>Another difference is that our curriculum consists of families of tasks (e.g., find a/an &lt;object&gt;) instead of specific instances (e.g., find a/an egg). We follow the SOAR syntax and keep all variables in angle brackets.</p><p>Unlike previous works that require human input on the next steps and/or goal condition for the tasks <ref type="bibr" target="#b22">(Mininger and Laird 2022)</ref>, we only require the names of the task families, so designing the curriculum is not very labor intensive.</p><p>With a given curriculum, the following steps are used to bootstrap a single task in the curriculum (using find a/an &lt;object&gt; as an example).</p><p>1. Fill in the variables randomly from the environment to instantiate a concrete task (e.g., find a/an Egg); 2. Attempt the task with the existing production rules; 3. (Action Selection) If there is no production rule for a state, or there is a cycle detected through the production application, query an LLM for an action; 4. (Production Generation) Generate the corresponding production rule to the action, and load it into the agent; 5. Repeat step 1-4 sufficient times until the robot can perform the task with only production rules; 6. (Production Improvement) Use a critic to summarize the end condition of the task for future use and improve the generated productions.</p><p>The above procedures are repeated for all task families in the curriculum. While the agent might not fully learn every scenario of a task before moving on to the next one, it can still query LLM to generate a production rule for a previous task later. The training of a task is considered complete as long as it has sufficient experience with the task to generate a reasonable end condition such that future tasks can reuse the previously learned tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Action Selection</head><p>The LLM is prompted with the current task, a summary of the current state, and a list of options available to the robot, which include both motor actions on the environment (e.g., move to a specific location) and internal action (e.g., attend to a new subtask). For each previously trained subtask, we provide the end condition generated by the critic for the LLM to evaluate its relevance. Like the task names, the actions can also be parameterized (e.g., move to &lt;receptacle&gt;) and the LLM can replace &lt;receptacle&gt; with anything as it sees fit.</p><p>We use chain-of-thought prompting <ref type="bibr" target="#b33">(Wei et al. 2022</ref>), which explicitly instructs the LLM to respond to the prompt in a step-by-step manner, probing it to make the most informed decision. The LLM is instructed to reflect on common strategies for approaching the task, analyze the current situation, and evaluate the usefulness of each action before suggesting one option for the robot to take. The LLM is also prompted to state the purpose of the chosen action, which will inform the production rule generation later.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Production Generation</head><p>Although the production rule is generated based on the current state, they are not plans for the current task but instead should be the underlying decision-making principle for all similar scenarios. For example, if the current task is to find a/an egg, instead of suggesting the action sequence of exploring every cabinet in the current environment, a desirable production rule would suggest "whenever you need to find something, you should first explore the unexplored places where that object is commonly stored". This is a systematic generalization that can be applied to finding any objects, not just eggs or food, and also to other novel environments with different layouts and receptacle types.</p><p>Listing 1: Production interface 1 class GeneratedProduction(Production): 2 def precondition(self, agent) -&gt; bool: 3 # Returns whether the production is applicable given the agent 4 # Set variables as side-effects 5 def apply(self) -&gt; str: 6 # Returns the effect 7 # Based on the variable bindings</p><p>To generate desired production rules, we separate the production generation into two steps. The first step summarizes the action selection process and generates the English description of the production rule; the second step converts the description into executable Python code (Listing 1). This separation is inspired by how human beginners are instructed to build cognitive models <ref type="bibr" target="#b13">(Laird 2017)</ref>, and has two benefits. First, it allows each query to the LLM to be of reasonable length (∼ 5k tokens), preventing LLMs to lose focus on overly long prompts <ref type="bibr">(Liu et al. 2023b</ref>). Second, it enables a modular design, which allows generating code from English descriptions generated from other sources, including human feedback and post-generation self-reflection.</p><p>For each step, we also use the chain-of-thought prompting technique. For English description generation, the LLM is given the entire history of the action selection process, and is instructed to take four steps: 1) identify relevant information that leads to choosing the action, 2) generate a specific production rule that describes the current situation, 3) identify the potentially generalizable components in the specific rule and what they can be generalized to, and 4) replace the components to form the generalized production description.</p><p>For code generation, the LLM is given the Python interface of querying declarative memory and the current task, and is instructed to take another four steps: 1) plan what variable bindings are needed, and how their values should be assigned, 2) analyze the predicates in the precondition and associate them with relevant variables, 3) plan how each predicate should be tested using the provided function interfaces, and 4) fill in the production template.</p><p>The code snippet is parsed from the LLM output, saved as a Python file, and dynamically imported into the agent.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Production Improvement</head><p>We use three mechanisms to monitor and improve the common interface mismatch, over-constraining, and overgeneralization problems of the LLM-generated productions.</p><p>Similar to the iterative prompting design in Voyager <ref type="bibr" target="#b32">(Wang et al. 2023)</ref>, we replay the generated production rule on the state that it is generated, and ensure that its precondition check passes the existing declarative knowledge. This mostly fixes errors regarding function interfaces, as the generated production has to comply with a specific naming scheme and the interface of the declarative knowledge.</p><p>Passing the precondition test for a single instance does not guarantee that production is ideal. As the LLM has access to accumulated observations from the past during the action selection process, it might include unnecessary conditions that happen to be true in the precondition of the production, making it over-constraining. This is handled by a critic LLM that summarizes the end condition of the task and provides suggestions on the existing productions.</p><p>Specifically, the critic LLM is given the name of the task family (e.g., find a/an &lt;object&gt;), and the English descriptions of the existing production rules for that task. The LLM is instructed to first analyze all the production rules whose effect is the done action, and summarize the end condition of the given task in a sentence (e.g., the robot is holding the desired object in its gripper). These end conditions summarize the behavior of the previously learned tasks to inform the action selection process for future tasks. As mentioned in the action selection section, this summary will be added to the prompt when querying for tasks later in the curriculum to incentivize reusing previously learned skills. Next, the LLM will go through all the production rules, and suggest modifications for each of them. The LLM is also given the choice of keeping a production rule as is or removing it entirely. The modifications are in the English description space for the critic, and we make use of the two-step modularity of production generation to update the production rules.</p><p>Over-generalization happens when important features are left out of the production's precondition. For example, for the pick and place task, the LLM might generate a production rule that says:</p><p>IF task is pick and place &lt;object&gt; AND &lt;object&gt; in field of view AND gripper is empty THEN pick &lt;object&gt; This will make the robot pick up the object even when the object is already in the target receptacle. To prevent the agent from being stuck in an infinite loop, it will keep a state transition graph during the execution process and query the LLM for an alternative action once a cycle is detected using a depth-first search on the transition graph. Coupled with the production reinforcement (described below), the agent will prioritize loop-breaking productions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Production Reinforcement</head><p>Following previous work in visual navigation <ref type="bibr" target="#b2">(Anderson et al. 2018)</ref>, the agent has to explicitly choose the special done action to indicate that it has completed the current task. We further extend this and give the agent a quit option to indicate that it believes the given task is impossible for the given environment. This is important as we allow the architecture to choose to attend to any subtask as it wants, and it should be able to realize when a task is impossible.</p><p>As we do not pre-define the goal condition during the bootstrapping process, we give a unit reward whenever the agent decides it is done with the current task. The reward propagates back through the shortest path to the starting state. For example, if the state transition is</p><formula xml:id="formula_0">S 0 P1 = = ⇒ S 1 P2 = = ⇒ S 2 P3 = = ⇒ S 0 P4 = = ⇒ S 4 P5 = = ⇒ S 5 Pdone = == ⇒</formula><p>where S 0 is the start state and P done is the production that yields the done action. Then the shortest path is</p><formula xml:id="formula_1">S 0 P4 = = ⇒ S 4 P5 = = ⇒ S 5 Pdone = == ⇒</formula><p>Therefore only P 4 , P 5 , P done will receive a utility update, using the bellman backup <ref type="bibr" target="#b28">(Sutton and Barto 2018)</ref>.</p><formula xml:id="formula_2">U after (P ) ← 1 N (P ) + 1 N (P ) • U before (P ) + γ ∆t (1)</formula><p>Where U (P ) is the utility of production P , N (P ) is the number of times P gets applied, ∆ t is the time difference from production application to the done action, and γ is the discount factor (which is set to 0.95 for our experiments). When a subtask is involved, the utility is updated with respect to each task. For example, if the state transition is</p><formula xml:id="formula_3">A 0 P1 = = ⇒ A 1 P2 = = ⇒ B 3 Q3 = = ⇒ B 4 Q4 = = ⇒ B 5 Qdone = == ⇒ a subtask initiated by P2 A 6 Pdone = == ⇒</formula><p>Where A and P correspond to the states and productions of the original task respectively and B and Q correspond to the states and productions of the subtask respectively. This will be treated as two separate utility update pathways</p><formula xml:id="formula_4">A 0 P1 = = ⇒ A 1 P2 = = ⇒ A 6 Pdone = == ⇒ B 3 Q3 = = ⇒ B 4 Q4 = = ⇒ B 5 Qdone = == ⇒</formula><p>If a subtask ends up with quit then there will be no utility update, not even negative ones. Because the task might be impossible due to environmental constraints, which has nothing to do with the production rules.</p><p>Intuitively the closer a production brings the agent to choose done for its current task, the higher its utility will be. This process is not provided to the LLM, so it has no incentive to "cheat" by proposing the done action all the time. We also explicitly tell the LLM to avoid selecting done or quit action unless it is "absolutely certain" about it. This works empirically in our experiments. This utility update process helps reduce the impact of hallucination in LLMs as the knowledge is aggregated. For example, when tasked with "explore the countertops", the LLM may hallucinate and propose a production P bad that keeps the agent exploring the cabinets after all countertops have been explored, instead of proposing the done action, as it should. However, when tasked with "explore the sink" in the same bootstrapping section, the LLM may generate a production P good that correctly identifies the termination condition and proposes done when all receptacles of the desired type have been explored. Then later, when the agent needs to explore all the countertops (potentially as a subtask of another task) and all of the countertops have been explored, both P bad and P good will be applicable. The agent will prioritize P good because it is guaranteed to have a higher utility value than P bad . On the other hand, if we use LLM to generate plans for each task, we would get a correct plan for the sink but an incorrect one for the countertops.</p><p>When multiple productions are applicable given the same environment knowledge, we resolve the conflict using the definition of noisy-optimal in previous works <ref type="bibr" target="#b29">(Tian et al. 2023)</ref>. Where the probability of production P i being selected and applied, given the current knowledge K, is</p><formula xml:id="formula_5">P(P i | K) ∝ I K (P i ) • exp(U (P i ))</formula><p>(2)</p><p>where I K (p) indicates that the preconditions of production p hold, given knowledge K.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>World Knowledge Base</head><p>For the sake of simplicity, we implemented the world knowledge of the agent as a dictionary that maps natural language statements to either true or false. Unlike many existing cognitive architectures that assume an absence of knowledge means the negation is true, we explicitly differentiate between not knowing and knowing to be false. When a production rule is conditioned on a statement not previously known to the agent, the LLM is used to evaluate whether the statement is true, and the result will be saved to the knowledge base to be reused later. For instance, when bootstrapping the task of finding an egg, the agent will learn the production rule that says "If there is an unexplored receptacle where the object is commonly stored, explore that receptacle". But the agent does not know whether "egg is commonly stored in the fridge" is true or not initially, so it will query the LLM and memorize the positive response in its world knowledge base. Later when the agent is tasked to put things in their common storage place, the agent can reuse the knowledge and place eggs into the fridge. In addition to transferring to new tasks, the knowledge can be applied to new environments as well (e.g., eggs are commonly stored in fridges in most American households).</p><p>This knowledge base could be easily replaced by connecting it to an existing knowledge graph or ontology, but for the purpose of this paper, we are bootstrapping it from scratch.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Experiments Setup</head><p>Following previous works in the embodied agents domain <ref type="bibr" target="#b25">(Sarch et al. 2022;</ref><ref type="bibr" target="#b30">Trabucco et al. 2023)</ref>, we evaluate our method in the kitchen environments in the AI2THOR simulator <ref type="bibr" target="#b12">(Kolve et al. 2017)</ref>, shown in Figure <ref type="figure" target="#fig_2">2</ref>. As shown in Figure <ref type="figure" target="#fig_2">2d</ref>, the agent has access to classification labels and attributes (e.g., "is opened") for objects that are close enough (within 1.6m) or large enough (more than 5% of the frame). We also assume the agent already knows the names and locations of the large receptacles (e.g., cabinets, fridges, etc.) but does not know what objects are in the receptacles until the agent actively explores them.</p><p>We use three different tasks for evaluation:</p><p>• find a/an &lt;object&gt;: the goal is to have the specified object in the robot's field of view. This is a fundamental skill that is often overlooked or directly assumed in many of the previous works <ref type="bibr" target="#b26">(Singh et al. 2023)</ref>. We want to show that our framework can bootstrap very basic skills in addition to composite actions. • slice a/an &lt;object&gt;: the goal is to use a knife to slice an object. Because the robot can hold at most one item at a time, slicing involves a sequence of actions including finding the target object and the knife, putting them in the same place, and the final slice action. We want to show that our framework can handle tasks that involve multiple steps and tool use.</p><p>• clear the countertops: the goal is to have all the objects on the countertops moved to suitable storage places. This is a common household task that is investigated a lot in previous work <ref type="bibr" target="#b3">(Andrew et al. 2022;</ref><ref type="bibr" target="#b25">Sarch et al. 2022)</ref>. We want to show that our framework can handle tasks that involve repeating similar subtasks.</p><p>The goal conditions listed above are only used for evaluation purposes, but are not provided to the LLM during training or testing. The LLM has to infer the goal condition from the task description only. For find and slice, 5 target objects are chosen for each task, and we run 3 trials for each object where the initial locations of the objects are shuffled. For clear the countertops we run 3 trials each with 5 objects on the countertops that need to be put away. The specific objects and locations vary between trials, and the success of the agent is evaluated based on how many objects originally on the countertops have been relocated to other places. This results in 15 specific goal instances for each task family.</p><p>We use GPT4-0613 (OpenAI 2023) for our experiments as previous works have shown that GPT3.5 is insufficient for code generation <ref type="bibr" target="#b24">(Olausson et al. 2023;</ref><ref type="bibr" target="#b32">Wang et al. 2023)</ref>. We set temperature to the 0 for the most deterministic response.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Conditions</head><p>For the experiment condition, we bootstrapped our agent with the following curriculum in the training floor plan:</p><p>1. explore &lt;receptacle&gt; 2. find a/an &lt;object&gt; 3. pick and place a/an &lt;object&gt; in/on a/an &lt;receptacle&gt; 4. slice a/an &lt;object&gt; 5. put things on the countertop away This process generated 27 production rules in total. During test time, the agent can query the LLM for an immediate action if it does not have an applicable production rule for the current situation, but it cannot learn new production rules.</p><p>For the baseline condition of using LLMs to query only the actions, we omit the production generation steps and only use the action selection process within our framework. This ensures the prompts used by both conditions are the same, so LLM should suggest actions of similar quality. If the action proposed by the LLM leads to an affordance error, we query LLM another two times, and if none of the actions are viable by the agent, then it raises a failure.</p><p>Although many works address the rearrangement task <ref type="bibr" target="#b25">(Sarch et al. 2022;</ref><ref type="bibr" target="#b34">Wu et al. 2023)</ref>, they are not appropriate baselines as their architectures already encode the general strategies (e.g., first determine the target receptacle for each object, then navigate to the target area, etc.) while our approach bootstraps everything from scratch. Other code generation works cannot handle multiple instances of the same kind <ref type="bibr" target="#b26">(Singh et al. 2023)</ref> or understand the slicing preconditions <ref type="bibr" target="#b27">(Song et al. 2022</ref>) without non-trivial modifications.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Results</head><p>Table <ref type="table" target="#tab_0">1</ref> shows the quantitative results of different types of agents performing each kitchen task.</p><p>The action-only baseline successfully completes all tasks but one, where it assumes find a/an mug is equivalent to find a/an cup, and ends the search pre-maturely without exploring the sink where the mug is actually placed. On the other hand, our bootstrapped agent is able to finish most tasks completely using its learned production rule. The only exceptions are when it is tasked to find an object that does not exist in the scene, which is not part of its training. But with very limited queries, the bootstrapped agent is able to successfully complete those tasks as well. This shows that the knowledge in the bootstrapped agent can be easily transferred to new objects in new environments.</p><p>The success rate and number of query tokens show two advantages of our framework. First, it is verifiable such that it won't make false assumptions (e.g., confusing mugs with cups). Second, it is much more efficient to be deployed into new environments as the production rules it learned can be easily transferred and require minimal further assistance from the LLM, saving computations and costs.</p><p>We use paired sample t-test for means to compare the number of steps taken by both agents. No significant evidence suggests that the two agents perform differently in find nor slice task (p-values 0.446 and 0.347). This is not surprising as the knowledge source of both agents is the same LLM. However, the bootstrapped agent is taking longer in the clearing task with significance (p-value 0.001), which results from a stylistic difference between the two agents. As shown in Figures <ref type="figure">3b</ref> and <ref type="figure">3d</ref>, the bootstrapped agent places everything into an individual cabinet while the baseline places multiple objects in the same cabinets. This is because one of the productions generated is "if there is an object on the countertop and there is an empty receptacle, attend to the subtask pick up the object and place it into the empty receptacle". This production gets reused repeatedly, requiring the agent to seek an unique empty receptacle before placing each object instead of putting every object in the same cabinet. By contrast, the baseline agent is making decisions on a case-by-case basis, so it does not enforce that the target receptacle has to be empty.</p><p>A similar difference is also found in the slice task where the bootstrapped agent always moves the objects to the countertops before slicing while the baseline agent slices objects at their current location (Figures <ref type="figure">3a</ref> and <ref type="figure">3c</ref>).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Production Analysis</head><p>The following are some learned productions:</p><p>• IF the current task is to find a/an &lt;object&gt; AND the &lt;object&gt; is located on &lt;location&gt; AND the robot is not at &lt;location&gt; THEN choose motor action: move to &lt;location&gt;. These show that the agent is able to represent different aspects of the given tasks using production rules. The first represents a common strategy for finding things, namely how to find things with a known location. The second represents decomposing complex tasks and reusing previously learned tasks. The third is a correct termination condition, which is not directly provided, for the exploration task from the LLM.</p><p>Figure <ref type="figure">4</ref> shows the task hierarchy learned by the agent after training on the given curriculum. It shows how previously learned tasks are used to perform new tasks. This reduces the number of queries needed for the LLM, fosters generality, and ensures the scalability of our approach.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Discussion Explainability</head><p>Our framework touches upon all three aspects of explainability as defined by <ref type="bibr" target="#b21">Milani et al. (2022)</ref>. The preconditions of the productions directly specify the feature that is being used (feature importance). Each production rule corresponds to a specific scenario during the bootstrapping process when it is created, which helps determine the training points that influence the learned policy (learning process). Lastly, the production application process can be easily converted to a verifiable decision tree by merging the precondition checks of productions (policy-level explainability).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitations</head><p>In this work, we explore only the high-level decision-making process of the agent and rely heavily on having a welldefined interface for low-level actions, such as navigation and object manipulation. There will likely be a considerable sim-to-real gap when applying this to physical agents.</p><p>Additionally, the English description generation step requires the decision-making process to be articulable to be converted to production rules. This is hard for skills that cannot be fully expressed using language (e.g., sculpting).</p><p>close open move to location pick up put down explore find slice in view pick and place clear countertops slice</p><p>Figure <ref type="figure">4</ref>: The hierarchy of tasks learned. Gray nodes denote the built-in functions of the robot, and white nodes represent the tasks learned from the curriculum. For built-in actions that involve an object (e.g., close), the object has to be within the field of view for the action to be taken. Special actions (i.e., done and quit) are omitted due to space constraints.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Future Work</head><p>There are more learning opportunities in cognitive architectures such as updating the preconditions of productions or using separate productions for conflict resolutions. These would help better extract the existing knowledge from LLMs to fit the specific agent and environment configurations. Additionally, it is well-acknowledged that human values and preferences are hard to represent with a single reward function <ref type="bibr" target="#b4">(Casper et al. 2023)</ref>. But the production rules are interpretable and can be easily modified to suit each individual without extensive computation. Therefore it would interesting to examine whether this framework will facilitate personalization in human-AI collaboration tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Conclusion</head><p>This paper presents a framework for bootstrapping a cognitive architecture from the existing noisy knowledge in LLMs, with minimal human inputs. We demonstrated how such an agent could efficiently learn to perform kitchen tasks and be applied to new environments. This work generalizes using LLMs to generate plans and provides an alternative to purely data-driven foundation models. And finally, we shed light on how it will benefit personalized agents in the future.</p><p>Figures <ref type="figure">5</ref> and <ref type="figure" target="#fig_5">6</ref> illustrate the production rules learned for each task in the form of decision trees. These decision trees are for illustrations purpose and are not completely equivalent to the agent because of the sampling mechanism in the production selection process. The order of the nodes is chosen based on the utility of the production. That is, productions with higher utility (e.g., productions leading to the done action) will be closer to the root. This demonstrates how the production rules can be converted to verifiable decision trees as mentioned in the discussion section in the main paper.</p><p>The actual production rules and their Python implementations can be found in the code and data supplementary material.</p><p>robot is in front of the target receptacle move to receptacle the receptacle is an unopened container open receptacle done yes no yes no (a) explore target object location done exists a common storage place robot at the same location explore an unexplored common storage place explore an unexplored receptacle pick up object move to object in gripper unknown known yes no yes no (b) find target object location done robot at target receptacle find target object robot at target object location receptacle needs to be opened move to receptacle pick up object move to object open receptacle put object on receptacle at target receptacle in gripper unknown other yes no yes no yes no (c) pick and place Figure 5: Productions learned through bootstrapping for exploring, finding, and placing. Gray nodes are the effects, and white nodes are the features being conditioned on. target object is already sliced done robot is holding a knife robot at target object location object location slice object move to object put object on countertop find knife find object yes no yes no yes no in gripper known unknown  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Tokens Usage</head><p>As shown in Figure <ref type="figure" target="#fig_6">7</ref>, the number of tokens needed to train each task is roughly the same. So as the curriculum expands, the number of tokens needed will only grow linearly. Additionally, the number of tokens needed to train one task is less than one single trial of slicing objects of the action-only agent as reflected in Table <ref type="table" target="#tab_0">1</ref>. This shows that our framework is much more cost-effective. The testing experiments on the baseline action-only agent cost around $120 in total while the bootstrapping of our framework costs less than $40.</p><p>Step-by-Step Example of Completing One Task  <ref type="table">2</ref> shows the trajectory of the agent completing the task of "pick up and place a/an kettle in/on a/an sinkbasin" after bootstrapping. The agent first attends to the subtask of finding a kettle, during which process it also uses the explore subtasks, and finally moves to the sink basin and places the kettle as instructed. The main task column in the table reflects the management of the task stack in the agent: it attends to a single main task at a time and releases it when a production rule determines the current task is done.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Task End Conditions Generated</head><p>Here is a list of end conditions for the tasks families in our curriculum.</p><p>• explore a/an &lt;receptacle&gt;: "the robot has fully explored the receptacle."</p><p>• find a/an &lt;object&gt;: "the robot has found the object and has it in its gripper."</p><p>• pick up and place a/an &lt;object&gt; in/on a/an &lt;receptacle&gt;: "the robot has successfully picked up the specified object and placed it in/on the specified receptacle, and the robot's gripper is empty." • slice a/an &lt;sliceable&gt;: "the sliceable object is already sliced and the robot's gripper is holding a knife."</p><formula xml:id="formula_6">(a) (b) (c) (d) (e) (f) (g) (h) (i) (j) (k) (l)</formula><p>Figure <ref type="figure">8</ref>: Trajectory of the agent completing "pick up and place a/an kettle in/on a/an sinkbasin"</p><p>• put things on the countertops away: "all objects on the countertops have been put away in the cabinets and there are no more unexplored countertops or cabinets."</p><p>They might not be fully aligned with the human's intention (e.g., someone may think having an object in view already satisfies the goal of "find", but the agent believes the task is not done until it picks the object up), but they reflect what the agent would do if the subtask is chosen. This is very helpful for reusing previously learned tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Reproducibility Checklist</head><p>We answer "partial" to the following question on the reproducibility checklist [Computational experiments] If an algorithm depends on randomness, then the method used for setting seeds is described in a way sufficient to allow replication of results. This is because our experiments involve the use of GPT-4 and an Unity-based simulator, whose internal mechanism is not fully disclosed to the best of our knowledge. We have done our best to set the temperature of GPT-4 to 0, but empirical experiments and experiences from other users suggest that its behavior is still not deterministic when the temperature is set to 0. Additionally, there is physics simulation in the simulator (e.g., when slicing a lettuce, the slices will fall apart). These motions are not deterministic according to our observation, and the documentation of the simulator does not provide a way to make the result deterministic. Because the bootstrapping process contains multiple steps (∼ 1400 steps), small discrepancies at the beginning may accumulate and result in very different production rules learned.</p><p>Despite we cannot guarantee whether anyone bootstrapping the agent from scratch will generate the same production rules as we do, we attach (in the code and data supplementary material) our bootstrapped production rules, the logs generated during the bootstrapping process, and the logs generated during the testing process such that one can use them to verify the results we reported in the experiments section of the main paper.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Main Task</head><note type="other">Figure</note><p>Action Production Preconditions pick and place a/an kettle in/on a/an sinkbasin 8a find a/an kettle the robot's gripper is empty AND the &lt;object&gt; has not been located find a/an kettle 8a open fridge the robot is in front of a closed &lt;receptacle&gt; AND the robot's gripper is empty 8b move to countertop2 the robot's gripper is empty AND there is an unexplored &lt;receptacle&gt; that is commonly associated with the &lt;object&gt; 8c explore a/an cabinet1 the robot's gripper is empty AND there are unexplored receptacles in the kitchen explore a/an cabinet1 8c move to cabinet1 the &lt;receptacle&gt; is not at the current location AND the robot's gripper is empty 8d open cabinet1 the robot is at the location of the &lt;receptacle&gt; AND the &lt;receptacle&gt; is closed and unexplored AND the robot's gripper is empty 8e done the robot is in front of the &lt;receptacle&gt; AND the &lt;receptacle&gt; has been fully explored find a/an kettle 8e explore a/an cabinet2 the robot's gripper is empty AND there are unexplored receptacles in the kitchen explore a/an cabinet2 8e move to cabinet2 the &lt;receptacle&gt; is not at the current location AND the robot's gripper is empty 8f open cabinet2 the robot is at the location of the &lt;receptacle&gt; AND the &lt;receptacle&gt; is closed and unexplored AND the robot's gripper is empty 8g done the robot is in front of the &lt;receptacle&gt; AND the &lt;receptacle&gt; has been fully explored find a/an kettle 8g move to countertop1 the robot's gripper is empty AND there is an unexplored &lt;receptacle&gt; that is commonly associated with the &lt;object&gt; 8h move to countertop3 the robot's gripper is empty AND there is an unexplored &lt;receptacle&gt; that is commonly associated with the &lt;object&gt; 8i pick up kettle the &lt;object&gt; is located in a/an &lt;receptacle&gt; AND the robot is in front of the &lt;receptacle&gt; 8j done the robot's gripper has &lt;object&gt; pick and place a/an kettle in/on a/an sinkbasin 8j move to sinkbasin the robot's gripper has the &lt;object&gt; AND the robot is not at the &lt;receptacle&gt; 8k put on sinkbasin the robot is holding the &lt;object&gt; AND the robot is in front of the &lt;receptacle&gt; AND the &lt;receptacle&gt; is empty 8l done the &lt;object&gt; is already in the &lt;receptacle&gt; AND the robot's gripper is empty Table <ref type="table">2</ref>: Action history of the agent completing "pick up and place a/an kettle in/on a/an sinkbasin". Due to space constraints, the object names are simplified and the task matching is omitted from the preconditions.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Overview of agent framework. It is showing the agent executing the production of attending to a new subtask of finding a tomato when the original task is to slice a tomato and the tomato is not in the gripper nor on the table. Dotted lines represent the information a production rule may condition on. Solid lines represent information flow.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Screenshots of the AI2THOR simulator</figDesc><graphic coords="5,319.50,182.10,110.88,110.88" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>Figure 3: Examples of task execution. The first row shows the bootstrapped agent sliced the apple on the countertop, and put each object in their own cabinet. The second row shows the baseline agent sliced the apple at its current location (fridge), and put multiple objects in the same cabinet.</figDesc><graphic coords="6,319.50,181.82,110.88,110.88" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 6 :</head><label>6</label><figDesc>Figure 6: Productions learned through bootstrapping for slicing and putting things away. Gray nodes are the effects, and white nodes are the features being conditioned on.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 7 :</head><label>7</label><figDesc>Figure 7: Number of tokens used during bootstrapping</figDesc><graphic coords="16,56.52,238.64,498.96,166.32" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure</head><figDesc>Figure8and Table2shows the trajectory of the agent completing the task of "pick up and place a/an kettle in/on a/an sinkbasin" after bootstrapping. The agent first attends to the subtask of finding a kettle, during which process it also uses the explore subtasks, and finally moves to the sink basin and places the kettle as instructed. The main task column in the table reflects the management of the task stack in the agent: it attends to a single main task at a time and releases it when a production rule determines the current task is done.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Result of experiments on household tasks. Completion steps and tokens are averaged over all task instances • IF the current task is to slice a/an &lt;sliceable&gt; AND the robot is holding a/an &lt;sliceable&gt; AND there is no &lt;tool&gt; in the spatial knowledge or object knowledge THEN choose 'attend to subtask: find a/an</figDesc><table><row><cell></cell><cell>Task</cell><cell>Agent</cell><cell></cell><cell></cell><cell cols="2">Success ↑ Success w/o LLM ↑ Steps ↓</cell><cell>Tokens ↓</cell></row><row><cell></cell><cell>find a/an &lt;object&gt;</cell><cell cols="3">action-only bootstrapped (ours)</cell><cell>14/15 15/15</cell><cell>-12/15</cell><cell>15.67 15.80</cell><cell>54754.20 916.87</cell></row><row><cell></cell><cell>slice a/an &lt;object&gt;</cell><cell cols="3">action-only bootstrapped (ours)</cell><cell>15/15 15/15</cell><cell>-15/15</cell><cell>28.20 29.13</cell><cell>102806.60 0.00</cell></row><row><cell cols="2">clear the countertops</cell><cell cols="3">action-only bootstrapped (ours)</cell><cell>15/15 15/15</cell><cell>-15/15</cell><cell>5.13 7.47</cell><cell>18924.87 0.00</cell></row><row><cell cols="2">&lt;tool&gt;'.</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="5">• IF the current task is to clear objects from</cell><cell></cell></row><row><cell>a/an</cell><cell>&lt;receptacle type&gt;</cell><cell>AND</cell><cell>all</cell><cell>the</cell><cell></cell></row><row><cell cols="5">&lt;receptacle type&gt; are empty THEN choose</cell><cell></cell></row><row><cell cols="2">special action: 'done'.</cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Technical Appendix</head><p>Step-by-Step Example of Learning One Production Rule This section shows an example of learning a new production rule for slice a/an &lt;object&gt; task. In the interest of space, only relevant information is kept. The original complete prompt, along with the responses from the LLM, are provided in the code and data supplementary material.</p><p>System prompt for action selection and production description in English The system prompt mainly describes the robot's affordance model and explains the input of future user prompts. It is the same prompt for all action selections.</p><p>User prompt for action selection As mentioned in the methods section, the production generation is grounded to a specific instance, and the LLM is first asked to choose an action. The user prompt for action selection has a fixed template, where the information will be dynamically filled according to the actual knowledge of the agent. Below is an example of the information provided in the prompt. Unimportant information and static instructions are omitted in the interest of space. The user prompt below and the system prompt will be provided to the LLM in the same request for the action selection.</p><p>[Current Task] slice a/an lettuce [Goal Conditions] * The lettuce is sliced.</p><p>[Current Situation Analysis] The robot is currently holding a lettuce and is located in front of the sink. The robot has explored several areas of the kitchen, including the sink, countertop4, countertop5, and a few cabinets. However, there are still several unexplored areas, including countertop1, countertop2, countertop3, and several cabinets. The robot has not found a knife yet, which is necessary for slicing the lettuce. The robot's previous actions indicate that it has successfully found and picked up the lettuce, which is part of the task. There is no existing plan provided.</p><p>[Task Analysis] The current task is to slice a lettuce. The robot has already found and picked up the lettuce, which is part of the task. However, the robot has not found a knife yet, which is necessary for slicing the lettuce. The robot also needs to find a suitable place to put down the lettuce for slicing, such as a countertop.</p><p>[Plan]</p><p>Step1: Put down the lettuce on a countertop.</p><p>Step2: Find and pick up a knife.</p><p>Step3: Slice the lettuce.</p><p>[Option Evaluation] "attend to subtask: find a/an &lt;object&gt;": This option is not useful right now because the robot already has the lettuce in its gripper. "motor action: put Lettuce_895e9ec5 on CounterTop4": This option is useful because it allows the robot to free its gripper so it can pick up a knife. "special action: 'done'": This option is not appropriate because the task is not completed yet. &lt;&lt;OTHER EVALUATION OMITTED&gt;&gt; [Option Suggestion] "motor action: put Lettuce_895e9ec5 on CounterTop4"</p><p>[Purpose] The purpose of the suggested option is to free the robot's gripper so it can pick up a knife.</p><p>[End]</p><p>User prompt for generating English description of the production rule After parsing the suggested option from the previous response, we prompt the LLM again for the English description of the production rule. We combine all the previous queries and responses and send all of them to the LLM in a single request.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>GPT4 response for production rule in English</head><p>[Relevant Information] * The current task is to slice a lettuce. * The robot is currently holding a lettuce in its gripper.</p><p>* The robot is currently in front of the sink, which is not an ideal place for slicing.</p><p>* A countertop is a suitable place for slicing. * The robot has the option to put the lettuce on CounterTop4.</p><p>[Specific Rule] IF the current task is to slice a lettuce AND the robot is holding a lettuce in its gripper AND the robot is not at a suitable place for slicing AND there is a countertop available THEN choose motor action: put Lettuce_895e9ec5 on CounterTop4.</p><p>[Generalizable Constants] * Lettuce_895e9ec5 could be any object that needs to be sliced. * CounterTop4 could be any countertop or similar flat surface.</p><p>[Generalized Rule] IF the current task is to slice a/an &lt;object&gt; AND the robot is holding the &lt;object&gt; in its gripper AND the robot is not at a suitable place for slicing AND there is a countertop available THEN choose motor action: put &lt;object&gt; on &lt;countertop&gt;.</p><p>[Correspondence] * &lt;object&gt; is Lettuce_895e9ec5. * &lt;countertop&gt; is CounterTop4.</p><p>Notes: This rule is designed to ensure that the robot places the object to be sliced on a suitable surface before attempting to slice it. It is applicable to any task that involves slicing an object.</p><p>System prompt for production rule code generation The system prompt mainly describes the Python interfaces for the productions and information stored in the agent. It is the same prompt for all code generation.</p><p>User prompt for production rule code generation The response of the production rule in English is copied verbatim along with the instructions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>GPT4 response for production code generation</head><p>The response generated by GPT4 is recreated below. The code has been reformatted to fit the page.</p><p>[Variable Bindings] * target_object: the object that needs to be sliced. Its value should be parsed from the current task.</p><p>* target_receptacle: a suitable place for slicing. Its value should be assigned by iterating through all receptacles and finding the countertop that is closest to the robot.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>[Precondition Relation]</head><p>* "the current task is to slice a/an &lt;object&gt;" is about the current task * "the robot is holding the &lt;object&gt; in its gripper" is about the object type of target_object and the hosting attribute of the robot's gripper * "the robot is not at a suitable place for slicing" is about the current location * "there is a countertop available" is about the existence of target_receptacle User prompt for code revision As described in the production improvement section, if the code generated does not pass the current state knowledge, we query it again with the current knowledge and the error raised, which in this example is the world knowledge cannot determine whether "SinkBasin 28084e25 is a suitable place for slicing" is true or not.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>&lt;&lt;INFORMATION FROM THE ACTION SELECTION STEP&gt;&gt;</head><p>[Expected Return of 'precondition()'] (True, "") <ref type="bibr">[Your Code Return]</ref> ValueError: got unknown statement: SinkBasin_28084e25 is a suitable place for slicing GPT4 response for code revision [Error Interpretation] The message indicates that the OracleQuery function has failed.</p><p>[Error Attribution] The error is because the OracleQuery function does not understand the statement "SinkBasin_28084e25 is a suitable place for slicing". The OracleQuery function is designed to answer general knowledge questions, not specific queries about the current environment.</p><p>[Things to Change] The OracleQuery test should be replaced with a check against a list of suitable places for slicing. </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ahn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Brohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chebotar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Cortes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>David</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Finn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Gopalakrishnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Hausman</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2204.01691</idno>
+		<title level="m">Do as i can, not as i say: Grounding language in robotic affordances</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">How can the human mind occur in the physical universe?</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Anderson</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2009">2009</date>
+			<publisher>Oxford University Press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">P</forename><surname>Anderson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">S</forename><surname>Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Dosovitskiy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Koltun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Kosecka</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Malik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Mottaghi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Savva</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1807.06757</idno>
+		<title level="m">On evaluation of embodied navigation agents</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title/>
+		<author>
+			<persName><forename type="first">S</forename><surname>Andrew</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Karmesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Alex</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Vincent-Pierre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Aaron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Angel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Manolis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Zsolt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Dhruv</surname></persName>
+		</author>
+		<ptr target="https://aihabitat.org/challenge/rearrange2022" />
+	</analytic>
+	<monogr>
+		<title level="j">Habitat Rearrangement Challenge</title>
+		<imprint>
+			<date type="published" when="2022">2022. 2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Casper</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Davies</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">K</forename><surname>Gilbert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Scheurer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Rando</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Freedman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Korbak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Lindner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Freire</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.15217</idno>
+		<title level="m">Open Problems and Fundamental Limitations of Reinforcement Learning from Human Feedback</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Towards a unified agent with foundation models</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Di Palo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Byravan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Hasenclever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Wulfmeier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Heess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Riedmiller</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Workshop on Reincarnating Reinforcement Learning at ICLR 2023</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<author>
+			<persName><forename type="first">D</forename><surname>Driess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">S</forename><surname>Sajjadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Lynch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Ichter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Wahid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tompson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Vuong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Yu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.03378</idno>
+		<title level="m">Palm-e: An embodied multimodal language model</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Dreamcoder: Bootstrapping inductive program synthesis with wake-sleep library learning</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Ellis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Wong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Nye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Sablé-Meyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Morales</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Hewitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Cary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Solar-Lezama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">B</forename><surname>Tenenbaum</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 42nd acm sigplan international conference on programming language design and implementation</title>
+		<meeting>the 42nd acm sigplan international conference on programming language design and implementation</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="835" to="850" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Inferring a Cognitive Architecture from Multitask Neuroimaging Data: A Data-Driven Test of the Common Model of Cognition Using Granger Causality</title>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">S</forename><surname>Hake</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Sibert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Stocco</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Topics in Cognitive Science</title>
+		<imprint>
+			<biblScope unit="volume">14</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="845" to="859" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Language models as zero-shot planners: Extracting actionable knowledge for embodied agents</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Abbeel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Pathak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Mordatch</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="9118" to="9147" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Learning Hierarchical Symbolic Representations to Support Interactive Task Learning and Knowledge Transfer</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Kirk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E</forename><surname>Laird</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IJCAI</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="6095" to="6102" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Integrating Diverse Knowledge Sources for Online One-shot Learning of Novel Tasks</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Kirk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">E</forename><surname>Wray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lindes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E</forename><surname>Laird</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2208.09554</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">E</forename><surname>Kolve</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Mottaghi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Vanderbilt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Weihs</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Herrasti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Gordon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Farhadi</surname></persName>
+		</author>
+		<idno>arXiv</idno>
+		<title level="m">An Interactive 3D Environment for Visual AI</title>
+		<meeting><address><addrLine>AI2-THOR</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E</forename><surname>Laird</surname></persName>
+		</author>
+		<idno>SOAR 9.6.0 Tutorial</idno>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E</forename><surname>Laird</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2205.03854</idno>
+		<title level="m">Introduction to Soar</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Interactive task learning</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E</forename><surname>Laird</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Gluck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Anderson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">D</forename><surname>Forbus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><forename type="middle">C</forename><surname>Jenkins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Lebiere</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Salvucci</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Scheutz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Thomaz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Trafton</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Intelligent Systems</title>
+		<imprint>
+			<biblScope unit="volume">32</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="6" to="21" />
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">A standard model of the mind: Toward a common computational framework across artificial intelligence, cognitive science, neuroscience, and robotics</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E</forename><surname>Laird</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Lebiere</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">S</forename><surname>Rosenbloom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Hausman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Ichter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Florence</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zeng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE International Conference on Robotics and Automation (ICRA)</title>
+		<meeting><address><addrLine>Ai Magazine</addrLine></address></meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2017">2017. 2023</date>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="page" from="9493" to="9500" />
+		</imprint>
+	</monogr>
+	<note>Code as policies: Language model programs for embodied control</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Improving Knowledge Extraction from LLMs for Robotic Task Learning through Agent Analysis</title>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Lindes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Peter</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.06770</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<author>
+			<persName><forename type="first">B</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Biswas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Stone</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.11477</idno>
+		<title level="m">LLM+ P: Empowering Large Language Models with Optimal Planning Proficiency</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">F</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hewitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Paranjape</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bevilacqua</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.03172</idno>
+		<title level="m">Lost in the middle: How language models use long contexts</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Language models of code are few-shot commonsense learners</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Madaan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">U</forename><surname>Alon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Neubig</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.07128</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Milani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Topin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Veloso</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Fang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2202.08434</idno>
+		<title level="m">A survey of explainable reinforcement learning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">A Demonstration of Compositional, Hierarchical Interactive Task Learning</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mininger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">E</forename><surname>Laird</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="page" from="13203" to="13205" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Unified theories of cognition</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Newell</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1994">1994</date>
+			<publisher>Harvard University Press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Demystifying GPT Self-Repair for Code Generation</title>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">X</forename><surname>Olausson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">P</forename><surname>Inala</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Solar-Lezama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">S</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">C</forename><surname>O'brien</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">J</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">R</forename><surname>Morris</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">S</forename><surname>Bernstein</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.09896.OpenAI.2023.GPT-4</idno>
+		<idno>arXiv:2304.03442</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Generative agents: Interactive simulacra of human behavior</title>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Tidee: Tidying up novel rooms using visuo-semantic commonsense priors</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Qiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Moon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sarch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Fang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">W</forename><surname>Harley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Schydlo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">J</forename><surname>Tarr</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Fragkiadaki</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.05696</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Embodied Executable Policy Learning with Language-based Scene Summarization</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2022">2023. 2022</date>
+			<biblScope unit="page" from="480" to="496" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>European Conference on Computer Vision</note>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">ProgPrompt: Generating Situated Robot Task Plans using Large Language Models</title>
+		<author>
+			<persName><forename type="first">I</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Blukis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mousavian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tremblay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Fox</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Thomason</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Garg</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Robotics and Automation</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>ICRA</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">H</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Washington</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">M</forename><surname>Sadler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W.-L</forename><surname>Chao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Su</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.04088</idno>
+		<title level="m">Llm-planner: Few-shot grounded planning for embodied agents with large language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<title level="m" type="main">Reinforcement learning: An introduction</title>
+		<author>
+			<persName><forename type="first">R</forename><forename type="middle">S</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">G</forename><surname>Barto</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<publisher>MIT press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Towards Modeling and Influencing the Dynamics of Human Learning</title>
+		<author>
+			<persName><forename type="first">R</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Tomizuka</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">D</forename><surname>Dragan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Bajcsy</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2023 ACM/IEEE International Conference on Human-Robot Interaction</title>
+		<meeting>the 2023 ACM/IEEE International Conference on Human-Robot Interaction</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="350" to="358" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">A Simple Approach for Visual Room Rearrangement: 3D Mapping and Semantic Search</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Trabucco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">A</forename><surname>Sigurdsson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Piramuthu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">S</forename><surname>Sukhatme</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title level="m" type="main">ChatGPT for Robotics: Design Principles and Model Abilities</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Vemprala</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Bonatti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Bucker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Kapoor</surname></persName>
+		</author>
+		<idno>MSR-TR-2023-8</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<publisher>Microsoft</publisher>
+		</imprint>
+	</monogr>
+	<note type="report_type">Technical Report</note>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<author>
+			<persName><forename type="first">G</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mandlekar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Anandkumar</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.16291</idno>
+		<title level="m">Voyager: An Open-Ended Embodied Agent with Large Language Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Chain-ofthought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="24824" to="24837" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Antonova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Kan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lepert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Bohg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Rusinkiewicz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Funkhouser</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.05658</idno>
+		<title level="m">Tidybot: Personalized robot assistance with large language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Xiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Tao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Shu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Hu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.10626</idno>
+		<title level="m">Language Models Meet World Models: Embodied Experiences Enhance Language Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Gong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Soh</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.05128</idno>
+		<title level="m">Translating natural language to planning goals with largelanguage models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lauer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mathis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">W</forename><surname>Mathis</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.04858</idno>
+		<title level="m">AmadeusGPT: a natural language interface for interactive animal behavioral analysis</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<monogr>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Soh</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.03548</idno>
+		<title level="m">Large Language Models as Zero-Shot Human Models for Human-Robot Interaction</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<monogr>
+		<author>
+			<persName><forename type="first">X</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Tao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.17144</idno>
+		<title level="m">Ghost in the Minecraft: Generally Capable Agents for Open-World Enviroments via Large Language Models with Text-based Knowledge and Memory</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<monogr>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">Z</forename><surname>Kolter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Fredrikson</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.15043</idno>
+		<title level="m">Universal and Transferable Adversarial Attacks on Aligned Language Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

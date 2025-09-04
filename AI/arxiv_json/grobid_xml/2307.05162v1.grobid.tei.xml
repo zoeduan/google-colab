@@ -1,0 +1,948 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">SuryaKiran at MEDIQA-Sum 2023: Leveraging LoRA for Clinical Dialogue Summarization</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-07-11">11 Jul 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Kunal</forename><surname>Suri</surname></persName>
+							<email>kunal_suri@optum.com</email>
+						</author>
+						<author>
+							<persName><forename type="first">Prakhar</forename><surname>Mishra</surname></persName>
+							<email>prakhar_mishra29@optum.com</email>
+						</author>
+						<author>
+							<persName><forename type="first">Saumajit</forename><surname>Saha</surname></persName>
+							<email>saumajit_saha@optum.com</email>
+						</author>
+						<author>
+							<persName><forename type="first">Atul</forename><forename type="middle">Singh</forename><surname>Optum</surname></persName>
+						</author>
+						<title level="a" type="main">SuryaKiran at MEDIQA-Sum 2023: Leveraging LoRA for Clinical Dialogue Summarization</title>
+					</analytic>
+					<monogr>
+						<idno type="ISSN">1613-0073</idno>
+						<imprint>
+							<date type="published" when="2023-07-11">11 Jul 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">09E34F43959572B4E63A6F16AAB5A1EE</idno>
+					<idno type="arXiv">arXiv:2307.05162v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:20+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<textClass>
+				<keywords>
+					<term>Dialogue Summarization</term>
+					<term>Parameter Efficient Fine Tuning</term>
+					<term>Clinical Dialogue Summarization</term>
+				</keywords>
+			</textClass>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Finetuning Large Language Models helps improve the results for domain-specific use cases. End-to-end finetuning of large language models is time and resource intensive and has high storage requirements to store the finetuned version of the large language model. Parameter Efficient Fine Tuning (PEFT) methods address the time and resource challenges by keeping the large language model as a fixed base and add additional layers, which the PEFT methods finetune. This paper demonstrates the evaluation results for one such PEFT method Low Rank Adaptation (LoRA), for Clinical Dialogue Summarization. The evaluation results show that LoRA works at par with end-to-end finetuning for a large language model. The paper presents the evaluations done for solving both the Subtask A and B from ImageCLEFmedical</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Introduction</head><p>It is important to record conversations between medical personnel and patients for compliance, training, and evaluation purposes. To that end, summaries of such conversations serve as valuable tools for medical personnel and patients to refer back to and comprehend their prior interactions. Therefore, a concise summary must be produced to facilitate the next medical consultation and provide a source for future reference. Currently, such summaries are created manually; this summarization process is costly and labour-intensive. AI-based summarization techniques can help here by reducing the time and cost associated with manual summarization and facilitating the generation of more accurate representations of doctor-patient conversations by human scribes in less time.</p><p>Sequence-to-Sequence (Seq2Seq) Architectures <ref type="bibr" target="#b0">[1]</ref> have been at the forefront of creating summaries. Transformers <ref type="bibr" target="#b1">[2]</ref> further improved the performance of this architecture. Over time, we have seen that the performance of these models have improved significantly 1 but it comes at the cost of increased model size which made it very difficult to fit such models on consumer grade hardware such as K80 or T4. Recently a couple of techniques such as LoRA <ref type="bibr" target="#b2">[3]</ref>, Prefix Tuning <ref type="bibr" target="#b3">[4]</ref>, P-Tuning <ref type="bibr" target="#b4">[5]</ref>, Prompt Tuning <ref type="bibr" target="#b5">[6]</ref> have been introduced which are collectively referred to as Parameter Efficient Fine Tuning (PEFT) techniques. These techniques are used for efficiently adapting pre-trained language models (PLMs) to various downstream applications without fine-tuning all the model's parameters. PEFT methods only trains a small number of (extra) model parameters, significantly decreasing computational and storage costs because fine-tuning large-scale PLMs is prohibitively costly. For this paper, we use the PEFT implementation from Huggingface<ref type="foot" target="#foot_0">foot_0</ref> .</p><p>This paper presents the experimental results of our explorations with LoRA on Clinical Dialogs to accomplish both Subtask A and B of <ref type="bibr" target="#b6">[7]</ref> Shared Tasks from <ref type="bibr" target="#b7">[8]</ref>. The solution of SubTask B presented in this paper was ranked first among all the submissions for SubTask B. The paper uses LoRA based models for both assigning conversations to a pre-defined set of clinical notes sections and summarization of conversations. Through this work, the paper also compares the performance of fine-tuned Transformer based models with LoRA based models for classification and summarization tasks. In addition to this comparison, we also evaluate impact of ensembling outputs from multiple Seq2Seq models using <ref type="bibr" target="#b8">[9]</ref>. Our simulations show that LoRA works as well as finetuning of Transformer-based models. This is very important because it shows that we can get the equivalent performance as we get after fine tuning Transformer models while using only a fraction of parameters which means that such models could be fine tuned on consumer grade hardware such as K80 and T4.</p><p>This paper is organized as follows. Section 3 presents a brief overview of SubTask A and B -including available labeled data and evaluation metrics. Then the paper describes current state-of-the-art for dialog classification and summarization in Section 2 that this paper builds upon. This is followed by the description of the approach used to solve SubTask A in Section 4 and SubTask B in Section 5. Then the results of our solutions for both of these subtasks are presented. Finally, the paper ends with a conclusion of the work. The paper includes an appendix containing exploratory data analysis and material that will help to better understand the solution presented in the paper.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Related Work</head><p>Finetuning large language models enables better performance for domain-specific use cases. In-context finetuning performs well in few-shot scenarios enabling the end users to provide examples with the prompt to enable LLMs to learn for the use case at hand. This approach does not scales as it restricts sending multiple examples with the prompt. End-to-end finetuning of LLMs is resource and time intensive and has the additional drawback of storing and managing multiple copies of large-size models.</p><p>Parameter Efficient Fine Tuning (PEFT) Methods attempt to solve the problems mentioned above by finetuning a smaller number of existing or newly introduced parameters of the large language model while keeping the rest of the parameters frozen. In <ref type="bibr" target="#b9">[10]</ref>, Lilian et al. divide PEFT methods into the following four categories: additive, selective, reparameterization-based, and hybrid methods. Additive methods such as adapters <ref type="bibr" target="#b10">[11]</ref> introduce and train only a new set of parameters or layers. Selective methods finetune only a few top layers of the network.</p><p>Reparametrization-based methods use a low-dimensional representation of the network to reduce the number of parameters to be trained during finetuning. This paper evaluates Low-Rank Adaptation (LoRA) a prominent example of this category of methods.</p><p>Parameter Efficient Fine Tuning (PEFT) methods reduce the need to host a large-sized model for each use case. They enable users to use a frozen base model with a small layer of model weights that vary with the use case. In <ref type="bibr" target="#b11">[12]</ref>, the authors compare the performance of four different PEFT techniques for scenarios where low, medium and high counts of samples are available for fine-tuning. The evaluation results show that LoRA gives near-best performance when low to medium data samples are available for summarization tasks. In another similar related study in <ref type="bibr" target="#b12">[13]</ref>, the evaluations demonstrate that the best summarization for radiology reports is achieved using a model pre-trained on the clinical text and then fine-tuned using LoRA. In this paper, the authors have used LoRA and ensembling for summarization.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Task Description</head><p>This Section provides a high-level overview of the MEDIQA-Sum 2023 Task (including both SubTask A and B) from ImageCLEFmed MEDIQA <ref type="bibr" target="#b7">[8]</ref>. The Section starts with a description of different SubTask goals followed by basic counts of available labeled data. The metric used to evaluate this task is arithmetic mean of ROUGE-1 <ref type="bibr" target="#b13">[14]</ref>, Bertscore F1 <ref type="bibr" target="#b14">[15]</ref>, and BLEURT <ref type="bibr" target="#b15">[16]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.">Task Definition</head><p>Given a short conversation between a Doctor and a patient or another Doctor (Dialogue), the goal of SubTask A is to create a system that automatically predicts the Section to which the conversation belongs to which is denoted by Section Header. There are twenty Sections Headers in this dataset. Some examples of Section Headers are FAM/SOCHX, GENHX, PASTMEDICALHX, CC. All of these Section Headers and their descriptions (Section Description) can be found in Table <ref type="table" target="#tab_1">A2</ref>. The goal of SubTask B is to create a system that generates a summary which matches the human generated summary (Section Text) as closely as possible while optimizing the metric for evaluation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.">Labeled Data</head><p>In this paper we have used the labeled data provided by MEDIQA-Sum 2023 organizers for training the models. A sample data point from the labeled data set for SubTask A and B can be found in Table <ref type="table" target="#tab_0">A1</ref>. The official data consists of a training and validation split. For SubTask A and B, training data contains 1201 and validation data contains 180 &lt;dialogue, section-text, section-header&gt; triplets.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">SubTask A Methodology</head><p>Given a short conversation between a doctor and a patient, the goal of SubTask A is to predict its Section Header. This Section starts with a description of the approach used to predict the Section Header. We have achieved success using Bio-ClinicalBERT <ref type="bibr" target="#b16">[17]</ref> for classification in the healthcare domain. Hence we choose it as the backbone and initialize LoRA layer on top of it. We use this architecture for classification of Dialogue to a Section Header in SubTask A. We limit the number of input tokens to 300 tokens because that is the length of majority of dialogues, as shown in Figure <ref type="figure" target="#fig_0">A1</ref>. We use a 3 Fold Cross Validation approach for modeling purposes. This is to ensure that we capture all information in the data. For every fold, we split its test part into validation and test. We do this so that we can use validation split to select best model using Early Stopping and test split to calculate its performance. The hyper-parameters used for training and performance for all folds can be found in Table <ref type="table">A3</ref>. During inference, we pass a given Dialogue through all three models, take an average of the logits for all the classes and output the class with the highest logit score.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">SubTask B Methodology</head><p>Given a short conversation between a doctor and a patient, the goal of SubTask B is to summarize it while ensuring that the generated summary is as fluent and as close to Section Text as possible. This Section starts with a description of the methodology used to summarize the conversation. For Dialogue Summarization, we have trained a LoRA layer on top of Seq2Seq models. This Section also describes the processed labeled data used for training these models, followed by the actual training steps. Then this Section looks at the steps used to generate the summary from the decoder. Finally, we discuss the approach used for ensembling the outputs of these models.</p><p>We train LoRA based Seq2Seq models using labeled data (Dialogue + Section Header, Section Text) as (Input, Output) pair. Section Text is a part of the labeled data and is a human subject matter expert-created summary of Dialogue. As a preprocessing step, we replace all new line We use a 3-fold cross validation scheme as described in 4 and train LoRA on two Seq2Seq architectures -BioBart-V2-Large <ref type="bibr" target="#b17">[18]</ref> and Flan-T5-Large <ref type="bibr" target="#b18">[19]</ref>. Here we need to select the number of input tokens for encoder and decoder. For encoder, we have selected token length of 512 tokens and for decoder, we have selected token length of 400 tokens. All the hyper-parameters used to train each of the above architecture can be found in Table <ref type="table">A4</ref>. To select the best model, we use early-stopping <ref type="bibr" target="#b19">[20]</ref> based on Validation Negative Log Loss. Results on the test part of each of these models can be found in Table <ref type="table">A5</ref>. The distribution of tokens for Dialogue and Section Text can be found in Figure <ref type="figure" target="#fig_1">A2</ref> and Figure <ref type="figure">A3</ref> respectively.</p><p>To generate summaries that match the human generated summaries, we need a way to control the text generated by the decoder component of a Seq2Seq model. This can be done by using decoding strategies such as Beam Search <ref type="bibr" target="#b20">[21]</ref>, Top-k Sampling <ref type="bibr" target="#b21">[22]</ref>, Top-p Sampling <ref type="bibr" target="#b22">[23]</ref>, Contrastive Search <ref type="bibr" target="#b23">[24]</ref> etc. In this module, we use Beam Search with TPESampler Algorithm from Optuna<ref type="foot" target="#foot_1">foot_1</ref> to search for the optimal decoding strategy trying to maximize ROUGE-1, ROUGE-2, and BertScore rather than relying on manual tweaking of these metrics. We use TPESampler here because it supports multivariate optimization and also it handles Float, Integer, and Categorical values better than other algorithms present in Optuna <ref type="foot" target="#foot_2">4</ref> . We use Optuna here due to ease of implementing Hyper-parameter optimization algorithms. We did not use BLEURT during search because it is extremely time consuming. For this module, we use four hyper-parameters for Beam Search -Early Stopping, Number of Beams, No Repeat N-gram Size, Length Penalty. The search space of each of these variables can be found in the Table <ref type="table" target="#tab_0">1</ref>.</p><p>The results from the different models are ensembled using Generating Best Summary by semantic similarity -a post-ensemble method <ref type="bibr" target="#b8">[9]</ref> to identify the summary which is closest to all the generated summaries. The paper uses this output summary as the final summary for the given Dialogue. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.">SubTask A Results and Analysis</head><p>This Section presents the results for SubTask A using the approach described in Section 4. We have made only one submission for predicting Section Header whose Multi Class Accuracy was 73.5% on the test set given by the organizers, obtaining a rank of 8 among 23 submissions. In this submission, we pass Dialogues through all three LoRA based Bio-ClinicalBERT models, take an average of the logits for all the classes and output the class with the highest logit score. The table containing our team's standing can be found in the Tables A6. Standings of all the teams have been calculated using multi class accuracy. We compared performance of Bio-ClinicalBERT when it is fine-tuned end-to-end and when it is used as a backbone for LoRA. We observe that Bio-ClinicalBERT with LoRA score 73.3% on validation data whereas end-to-end fine-tuned Bio-ClinicalBERT score 72% on the same validation data.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.">SubTask B Results</head><p>This Section presents the results for SubTask B using the approach described in Section 5. We have made three submissions (mentioned as runs in the result tables) for generating summaries from Dialogues. For the summarization task, we have submitted results from three runs. In run 1 and run 2, we train LoRA on BioBart-V2-Large and Flan-T5-Large respectively while run 3 presents the results of ensembling summaries from both of these models. The details for each run are as follows:</p><p>1. Run 1 -We generate summary from BioBart-V2-Large model trained on each fold and ensemble output of all the models using 5 2. Run 2 -We generate summary from Flan-T5-Large model trained on each fold and ensemble output of all the models using Generating Best Summary by semantic similarity.</p><p>3. Run 3 -We generate summary from BioBart-V2-Large and Flan-T5-Large model trained on each fold and ensemble output of all the models using Generating Best Summary by semantic similarity.</p><p>The table containing our team's standing can be found in Table <ref type="table">A7</ref>. Standings of all the teams have been calculated by calculating arithmetic mean of Rouge-1, Bertscore, BLEURT for the Dialogue summary.</p><p>The experiments show that Run3 performs the best scoring rank 1 out of 13 submissions. This is also intuitive since it contains summaries from 3 models of BioBART-V2-Large and 3 models of Flan-T5-Large. Run2 scored 5th rank and Run1 scored 6th rank. This is an interesting observation since Flan-T5-Large is an enhanced version of T5 that has been finetuned in a mixture of tasks whereas BioBart-V2-Large has been trained solely on medical corpus so ideally Run1 should have scored better than Run2 but it seems that bigger models work better than domain specific models although this hypothesis needs to be validated. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.1.">Analysis of different Transformer Architectures on SubTask B</head><p>We compare performance of BioBart-V2-Large and Flan-T5-Large when they are fine-tuned end-to-end and they are treated as backbone for LoRA. We observe that the models trained with LoRA perform better than the models which were fine-tuned end-to-end. The performance was evaluated by calculating arithmetic mean of ROUGE-1, ROUGE-2, and BertScore-F1. We do not use BLEURT here as it is extremely time consuming and based on our observations, ROUGE-2 and BLEURT have a very strong correlation. The average score across all folds for each architecture can be found in the Table <ref type="table">A5</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8.">Conclusion</head><p>The paper presents the solution and the results for SubTask A and B of ImageCLEFmed MEDIQA-Sum task. The solution uses LoRA to finetune Transformer based models to classify and summarise Clinical Dialogues, and our simulation results show that the performance of Transformer based models finetuned using LoRA is equivalent to the performance of Transformer based models finetuned using resource and time-intensive end-to-end finetuning. The success of Transformer based model finetunes using LoRA implies organizations can easily finetune and deploy domain-based models.</p><p>The authors observe that metrics such as ROUGE are ineffective for evaluating the performance of models like OpenAI GPT3 as they focus on syntactic similarity. Metrics such as Bertscore and BLEURT seem more suitable for such models since they focus on semantic similarity. Finally, the paper also evaluates two different ensemble techniques, and the results demonstrate that the Post Ensemble technique performs the best while giving minimum hallucinations.</p><p>Table A2 Section Headers and their descriptions. Section Header Section Header Description FAM/SOCHX FAMILY HISTORY/SOCIAL HISTORY GENHX HISTORY OF PRESENT ILLNESS PASTMEDICALHX PAST MEDICAL HISTORY CC CHIEF COMPLAINT PASTSURGICAL PAST SURGICAL HISTORY ALLERGY ALLERGY ROS REVIEW OF SYSTEMS MEDICATIONS MEDICATIONS ASSESSMENT ASSESSMENT EXAM EXAM DIAGNOSIS DIAGNOSIS DISPOSITION DISPOSITION PLAN PLAN EDCOURSE EMERGENCY DEPARTMENT COURSE IMMUNIZATIONS IMMUNIZATIONS IMAGING IMAGING GYNHX GYNECOLOGIC HISTORY PROCEDURES PROCEDURES OTHER_HISTORY OTHER_HISTORY LABS LABS Table A3 SubTask A -Predicting Section Header. Base Arch: Base Architecture, BS: Batch Size, LR: Learning Rate, LoRA-A: LoRA-Alpha, LoRA-D: LoRA-Dropout BVL : Best Validation Loss. Base Arch Fold Epochs BS LR LoRA-R LoRA-A LoRA-D BVL Bio-ClinicalBERT 0 150 16 1e-3 8 32 0.01 1.193 Bio-ClinicalBERT 1 150 16 1e-3 8 32 0.01 1.429 Bio-ClinicalBERT 2 150 16 1e-3 8 32 0.01 0.4961 Table A4 SubTask B -Hyperparameter Tuning for Different Architectures. Base Arch: Base Architecture, BS: Batch Size, LR : Learning Rate, LoRA-A: LoRA-Alpha, LoRA-D: LoRA-Dropout, MaxSL : Maximum Source Length, MaxTL : Maximum Target Length, MinTL : Minimum Target Length Base Arch BS LR LoRA-R LoRA-A LoRA-D MaxSL MaxTL MinTL Flan-T5-Large 1 1e-3 8 32 1e-3 512 400 8 Biobart-V2-Large 1 1e-3 8 32 1e-3 512 400 8 Table A5 SubTask B -Section Text Summarization Comparison Base Architecture LoRA-Score Fine Tuning-Score BioBart-V2-Large 0.4310 0.2877 FLAN-T5-Large 0.4276 0.1083 Figure A1: Class distribution of Section Headers FAM/SOCHX GENHX PASTMEDICALHX CC PASTSURGICAL ROS ALLERGY MEDICATIONS ASSESSMENT EXAM DIAGNOSIS DISPOSITION PLAN EDCOURSE IMMUNIZATIONS IMAGING GYNHX PROCEDURES OTHER_HISTORY LABS 0 100 200 300 Section_Header Count section_header Count  </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: SubTask A -Overall Architecture</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: SubTask B -Overall Architecture</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure</head><figDesc>Figure A2: Dialogue Token Distribution</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure</head><figDesc>Figure A3: Clinical Note Token Distribution</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1</head><label>1</label><figDesc>Search Space for Beam Search Decoding</figDesc><table><row><cell>Variable</cell><cell>Data Type</cell><cell>Range</cell></row><row><cell>Early Stopping</cell><cell cols="2">Categorical [True,False]</cell></row><row><cell>Number of Beams</cell><cell>Integer</cell><cell>5-15</cell></row><row><cell>No Repeat Ngram Size</cell><cell>Integer</cell><cell>5-15</cell></row><row><cell>Length Penalty</cell><cell>Float</cell><cell>[-2,2]</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2</head><label>2</label><figDesc>Results of runs on Test Data</figDesc><table><row><cell cols="5">Run ROUGE-1 Bertscore-F1 BLEURT Mean Score</cell></row><row><cell>Run 3</cell><cell>0.4398</cell><cell>0.7231</cell><cell>0.5567</cell><cell>0.5732</cell></row><row><cell>Run 2</cell><cell>0.4209</cell><cell>0.7137</cell><cell>0.5423</cell><cell>0.5590</cell></row><row><cell>Run 1</cell><cell>0.4056</cell><cell>0.7109</cell><cell>0.5324</cell><cell>0.5496</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_0"><p>https://huggingface.co/docs/peft/index</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_1"><p>https://optuna.readthedocs.io/en/stable/reference/samplers/generated/optuna.samplers.TPESampler.html</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_2"><p>https://optuna.readthedocs.io/en/stable/reference/samplers/index.html</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Appendix</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.1. Data Exploration and Explanation</head><p>This section discusses data exploration and explanation so that audience can understand why we made the decisions that we made. A sample data point from dataset for SubTask A and B can be seen in Table <ref type="table">A1</ref>. The description of each of the Section Headers present in the data can be found in Table <ref type="table">A2</ref> The Class distribution of Section Headers for SubTask A is give by Figure <ref type="figure">A1</ref> The Dialogue Token Distribution for SubTask A and B is give by Figure <ref type="figure">A2</ref> The Clinical Note Token Distribution for SubTask B is give by Figure <ref type="figure">A3</ref> The hyper-parameters and performance metrics for Predicting Section Header i.e SubTask A can be found in the Table <ref type="table">A3</ref>.</p><p>The hyperparameters used to fine tune Seq2Seq Models and LoRA i.e. SubTask B can be found in Table <ref type="table">A4</ref>. Each of these models were trained on 150 epochs, Gradient Accumulation of 16, Learning rate of 1e-3, AdamW optimizer, and Linear Learning Scheduler.</p><p>The performance of different Seq2Seq Models using LoRA and Fine-tuning can be found in Table <ref type="table">A5</ref> A.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Standing of our team</head><p>Our standings (in bold) for SubTask A -Section Header Classification is in Table <ref type="table">A6</ref>. We omitted several teams from these standings and represent them by Ellipsis (...). This is done only to conserve space.  </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Sequence to sequence learning with neural networks</title>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Vinyals</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+		<ptr target="https://proceedings.neurips.cc/paper_files/paper/2014/file" />
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">Z</forename><surname>Ghahramani</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">M</forename><surname>Welling</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">C</forename><surname>Cortes</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">N</forename><surname>Lawrence</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">K</forename><surname>Weinberger</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="volume">27</biblScope>
+		</imprint>
+	</monogr>
+	<note>c743d2-Paper.pdf</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">U</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Polosukhin</surname></persName>
+		</author>
+		<ptr target="https://proceedings.neurips.cc/paper_files/paper/2017/file/3" />
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<editor>
+			<persName><forename type="first">I</forename><surname>Guyon</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">U</forename><forename type="middle">V</forename><surname>Luxburg</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Bengio</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">H</forename><surname>Wallach</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Fergus</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">S</forename><surname>Vishwanathan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">R</forename><surname>Garnett</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+	<note>f5ee243547dee91fbd053c1c4a845aa-Paper.pdf</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Low-rank adaptation of large language models</title>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">J</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2106.09685</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<pubPlace>Lora</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Prefix-tuning: Optimizing continuous prompts for generation</title>
+		<author>
+			<persName><forename type="first">X</forename><forename type="middle">L</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2101.00190</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<author>
+			<persName><forename type="first">X</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Tang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2103.10385</idno>
+		<title level="m">Gpt understands, too, 2021</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">The power of scale for parameter-efficient prompt tuning</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Lester</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Al-Rfou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Constant</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.emnlp-main.243</idno>
+		<ptr target="https://aclanthology.org/2021.emnlp-main.243" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Dominican Republic</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="3045" to="3059" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Overview of the mediqa-sum task at imageclef 2023: Summarization and classification of doctor-patient conversations</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Yim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ben Abacha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Snider</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Adams</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Yetisgen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CLEF 2023 Working Notes, CEUR Workshop Proceedings, CEUR-WS</title>
+		<meeting><address><addrLine>org, Thessaloniki, Greece</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Overview of ImageCLEF 2023: Multimedia retrieval in medical, social media and recommender systems applications</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Ionescu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Müller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A.-M</forename><surname>Drăgulinescu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Yim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ben Abacha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Snider</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Adams</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Yetisgen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Rückert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">G S</forename><surname>De Herrera</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">M</forename><surname>Friedrich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Bloch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Brüngel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Idrissi-Yaghir</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Schäfer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">A</forename><surname>Hicks</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">A</forename><surname>Riegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Thambawita</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Storås</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Halvorsen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Papachrysos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Schöler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Jha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A.-G</forename><surname>Andrei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Filipovich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Coman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Kovalev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Stan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Ioannidis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Manguinhas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L.-D</forename><surname>Ştefan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">G</forename><surname>Constantin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Dogariu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Deshayes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Popescu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Experimental IR Meets Multilinguality, Multimodality</title>
+		<title level="s">Springer Lecture Notes in Computer Science LNCS</title>
+		<meeting><address><addrLine>Thessaloniki, Greece</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>and Interaction, Proceedings of the 14th International Conference of the CLEF Association (CLEF 2023</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Kobayashi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D18-1449</idno>
+		<ptr target="https://aclanthology.org/D18-1449" />
+		<title level="m">Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2018 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Brussels, Belgium</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="4165" to="4176" />
+		</imprint>
+	</monogr>
+	<note>Frustratingly easy model ensemble for abstractive summarization</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Scaling down to scale up: A guide to parameterefficient fine-tuning</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Lialin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Deshpande</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rumshisky</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.15647</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Parameter-efficient transfer learning for NLP</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Houlsby</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Giurgiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jastrzebski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Morrone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>De Laroussilhe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gesmundo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Attariyan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gelly</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1902.00751</idno>
+		<ptr target="http://arxiv.org/abs/1902.00751" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<author>
+			<persName><forename type="first">G</forename><surname>Pu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Kaplan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.14999</idno>
+		<title level="m">Empirical analysis of the strengths and weaknesses of peft techniques for llms</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Radadapt: Radiology report summarization via lightweight domain adaptation of large language models</title>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">V</forename><surname>Veen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">V</forename><surname>Uden</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Attias</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Pareek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Bluethgen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Polacin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-B</forename><surname>Delbrouck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">M Z</forename><surname>Chaves</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">P</forename><surname>Langlotz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">S</forename><surname>Chaudhari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Pauly</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.01146</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">ROUGE: A package for automatic evaluation of summaries, in: Text Summarization Branches Out</title>
+		<author>
+			<persName><forename type="first">C.-Y</forename><surname>Lin</surname></persName>
+		</author>
+		<ptr target="https://aclanthology.org/W04-1013" />
+		<imprint>
+			<date type="published" when="2004">2004</date>
+			<publisher>Association for Computational Linguistics</publisher>
+			<biblScope unit="page" from="74" to="81" />
+			<pubPlace>Barcelona, Spain</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Evaluating text generation with BERT</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Kishore</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">Q</forename><surname>Weinberger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Artzi</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bertscore</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1904.09675</idno>
+		<ptr target="http://arxiv.org/abs/1904.09675" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<title level="m" type="main">Learning robust metrics for text generation</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Sellam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">P</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bleurt</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:2004.04696</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Publicly available clinical BERT embeddings</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Alsentzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Murphy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Boag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Weng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Naumann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">B A</forename><surname>Mcdermott</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1904.03323</idno>
+		<ptr target="http://arxiv.org/abs/1904.03323" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Biobart: Pretraining and evaluation of a biomedical generative language model</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Gan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2204.03905</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title level="m" type="main">Scaling instruction-finetuned language models</title>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">W</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Dehghani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Brahma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">S</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Suzgun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Castro-Ros</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pellat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Robinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Valter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Petrov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">H</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Dean</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.11416</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">On early stopping in gradient descent learning</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Rosasco</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Caponnetto</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Constructive Approximation</title>
+		<imprint>
+			<biblScope unit="volume">26</biblScope>
+			<biblScope unit="page" from="289" to="315" />
+			<date type="published" when="2007">2007</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Sequence transduction with recurrent neural networks</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Graves</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1211.3711</idno>
+		<ptr target="http://arxiv.org/abs/1211.3711" />
+		<imprint>
+			<date type="published" when="2012">2012</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Hierarchical neural story generation</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Dauphin</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/P18-1082</idno>
+		<ptr target="https://aclanthology.org/P18-1082" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 56th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Melbourne, Australia</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="889" to="898" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">The curious case of neural text degeneration</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Buys</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Forbes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Choi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1904.09751</idno>
+		<ptr target="http://arxiv.org/abs/1904.09751" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Contrastive search is what you need for neural text generation</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Collier</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.14140</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

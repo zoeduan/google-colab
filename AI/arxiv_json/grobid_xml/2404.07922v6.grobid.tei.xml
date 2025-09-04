@@ -1,0 +1,1246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">LaVy: Vietnamese Multimodal Large Language Model</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Chi</forename><surname>Tran</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">Hanoi University of Science and Technology</orgName>
+								<orgName type="institution" key="instit2">Hanoi University of Science and Technology</orgName>
+							</affiliation>
+						</author>
+						<author role="corresp">
+							<persName><forename type="first">Huong</forename><surname>Le Thanh</surname></persName>
+							<email>huonglt@soict.hust.edu.vn</email>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">Hanoi University of Science and Technology</orgName>
+								<orgName type="institution" key="instit2">Hanoi University of Science and Technology</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">LaVy: Vietnamese Multimodal Large Language Model</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">4A2A922200260A31321D381A1E3C0445</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:38+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large Language Models (LLMs) and Multimodal Large language models (MLLMs) have taken the world by storm with impressive abilities in complex reasoning and linguistic comprehension. Meanwhile there are plethora of works related to Vietnamese Large Language Models, the lack of high-quality resources in multimodality limits the progress of Vietnamese MLLMs. In this paper, we pioneer in address this by introducing LaVy, a state-of-the-art Vietnamese MLLM, and we also introduce LaVy-Bench benchmark designated for evaluating MLLMs's understanding on Vietnamese visual language tasks. All code and model weights are public at <ref type="url" target="https://github.com/baochi0212/LaVy">https://github.com/baochi0212/LaVy</ref> </p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>In recent years, Large Language Models (LLMs) have demonstrated remarkable capabilities in various natural language processing tasks, showcasing their proficiency in complex reasoning and linguistic comprehension. The success of LLMs has inspired researchers to explore the potential of Multimodal Large Language Models (MLLMs), which incorporate visual information alongside textual data. MLLMs have shown promising results in tasks that require understanding the interplay between language and vision, such as image captioning, visual question answering, and multimodal machine translation.</p><p>While there has been significant progress in developing Vietnamese LLMs, the lack of highquality multimodal resources has hindered the advancement of Vietnamese MLLMs. The availability of diverse and well-annotated datasets is crucial for training and evaluating MLLMs, as they rely on the integration of visual and textual information to perform multimodal tasks effectively.</p><p>To address this limitation and foster research in Vietnamese multimodal language understanding, we introduce LaVy, Vietnamese first MLLM and achieve state-of-the-art performance in Vietnamese vision language tasks. LaVy is designed to leverage the rich visual and linguistic information present in Vietnamese data, enabling it to tackle a wide range of multimodal tasks with improved performance. Our model outperforms a multilingual baseline mBLIP <ref type="bibr" target="#b4">(Geigle et al., 2023)</ref> on different tasks by a large margin. By developing LaVy, we aim to bridge the gap between Vietnamese LLMs and MLLMs, providing researchers and practitioners with a powerful tool for exploring the intersection of language and vision in the Vietnamese context. Furthermore, to facilitate the evaluation and comparison of Vietnamese MLLMs, we propose the LaVy-Bench benchmark. This benchmark consists an open VQA task and an in-the-wild test set, specifically designed to assess the visual language understanding and generation capabilities of MLLMs in the Vietnamese and in-the-wild images. By establishing a standardized evaluation framework, we aim to promote the development and benchmarking of Vietnamese MLLMs, driving innovation and collaboration within the research community.</p><p>In this paper, we present LaVy and the LaVy-Bench benchmark as significant contributions to the field of Vietnamese multimodal language understanding. We provide a detailed description of LaVy's architecture, data curation and training procedure. Additionally, we introduce the LaVy-Bench benchmark, discussing its design principles, task composition, and evaluation metrics.</p><p>Through extensive experiments and analysis, we demonstrate the effectiveness of LaVy and the utility of the LaVy-Bench benchmark in advancing Vietnamese MLLM research. arXiv:2404.07922v6 [cs.CL] 16 Jul 2024 2 Related work</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Large Language Model</head><p>Recent advancements in Large Language Models (LLMs) have showcased remarkable capabilities across various natural language processing tasks, including dialogue, creative writing, and problemsolving. Models such as LLaMA <ref type="bibr">(Touvron et al., 2023a,b)</ref>, Mistral <ref type="bibr" target="#b6">(Jiang et al., 2023)</ref>, and Gemma <ref type="bibr">(Mesnard et al., 2024)</ref> have leveraged scalable Transformer-based architectures <ref type="bibr" target="#b18">(Vaswani et al., 2017)</ref> and large-scale data to become foundation models for general reasoning tasks. These models have demonstrated impressive performance and have set new benchmarks in the field.</p><p>Following the trend of LLMs, several Vietnamese language models emerged such as PhoGPT <ref type="bibr">(Nguyen et al., 2023b</ref><ref type="bibr">), Vistral (Nguyen et al., 2023a)</ref> perform outstandingly in Vietnamese LLM benchmarks and NLP tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Multimodal Large Language Model</head><p>Witness the exceptional performance of GPT-4 <ref type="bibr" target="#b0">(Achiam et al., 2023)</ref> and Gemini Pro Vision <ref type="bibr" target="#b3">(Anil et al., 2023)</ref> in visual language tasks, recent research has focused on developing Multimodal Large Language Models (MLLMs) to achieve unified understanding and reasoning across different modalities, building upon the success of Large Language Models (LLMs). Various methods have been proposed to integrate information from multiple modalities into pre-trained LLM architectures. For instance, Flamingo <ref type="bibr" target="#b1">(Alayrac et al., 2022)</ref> and BLIP-2 <ref type="bibr" target="#b7">(Li et al., 2023)</ref> introduce different techniques for fusing visual tokens with frozen LLMs using gated attention or Q-former. Inspired by the effectiveness of instruction tuning, LLaVA <ref type="bibr" target="#b8">(Liu et al., 2023)</ref> and <ref type="bibr">MiniGPT-4 (Zhu et al., 2024)</ref> align visual input with LLMs through visual instruction tuning, demonstrating impressive results. Another active line of work is researching efficient MLLMs, resulting in lightweight model families like Bunny <ref type="bibr" target="#b5">(He et al., 2024)</ref>. Meanwhile, recent works are pioneering development in vision-language tasks for low-resource languages, such as Peacock <ref type="bibr">(Alwajih et al., 2024)</ref> 3 LaVy</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Architecture</head><p>Our model are built with LlaVA architecture <ref type="bibr" target="#b8">(Liu et al., 2023)</ref> using three main components:</p><p>• Vision Encoder: The CLIP-Large model <ref type="bibr" target="#b15">(Radford et al., 2023)</ref>, is used as the vision encoder.</p><p>• MLP Projector: A two-layer Multi-Layer Perceptron (MLP) projector is employed to align the output representations from the visual and language modalities. This projector ensures that the visual and textual information is transformed into a common space.</p><p>• Language Model: The third component is a Large Language Model, which is a language model responsible for generating textual information, take the aligned representations from the MLP projector.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Data Curation</head><p>The barrier for Vietnamese MLLMs' development is resource for training, which is handled by the our novel pipeline of data collection.</p><p>• Translated then Refined: We utilize LlaVA training data composing of filtered 558K LAION-CC-SBU captions and 150K GPTgenerated multimodal instructions. With the acknowledgement of the insufficient competency of open-source translation projects and translation API like VinAI Translate (Nguyen et al., 2022), Google Translate, ... in convert English data to Vietnamese high-quality data, we firstly translate a sample with VinAI translation, then we prompt Gemini Pro to rewrite it in more accurate and natural way for Vietnamese language by pairing translated sample and original English sample in Gemini prompt. Because the captions dataset is massive, we only refine a subset of 150K randomly sampled captions, and combine it with 558K non-write captions to finalize a captioning dataset. Finally, GPT-generated instructions is all refined to make 150K high-quality Vietnamese instructions • Synthetic: Understanding the difference between Vietnamese images and LlaVA's images, we crawl 8.000 images from web in various topics (for example: Vietnamese event images with keyword Ảnh sự kiện Việt Nam) and prompt Gemini Pro Vision to generated concise and detailed description of them to enhance LaVy's performance in Vietnamese images. Totally, we have 16.000 Vietnamese Image 1: Data pipeline descriptions for crawled images and merge them with rewritten instructions In eventuality, we curated Vietnamese datasets with 708K image-caption pairs for pretraining and 166K high-quality instructions for finetuning in training step. Our pipeline is clearly illustrated in Image 1.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Training Procedure</head><p>The training procedure is divided into 2 steps:</p><p>• Pretraining: Align the vision embeddings from a pre-trained vision encoder with the text embeddings from the LLM by optimizing only the cross-modality projector using a cross-entropy loss for next token prediction.</p><p>• Finetuning: We apply visual instruction tuning to fully utilize the MLLM's capabilities across different multimodal tasks. We use the same cross-entropy loss as in the pre-training stage, but this time, they employ Low-Rank Adaptation (LoRA) to train both the crossmodality projector and the LLM backbone.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Experiment</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Implementation details</head><p>We use Vistral 7B as LLM backbone and CLIP large visual encoder. The training process for the LaVy consists of two stages. In the first stage, the model is pretrained using a dataset of 708k captions for 1 epoch, with a global batch size of 64 and a learning rate of 1e-3. During this stage, all model parameters are frozen, except the MLP layers. Besides, we don't shuffle data but train the model to learn from unrefined data to refined data.</p><p>The second stage involves finetuning the model using an instructions dataset. This stage also spans 1 epoch, with a global batch size of 32 and a learning rate of 2e-5. In this phase, only the newly introduced LoRA (Low-Rank Adaptation) parameters are trainable. Besides, in evaluation, we apply greedy decoding to generate all models' responses</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">LaVy-Bench</head><p>We construct LaVy-Bench to benchmark models' Vietnamese Visual Language understanding. We use mBLIP models as multilingual baselines. Additionally, we compare performance with close source projects Gemini Pro Vision and SeaLLLM Furthermore, we propose a new metric for automatic evaluation to replace older metrics, such as BLEU <ref type="bibr" target="#b14">(Papineni et al., 2002)</ref>, which do not accurately reflect models' competency in the VQA tasks. Our metric is inspired by LLM-as-a-Judge <ref type="bibr" target="#b19">(Zheng et al., 2023)</ref>, which utilizes Gemini Pro to verify the accuracy of generated responses for question-answer pairs. In Table <ref type="table">1</ref>, it's apparent that LaVy's zero-shot VQA performance (45.3%) outshadows mBLIP-Bloomz-7B (27.9%) and mBLIP-mT0-XL-5B (20.0%). However, roughly half of the OpenViVQA dataset is composed of TextQA samples (1,733 samples) that do not appear in our training dataset, making OpenViVQA particularly challenging for our model, not mention to our training instructions just includes descriptions of 8.000 Vietnamese crawled images. Notably, Gemini Pro (Vision) obviously showcase the best performance, but only correctly answers 66.8% questions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2.2">In-the-wild benchmark</head><p>To further assess the models' comprehension, we follow the evaluation methodology LLaVA benchmark (in-the-wild) <ref type="bibr" target="#b8">(Liu et al., 2023)</ref> and recollect set of 24 diverse images and 60 questions in 3 main types: Complex Reasoning, Detail Description and Conversation. The collected images and manually Model Accuracy mBLIP (mT0-XL-5B) 20.0 mBLIP (BLOOMZ-7B) 27.9 LaVy 45.3 Gemini Pro-20240526 66.8 Table 1: Zero-shot VQA on OpenViVQA dev set. Models' output accuracy are evaluated by Gemini Pro crafted questions aim to diversify the test set in various aspects: culture, race, image types,... and avoiding opting for images in crawled training images. For each question, we then prompt Gemini Pro Vision to generate detailed description of image and answer the question, and finally use Gemini Pro to rate the models' response on the scale of 1 to 5 while taking Gemini Pro's response as groundtruth. We opted against using detailed descriptions as references (unlike LlaVA) due to their occasional irrelevance. Instead, we found Gemini Pro Vision's in-the-wild benchmark responses to be closely pertinent. Then we ask model to score outputs in 3 criteria: relevancy, accuracy and naturalness, and sum them all for final score at the end In comparison with mBLIP baselines in Table 2, LaVy outperforms sharply in all types of questions: Conversation (+42.8%), Detail Description (+72.4%) and Complex Reasoning (+50.9%). In overall, our model is scored 67.2 by Gemini Pro. Further, Our model is only marginalized by SeaL-LLM in Detail aspect, and scored higher by Gemini Pro (67.2% vs 65.9%). Some qualitative test cases are depicted in Table 3. Model Conversation Detail description Complex reasoning All mBLIP (mT0-XL-5B) 48.5 30.8 28.9 36.1 mBLIP (BLOOMZ-7B) 54.2 30.8 47.1 44.0 LaVy 77.4 53.1 71.1 67.2 SeaLMMM-20240526 72.3 55.3 70.1 65.9 Table 2: Performance on in-the-wild benchmark</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Limitations</head><p>Our model still have several limitations:</p><p>• Although LaVy exhibits deep understanding in Vietnamese visual language tasks but still faces many challenges, for example: TextQA, due to lack of high-quality annotated data for these tasks.</p><p>• Moreover, like other MLLMs, our model still suffers from hallucination where it generates irrelevant information, redundant details or misinformation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Conclusion</head><p>In this paper, we have introduced LaVy, a pioneering state-of-the-art Vietnamese Multimodal Large Language Model (MLLM) that aims to address the lack of high-quality resources in multimodality for the Vietnamese language. LaVy represents a significant step forward in the development of Vietnamese MLLMs, enabling complex reasoning and linguistic comprehension in tasks that involve both visual and textual information. Furthermore, we have presented LaVy-Bench, a comprehensive benchmark designed specifically for evaluating the performance of MLLMs on Vietnamese visual language tasks. This benchmark provides a standardized platform for assessing the capabilities of Vietnamese MLLMs, facilitating the comparison and advancement of these models. Our model also have proved SOTA perfomance in comparison with mBLIP baselines in test sets of benchmark.</p><p>As future work, we plan to expand the capabilities of LaVy by incorporate diverse instructions to entirely handle challenging tasks like Vietnamese OCR, Object Counting. We hope our work will contribute to the advancement of Vietnamese MLLMs' development. Table 3: Qualitative test cases of LaVy. In-the-wild images and questions are varied in image type, topic, culture...</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><figDesc>We evaluate the zero-shot Visual Question Answering (VQA) performance of models on the OpenViVQA (Nguyen et al., 2023c) dev set, which consists of 3,505 samples. This dataset challenges the models' understanding of the relationships between Vietnamese images and natural language.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>Đây là nhân vật lịch sử Việt Nam nổi tiếng nào? Hình ảnh cho thấy Hồ Chí Minh, một nhà lãnh đạo cách mạng và chính trị gia Việt Nam. Ông là người sáng lập Đảng Cộng sản Việt Nam và là Chủ tịch nước Việt Nam Dân chủ Cộng hòa từ năm 1945 đến khi qua đời vào năm 1969. Hồ Chí Minh là một nhân vật quan trọng trong lịch sử Việt Nam, đóng vai trò then chốt trong cuộc đấu tranh giành độc lập và thống nhất đất nước. Bức ảnh có ý nghĩa như thế nào với lịch sử Việt Nam? Bức ảnh đen trắng này có ý nghĩa quan trọng trong lịch sử Việt Nam vì nó ghi lại khoảnh khắc lịch sử khi Hồ Chí Minh, lãnh tụ của Việt Nam, đang phát biểu trước đám đông. Bức ảnh cho thấy Hồ Chí Minh đang đứng trên bục phát biểu, cầm micro và nói chuyện với mọi người. Sự kiện này có thể là một cuộc mít tinh hoặc một bài phát biểu quan trọng, thể hiện tầm ảnh hưởng và vai trò lãnh đạo của Hồ Chí Minh trong phong trào độc lập và tự do của Việt Nam. Bức ảnh này là một minh chứng trực quan cho những đóng góp của Hồ Chí Minh đối với lịch sử Việt Nam và di sản của ông vẫn tiếp tục được tôn vinh và ngưỡng mộ cho đến ngày nay. Các con vật nào xuất hiện trong ảnh, và chúng đang làm gì Trong ảnh có một con gấu, một con mèo và một con thỏ. Chúng đang ngồi quanh bàn ăn, cùng nhau thưởng thức bữa ăn. Viết một câu chuyện cổ tích cho bức ảnh trên. Ngày xửa ngày xưa, trong một khu rừng xanh tươi, có một chú gấu nâu, một chú mèo xám và một chú thỏ trắng cùng nhau dùng bữa. Họ ngồi quanh một chiếc bàn gỗ nhỏ, trên bàn bày nhiều món ăn ngon. Chú gấu và chú mèo ngồi đối diện nhau, còn chú thỏ ngồi giữa họ. Khi họ thưởng thức bữa ăn, chú gấu và chú mèo trò chuyện vui vẻ, còn chú thỏ chăm chú lắng nghe. Họ nói về những cuộc phiêu lưu trong rừng, những câu chuyện về gia đình và những điều kỳ diệu của thiên nhiên. Khi bữa ăn kết thúc, họ cảm thấy gắn bó và thân thiết hơn. Họ hứa sẽ luôn giúp đỡ nhau và cùng nhau khám phá khu rừng. Từ ngày đó, họ trở thành những người bạn tốt, cùng nhau chia sẻ những câu chuyện và cuộc phiêu lưu trong thế giới tự nhiên. Bức ảnh được chụp ở sự kiện nào? Bức ảnh được chụp tại lễ trao giải FIFA World Cup, nơi Lionel Messi đang cầm chiếc cúp vàng. Bạn có biết tên của người đàn ông trong bức ảnh là gì? Người đàn ông trong bức ảnh là Lionel Messi. Miêu tả cảm xúc của người đàn ông trong bức hình Người đàn ông trong bức hình đang rất vui mừng và hạnh phúc. Anh ta đang cầm trên tay chiếc cúp vàng World Cup và nở một nụ cười rạng rỡ. Có thể thấy rằng anh ta đang rất tự hào về thành tích của mình và cảm thấy vô cùng phấn khích. Bạn có biết ai vẽ bức tranh này không Đây là bức tranh Mona Lisa của Leonardo da Vinci. Thảo luận về tác động lịch sử và ý nghĩa của bức tranh này trong thế giới nghệ thuật. Bức tranh Mona Lisa của Leonardo da Vinci, với nụ cười bí ẩn và đôi mắt hướng về phía người xem, là một tác phẩm nghệ thuật mang tính biểu tượng và có ảnh hưởng lớn trong thế giới nghệ thuật. Được vẽ vào đầu thế kỷ 16, bức tranh này thể hiện kỹ năng hội họa bậc thầy của da Vinci, với sự chú ý đến từng chi tiết và cách sử dụng ánh sáng và bóng tối tinh tế. Bức tranh đã trở thành một trong những tác phẩm nghệ thuật nổi tiếng và được yêu thích nhất trên thế giới, thu hút hàng triệu du khách đến Bảo tàng Louvre ở Paris mỗi năm. Tác động lịch sử của bức tranh này nằm ở sự đổi mới nghệ thuật và ảnh hưởng của nó đối với các nghệ sĩ trong nhiều thế kỷ. Bức tranh đã truyền cảm hứng cho vô số nghệ sĩ và nhà sử học nghệ thuật, những người đã nghiên cứu và phân tích các kỹ thuật, bố cục và biểu đạt cảm xúc của nó. Bức tranh cũng đã được sao chép, tái tạo và diễn giải vô số lần, cho thấy sức hấp dẫn lâu dài và tác động của nó đối với thế giới nghệ thuật. Ngoài ra, bức tranh còn có ý nghĩa lịch sử vì nó là một trong những tác phẩm nghệ thuật đầu tiên được bảo vệ nghiêm ngặt, với các biện pháp an ninh được tăng cường để bảo vệ bức tranh khỏi bị hư hại hoặc trộm cắp. Sự nổi tiếng và tầm quan trọng của bức tranh Mona Lisa đã khiến nó trở thành một biểu tượng văn hóa và là một phần không thể thiếu trong di sản nghệ thuật của nhân loại. Bức ảnh phản ánh vấn đề xã hội gì? Có những giải pháp nào để giải quyết vấn đề này? Bức ảnh cho thấy một con phố đông đúc với nhiều người đi bộ, xe máy và ô tô. Tình trạng tắc nghẽn giao thông và đông đúc này có thể gây ra nhiều vấn đề xã hội như ô nhiễm không khí, tiếng ồn, tai nạn và căng thẳng cho người tham gia giao thông. Để giải quyết những vấn đề này, có thể áp dụng nhiều giải pháp như cải thiện cơ sở hạ tầng giao thông công cộng, khuyến khích đi bộ và đi xe đạp, thực hiện các biện pháp quản lý giao thông hiệu quả và thúc đẩy các phương thức di chuyển thay thế như đi chung xe hoặc đi chung xe. Ngoài ra, việc nâng cao nhận thức của người dân về tác động môi trường của giao thông và khuyến khích các hành vi thân thiện với môi trường cũng có thể góp phần giảm ùn tắc giao thông và cải thiện chất lượng cuộc sống chung trong thành phố.</figDesc></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://huggingface.co/spaces/SeaLLMs/ SeaLLM-7B</p></note>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">Josh</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Adler</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Steven</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Sandhini</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ahmad</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lama</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Akkaya</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ilge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florencia</forename><surname>Aleman</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Leoni</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Diogo</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Altenschmidt</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Janko</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Altman</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Sam</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Anadkat</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Shyamal</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.08774</idno>
+		<title level="m">Gpt-4 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Flamingo: a visual language model for few-shot learning</title>
+		<author>
+			<persName><forename type="first">Jean</forename><forename type="middle">-</forename><surname>Alayrac</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Baptiste</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Donahue</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Luc</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Pauline</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Miech</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Antoine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iain</forename><surname>Barr</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hasson</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Yana</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lenc</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Karel</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Arthur</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Millican</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Katherine</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Reynolds</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Malcolm</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="23716" to="23736" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<idno type="arXiv">arXiv:2403.01031</idno>
+		<title level="m">Peacock: A family of arabic multimodal large language models and benchmarks</title>
+		<editor>
+			<persName><forename type="first">Fakhraddin</forename><surname>Alwajih</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">El</forename><surname>Moatez</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Billah</forename><surname>Nagoudi</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Gagan</forename><surname>Bhatia</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Abdelrahman</forename><surname>Mohamed</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Muhammad</forename><surname>Abdul-Mageed</surname></persName>
+		</editor>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<author>
+			<persName><forename type="first">Rohan</forename><surname>Anil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jean-Baptiste</forename><surname>Alayrac</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiahui</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Radu</forename><surname>Soricut</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johan</forename><surname>Schalkwyk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anja</forename><surname>Hauth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katie</forename><surname>Millican</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Silver</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melvin</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ioannis</forename><surname>Antonoglou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julian</forename><surname>Schrittwieser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amelia</forename><surname>Glaese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jilin</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emily</forename><surname>Pitler</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2312.11805</idno>
+		<title level="m">Gemini: a family of highly capable multimodal models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<author>
+			<persName><forename type="first">Gregor</forename><surname>Geigle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhay</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Radu</forename><surname>Timofte</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Goran</forename><surname>Glavaš</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.06930</idno>
+		<title level="m">mblip: Efficient bootstrapping of multilingual vision-llms</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Efficient multimodal learning from data-centric perspective</title>
+		<author>
+			<persName><forename type="first">Muyang</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yexin</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boya</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianhao</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yueze</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tiejun</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bo</forename><surname>Zhao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.11530</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<author>
+			<persName><forename type="first">Albert</forename><forename type="middle">Q</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Sablayrolles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Bamford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Singh Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diego</forename><surname>De Las Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>Bressand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gianna</forename><surname>Lengyel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillaume</forename><surname>Lample</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucile</forename><surname>Saulnier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Renard</forename><surname>Lélio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lavaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Teven</forename><surname>Stock</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Le Scao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><forename type="middle">El</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Sayed</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.06825</idno>
+		<title level="m">Mistral 7b</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">BLIP-2: Bootstrapping languageimage pre-training with frozen image encoders and large language models</title>
+		<author>
+			<persName><forename type="first">Junnan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Dongxu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Silvio</forename><surname>Savarese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Hoi</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th International Conference on Machine Learning</title>
+		<meeting>the 40th International Conference on Machine Learning</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="19730" to="19742" />
+		</imprint>
+	</monogr>
+	<note>Proceedings of Machine Learning Research</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Visual instruction tuning</title>
+		<author>
+			<persName><forename type="first">Haotian</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunyuan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingyang</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong Jae</forename><surname>Lee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Thirtyseventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Mesnard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cassidy</forename><surname>Hardin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Dadashi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Surya</forename><surname>Bhupatiraju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shreya</forename><surname>Pathak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laurent</forename><surname>Sifre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Morgane</forename><surname>Rivière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mihir</forename><surname>Sanjay Kale</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Juliette</forename><surname>Love</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pouya</forename><surname>Tafti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Léonard</forename><surname>Hussenot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Barua</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Botev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Castro-Ros</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ambrose</forename><surname>Slone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amélie</forename><surname>Héliou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrea</forename><surname>Tacchetti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anna</forename><surname>Bulanova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antonia</forename><surname>Paterson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Beth</forename><surname>Tsai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bobak</forename><surname>Shahriari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charline</forename><forename type="middle">Le</forename><surname>Lan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><forename type="middle">A</forename><surname>Choquette-Choo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clément</forename><surname>Crepy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Cer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daphne</forename><surname>Ippolito</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Reid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Elena</forename><surname>Buchatskaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Ni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Noland</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Geng</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">George</forename><surname>Tucker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">George-Christian</forename><surname>Muraru</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Grigory</forename><surname>Rozhdestvenskiy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henryk</forename><surname>Michalewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ian</forename><surname>Tenney</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ivan</forename><surname>Grishchenko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Austin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Keeling</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jane</forename><surname>Labanowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jean-Baptiste</forename><surname>Lespiau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Stanway</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jenny</forename><surname>Brennan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeremy</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johan</forename><surname>Ferret</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Justin</forename><surname>Chiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Justin</forename><surname>Mao-Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katherine</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kathy</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katie</forename><surname>Millican</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lars</forename><forename type="middle">Lowe</forename><surname>Sjoesund</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lisa</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucas</forename><surname>Dixon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Machel</forename><surname>Reid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maciej</forename><surname>Mikuła</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateo</forename><surname>Wirth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Sharman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolai</forename><surname>Chinaev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nithum</forename><surname>Thain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olivier</forename><surname>Bachem</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oscar</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oscar</forename><surname>Wahltinez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paige</forename><surname>Bailey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Michel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Petko</forename><surname>Yotov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Giuseppe</forename><surname>Pier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rahma</forename><surname>Sessa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ramona</forename><surname>Chaabouni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Reena</forename><surname>Comanescu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rohan</forename><surname>Jana</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ross</forename><surname>Anil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruibo</forename><surname>Mcilroy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Mullins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Samuel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wojciech</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Stokowiec</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zafarali</forename><surname>Hui Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhitao</forename><surname>Ahmed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tris</forename><surname>Gong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ludovic</forename><surname>Warkentin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Minh</forename><surname>Peran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clément</forename><surname>Giang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oriol</forename><surname>Farabet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Vinyals</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Koray</forename><surname>Dean</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Kavukcuoglu ; Zoubin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Douglas</forename><surname>Ghahramani</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Eck</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.08295</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Open models based on gemini research and technology</title>
+		<editor>
+			<persName><forename type="first">Sholto</forename><surname>Douglas</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Shree</forename><surname>Pandya</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Siamak</forename><surname>Shakeri</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Soham</forename><surname>De</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ted</forename><surname>Klimenko</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Tom</forename><surname>Hennigan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Vlad</forename><surname>Feinberg</surname></persName>
+		</editor>
+		<meeting><address><addrLine>Fernando Pereira, Eli Collins</addrLine></address></meeting>
+		<imprint>
+			<publisher>Joelle Barral</publisher>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>Armand Joulin, Noah Fiedel, Evan Senter, Alek Andreev, and Kathleen Kenealy. 2024. Gemma</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">2023a. Vistral-7b-chat -towards a state-of-the-art large language model for vietnamese</title>
+		<author>
+			<persName><forename type="first">Chien</forename><surname>Van Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thuat</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quan</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huy</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Björn</forename><surname>Plüster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nam</forename><surname>Pham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huu</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Schramowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thien</forename><surname>Nguyen</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<author>
+			<persName><forename type="first">Linh</forename><forename type="middle">The</forename><surname>Dat Quoc Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chi</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Tran</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.02945</idno>
+		<title level="m">Dung Ngoc Nguyen, Dinh Phung, and Hung Bui. 2023b. Phogpt: Generative pre-training for vietnamese</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Openvivqa: Task and dataset and and multimodal fusion models for visual question answering in vietnamese</title>
+		<author>
+			<persName><forename type="first">Hieu</forename><surname>Nghia</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">D</forename><surname>Duong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kiet</forename><surname>Vo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ngan</forename><surname>Van Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">-Thuy</forename><surname>Luu</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Nguyen</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.04183</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">A Vietnamese-English Neural Machine Translation System</title>
+		<author>
+			<persName><forename type="first">Hai</forename><surname>Thien</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Tuan-Duy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Duy</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Duy</forename><surname>Phung</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Tran-Cong Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Minh</forename><surname>Hieu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manh</forename><surname>Tran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tin Duy</forename><surname>Luong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hung</forename><forename type="middle">Hai</forename><surname>Vo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dinh</forename><surname>Bui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dat Quoc</forename><surname>Phung</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Nguyen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 23rd Annual Conference of the International Speech Communication Association: Show and Tell</title>
+		<meeting>the 23rd Annual Conference of the International Speech Communication Association: Show and Tell</meeting>
+		<imprint>
+			<publisher>INTERSPEECH</publisher>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Bleu: a method for automatic evaluation of machine translation</title>
+		<author>
+			<persName><forename type="first">Kishore</forename><surname>Papineni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Salim</forename><surname>Roukos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Todd</forename><surname>Ward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Jing</forename><surname>Zhu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th Annual Meeting of the Associations for Computational Linguistics (ACL)</title>
+		<meeting>the 40th Annual Meeting of the Associations for Computational Linguistics (ACL)</meeting>
+		<imprint>
+			<date type="published" when="2002">2002</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jong</forename><forename type="middle">Wook</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Hallacy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriel</forename><surname>Goh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2103.00020</idno>
+		<title level="m">Learning transferable visual models from natural language supervision</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">2023a. Llama: Open and efficient foundation language models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Thibaut</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Gautier</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Xavier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Timothée</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Baptiste</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Naman</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Eric</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Azhar</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Faisal</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">2023b. Llama 2: Open foundation and fine-tuned chat models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Louis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Peter</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Amjad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Nikolay</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Soumya</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Prajjwal</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bhosale</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Shruti</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niki</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jakob</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Llion</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Łukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2017">2017. 2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei-Lin</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhanghao</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghao</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zi</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuohan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dacheng</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><forename type="middle">P</forename><surname>Xing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ion</forename><surname>Stoica</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.05685</idno>
+		<title level="m">Judging llm-as-a-judge with mt-bench and chatbot arena</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">MiniGPT-4: Enhancing vision-language understanding with advanced large language models</title>
+		<author>
+			<persName><forename type="first">Deyao</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoqian</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohamed</forename><surname>Elhoseiny</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">The Costly Dilemma: Generalization, Evaluation and Cost-Optimal Deployment of Large Language Models</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-06-23">June 23, 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Abi</forename><surname>Aryan</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Aakash</forename><forename type="middle">Kumar</forename><surname>Nain</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Andrew</forename><surname>Mcmahon</surname></persName>
+						</author>
+						<author>
+							<persName><roleName>Harpreet</roleName><forename type="first">Lucas</forename><forename type="middle">Augusto</forename><surname>Meyer</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Singh</forename><surname>Sahota</surname></persName>
+						</author>
+						<title level="a" type="main">The Costly Dilemma: Generalization, Evaluation and Cost-Optimal Deployment of Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-06-23">June 23, 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">0C6CED5AAA6FE3682728626E9FC8C803</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:30+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>When deploying machine learning models in production for any product/application, there are three properties that are commonly desired. First, the models should be generalizable, in that we can extend it to further use cases as our knowledge of the domain area develops. Second they should be evaluable, so that there are clear metrics for performance and the calculation of those metrics in production settings are feasible. Finally, the deployment should be cost-optimal as far as possible. In this paper we propose that these three objectives (i.e. generalization, evaluation and cost-optimality) can often be relatively orthogonal and that for large language models, despite their performance over conventional NLP models, enterprises need to carefully assess all the three factors before making substantial investments in this technology. We propose a framework for generalization, evaluation and cost-modeling specifically tailored to large language models, offering insights into the intricacies of development, deployment and management for these large language models.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>According to two separate Gartner reports <ref type="bibr" target="#b0">[1]</ref>[2], 85% of AI and machine learning projects fail to deliver, with only 53% of projects finally making it from prototype to production. The four key reasons for this mentioned in a subsequent study by Gartner <ref type="bibr" target="#b2">[3]</ref> were: 1) a lack of business-use case clarity, 2) inadequate skills within the team for end-to-end deployments, 3) neglecting organizational change, and 4) failure to experiment. These problems still remain in typical machine learning projects, and are becoming particularly acute as organizations attempt to adopt Large Language Models (LLMs).Further questions are important for those considering the adoption of LLMs such as the "build vs buy" hypothesis, should teams consume models hosted as third party services or build their own LLMs? How do the costs for LLM development, deployment and management scale once the business use-case has been established? And finally, given all the evaluation frameworks and leaderboards out there, how should engineering teams evaluate these models?</p><p>We assert that these challenges are particularly acute as organizations adopt and adapt LLMs for two main reasons associated with the ability to evaluate these models and deploy them cost effectively. First, compliance and other risks are high <ref type="bibr" target="#b3">[4]</ref> due to lack of clear evaluation metrics, and secondly, there are hidden costs associated with model deployments for LLMs that must be accounted for. In this paper, we will explore these challenges and suggest some strategies for mitigating them.</p><p>The first part of the paper introduces the question of generalized vs. domain-specific LLMs,with a discussion of the advantages and disadvantages of reach through these risk and cost lenses. We then develop the analysis further in the second part as we cover the visible and hidden short and long-term costs of deploying these models in production. The third part focuses on how LLM Operations (LLMOps) techniques can help to tackle the aforementioned challenges.</p><p>Related research on the question of generalized vs. specialized technological solutions has been performed by E. Brynjolfsson et al. <ref type="bibr" target="#b4">[5]</ref>. Rosa et. al <ref type="bibr" target="#b5">[6]</ref> have performed cost-benefit analysis for multi-lingual language models, with a focus on one-time vs recurrent costs..</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">The GCE Trifecta</head><p>When developing new technology, questions of generalization, cost optimization, and evaluation, play a pivotal role in determining project success. Each componentgeneralization, cost, and evaluation -carries its own significance, yet they collectively contribute to achieving project objectives. We term these three elements the "GCE trifecta". The consideration of these components for the developments for LLMs is something that we believe has not been done in detail, we do this below.</p><p>Generalization stands as a fundamental pillar of LLM project success. It encompasses the ability of a large language model to deliver its intended outcomes across a broad range of contexts and situations. Generalization of the underlying model across different language based tasks enables scalability, adaptability, and the potential for replication, allowing projects to tackle complex challenges while remaining applicable to diverse scenarios.</p><p>Cost optimality serves as a critical factor in the ability of an organization to harness the potential of large language models. Accurate cost-benefit analyses of LLM enabled technological solutions will be needed to enable organizations to achieve their goals within budgetary constraints, maximizing value and gaining a return on investment.</p><p>Lastly, the ability to evaluate models acts as the cornerstone of machine learning project success. Evaluation provides a systematic and objective assessment of the model performance across likely production scenarios. By employing rigorous evaluation methodologies, product teams can ensure accountability, transparency, and the ability to do continuous experimentation and improvement throughout the lifecycle of their solution. Effective evaluation techniques enable stakeholders to gauge the impact of the LLM and make data-driven decisions for future endeavors. Consistent and robust evaluation methodologies and frameworks need to be used by organizations looking to adopt LLMs in order to enable these benefits and to mitigate the risks of failure in deployment scenarios.</p><p>Despite their inherent interdependencies, we propose that, for LLMs, the concepts generalization, cost optimization, and evaluation are relatively orthogonal in the context of project success. By recognizing the challenges within each of these areas and employing tailored strategies for specific use-cases, organizations can strike an appropriate balance, and create value through lasting project success. Through this research, we aim to shed light on the unique dynamics of the GCE trifecta for LLMs and provide insights that would be helpful across the organization and different stakeholders within the team.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Generalization</head><p>Broadly speaking, there are two different interest-groups amongst enterprises working on large language models. The first are the Foundation Model (sometimes also referred to as Base Model) providers. These providers aim to make it easy for anyone to access pre-trained large language models using cloud-based or self-hosted infrastructure. Depending on the provider, these models may be open-source or proprietary, based on the release strategy <ref type="bibr" target="#b6">[7]</ref> of the provider. Amongst this category are companies like OpenAI, Cohere, Google, Microsoft, Anthropic, Nvidia, Mosaic, Hugging Face and others. While the out-of-the-box direct use of a foundational model may be the quickest way to deploy a LLM-based product or application. However, it may not add much substantial value depending on the use-case. Some organizations may instead benefit from domain-specific knowledge injection to improve task-specific performance of the models. While LLMs have seen adoption for several NLP applications across a wide-range of industries including coding assistants, copywriting, language prompted visual design, drug discovery, legal reviews and many others, an extensive review of all existing applications across industries is missing. That said, several economists have done reviews on the potential impact of GPTs on the labor market <ref type="bibr" target="#b11">[12]</ref>[13]14]. These reports suggest that LLMs are as of now more generally used for generative use-cases than discriminative use-cases. At the time of writing, we note some of the most popular LLM use-cases are knowledge retrieval <ref type="bibr" target="#b7">[8]</ref>, recommender systems <ref type="bibr" target="#b8">[9]</ref>, cross-lingual translation <ref type="bibr" target="#b9">[10]</ref> and autonomous agents or AI Agents <ref type="bibr" target="#b10">[11]</ref>.</p><p>In many of these applications, the suggested mechanism for using LLMs is to consume them via a third party service. However, using these models out of the box exposes organizations to several new risks including those around regulatory and legal compliance of generative models trained on datasets with unknown provenance, security risks through new attack vectors like prompt injection and risks of drop in performance due to prompt drifts to name just a few. Thus, the trend of organizations fine-tuning their models on their industry-specific data, or even building them in-housem will likely accelerate. The ability to do this depends on factors such as the business use-case maturity and the capability of the technical teams within these entities.</p><p>The generalizability of these models is also of interest to developers and teams interested in integrating LLMs into their own, existing,products and services. These include Plugins, AI Agents as well as products that use LLMs for NLP applications, for tasks like summarization.</p><p>This can be challenging as at the time of writing there are no substantive studies that compare which provider would be better for which particular use-case, as the majority of benchmark cases focus on general applicability of the models or performance of only indirect relevance to many use cases. Another important factor that could guide the technical choices of different organizations in this space will be in terms of which models can be generally useful but still respect legislation(eg. the EU-AI Act <ref type="bibr" target="#b14">[15]</ref>). Such regulatory guardrails may potentially limit the availability of a certain model or provider by the region depending on the compliance-levels, see Figure <ref type="figure" target="#fig_0">1</ref>). On a more technical level, deciding which provider and foundational model would be a better choice depends not only on the generalizability of the model, but also on several factors including number of parameters, size of context window, training type, inference speed, cost, fine-tunability as well as data security.</p><p>While there are subjective quality-measures for all models, the extensive model quality depends on your particular domain as well as the sophistication of application using a LLM. For example, if the goal is to do knowledge retrieval on unstructured data, GPT-4 may be an excellent choice however when doing knowledge retrieval on structured data, a model with a larger context window may be the most optimal choice. Although, one of the key limitations with building using proprietary models is there is a lack of best-practices and information on long-term-support (LTS), prompt-drift on updates and other important operational factors. This lack of clarity can lead to operational risks around reliability, explainability and predictability when moving into production.</p><p>Taken together, these points show that the selection of a model cannot be based solely on its ability to generalize across problem domains, and must be more nuanced in terms of applicability to organizational problems.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Cost Optimality</head><p>A very pertinent question that concerns every organization looking to deploy or utilize LLMs today is, how much will this cost?</p><p>First, consider building an in-house LLM and maintaining it in production. This is no easy feat and may require a significant investment in infrastructure, data collection, and hiring skilled personnel. As in other software deployments this will not be a one-time investment and will require ongoing operational cost. The full cost profile of LLMs is currently unknown and requires future work and data to determine. The uniqueness of the challenge for LLMs comes from the fact that the infrastructure and MLOps requirements for running such large and complex models are not common experience among the community yet. We expand on these challenges in the paragraphs below.</p><p>In contrast, vendor-based LLMs like GPT-4 may seem easier to estimate costs for, given they operate on a pay-as-you-go model. This can reduce upfront costs and allow for better operational cost modeling, making them an attractive choice.</p><p>Table 1. Build vs Buy Hypothesis Attribute Build Buy Predictable Workload Native LLMs require significant upfront capital investment for hardware, software, networking equipment, and facilities. Ongoing costs include maintenance, staff, and energy consumption. Vendor-Based LLMs typically operate on a pay-as-you-go model, reducing upfront costs and allowing for better cost control. They provide almost limitless scalability, enabling organizations to easily expand or contract their resources according to demand Hardware Costs Upfront and maintenance Nominal Security More secure Depends on the provider's infrastructure Compliance High Compliance Check Chart (on Pg.2) Latency Lower Latency Higher Latency</p><p>This build-vs-buy dichotomy is not anything new in software development or in MLOps, but as we have mentioned it does have some new dimensions to consider for LLMs. Table <ref type="table">1</ref> starts to flesh out some of these points.</p><p>Deploying an LLM is very different from deploying any other machine learning model because the cost in the case of LLMs is two-fold: infra-model related cost, and the hidden cost.</p><p>Although we can significantly reduce our costs with these vendor-based models, they come with their own sets of challenges. Organizations may be reticent when it comes to sharing sensitive data with any API-based LLM vendor.</p><p>Organizations will also require that vendor based models are compliant with their own organizational data policies. This can be hard to ensure if data and implementation details are not shared freely.</p><p>Given this, there is the risk of lock-in as switching to a new model or vendor will incur new operational costs as these due diligence and compliance exercises are completed. In short, security, compliance, and latency become major concerns when choosing a vendor-based model. This can be more difficult to factor into a direct cost comparison, but must be considered, Another dimension to consider when working with LLMs is the question of prompt engineering vs. fine-tuning. This choice depends on several factors, and has some associated consequences on the overall cost. An important consideration for this question is the length of the context window of the model and understanding how the overall cost is related to it. Although transformer models show exceptional scaling capabilities, one computational bottleneck that remains an open-challenge is the processing of long sequences. The complexity of the naive attention mechanism grows quadratically in terms of both the compute and the memory <ref type="bibr" target="#b16">[17]</ref>.</p><p>With the latest Anthropic model, we have a context window of 100K tokens that translates to roughly 75,000 words. Such a lengthy context window opens up opportunities for accomplishing tasks that were almost impossible to achieve in the past. For example, you can input an entire book into the model and dynamically query the content just from that provided context. This is a qualitative step up compared to the capabilities of some earlier LLMs.</p><p>With the larger context windows, you can retain more in-context information and the model can handle more complex and longer inputs. However, one of the challenges of large context windows is that the costs increase almost quadratically as the number of tokens are increased and can also affect the inference latency due to the slow-down of model computations. For example, Anthropic latest model response time on a 100K context window is roughly 22 seconds. Also, most use cases don't require such a large context window. It is also not so easy to write and modify lengthy prompts.</p><p>Smaller context windows allow for smaller input lengths thus requiring clear, concise, and clever prompts to obtain a desirable output. One of the advantages of short prompts is that they are easy to write and modify compared to the lengthier prompts. The overall latency is low, the chain of thoughts becomes easy and they also enable faster iteration. You can also leverage parallel context windows for many use cases to achieve acceptable performance on a task <ref type="bibr" target="#b17">[18]</ref> without fine-tuning or using an expensive model with a bigger context window.</p><p>While it seems like there is an obvious upside to using smaller context windows and investing your time in prompt engineering, the iterative costs of this can accumulate quickly. To obtain a similar result from an LLM, you may be required to write multiple prompts and make multiple calls to the model. With multiple prompts and calls, this quickly adds to your overall inference cost of the model. Another disadvantage of shorter prompts is that it makes it hard to decide when to go with fine-tuning instead of prompting. Most of the time prompting can take you far, but it may require you to run several trials before you decide to fine-tune, either with an explicit reward function or Reinforcement Learning from Human Feedback (RLHF).</p><p>Fine-tuning is substantially more expensive than prompting and not always the right approach depending on the complexity of the conditional. There may exist valid inferences that satisfy the conditional argument, however sampling them can be incredibly hard if we don't already know the factorization ahead of time.</p><p>Generally speaking, for domain-adaptation, prompt engineering works well for embedding-based search, fine-tuning may produce better results for categorization and filtering however there is no conclusive work that compares the generalization for both the options.</p><p>Another factor to keep in mind are the scaling behavior of these models.It has been proven empirically that language models get predictably better as the number of parameters, amount of compute used, and dataset size increases <ref type="bibr" target="#b15">[16]</ref> <ref type="bibr" target="#b18">[19]</ref>. Query caching can significantly reduce costs for LLM inferencing, but the exact amount of cost reduction depends on various factors, such as the frequency of repeated queries, performance of the underlying language model, cache hit ratio, and the overall architecture of the LLM inferencing system. <ref type="bibr" target="#b19">[20]</ref>.</p><p>Once again, we hope that these points highlight some of the nuances of considering the cost profile of working with LLMs.</p><p>While the above discussion focused on the infrastructure and the modeling-related costs, LLMs also have associated hidden costs.</p><p>The first key cost is the potential cost of prompt drift. LLMs offer very little reproducibility even with the same prompts between different versions of the model. This often occurs as the model is updated to a faster, better, distilled LLM. Second, with traditional machine learning models, it is common to hire annotators to annotate datasets. Hiring annotators is cheap, and it takes a very short amount of time to train them for the defined annotation task. Validating the annotations done by the annotators is easy, and we can in many cases even automate the validation process to a large extent.</p><p>However, the same process becomes very complex in the case of LLMs due to the need for domain-specific knowledge to create good prompts. Either the relevant team writes and validates all the prompts every time, or you hire a prompt engineer. Hiring prompt engineers is expensive. On top of that, it creates an indirect dependency on the prompt engineer within the team if they choose to leave. Retraining new prompt engineers for your tasks is time-consuming, and expensive (see the discussion on API call cost accumulation above). Even if you hire a prompt engineer, there is currently no way to automate the validation of prompts.</p><p>Given that you can choose to call the model from the front-end or the back-end, and fine-tune vs. prompt engineer, this can result in operational costs that vary across a wide scale. LLMs are still relatively new in the machine learning world, which means that there are unknowns associated with using them in production. Some typical risks associated with machine learning models when used in production are listed below, along with a brief discussion of the important points regarding LLMs:</p><p>-Compliance and regulatory risk: This refers to the risk of breaking rules set by governing bodies of various flavors, be they government themselves, regulators or other institutions with powers to enforce compliance with set rules. In this scenario organizations can face potential large fines or other punitive measures. For example the upcoming EU AI Act, which is undergoing final review by European lawmakers at the time of writing, could mean fines of 10 million euros or 2% of global profits (whichever is higher) on organizations that breach these rules <ref type="bibr">[21]</ref>.</p><p>-Reputational risk: A system may not necessarily breach legal or regulatory guidelines but it may still behave outside the expected norms for interaction with a variety of stakeholders. Some examples could be a banking customer being faced with derogatory remarks, a hospital patient being blamed for their illness, or a customer being given suggestions that conform to racial or gender biases <ref type="bibr" target="#b20">[22]</ref>. These scenarios can then lead to huge reputational damage for organizations and for the concept of AI and ML systems as a whole and lead to losses in income and future revenue.</p><p>-Operational risk: Many organizations now use data and machine learning to inform operational decisions. If an LLM generates inconsistent output or leads to an erroneous operational decision this could incur large costs as well. For example, if an LLM based chatbot was being used by a senior executive in an organization to help make an investment decision, hallucinated facts could lead to a large amount of that investment being wasted in a low growth area. Similarly incorrect information may lead to erroneous decisions around technology adoption, system design, logistical operations, administration execution that could lead to very costly outcomes.</p><p>Table 2. Costs Associated with LLM Applications Upfront Costs Hidden Costs Context Window Model Drift, Prompt Drift Prompting/Fine-Tuning Hardware Costs Data Compliance Infrastructure People Scalability Reliability</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3">Evaluation</head><p>With the rise of Large Language Models (LLMs) the question of what best evaluation practice looks like must be revisited as some assumptions usually employed for ML evaluations no longer hold and need augmented. Large language models are often trained on massive amounts of data and require more than a few million parameters further limiting their reproducibility as well as interpretability.</p><p>This gets even more tricky as more and more companies are moving to closed-version of the models keeping the model parameters as well as information on RLHF and red-teaming the models through adversarial examples private thus making it close to impossible to fully evaluate these models.</p><p>In the past, transformer based language models were typically evaluated using perplexity, the BLEU score and Human Evaluations. <ref type="bibr" target="#b21">[23]</ref> However, these metrics have been criticized for being too simplistic and not taking into account much of the nuance of human language. This is counteracted somewhat when using techniques based on human evaluation, however this can also be the most time-consuming and expensive approach, with particular challenges around scaling to large input and outputs, as is the case with LLMs.</p><p>There are several general benchmarks available for LLMs, namely OpenAI Evals, HELM, Evals-Harness, etc. however elo-based systems <ref type="bibr" target="#b23">[25]</ref> are quickly gaining popularity over community-based leaderboards <ref type="bibr" target="#b22">[24]</ref> v/s vendor-based evals (Nemo Guardrails, Aviary, etc). While the above-mentioned generalized benchmarks are helpful for some contexts, most organizations need domain-specific benchmarks that are specific to the company and their business use-case.</p><p>We break it down into five concerns that need to be addressed to develop a comprehensive evaluation framework. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.1">What does "performance" mean for an LLM application?</head><p>Since LLMs do not have clear objective functions, thus it is hard to conventionally evaluate them using the conventional ML metrics. Thus, performance comes down to a combination of several factors-</p><p>1. Accuracy 2. Inference Speed 3. Latency 2.3.2 How do we create stable experimental setups for evaluating LLM applications? While having a test set you test/benchmark against is incredibly important. However, the setup comes down to -1. Data Sampling in Test vs Evals 2. Logging Prompts and Inferences 3. Checkpointing the models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.3">What benchmarks do we have or do we need to create to enable consistency of approach?</head><p>The generalized benchmarks depending on the use-case do allow for grounding. However, organizations still standard proxies like accuracy and other metrics against your own test dataset and/or public benchmarks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.4">For third party hosted models, what assurances can we give ourselves as downstream consumers through validation?</head><p>Delegating the model development and maintenance to vendors like OpenAI, Anthropic etc does allow one to have significant assurances when it comes to model staling, latency, scalability and easy deployment.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3.5">How do we evaluate and monitor the accuracy of our LLM-based solutions during development and post-deployment?</head><p>For applications, public benchmarks are not useful because it's not measured on the data distribution you care about (data your users give). So building elo-based benchmarks for your data can be an important step in the right direction.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Conclusion</head><p>The integration of Language Models (LLMs) into applications brings forth numerous benefits, but it also introduces the concept of technical debt. This debt can manifest as potential risks or hidden costs that may arise in the future. However, it is important to emphasize that LLMs remain highly valuable despite these considerations, and technical debt itself is not inherently negative. Just as individuals make informed decisions regarding financial debt and actively manage it, a similar approach must be adopted when dealing with technical debt in LLM-based solutions.</p><p>Choosing an appropriate level of technical debt becomes crucial in LLM integrations. This involves carefully evaluating the trade-offs between short-term gains and long-term consequences. LLMs offer immediate advantages such as enhanced natural language processing capabilities and improved user experiences. However, hasty implementation or overreliance on LLMs without addressing potential technical debt can lead to challenges down the line.</p><p>Managing technical debt in LLM-based solutions requires a proactive and strategic approach. Just as financial debt requires diligent monitoring and repayment plans, technical debt should be assessed, documented, and accounted for. Organizations must invest resources in identifying areas where technical debt may accumulate, such as code complexity, potential performance bottlenecks, or lack of maintainability. By acknowledging these risks, teams can make informed decisions, and allocate resources accordingly.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Stanford HAI evaluation of foundation model providers for their compliance with proposed EU law on AI.</figDesc><graphic coords="4,73.50,88.05,461.25,241.50" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 .</head><label>2</label><figDesc>Figure 2. LMSys.org -Comparison between different evaluation methods</figDesc><graphic coords="9,73.50,73.50,451.50,105.75" type="bitmap" /></figure>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Fueling the future of business</title>
+		<author>
+			<persName><surname>Gartner</surname></persName>
+		</author>
+		<ptr target="https://blogs.gartner.com/andrew_white/201" />
+	</analytic>
+	<monogr>
+		<title level="m">Gartner</title>
+		<imprint>
+			<date type="published" when="2019-01-03">2019, January 3</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<ptr target="https://www.gartner.com/en/newsroom/press-releases/2020-10-19-gartner-identifies-the-top-strategic-technology-trends-for-2021" />
+		<title level="m">Gartner identifies the top strategic technology trends for 2021</title>
+		<imprint/>
+	</monogr>
+	<note>Gartner</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Gartner says nearly half of CIOs are planning to deploy artificial intelligence</title>
+		<ptr target="https://www.gartner.com/en/newsroom/press-releases/2018-02-13-gartner-says-nearly-half-of-cios-are-planning-to-deploy-artificial-intelligence" />
+	</analytic>
+	<monogr>
+		<title level="m">Gartner</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Managing the risk of large language models like ChatGPT</title>
+		<ptr target="https://www.acaglobal.com/insights/managing-risk-large-language-models-chatgpt" />
+	</analytic>
+	<monogr>
+		<title level="m">Governance, risk, and compliance advisory in financial services</title>
+		<imprint>
+			<date type="published" when="2023-05-10">2023. May 10</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">The productivity J-curve: How intangibles complement general purpose technologies</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Brynjolfsson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Rock</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Syverson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">American Economic Journal: Macroeconomics</title>
+		<imprint>
+			<biblScope unit="volume">13</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="333" to="372" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">M</forename><surname>Rosa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">H</forename><surname>Bonifacio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">R</forename><surname>De Souza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Lotufo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Nogueira</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2105.06813</idno>
+		<title level="m">A cost-benefit analysis of cross-lingual transfer methods</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<author>
+			<persName><forename type="first">I</forename><surname>Solaiman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Brundage</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Clark</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">.</forename><forename type="middle">.</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:1908.09203</idno>
+		<title level="m">Release strategies and the social impacts of language models</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Check your facts and try again: Improving large language models with external knowledge and automated feedback</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Galley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">.</forename><forename type="middle">.</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.12813</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">.</forename><forename type="middle">.</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.05817</idno>
+		<title level="m">How Can Recommender Systems Benefit from Large Language Models: A Survey</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><forename type="first">C</forename><surname>Whitehouse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Choudhury</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">F</forename><surname>Aji</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.14288</idno>
+		<title level="m">LLM-powered Data Augmentation for Enhanced Crosslingual Performance</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Talebirad</surname></persName>
+			<affiliation>
+				<orgName type="collaboration">Multi-Agent Collaboration</orgName>
+			</affiliation>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Nadiri</surname></persName>
+			<affiliation>
+				<orgName type="collaboration">Multi-Agent Collaboration</orgName>
+			</affiliation>
+		</author>
+		<idno type="arXiv">arXiv:2306.03314</idno>
+		<title level="m">Harnessing the Power of Intelligent LLM Agents</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<author>
+			<persName><forename type="first">T</forename><surname>Eloundou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Manning</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Rock</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.10130</idno>
+		<title level="m">Gpts are gpts: An early look at the labor market impact potential of large language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">L</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.09823</idno>
+		<title level="m">The future of chatgpt-enabled labor market: A preliminary study</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<author>
+			<persName><forename type="first">B</forename><surname>Lou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Sun</surname></persName>
+		</author>
+		<idno>SSRN 4426461</idno>
+		<title level="m">Gpts and labor markets in the developing economy: Evidence from china</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title/>
+		<ptr target="https://artificialintelligenceact.eu/" />
+	</analytic>
+	<monogr>
+		<title level="j">The Artificial Intelligence Act</title>
+		<imprint>
+			<date type="published" when="2023-06-14">2023. June 14</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hoffmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Buchatskaya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Rutherford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">.</forename><forename type="middle">.</forename><surname>Sifre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.15556</idno>
+		<title level="m">Training compute-optimal large language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Attention is not all you need: Pure attention loses rank doubly exponentially with depth</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">B</forename><surname>Cordonnier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Loukas</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2021-07">2021, July</date>
+			<biblScope unit="page" from="2793" to="2803" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ratner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Levine</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Belinkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Ram</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Abend</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Karpas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">.</forename><forename type="middle">.</forename><surname>Shoham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.10947</idno>
+		<title level="m">Parallel Context Windows Improve In-Context Learning of Large Language Models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<author>
+			<persName><forename type="first">R</forename><surname>Anil</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Firat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Lepikhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Passos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">.</forename><forename type="middle">.</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.10403</idno>
+		<title level="m">Palm 2 technical report</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<author>
+			<persName><forename type="first">L</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zaharia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.05176.21.52021pc0206</idno>
+		<ptr target="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex%3A52021PC0206" />
+		<title level="m">FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+	<note>EUR-Lex -Access to European Union law</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">On the Dangers of Stochastic Parrots: Can Language Models Be Too Big?🦜</title>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">M</forename><surname>Bender</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Gebru</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mcmillan-Major</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Shmitchell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 ACM conference on fairness, accountability, and transparency</title>
+		<meeting>the 2021 ACM conference on fairness, accountability, and transparency</meeting>
+		<imprint>
+			<date type="published" when="2021-03">2021, March</date>
+			<biblScope unit="page" from="610" to="623" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Decoding the puzzle: Unraveling the evaluation and interpretation conundrum for LLMs</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Aryan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mcmahon</surname></persName>
+		</author>
+		<ptr target="https://medium.com/the-llmops-brief/decoding-the-puzzle-unraveling-the-evaluation-and-interpretation-conundrum-for-" />
+		<imprint>
+			<date type="published" when="2023-06-14">2023. June 14</date>
+			<biblScope unit="page">8</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title/>
+		<author>
+			<persName><surname>Leaderboard</surname></persName>
+		</author>
+		<ptr target="https://leaderboard.allenai.org/natural-instructions/submissions/public" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<ptr target="https://lmsys.org/blog/2023-05-03-arena/" />
+		<title level="m">Chatbot arena: Benchmarking LLMs in the wild with Elo ratings</title>
+		<imprint/>
+	</monogr>
+	<note>LMSYS Org</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

@@ -1,0 +1,1367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Modality-invariant and Specific Prompting for Multimodal Human Perception Understanding</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-11-17">17 Nov 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Hao</forename><surname>Sun</surname></persName>
+							<email>sunhaoxx@zju.edu.cn</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Zhejiang University Hangzhou</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Ziwei</forename><surname>Niu</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="institution">Zhejiang University Hangzhou</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xinyao</forename><surname>Yu</surname></persName>
+							<email>xinyaoyu@zju.edu.cn</email>
+							<affiliation key="aff2">
+								<orgName type="institution">Zhejiang University Hangzhou</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Jiaqing</forename><surname>Liu</surname></persName>
+							<email>liu-j@fc.ritsumei.ac.jp</email>
+							<affiliation key="aff3">
+								<orgName type="institution">Ritsumeikan University Shiga</orgName>
+								<address>
+									<country key="JP">Japan</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yen-Wei</forename><surname>Chen</surname></persName>
+							<email>chen@is.ritsumei.ac.jp</email>
+							<affiliation key="aff4">
+								<orgName type="institution">Ritsumeikan University Shiga</orgName>
+								<address>
+									<country key="JP">Japan</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Lanfen</forename><surname>Lin</surname></persName>
+							<affiliation key="aff5">
+								<orgName type="institution">Zhejiang University Hangzhou</orgName>
+								<address>
+									<country key="CN">China</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Modality-invariant and Specific Prompting for Multimodal Human Perception Understanding</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-11-17">17 Nov 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">5F56921C33B8E092F06E2D56CB7CAAFF</idno>
+					<idno type="arXiv">arXiv:2311.10791v1[cs.MM]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:33+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Understanding human perceptions presents a formidable multimodal challenge for computers, encompassing aspects such as sentiment tendencies and sense of humor. While various methods have recently been introduced to extract modality-invariant and specific information from diverse modalities, with the goal of enhancing the efficacy of multimodal learning, few works emphasize this aspect in large language models. In this paper, we introduce a novel multimodal prompt strategy tailored for tuning large language models. Our method assesses the correlation among different modalities and isolates the modality-invariant and specific components, which are then utilized for prompt tuning. This approach enables large language models to efficiently and effectively assimilate information from various modalities. Furthermore, our strategy is designed with scalability in mind, allowing the integration of features from any modality into pretrained large language models. Experimental results on public datasets demonstrate that our proposed method significantly improves performance compared to previous methods.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Introduction</head><p>Understanding human perceptions, such as sentiment tendency and humor sense, encompasses a variety of emerging applications, such as online chatting <ref type="bibr" target="#b8">[9,</ref><ref type="bibr" target="#b23">24]</ref> and dialogue systems <ref type="bibr" target="#b1">[2]</ref>. The primary challenge in this field lies in effectively leveraging human psychological information across various modalities, including text, acoustics, and facial cues.</p><p>In recent years, numerous approaches have emerged to decouple multimodal signals into modality-invariant and specific information for perception understanding <ref type="bibr" target="#b13">[14,</ref><ref type="bibr" target="#b31">32]</ref> (as illustrated in Figure <ref type="figure" target="#fig_0">1</ref>(a)). For instance, Hazarika et al. <ref type="bibr" target="#b13">[14]</ref> decomposed involved modalities into several pieces and utilized central moment discrepancy <ref type="bibr" target="#b38">[39]</ref> to bring invariant parts closer while pushing specific parts further apart. These methods effectively capture human perception from multimodal features, remaining a key focus in multimodal research.</p><p>On another front, pretrained large language models (LLMs) have demonstrated excellent generalization abilities in various downstream tasks <ref type="bibr" target="#b2">[3,</ref><ref type="bibr" target="#b32">33]</ref>. However, due to their massive scale (e.g., 10 billion or 70 billion parameters), fine-tuning the entire model becomes challenging. Effectively prompting LLMs has thus become a prominent research topic in related fields <ref type="bibr" target="#b18">[19,</ref><ref type="bibr" target="#b19">20,</ref><ref type="bibr" target="#b39">40]</ref>. While many methods have endowed LLMs with multimodal processing capabilities <ref type="bibr" target="#b16">[17,</ref><ref type="bibr" target="#b17">18]</ref>, fewer studies focus on enabling LLMs to leverage modality-invariant and specific information.</p><p>To address this gap, we propose a new multimodal prompting strategy with modality information disentangling for human perception estimation (as depicted in Figure <ref type="figure" target="#fig_0">1(b)</ref>). Instead of directly extracting modality-invariant and specific information for final predictions, we emphasize these aspects in tunable prefix tokens. Our approach introduces the Parameter-Free Invariant and Specific prompt generation module (PaFIS) to generate tunable multimodal prompts with corresponding information from other modalities. Specifically, we calculate channel-wise correlations between text tokens and tokens from other modalities. We posit that less relevant parts contain more specific information, while more relevant parts bring more invariant information. By integrating these different parts into prompt tokens, LLMs can acquire the ability to process multimodal information. The entire process is parameter-free and does not introduce new learning parameters. Moreover, our strategy is designed with scalability, enabling the resolution of any modality features for LLM prompting. Experiments on four public datasets demonstrate that our approach significantly improves performance compared with other state-ofthe-art methods. Through further analysis, our method also demonstrates the ability to handle modal absence cases. To the best of our knowledge, this is the first application that employs LLMs for modality information disentangling in human perception understanding.</p><p>In summary, our contributions can be summarized as follows:</p><p>• We propose a new multimodal prompting strategy, granting LLMs the ability to extract information from various modalities, such as facial and acoustic features. • We introduce PaFIS, a parameter-free modality-invariant and specific prompt generation module. Through PaFIS, LLMs can leverage modality-invariant and specific information from other modalities. • Our approach achieves state-of-the-art performance on four evaluated datasets, outperforming other methods by a large margin.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Related Works</head><p>Our work encompasses two primary research areas: multimodal learning and LLM tuning. Multimodal learning seeks to refine or discover relationships between multiple modalities, while LLM tuning aims to uncover the knowledge implicit in language models with efficient parameter approaches.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1.">Multimodal Representation Learning</head><p>One research topic in multimodality focuses on learning effective representations from diverse modalities. Zadeh et al. <ref type="bibr" target="#b34">[35]</ref> introduced the Tensor Fusion Network (TFN), employing outer product to blend multimodal features into a compact representation. Gu et al. <ref type="bibr" target="#b9">[10]</ref> proposed a hierarchical attention network to analyze multimodal signals. More recently, researchers have utilized the self-attention mechanism <ref type="bibr" target="#b30">[31]</ref> to fuse multimodal signals <ref type="bibr" target="#b5">[6,</ref><ref type="bibr" target="#b26">27,</ref><ref type="bibr" target="#b29">30]</ref>. Liu et al. <ref type="bibr" target="#b20">[21]</ref> applied unsupervised domain adaptation to align involved modalities in a common space, and Sun et al. <ref type="bibr" target="#b25">[26]</ref> introduced a pure multilayer perceptron network for fusing multimodal features. Besides direct multimodal fusion, some researchers argue that modality-invariant and specific information are crucial for multimodal understanding.</p><p>For instance, Hazarika et al. <ref type="bibr" target="#b13">[14]</ref> used central moment discrepancy, while Yang et al. <ref type="bibr" target="#b31">[32]</ref> employed Hilbert-Schmidt Independence Criterion <ref type="bibr" target="#b24">[25]</ref> to explicitly extract invariant and specific information for final predictions. These works highlight the importance of invariant and specific information in multimodal representation learning. Building upon this, our approach disentangles modality information with adaptability tailored for the fine-tuning of LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.">LLMs for Language and Multimodal Learning</head><p>In recent years, LLMs have gained significant attention in natural language processing and computer vision communities, demonstrating prowess in downstream tasks such as long-form generation and summarization <ref type="bibr" target="#b2">[3,</ref><ref type="bibr" target="#b32">33]</ref>. Most LLMs are based on the Transformer <ref type="bibr" target="#b30">[31]</ref> structure, boasting vast parameters and training data <ref type="bibr" target="#b28">[29,</ref><ref type="bibr" target="#b40">41]</ref>. Directly tuning LLMs is infeasible due to their scale. Various approaches propose prompting large-scale models with few or no parameters, such as LoRA <ref type="bibr" target="#b15">[16]</ref>, IA3 <ref type="bibr" target="#b19">[20]</ref>, prefix tuning <ref type="bibr" target="#b18">[19]</ref>, and LLaMA-Adapter <ref type="bibr" target="#b39">[40]</ref>. Researchers have also explored equipping LLMs with the ability to process information from other modalities. Merullo <ref type="bibr" target="#b21">[22]</ref> found similarities in latent representations between LLMs and large vision models (LVM), correlated through linear mappings. Jing et al. <ref type="bibr" target="#b17">[18]</ref> combined LLMs and LVMs with linear mappings for multimodal inputs and outputs. Khattak et al. <ref type="bibr" target="#b16">[17]</ref> used a projection function to map textual tokens to visual prompts. Our approach also adopts prompting for multimodal processing but places greater emphasis on extracting invariant and specific information from any other modalities. In each prompting layer i, textual(h i t ), facial(h i v ) and acoustic(h i a ) features are fed to Parameterfree invariant and specific prompt generation module(PaFIS). In PaFIS, the modality-invariant and specific information are integrated into learnable tokens p i .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Methodology</head><p>Our approach concerns with fine-tuning a LLM with different kind of modalities while keeping its parameters frozen. As we focus on perception understanding, we mainly involve textual(t), facial(visual, v), and acoustic(a) features. We try to let the LLM leverage the modality-invariant and specific information during prompting, so as to further excavate the capabilities obtained from large scale pretraining.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.">Model Architecture and Pipeline</head><p>The framework overview is presented in Figure <ref type="figure" target="#fig_1">2</ref>. Text inputs are first tokenized and embedded before being fed into the pretrained LLM. The hidden states for the ith layer are represented as:</p><formula xml:id="formula_0">h i t = [h i t,1 , h i t,2 , ..., h i t,lt ] ∈ R lt×dt ,<label>(1)</label></formula><p>where d t is the embedding dimension, and l t is the number of tokens in the textual input. Simultaneously, facial and acoustic features undergo context modeling through respective Transformer encoders <ref type="bibr" target="#b30">[31]</ref>. The encoded states for the ith layer are expressed as:</p><formula xml:id="formula_1">h i m = [h i m,1 , h i m,2 , ..., h i m,lm ] ∈ R lm×dm ,<label>(2)</label></formula><p>where m ∈ {a, v}, l m is the sequential length of modality m, and d m (d m &lt; d t ) is the corresponding feature dimension. To generate multimodal prompts for the ith layer of the LLM, we introduce a parameter-free invariant and specific prompt generation module (PaFIS):</p><formula xml:id="formula_2">p i = PaFIS(h i t , h i a , h i v ) ∈ R lp×dt ,<label>(3)</label></formula><p>where p i is the prompt for the ith layer, and l p is the length of prompt tokens. Subsequently, we prefix the prompt tokens to the textual hidden states for the ith layer of the LLM:</p><formula xml:id="formula_3">h ′ i t = [p i 1 , ..., p i lp ; h i t,1 , ..., h i t,lt ] ∈ R (lp+lt)×dt .<label>(4)</label></formula><p>During processing, we maintain frozen LLM parameters and exclusively train the facial and acoustic Transformers for context modeling.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.">Parameter-free Invariant and Specific Prompt Generation(PaFIS)</head><p>The PaFIS module aims to generate learnable prompts where modality-invariant and specific information are emphasized. In the ith layer of the LLM, the PaFIS module takes modality hidden states (h i t , h i a , h i v ) as inputs and outputs multimodal prompts p i . For each PaFIS module, we first introduce the learnable prompts pi ∈ R lp×dt , which are not only used to tune the LLM but also serve as containers for modality-invariant and specific information.</p><p>Aligned Cases. When acoustic or visual features are strictly aligned with textual tokens (l m = l t = l), we calculate the channel-wise correlation coefficients<ref type="foot" target="#foot_0">foot_0</ref> between h i m and distinct channels of h i t :</p><formula xml:id="formula_4">K = Corr(h i m , h i t [j : j + d m ]) ∈R l×(dt-dm) , for j ∈[0, d t -d m ],<label>(5)</label></formula><p>where h i t [j : j + d m ] ∈ R l×dm is the sub-channels of h t used to calculate coefficients with h i m . Next, we identify the distinct sub-channels of h i t with the highest correlation:</p><formula xml:id="formula_5">k max m = argmax(K, axis = 1) ∈ N l , c max m = [k max m [j] : k max m [j] + d m ] ∈ N l×dm , j ∈ [0, l], h i,inv t = h i t [c max m ] ∈ R l×dm . (<label>6</label></formula><p>) Similarly, we identify those with the lowest correlation:</p><formula xml:id="formula_6">k min m = argmin(K, axis = 1) ∈ N l , c min m = [k min m [j] : k min m [j] + d m ] ∈ N l×dm , j ∈ [0, l], h i,spe t = h i t [c min m ] ∈ R l×dm . (<label>7</label></formula><formula xml:id="formula_7">)</formula><p>We posit that h i,inv t channels (of high correlation with h i m ) bring more modality-invariant information, while h i,spe t channels (of low correlation with h i m ) contain more modality-specific information. To enable the LLM to leverage this information from other modalities, we integrate them into the learnable prompts:</p><formula xml:id="formula_8">p i [c max m ] = pi [c max m ] + (h i m + h i,inv t ), p i [c min m ] = pi [c min m ] + (h i m -h i,spe t ).<label>(8)</label></formula><p>In Equation <ref type="formula" target="#formula_8">8</ref>, modality-invariant information(between modality t and m) is emphasized by</p><formula xml:id="formula_9">(h i m + h i,inv t</formula><p>) while specific information(from modality m) is emphasized by</p><formula xml:id="formula_10">(h i m -h i,spe t</formula><p>). Unaligned Cases. In cases where acoustic or facial features are not aligned with textual tokens, we average-pool the hidden states on the temporal level before calculating the correlation:</p><formula xml:id="formula_11">K = Corr( hi m , hi t [j : j + d m ]) ∈ R (dt-dm) , for j ∈ [0, d t -d m ].<label>(9)</label></formula><p>where hi m and hi t are temporally pooled features. Correspondingly, the sub-channels of hi t with the highest correlation are calculated by:</p><formula xml:id="formula_12">k max m = argmax(K) ∈ N, c max m = [k max m : k max m + d m ] ∈ N dm , hi,inv t = hi t [c max m ] ∈ R dm ,<label>(10)</label></formula><p>The same is true for the lowest correlated channels hi,spe t . Likewise, modality-invariant and specific information will be emphasized in learnable prompts:</p><formula xml:id="formula_13">p i [j][c max m ] = pi [j][c max m ] + ( hi m + hi,inv t ), p i [j][c min m ] = pi [j][c min m ] + ( hi m -hi,spe t ), for j ∈ [0, l t ].<label>(11)</label></formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3.">Training Target</head><p>Our framework addresses two types of tasks: regression and binary classification. However, LLMs are typically designed and pretrained with language generation tasks. Therefore, we append a fully-connected layer after the last token hidden state h L t,lt in the last layer for predictions. For regression tasks, we utilize the rooted mean square error as the loss function:</p><formula xml:id="formula_14">L = 1 N N i=1 (y n -ŷn ) 2 , (<label>12</label></formula><formula xml:id="formula_15">)</formula><p>where N is the number of samples in a training batch, y n is the ground truth, and ŷn is the prediction. For classification tasks, the binary cross-entropy loss is used:</p><formula xml:id="formula_16">L = 1 N N i=1 [y n log ŷn + (1 -y n ) log(1 -ŷn )]. (<label>13</label></formula><formula xml:id="formula_17">)</formula><p>4. Experiments</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.">Datasets Evaluated</head><p>To assess the effectiveness of our proposed method, we conducted experiments on four publicly available datasets: MOSI <ref type="bibr" target="#b33">[34]</ref>, MOSEI <ref type="bibr" target="#b37">[38]</ref>, URFunny <ref type="bibr" target="#b12">[13]</ref>, and POM <ref type="bibr" target="#b22">[23]</ref>.</p><p>Each of these datasets provides textual, facial, and acoustic modalities.</p><p>MOSI &amp; MOSEI: These datasets consist of utterances gathered from a public social platform. MOSI comprises 1283 training utterances, 229 validation utterances, and 686 testing utterances. In MOSEI, there are 16315 training samples, 1817 validation samples, and 4654 testing samples. Labels range from [-3, +3], where -3 and +3 denote the most negative and positive sentiments, respectively. Although we approach the task as a regression, we can also provide 2-class and 7-class metrics by rounding the labels.</p><p>URFunny: This dataset is designed for humor detection in video clips, with clips sourced from the Internet and annotated as 0 or 1 based on the presence of humor punchlines. It consists of 10598 training samples, 2626 validation samples, and 3290 testing samples.</p><p>POM: The POM dataset includes 600 training samples, 100 validation samples, and 203 testing samples. Each sample offers 18 human perceptions, covering sentiment, confidence, passion, voice pleasantness, dominance, credibility, vividness, expertise, entertainment, reserve, trust, laziness, relaxation, extroversion, thoroughness, nervousness, humor, and persuasion. All labels fall within the range of <ref type="bibr" target="#b0">[1,</ref><ref type="bibr" target="#b6">7]</ref>, where a higher value indicates a stronger tendency.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2.">Experimental settings</head><p>In our experiments, we employed the popular LLaMA2-7B <ref type="bibr" target="#b28">[29]</ref> as the foundational model, which stands as one Table <ref type="table">1</ref>. The results of our method on MOSI and MOSEI dataset. ↓: the lower the better; ↑: the higher the better. *: previous state-of-theart performance.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>MOSI</head><p>MOSEI MAE(↓) Corr(↑) Acc-2/F1(↑) Acc-7(↑) MAE(↓) Corr(↑) Acc-2/F1(↑) Acc-7(↑) TFN <ref type="bibr" target="#b34">[35]</ref> 0.970 0.633 73.9/73.4 32.1 0.593 0.700 82.5/82.1 50.2 ICCN[28] 0.862 0.714 83.0/83.0 39.0 0.565 0.713 84.2/84.2 51.6 MulT[30] 0.871 0.698 83.0/82.8 40.0 0.580 0.703 82.5/82.3 51.8 MISA[30] 0.817 0.748 82.1/82.0 41.4 0.557 0.748 84.9/84.8 51.7 BBFN[11] 0.776 0.775 84.3/84.3 45.0 0.529 0.767 86.2/86.1* 54.8* CMLP[26] 0.770 0.767 85.6/85.5* 45.5 0.529 0.760 85.1/84.5 54.9 MMIM[12] 0.700* 0.800 84.1/84.0 46.6* 0.526* 0.772* 82.2/82.6 54.2 OSAN[21] 0.713 0.801* 83.1/83.0 46.3 0.532 0.768 83.4/83.3 53.8 Ours 0.619 0.860 86.5/86.5 49.3 0.501 0.789 87.3/87.2 55.4 ∆ SOT A ↓11.6% ↑7.4% ↑0.9%/1.0% ↑2.7% ↓4.8% ↑2.2% ↑1.1%/1.1% ↑0.5% of the state-of-the-art open-source LLMs in the natural language processing community. Inherited from LLaMA2, d t is set to 4096, and d m varies depending on the type of features but is consistently set to be less than 128. For performance reasons, we fixed the prompt token length l p to 8 and only prefixed the prompts in the last three layers of the LLM. Moreover, to adapt to the text generation task of LLM pre-training, we formulate the original text input as 'Below is a text that describes a movie. Predict the {task} according to the text. ### Text: {text} ###{task} tendency:' where {text} is the input sentence, {task} varies according to different tasks, e.g. sentiment, humor, confidence.</p><p>The learning rate was set to 0.0001, and the batch size was set to 8 on each GPU. We trained the model on datasets for up to 40 epochs with early stopping. All methods were implemented using the PyTorch framework and mixedprecision with bfloat16 <ref type="bibr" target="#b0">[1]</ref>. Our experiments were conducted on two Nvidia RTX3090Ti GPUs, taking less than Table <ref type="table">3</ref>. The results of our method on URFunny dataset. ↑: the higher the better. Pre means the precision and Rec means the recall. : some of the metrics are not provided by presented papers, we rerun the methods based on public codes. *: SOTA performance.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Models</head><p>URFunny Acc-2/F1(↑) Pre(↑) Rec(↑) TFN <ref type="bibr" target="#b34">[35]</ref> 68.5/68.6 67.9 61.1 MulT <ref type="bibr" target="#b29">[30]</ref> 70.5/70.4 66.4 70.0 MISA <ref type="bibr" target="#b29">[30]</ref> 70.6/70.0 68.9 73.5* BBFN <ref type="bibr" target="#b10">[11]</ref> 71.6/72.0* 69.2* 72.8 DRL <ref type="bibr" target="#b31">[32]</ref> 71.</p><p>8/ ---Ours 74.2/74.2 71.8 77.7 ∆ SOT A (↑) 2.6%/2.2% 2.6% 4.2% Can you feel it? Frozen LLM Frozen LLM ŷ=1.8 y=2.4 It works fine. Frozen LLM Frozen LLM ŷ=2.2 Training Inference an hour when training on the MOSI dataset. 2   </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">Results and Analysis</head><p>Our results, along with comparisons to other approaches, are presented in Table <ref type="table">1</ref>, Table <ref type="table" target="#tab_1">2</ref>, and Table <ref type="table">3</ref>. We benchmark our method against current state-of-theart approaches, including Tensor Fusion Network <ref type="bibr" target="#b34">[35]</ref>, MISA <ref type="bibr" target="#b13">[14]</ref>, and OSAN <ref type="bibr" target="#b20">[21]</ref>. As evident from the tables, our method significantly outperforms the current state-ofthe-art approaches. Specifically, we achieve a Mean Absolute Error (MAE) of 0.619 on the MOSI dataset and 0.501 on the MOSEI dataset for sentiment tendency prediction. In humor detection, we attain an accuracy of 74.2 on the UR-Funny dataset. Furthermore, our method achieves state-ofthe-art performance across all 18 tasks on the POM dataset. 2 The codes for our method will be made public after publication.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.">Ablation and Modality Robustness</head><p>To further assess the effectiveness of our approach, we conducted ablation studies on the MOSI and URFunny datasets.</p><p>Our focus was on studying the impact of the PaFIS module and the involved modalities. In scenarios where the PaFIS module is not employed, the modality features h i a and h i v are directly added to the textual hidden states h i t at arbitrary positions, implying that modality-invariant and specific information is not emphasized. The results are presented in Table <ref type="table" target="#tab_3">4</ref>. The observed performance drop without the PaFIS module emphasizes the crucial role of modality-invariant and specific information in multimodal learning. Through the metrics, we observe that the enhancement in our performance is not solely attributed to LLM; however, the contributions of PaFIS and other modalities should not be underestimated.</p><p>Furthermore, we explored the significance of different modalities in human perception estimation. As evident from the results, both acoustic and facial information (h a , h v ) play crucial roles in perceptual understanding. However, acoustic features tend to contribute more to the predictions than facial features. Additionally, we experimented with fine-tuning the LLM with full modalities but only utilizing texts during inference (as illustrated in Figure <ref type="figure" target="#fig_2">3</ref>). Surprisingly, the performance (shown in Figure <ref type="figure" target="#fig_4">4</ref> with Test a /Test v ablation) remained superior to previous work, as illustrated in Table <ref type="table">1</ref> and <ref type="table">Table 3</ref>. This indicates the robustness of our proposed multimodal prompting strategy in scenarios where modalities are absent, which is common in real-time applications.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.">Cross Dataset Evaluation</head><p>As some datasets provide the same kind of acoustic and facial features, we conducted cross-dataset evaluation experiments. Two models were trained on the MOSEI dataset: model1 was trained with COVAREP <ref type="bibr" target="#b4">[5]</ref> (a) and Facet <ref type="bibr" target="#b6">[7]</ref> (v) features, while model2 was trained with COVAREP <ref type="bibr" target="#b4">[5]</ref> (a) and OpenSMILE <ref type="bibr" target="#b7">[8]</ref> (v) features. After training, the models were directly tested on the MOSI and POM datasets, which provide the same type of features as the two models above, respectively. As indicated in Table <ref type="table" target="#tab_4">5</ref>, the results remained competitive with previous approaches. This suggests that our proposed approach facilitates generalization capabilities in perception understanding.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3.">Impact of Prompt Scales</head><p>As the LLM is frozen when performing multimodal prompting, the prompts play a crucial role in the final performance. Therefore, we studied the influence of prompt scales, including prompt length and prompt depth.</p><p>Prompt Length: Figure <ref type="figure" target="#fig_4">4</ref>(a) illustrates the effect of prompt length on our proposed method. The experiments were conducted on the MOSI and URFunny datasets.  Longer prompt lengths indicate stronger fitting ability but come with a greater computational burden and a risk of overfitting. We observed that the best results were achieved with a prompt length (l p ) set between 8 and 10. Prompt Depth: In Figure <ref type="figure" target="#fig_4">4</ref>(b), we showcase the effect of different prompt depths on predictions. In LLM, we consistently prompt the last D layers, as deeper features contain richer semantic information and are more conducive to multimodal learning. The experiments were conducted on the MOSI dataset. Results demonstrate that performance is optimal when the prompt depth is set to 3. Any increase or decrease in the depth of prompts results in reduced performance. An increase in prompt depth leads to overfitting, while shallower prompts can lead to underfitting. We present not only the performance on the test set but also the results on the training set. Interestingly, the model fails to fit on the training set when prompts are deeper than 15 (D &gt; 15). We attribute this to the scale of data in down-</p><p>1 2 4 6 8 10 12 14 16 18 20 (a) Prompt length 0.600 0.625 0.650 0.675 0.700 0.725 0.750 0.775 MOSI (MAE) 66 68 70 72 74 URFunny (Acc-2) MOSI URFunny 1 2 3 4 5 6 8 10 12 14 16 18 20 24 28 32 (b) Prompt depth(D) 0.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4  stream tasks. A surplus of tunable parameters relative to the data scale eventually hampers model fitting.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>MOSI-Train</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>MOSI-Test MOSI-Train</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.4.">Selection of Acoustic &amp; Facial Encoders</head><p>As evident from the ablation studies presented in Table <ref type="table" target="#tab_3">4</ref>, acoustic and facial features play a significant role in perception understanding. Consequently, we investigated the impact of different encoders for modality features other than texts. Four types of encoders were employed: LSTM <ref type="bibr" target="#b14">[15]</ref>, GRU <ref type="bibr" target="#b3">[4]</ref>, convolution, and Transformer encoders <ref type="bibr" target="#b30">[31]</ref>. The findings in Table <ref type="table" target="#tab_5">6</ref> indicate that Transformer yields the best results, while LSTM and GRU exhibit slightly inferior performance. Interestingly, the convolution encoders produce the poorest results, even worse than the text-only model in Table <ref type="table" target="#tab_3">4</ref>. This suggests that convolution not only fails to extract effective information but also, at times, has a negative impact on LLM.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.">Conclusion</head><p>This paper introduced a novel multimodal prompting strategy for Large Language Models (LLMs), leveraging the Parameter-Free Invariant and Specific prompt generation module (PaFIS). The PaFIS module generates learnable prompts that integrate modality-invariant and specific information, enabling LLMs to effectively utilize information from various modalities. Experimental results on four public datasets, including MOSI, MOSEI, URFunny, and POM, showcased the effectiveness of our proposed method. Despite these positive outcomes, our approach is susceptible to overfitting due to the potent representation capability of LLMs. Future research will focus on refining strategies to seamlessly integrate multimodal signals into LLMs while addressing overfitting concerns.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 .</head><label>1</label><figDesc>Figure 1. The comparison of previous modality-invariant ( ) and specific (∆ ⋆) information learning(a) and our proposed multimodal prompting strategy(b), in which the modality-invariant and specific information are integrated.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 .</head><label>2</label><figDesc>Figure2. The pipeline of our proposed method. The whole LLM is frozen while the facial and acoustic features are context modeled by respective transformer encoders. In each prompting layer i, textual(h i t ), facial(h i v ) and acoustic(h i a ) features are fed to Parameterfree invariant and specific prompt generation module(PaFIS). In PaFIS, the modality-invariant and specific information are integrated into learnable tokens p i .</figDesc><graphic coords="3,108.56,193.92,146.72,63.96" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 .</head><label>3</label><figDesc>Figure 3. The illustration of modality absence inference(the case in figure is for sentiment analysis). The model is tuned in with multimodal inputs(up) but without multimodal signals for inference(down).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 4 .</head><label>4</label><figDesc>Figure 4. The impact of prompt scales to the final predictions. (a) The impact of prompt length. (b) The impact of prompt depth(D).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 .</head><label>2</label><figDesc>The results of our method on POM dataset. ↓: the lower the better; ↑: the higher the better. Con, Pas, Voi, Dom, Cre, Viv, Exp, Ent, Per, Res, Tru, Rel, Out, Tho, Ner, Hum, Laz, Sen mean for confident, passionate, voice pleasant, dominant, credible, vivid, expertise, entertaining, persuasion, reserved, trusting, relaxed, outgoing, thorough, nervous, humorous, laziness, sentiment, respectively. means that the metrics are not provided in presented papers, we rerun the methods based on public codes. *: previous SOTA method.</figDesc><table><row><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell cols="4">(a) Task name with MAE metric.</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Methods</cell><cell cols="9">Task Name [MAE(↓) metric] Con Pas Voi Dom Cre Viv Exp Ent Per Res Tru</cell><cell>Rel</cell><cell cols="4">Out Tho Ner Hum Laz Sen</cell></row><row><cell cols="15">MFN[36] 0.952 0.993 0.882 0.835 0.903 0.908 0.886 0.913 0.981 0.821 0.521 0.566 0.679 0.665 0.654 0.727 0.911 0.742</cell></row><row><cell cols="15">MulT[30]  *  0.844 0.879 0.791 0.766 0.804 0.877 0.830 0.900 0.852 0.745 0.500 0.638 0.622 0.641 0.634 0.747 0.857 0.761</cell></row><row><cell>Ours</cell><cell cols="14">0.810 0.821 0.731 0.722 0.792 0.783 0.777 0.821 0.801 0.699 0.443 0.500 0.527 0.592 0.510 0.603 0.731 0.736</cell></row><row><cell cols="15">∆ SOT A (↓) 4.0% 6.6% 7.6% 5.7% 1.5% 10.7% 6.4% 8.8% 6.0% 6.2% 11.4% 21.6% 15.3% 7.6% 19.6% 17.1% 14.7% 0.8%</cell></row><row><cell></cell><cell cols="4">(b) 9 POM tasks with Acc-7 metric.</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell cols="6">(c) 9 POM tasks with Acc-5 metric.</cell></row><row><cell>Methods</cell><cell cols="7">Task Name [Acc-7(↑) metric] Con Pas Voi Dom Cre Viv Exp Ent Sen</cell><cell>Methods</cell><cell cols="6">Task Name [Acc-5(↑) metric] Per Res Tru Rel Out Tho Ner Hum Laz</cell></row><row><cell>SVM</cell><cell>26.6 20.7</cell><cell>-</cell><cell>35.0 25.1</cell><cell>-</cell><cell>-</cell><cell>31.5</cell><cell>-</cell><cell>SVM</cell><cell cols="3">28.1 34.0 50.2 49.8</cell><cell>-</cell><cell>-</cell><cell>41.4 36.0</cell><cell>-</cell></row><row><cell>TFN[35]</cell><cell cols="7">24.1 31.0 38.7 34.5 24.6 39.9 32.0 29.1 41.1</cell><cell>TFN[35]</cell><cell cols="6">27.6 30.5 38.9 35.5 44.3 50.5 42.4 33.0 38.4</cell></row><row><cell cols="8">MFN[36] 34.5 35.5 37.4 41.9 34.5 36.9 36.0 37.9 52.0</cell><cell cols="7">MFN[36] 34.0 38.4 57.1 53.2 46.8 47.3 47.8 47.3 37.2</cell></row><row><cell cols="2">MARN[37] 29.1 33.0</cell><cell>-</cell><cell>38.4 31.5</cell><cell>-</cell><cell>-</cell><cell>33.5</cell><cell>-</cell><cell cols="4">MARN[37] 31.0 36.9 55.7 52.2</cell><cell>-</cell><cell>-</cell><cell>47.3 44.8</cell><cell>-</cell></row><row><cell cols="8">MulT[30]  *  39.0 40.2 43.6 39.2 40.5 38.8 43.1 40.9 57.8</cell><cell cols="7">MulT[30]  *  37.8 46.6 57.1 53.0 54.2 56.4 50.9 48.8 41.3</cell></row><row><cell>Ours</cell><cell cols="7">43.1 44.2 45.1 43.9 44.5 47.0 44.5 43.8 69.2</cell><cell>Ours</cell><cell cols="6">42.9 48.4 62.1 60.1 55.4 58.6 52.5 51.7 46.3</cell></row><row><cell cols="8">∆ SOT A (↑) 4.1% 4.0% 1.5% 4.7% 4.0% 8.2% 1.4% 2.9% 11.4%</cell><cell cols="7">∆ SOT A (↑) 5.1% 1.8% 5.0% 6.9% 1.2% 2.2% 1.6% 2.9% 5.0%</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 4 .</head><label>4</label><figDesc>The ablation studies on MOSI and URFunny dataset. ha and hv means whether we use the acoustic or facial modality features. PaFIS means whether the modality-invariant and specific information are addressed during tuning. Testa or Testv mean whether to use acoustic or visual features during inference and testing.</figDesc><table><row><cell></cell><cell>Ablations</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell>MOSI</cell><cell></cell><cell cols="2">URFunny</cell></row><row><cell cols="10">PaFIS h a h v Testa Testv MAE(↓) Corr(↑) Acc-2/F1(↑) Acc-7(↑) Acc-2(↑) F1(↑)</cell></row><row><cell></cell><cell></cell><cell></cell><cell></cell><cell>0.689</cell><cell>0.840</cell><cell>82.2/82.2</cell><cell>46.9</cell><cell>72.1</cell><cell>72.1</cell></row><row><cell>✓</cell><cell>✓</cell><cell>✓</cell><cell></cell><cell>0.639</cell><cell>0.844</cell><cell>83.7/83.7</cell><cell>48.2</cell><cell>73.0</cell><cell>72.9</cell></row><row><cell>✓</cell><cell>✓</cell><cell></cell><cell>✓</cell><cell>0.644</cell><cell>0.841</cell><cell>82.2/83.9</cell><cell>47.1</cell><cell>71.1</cell><cell>71.1</cell></row><row><cell></cell><cell>✓ ✓</cell><cell>✓</cell><cell>✓</cell><cell>0.630</cell><cell>0.843</cell><cell>84.4/84.3</cell><cell>47.9</cell><cell>72.9</cell><cell>71.4</cell></row><row><cell>✓</cell><cell>✓ ✓</cell><cell></cell><cell></cell><cell>0.655</cell><cell>0.820</cell><cell>82.8/82.6</cell><cell>45.4</cell><cell>71.8</cell><cell>71.8</cell></row><row><cell>✓</cell><cell>✓ ✓</cell><cell>✓</cell><cell></cell><cell>0.638</cell><cell>0.839</cell><cell>83.4/83.5</cell><cell>46.9</cell><cell>73.4</cell><cell>73.3</cell></row><row><cell>✓</cell><cell>✓ ✓</cell><cell></cell><cell>✓</cell><cell>0.641</cell><cell>0.830</cell><cell>83.0/83.0</cell><cell>46.1</cell><cell>72.6</cell><cell>72.5</cell></row><row><cell>✓</cell><cell>✓ ✓</cell><cell>✓</cell><cell>✓</cell><cell>0.619</cell><cell>0.860</cell><cell>86.5/86.5</cell><cell>49.3</cell><cell>74.2</cell><cell>74.2</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 5 .</head><label>5</label><figDesc>The results of cross dataset evaluation on MOSI and POM dataset. On POM dataset, we only evaluate on the sentiment analysis task.(a) The results of our method on MOSI dataset when training on MOSEI.</figDesc><table><row><cell>Methods</cell><cell cols="4">MAE(↓) Corr(↑) Acc-2/F1(↑) Acc-7(↑)</cell></row><row><cell>MMIM[12]</cell><cell>0.700</cell><cell>0.800</cell><cell>84.1/84.0</cell><cell>46.6</cell></row><row><cell>OSAN[21]</cell><cell>0.713</cell><cell>0.801</cell><cell>83.1/83.0</cell><cell>46.3</cell></row><row><cell>Ours</cell><cell>0.719</cell><cell>0.802</cell><cell>83.2/83.3</cell><cell>46.4</cell></row><row><cell cols="5">(b) The results of our method on POM dataset(sentiment regression task)</cell></row><row><cell cols="2">when training on MOSEI.</cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>Method</cell><cell cols="2">MAE(↓) Acc-7(↑)</cell><cell></cell></row><row><cell></cell><cell>MFN[36]</cell><cell>0.742</cell><cell>52.0</cell><cell></cell></row><row><cell></cell><cell>MulT[30]</cell><cell>0.761</cell><cell>57.8</cell><cell></cell></row><row><cell></cell><cell>Ours</cell><cell>0.759</cell><cell>60.1</cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 6 .</head><label>6</label><figDesc>The impact of different encoders for acoustic and facial encoders. The experiments are conducted on MOSI dataset.</figDesc><table><row><cell>Encoders</cell><cell cols="4">MAE(↓) Corr(↑) Acc-2/F1(↑) Acc-7(↑)</cell></row><row><cell>Convolution</cell><cell>0.710</cell><cell>0.839</cell><cell>81.8/81.7</cell><cell>46.7</cell></row><row><cell>LSTM</cell><cell>0.625</cell><cell>0.851</cell><cell>85.2/85.1</cell><cell>47.8</cell></row><row><cell>GRU</cell><cell>0.622</cell><cell>0.849</cell><cell>85.0/85.1</cell><cell>48.0</cell></row><row><cell>Transformer</cell><cell>0.619</cell><cell>0.860</cell><cell>86.5/86.5</cell><cell>49.3</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>The Pearson Correlation Coefficient is employed in our work.</p></note>
+		</body>
+		<back>
+
+			
+			<div type="acknowledgement">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Acknowledgments</head><p>The acknowledgments and sponsors are hidden for doubleblind review.</p></div>
+			</div>
+
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Tensorflow: Large-scale machine learning on heterogeneous distributed systems</title>
+		<author>
+			<persName><forename type="first">Martín</forename><surname>Abadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Barham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eugene</forename><surname>Brevdo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhifeng</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Craig</forename><surname>Citro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Greg</forename><forename type="middle">S</forename><surname>Corrado</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>Davis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Dean</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthieu</forename><surname>Devin</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1603.04467</idno>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Role of chat gpt in public health</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Som</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Biswas</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Annals of biomedical engineering</title>
+		<imprint>
+			<biblScope unit="volume">51</biblScope>
+			<biblScope unit="issue">5</biblScope>
+			<biblScope unit="page" from="868" to="869" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Data distributional properties drive emergent few-shot learning in transformers</title>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">Y</forename><surname>Stephanie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Chan</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Santoro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jane</forename><forename type="middle">X</forename><surname>Andrew K Lampinen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaditya</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierre</forename><forename type="middle">H</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jay</forename><surname>Richemond</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Felix</forename><surname>Mc-Clelland</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hill</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2205.05055</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Learning phrase representations using rnn encoder-decoder for statistical machine translation</title>
+		<author>
+			<persName><forename type="first">Kyunghyun</forename><surname>Cho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bart</forename><surname>Merrienboer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caglar</forename><surname>Gulcehre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fethi</forename><surname>Bougares</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Holger</forename><surname>Schwenk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoshua</forename><surname>Bengio</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">EMNLP</title>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Covarep-a collaborative voice analysis repository for speech technologies</title>
+		<author>
+			<persName><forename type="first">Gilles</forename><surname>Degottex</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Kane</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Drugman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tuomo</forename><surname>Raitio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefan</forename><surname>Scherer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2014 ieee international conference on acoustics, speech and signal processing (icassp)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="page" from="960" to="964" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">A transformer-based joint-encoding for emotion recognition and sentiment analysis</title>
+		<author>
+			<persName><forename type="first">Jean-Benoit</forename><surname>Delbrouck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noé</forename><surname>Tits</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mathilde</forename><surname>Brousmiche</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stéphane</forename><surname>Dupont</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Second Grand-Challenge and Workshop on Multimodal Language (Challenge-HML)</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="1" to="7" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">What the face reveals: Basic and applied studies of spontaneous expression using the Facial Action Coding System (FACS)</title>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Ekman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erika</forename><forename type="middle">L</forename><surname>Rosenberg</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1997">1997</date>
+			<publisher>Oxford University Press</publisher>
+			<pubPlace>USA</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Opensmile: the munich versatile and fast open-source audio feature extractor</title>
+		<author>
+			<persName><forename type="first">Florian</forename><surname>Eyben</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Wöllmer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Björn</forename><surname>Schuller</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 18th ACM international conference on Multimedia</title>
+		<meeting>the 18th ACM international conference on Multimedia</meeting>
+		<imprint>
+			<date type="published" when="2010">2010</date>
+			<biblScope unit="page" from="1459" to="1462" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Modelling emotional trajectories of individuals in an online chat</title>
+		<author>
+			<persName><forename type="first">Maros</forename><surname>Galik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefan</forename><surname>Rank</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Multiagent System Technologies: 10th German Conference, MATES 2012</title>
+		<meeting><address><addrLine>Trier, Germany</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2012">October 10-12, 2012. 2012</date>
+			<biblScope unit="volume">10</biblScope>
+			<biblScope unit="page" from="96" to="105" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Multimodal affective analysis using hierarchical attention strategy with word-level alignment</title>
+		<author>
+			<persName><forename type="first">Yue</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kangning</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shiyu</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuhong</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ivan</forename><surname>Marsic</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 56th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Melbourne, Australia</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="2225" to="2235" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Bi-bimodal modality fusion for correlation-controlled multimodal sentiment analysis</title>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hui</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Gelbukh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Zadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis-Philippe</forename><surname>Morency</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soujanya</forename><surname>Poria</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 International Conference on Multimodal Interaction</title>
+		<meeting>the 2021 International Conference on Multimodal Interaction</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="page">6</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Improving multimodal fusion with hierarchical mutual information maximization for multimodal sentiment analysis</title>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hui</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soujanya</forename><surname>Poria</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="page">7</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Ur-funny: A multimodal language dataset for understanding humor</title>
+		<author>
+			<persName><forename type="first">Md</forename><surname>Kamrul Hasan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wasifur</forename><surname>Rahman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amirali</forename><surname>Bagher Zadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianyuan</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Md</forename><surname>Iftekhar Tanveer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis-Philippe</forename><surname>Morency</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammed</forename><forename type="middle">Ehsan</forename><surname>Hoque</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="2046" to="2056" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Misa: Modality-invariant and-specific representations for multimodal sentiment analysis</title>
+		<author>
+			<persName><forename type="first">Devamanyu</forename><surname>Hazarika</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roger</forename><surname>Zimmermann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soujanya</forename><surname>Poria</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 28th ACM International Conference on Multimedia</title>
+		<meeting>the 28th ACM International Conference on Multimedia</meeting>
+		<imprint>
+			<date type="published" when="2006">2020. 1, 2, 6</date>
+			<biblScope unit="page" from="1122" to="1131" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Long short-term memory</title>
+		<author>
+			<persName><forename type="first">Sepp</forename><surname>Hochreiter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jürgen</forename><surname>Schmidhuber</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Neural computation</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page" from="1735" to="1780" />
+			<date type="published" when="1997">1997</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Lora: Lowrank adaptation of large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Edward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phillip</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zeyuan</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuanzhi</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shean</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Multi-modal prompt learning</title>
+		<author>
+			<persName><forename type="first">Muhammad</forename><surname>Uzair Khattak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hanoona</forename><surname>Rasheed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Muhammad</forename><surname>Maaz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Salman</forename><surname>Khan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fahad</forename><surname>Shahbaz Khan</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Maple</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="19113" to="19122" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Grounding language models to images for multimodal inputs and outputs</title>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Yu Koh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruslan</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Fried</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th International Conference on Machine Learning</title>
+		<meeting>the 40th International Conference on Machine Learning</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Prefix-tuning: Optimizing continuous prompts for generation</title>
+		<author>
+			<persName><forename type="first">Lisa</forename><surname>Xiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</title>
+		<meeting>the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="4582" to="4597" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Fewshot parameter-efficient fine-tuning is better and cheaper than in-context learning</title>
+		<author>
+			<persName><forename type="first">Haokun</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Derek</forename><surname>Tam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammed</forename><surname>Muqeeth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jay</forename><surname>Mohta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tenghao</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohit</forename><surname>Bansal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Colin</forename><forename type="middle">A</forename><surname>Raffel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<date type="published" when="1950">1950-1965, 2022. 2</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Osan: A one-stage alignment network to unify multimodal alignment and unsupervised domain adaptation</title>
+		<author>
+			<persName><forename type="first">Ye</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lingfeng</forename><surname>Qiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Changchong</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Di</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chen</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haoyuan</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bo</forename><surname>Ren</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2007">2023. 2, 5, 6, 7</date>
+			<biblScope unit="page" from="3551" to="3560" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Linearly mapping from image to text space</title>
+		<author>
+			<persName><forename type="first">Jack</forename><surname>Merullo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Castricato</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carsten</forename><surname>Eickhoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellie</forename><surname>Pavlick</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Computational analysis of persuasiveness in social multimedia: A novel dataset and multimodal prediction approach</title>
+		<author>
+			<persName><forename type="first">Sunghyun</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suk</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Moitreya</forename><surname>Shim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenji</forename><surname>Chatterjee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis-Philippe</forename><surname>Sagae</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Morency</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 16th International Conference on Multimodal Interaction</title>
+		<meeting>the 16th International Conference on Multimodal Interaction</meeting>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="page" from="50" to="57" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Chatgpt: A comprehensive review on background, applications, key challenges, bias, ethics, limitations and future scope. Internet of Things and Cyber-Physical Systems</title>
+		<author>
+			<persName><forename type="first">Partha</forename><surname>Pratim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ray</forename></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Supervised feature selection via dependence estimation</title>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Smola</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Gretton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karsten</forename><forename type="middle">M</forename><surname>Borgwardt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Justin</forename><surname>Bedo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 24th international conference on Machine learning</title>
+		<meeting>the 24th international conference on Machine learning</meeting>
+		<imprint>
+			<date type="published" when="2007">2007</date>
+			<biblScope unit="page" from="823" to="830" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Cubemlp: An mlp-based model for multimodal sentiment analysis and depression estimation</title>
+		<author>
+			<persName><forename type="first">Hongyi</forename><surname>Hao Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaqing</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yen-Wei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lanfen</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th ACM International Conference on Multimedia</title>
+		<meeting>the 30th ACM International Conference on Multimedia<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page">5</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Modality-invariant temporal representation learning for multimodal sentiment classification</title>
+		<author>
+			<persName><forename type="first">Jiaqing</forename><surname>Hao Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yen-Wei</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lanfen</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Information Fusion</title>
+		<imprint>
+			<biblScope unit="volume">91</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="504" to="514" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Learning relationships between text, audio, and video via deep canonical correlation for multimodal language analysis</title>
+		<author>
+			<persName><forename type="first">Zhongkai</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prathusha</forename><surname>Sarma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Sethares</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yingyu</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="8992" to="8999" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<title level="m" type="main">Llama 2: Open foundation and fine-tuned chat models</title>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amjad</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolay</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prajjwal</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shruti</forename><surname>Bhosale</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page">4</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Multimodal transformer for unaligned multimodal language sequences</title>
+		<author>
+			<persName><forename type="first">Yao-Hung Hubert</forename><surname>Tsai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaojie</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><forename type="middle">Pu</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zico Kolter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis-Philippe</forename><surname>Morency</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruslan</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the conference. Association for Computational Linguistics. Meeting</title>
+		<meeting>the conference. Association for Computational Linguistics. Meeting</meeting>
+		<imprint>
+			<publisher>NIH Public Access</publisher>
+			<date type="published" when="2007">2019. 2, 5, 6, 7</date>
+			<biblScope unit="page" from="6558" to="6569" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niki</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jakob</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Llion</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Łukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2008">2017. 2, 3, 8</date>
+			<biblScope unit="page" from="5998" to="6008" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Disentangled representation learning for multimodal emotion recognition</title>
+		<author>
+			<persName><forename type="first">Dingkang</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuai</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haopeng</forename><surname>Kuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yangtao</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lihua</forename><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th ACM International Conference on Multimedia</title>
+		<meeting>the 30th ACM International Conference on Multimedia</meeting>
+		<imprint>
+			<date type="published" when="2006">2022. 1, 2, 6</date>
+			<biblScope unit="page" from="1642" to="1651" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Re3: Generating longer stories with recursive reprompting and revision</title>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuandong</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nanyun</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Klein</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2022 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="4393" to="4479" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Multimodal sentiment intensity analysis in videos: Facial gestures and verbal messages</title>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Zadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rowan</forename><surname>Zellers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eli</forename><surname>Pincus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis-Philippe</forename><surname>Morency</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Intelligent Systems</title>
+		<imprint>
+			<biblScope unit="volume">31</biblScope>
+			<biblScope unit="issue">6</biblScope>
+			<biblScope unit="page" from="82" to="88" />
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Tensor fusion network for multimodal sentiment analysis</title>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Zadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Minghai</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soujanya</forename><surname>Poria</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Cambria</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis-Philippe</forename><surname>Morency</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2017 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2017 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page">6</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">Memory fusion network for multi-view sequential learning</title>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Zadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><forename type="middle">Pu</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Navonil</forename><surname>Mazumder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soujanya</forename><surname>Poria</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Cambria</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis-Philippe</forename><surname>Morency</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Thirty-Second AAAI Conference on Artificial Intelligence and Thirtieth Innovative Applications of Artificial Intelligence Conference and Eighth AAAI Symposium on Educational Advances in Artificial Intelligence</title>
+		<meeting>the Thirty-Second AAAI Conference on Artificial Intelligence and Thirtieth Innovative Applications of Artificial Intelligence Conference and Eighth AAAI Symposium on Educational Advances in Artificial Intelligence</meeting>
+		<imprint>
+			<publisher>AAAI Press</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="page">7</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Multi-attention recurrent network for human communication comprehension</title>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Zadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><forename type="middle">Pu</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soujanya</forename><surname>Poria</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prateek</forename><surname>Vij</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Cambria</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis-Philippe</forename><surname>Morency</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Thirty-Second AAAI Conference on Artificial Intelligence and Thirtieth Innovative Applications of Artificial Intelligence Conference and Eighth AAAI Symposium on Educational Advances in Artificial Intelligence</title>
+		<meeting>the Thirty-Second AAAI Conference on Artificial Intelligence and Thirtieth Innovative Applications of Artificial Intelligence Conference and Eighth AAAI Symposium on Educational Advances in Artificial Intelligence</meeting>
+		<imprint>
+			<publisher>AAAI Press</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="5642" to="5649" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Multimodal language analysis in the wild: Cmu-mosei dataset and interpretable dynamic fusion graph</title>
+		<author>
+			<persName><forename type="first">Amirali</forename><surname>Bagher Zadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><forename type="middle">Pu</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soujanya</forename><surname>Poria</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Cambria</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis-Philippe</forename><surname>Morency</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 56th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="2236" to="2246" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Central moment discrepancy (cmd) for domain-invariant representation learning</title>
+		<author>
+			<persName><forename type="first">Werner</forename><surname>Zellinger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Grubinger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edwin</forename><surname>Lughofer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Natschläger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Susanne</forename><surname>Saminger-Platz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 5th International Conference on Learning Representations</title>
+		<meeting>the 5th International Conference on Learning Representations</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<monogr>
+		<title level="m" type="main">Llama-adapter: Efficient fine-tuning of language models with zero-init attention</title>
+		<author>
+			<persName><forename type="first">Renrui</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaming</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aojun</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangfei</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shilin</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pan</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongsheng</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Qiao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.16199</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<monogr>
+		<title level="m" type="main">Opt: Open pre-trained transformer language models</title>
+		<author>
+			<persName><forename type="first">Susan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Roller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikel</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Moya</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuohui</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Dewan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mona</forename><surname>Diab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xian</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xi</forename><surname>Victoria Lin</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2205.01068</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

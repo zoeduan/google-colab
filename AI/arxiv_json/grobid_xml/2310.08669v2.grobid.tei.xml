@@ -1,0 +1,1523 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Multimodal Large Language Model for Visual Navigation</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-11-06">6 Nov 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Yao-Hung</forename><forename type="middle">Hubert</forename><surname>Tsai</surname></persName>
+							<email>yaohungtsai@apple.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of North Carolina</orgName>
+								<address>
+									<settlement>Chapel Hill</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Vansh</forename><surname>Dhar</surname></persName>
+							<email>vdhar@apple.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of North Carolina</orgName>
+								<address>
+									<settlement>Chapel Hill</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Hugues</forename><surname>Thomas</surname></persName>
+							<email>hthomas23@apple.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of North Carolina</orgName>
+								<address>
+									<settlement>Chapel Hill</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Jialu</forename><surname>Li</surname></persName>
+							<email>jialuli@cs.unc.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of North Carolina</orgName>
+								<address>
+									<settlement>Chapel Hill</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Bowen</forename><surname>Zhang</surname></persName>
+							<email>bowenzhang4@apple.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of North Carolina</orgName>
+								<address>
+									<settlement>Chapel Hill</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Jian</forename><surname>Zhang</surname></persName>
+							<email>jianz@apple.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of North Carolina</orgName>
+								<address>
+									<settlement>Chapel Hill</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">†</forename><surname>Apple</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of North Carolina</orgName>
+								<address>
+									<settlement>Chapel Hill</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Multimodal Large Language Model for Visual Navigation</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-11-06">6 Nov 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">532A3C555B62783E0878D066FC267714</idno>
+					<idno type="arXiv">arXiv:2310.08669v2[cs.CV]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:31+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Recent efforts to enable visual navigation using large language models have mainly focused on developing complex prompt systems. These systems incorporate instructions, observations, and history into massive text prompts, which are then combined with pre-trained large language models to facilitate visual navigation. In contrast, our approach aims to fine-tune large language models for visual navigation without extensive prompt engineering. Our design involves a simple text prompt, current observations, and a history collector model that gathers information from previous observations as input. For output, our design provides a probability distribution of possible actions that the agent can take during navigation. We train our model using human demonstrations and collision signals from the Habitat-Matterport 3D Dataset (HM3D). Experimental results demonstrate that our method outperforms state-of-theart behavior cloning methods and effectively reduces collision rates.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Introduction</head><p>Visual navigation is a crucial feature for mobile agents, allowing them to process visual inputs and generate corresponding actions <ref type="bibr" target="#b1">[2]</ref>. This technology finds applications in various fields, including elder care <ref type="bibr" target="#b29">[30]</ref>, autonomous driving <ref type="bibr" target="#b43">[44]</ref>, and logistics delivery <ref type="bibr" target="#b7">[8]</ref>. However, solving visual navigation is a complex task that requires a comprehensive understanding of different environments and the implementation of safety measures to protect both the agent and the surrounding objects <ref type="bibr" target="#b24">[25]</ref>.</p><p>In recent years, the emergence of large language models (LLMs) has transformed artificial intelligence and business <ref type="bibr" target="#b10">[11]</ref>. These models have found applications in document drafting <ref type="bibr" target="#b0">[1]</ref>, storytelling <ref type="bibr" target="#b34">[35]</ref>, grammar checking <ref type="bibr" target="#b39">[40]</ref>, and more. Researchers have also explored the use of LLMs for visual navigation, focusing on developing complex prompt systems <ref type="bibr" target="#b15">[16,</ref><ref type="bibr" target="#b31">32,</ref><ref type="bibr" target="#b42">43,</ref><ref type="bibr" target="#b44">45]</ref>. These systems in- corporate instructions, observations, and history into text prompts, which are then combined with pre-trained LLMs to facilitate visual navigation. However, a limitation of this approach is that pre-trained LLMs are typically trained only with text data and may not be best suited for tasks that require an understanding of other modalities <ref type="bibr" target="#b38">[39]</ref>, such as visual observations, GPS information, and compass data.</p><p>To address this limitation, recent work has focused on fine-tuning LLMs using additional image-text pairs <ref type="bibr" target="#b9">[10,</ref><ref type="bibr" target="#b21">22,</ref><ref type="bibr" target="#b22">23,</ref><ref type="bibr" target="#b45">46]</ref>. This approach enables LLMs to answer questions about images <ref type="bibr" target="#b9">[10,</ref><ref type="bibr" target="#b21">22,</ref><ref type="bibr" target="#b45">46]</ref> or generate stories that interleave text and images <ref type="bibr" target="#b22">[23]</ref>. Building upon this, we propose to fine-tune LLMs specifically for visual navigation using observation-action pairs. During inference, LLMs directly process observations and generate low-level guidelines for the agent to follow, eliminating the need for extensive prompt system design.</p><p>Our approach involves utilizing a simple text prompt, current observations (including visual inputs, GPS, and compass values), and a history collector model that gathers information from previous observations. These inputs are transformed into prompt tokens, current observation tokens, and history tokens. The large language model then processes these tokens and outputs a probability distribution of possible actions for the agent during navigation.</p><p>For training, we use human demonstrations on the Habitat-Matterport 3D Dataset (HM3D) <ref type="bibr" target="#b27">[28]</ref> to form the probability of actions based on 1) human-demonstrated actions, 2) action probability distributions from state-of-the-art behavior cloning methods, and 3) collision signals.</p><p>In our experiments, we compare our approach with stateof-the-art behavior cloning methods and observe significant improvements in object goal navigation. We also find that having the large language model output a probability distribution over actions leads to better performance compared to directly outputting the action itself. Additionally, by considering collision signals during training, we observe a decrease in the number of collisions during visual navigation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Related Work</head><p>This paper covers a wide range of literature. Below, we will discuss them in various topics.</p><p>Visual Navigation. There are three important components in visual navigation: map building, localization, and path planning <ref type="bibr" target="#b1">[2]</ref>. Map building involves the agent creating a map of the environment, localization involves the agent determining its position on the map, and path planning involves the agent deciding its actions based on the current context. In some scenarios where a pre-built map already exists, approaches like RTAB-Map <ref type="bibr" target="#b19">[20]</ref> perform localization and path planning. However, in most real-world scenarios, maps are not provided, and SLAM systems <ref type="bibr" target="#b26">[27]</ref> offer a solution by simultaneously building maps and performing localization. While classic approaches like orb-SLAM <ref type="bibr" target="#b25">[26]</ref> or LSD-SLAM <ref type="bibr" target="#b13">[14]</ref> perform well, there is a growing trend of incorporating differentiable models, such as deep neural networks, into SLAM systems <ref type="bibr" target="#b3">[4,</ref><ref type="bibr" target="#b6">7]</ref>. Furthermore, recent work has demonstrated that explicit map building and path planning are not necessary, and directly training reactive policies using recurrent neural networks like GRU <ref type="bibr" target="#b8">[9]</ref> can achieve excellent performance <ref type="bibr" target="#b5">[6,</ref><ref type="bibr" target="#b28">29]</ref>. Our method is similar to these approaches, but we use LLMs to train a reactive policy. During inference, our method outputs a probability distribution for the actions, and we select the action with the highest probability.</p><p>Large Language Models for Visual Navigation. There have been several studies on visual navigation using LLMs. LM-Nav <ref type="bibr" target="#b31">[32]</ref> utilizes LLMs to extract landmarks from free-form navigation instructions. These landmarks are then passed to a vision-and-language model for grounding and a visual navigation model for navigation planning. L3MVN <ref type="bibr" target="#b42">[43]</ref> proposes a method that calculates the entropy of objects in each frontier using a semantic segmentation model. This entropy is represented as query strings, and LLMs are used to determine a more relevant frontier. NavGPT <ref type="bibr" target="#b44">[45]</ref> and another recent approach <ref type="bibr" target="#b36">[37]</ref> interact with different visual foundation models to handle multimodal inputs. They also incorporate a history buffer and an LLM summarizer to handle the history, and aggregate information from various sources through a prompt man-ager. However, these approaches heavily rely on prompt engineering for LLMs and do not fine-tune the LLMs. In contrast, our method does not require extensive prompt engineering and directly fine-tunes LLMs for visual navigation policy.</p><p>Multimodal Large Language Models. Performing visual navigation using LLMs requires LLMs to understand modalities beyond text. In this context, we discuss approaches that involve fine-tuning LLMs with image-text pairs to enhance their visual capabilities. MiniGPT4 <ref type="bibr" target="#b45">[46]</ref> proposes fine-tuning the pre-trained Llama <ref type="bibr" target="#b35">[36]</ref> model using curated image-text pairs. It utilizes the visual encoder and q-former from BLIP2 <ref type="bibr" target="#b21">[22]</ref>, adds a trainable linear layer to transform visual features into visual tokens, inserts the visual tokens and text tokens from the text prompt into Llama <ref type="bibr" target="#b35">[36]</ref>, and conducts the training. InstructBlip <ref type="bibr" target="#b9">[10]</ref> extends the idea of MiniGPT4 by training LLMs with highquality image-text pairs. InstructBlip collects 26 publicly available datasets covering various tasks and capabilities and converts them into an instruction tuning format for finetuning LLMs. Similar to MiniGPT4 and InstructBlip, our method involves creating pairs between agent observations and actions, which we use to fine-tune LLMs. We consider observations from the visual image, compass values, and GPS information. Text is used to represent actions, such as "go forward" or "turn right".</p><p>Large Language Models for Robotics. In this discussion, we explore the use of large language models (LLMs) for general robotics control. Palm-e <ref type="bibr" target="#b12">[13]</ref> proposes inputting tokens from various modalities (such as images, neural 3D representations, or states), along with text tokens, into LLMs. The model then generates high-level robotics instructions for tasks such as mobile manipulation, task and motion planning, and tabletop manipulation. In contrast, Instruct2Act <ref type="bibr" target="#b16">[17]</ref> generates Python programs that form a complete perception, planning, and action loop for robotic tasks. Moving further, RT-2 <ref type="bibr" target="#b2">[3]</ref> generates low-level actions for robots, enabling closed-loop control. While this paper does not solve general-purpose robotics tasks, it focuses on visual navigation, which requires exploration in unseen environments, unlike the tasks studied in these works. It is worth noting that our method aligns with the approach of RT-2, as we generate low-level actions (in the form of a probability distribution) for the robot to execute.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Proposed Method</head><p>Our method involves fine-tuning Large Language Models (LLMs) using pairs of observations and actions from a visual navigation agent. Our proposed architecture does the following: firstly, we have an observation encoding model that converts observations into observation tokens; secondly, we have a history collector model that gathers past observations as history and transforms this information into Figure <ref type="figure">2</ref>. Architecture for fine-tuning large language models for visual navigation. The history collector model is responsible for encoding history features from the current observation and past history. The observation encoding model encodes observation features. The projection layer transforms history tokens and observation tokens from history and observation features, respectively. The text prompt is used to provide hints to the large language models (LLMs) for visual navigation. The pre-trained large language model takes text tokens, history tokens, and observation tokens as input, and generates a probability distribution over a set of actions as text output. history tokens. Lastly, we have a pre-trained large language model that takes in text tokens from text prompts, observation tokens, and history tokens. It then outputs a probability distribution over the set of actions. During training, we utilize a human demonstration dataset. We construct the probability distribution using labels from the dataset, action outputs from a state-of-the-art behavior cloning method, and collision signals.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.">Dataset</head><p>Our task is object goal navigation, with object categories including "chair", "bed", "plant", "toilet", "tv monitor", and "sofa". In simple terms, the agent is required to navigate in an environment based on a given object goal. If the agent successfully reaches any objects within a distance of 1 meter that belong to the specified object category, it is considered a success.</p><p>For fine-tuning, we use the human demonstration dataset curated by a recent work <ref type="bibr" target="#b28">[29]</ref> using environments from the Habitat-Matterport 3D Research Dataset (HM3D) <ref type="bibr" target="#b27">[28]</ref> within the Habitat-sim simulator <ref type="bibr" target="#b30">[31]</ref>. The dataset contains 77k human demonstrations from 80 training scenes.</p><p>In the Habitat-sim simulator <ref type="bibr" target="#b30">[31,</ref><ref type="bibr" target="#b33">34]</ref>, we consider the following observations: RGB visual image, compass values, and GPS values. The available actions are: "stop", "go forward by 25 centimeters", "turn right by 30 degrees", "turn left by 30 degrees", "look up by 30 degrees", and "look down by 30 degrees". The simulator also provides collision information. It is important to note that when a collision occurs, the agent remains at the same location in the simulator.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.">Architecture</head><p>We present the architecture in Figure <ref type="figure">2</ref>. The architecture consists of five core modules: the history collector model, the observation encoding model, the projection layers, the text prompt, and the pre-trained large language model. The history collector model is responsible for encoding historical features from the current observation and past history. The observation encoding model encodes observation features. The projection layer transforms history tokens and observation tokens from history and observation features, respectively. The text prompt is used to provide hints to the large language models (LLMs) for visual navigation. The prompt is transformed into text tokens using a text tokenizer. The pre-trained large language model takes text tokens, history tokens, and observation tokens as input and generates a probability distribution over a set of actions as text output.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.1">History Collector Model</head><p>The history collector model generates history features that carry meaningful information from the beginning of a training episode to the current time step. After evaluating different model combinations, we use ResNet-50 <ref type="bibr" target="#b14">[15]</ref> to encode visual features. Linear layers are used to encode GPS, compass values, previous action, and object category into corresponding features. These features are then transformed into history features using GRUs <ref type="bibr" target="#b8">[9]</ref>.</p><p>We pretrain the history collector model using the behavior cloning method described in the paper <ref type="bibr" target="#b28">[29]</ref> on the human demonstration dataset. It is important to note that the history collector model can be seen as a standalone model that generates actions from observations. We will provide further details on its performance in the experimental section. During the fine-tuning of the large language model with visual navigation, the weights of this history collector model remain fixed.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.2">Observation Encoding Model</head><p>We utilize the pre-trained ViT <ref type="bibr" target="#b11">[12]</ref> and the Q-former <ref type="bibr" target="#b21">[22]</ref> from the BLIP-2 model <ref type="bibr" target="#b21">[22]</ref> as our observation encoding model for encoding visual images into our observation features. It is important to note that we have not observed any benefits in including information from GPS, compass values, or previous actions in our observation features. We believe this is because GPS, compass values, and previous actions are only meaningful when considered as a sequence. However, since our observation encoding model is designed to process only the current observation, we have chosen to include only the current visual image. We keep the weights of the observation encoding model fixed when fine-tuning the large language model for visual navigation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.3">Projection Layers</head><p>During the fine-tuning process, only the projection layers are trained. We use the Q-former <ref type="bibr" target="#b21">[22]</ref> followed by a linear layer to project history features into 32 history tokens. Additionally, we use a linear layer to project observation features into 32 observation tokens.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.4">Text Prompt</head><p>We provide a list of text prompts which are paraphrased with each other (using ChatGPT for paraphrasing). An example of the text prompt is:</p><p>"Imagine you are a robot, and you are navigating to find ⟨ Goal ⟩ ⟨ GoalHere ⟩ ⟨ / Goal ⟩ . With current observation ⟨ Img ⟩ ⟨ ImageHere ⟩ ⟨ / Img ⟩ , history tokens ⟨ History ⟩ ⟨ HistoryHere ⟩ ⟨ / History ⟩ , and suggested actions prob-abilities ⟨ ActionProb ⟩ ⟨ ActionProbHere ⟩ ⟨ / ActionProb ⟩ , please plan out your following action."</p><p>In this text prompt, ⟨ GoalHere ⟩ represents the object category. ⟨ ImageHere ⟩ represents the observation tokens. ⟨ HistoryHere ⟩ represents the history tokens. ⟨ ActionProb-Here ⟩ represents the action probability output from the history collector model (See Section 3.2.1). We present it via text, and an example for it is "Stop with probability 0.03, move forward with probability 0.44, turn left with probability 0.28, turn right with probability 0.21, look up with probability 0.03, and look down with probability 0.01"</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.5">Pre-trained Large Language Model</head><p>We consider the pre-trained LLama-13B model <ref type="bibr" target="#b23">[24]</ref> as a large language model that has its weights fixed during the fine-tuning process.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3.">Fine-tuning Paradigm</head><p>We perform 80k iterations for fine-tuning, with each iteration considering a batch size of 6 observation-action pairs. Each episode in the human demonstration contains around 50 to 100 time steps. Therefore, the fine-tuning is conducted over 4.8k to 9.6k episodes out of the total of 77k episodes in our dataset. For the output, we perform the following steps to construct the probability over the set of actions.</p><p>Firstly, we use the state-of-the-art (SOTA) behavior cloning method from the paper <ref type="bibr" target="#b28">[29]</ref> to compute the output probability over the actions, starting from the beginning of an episode until the current observation. We denote this probability as P SOTA .</p><p>Secondly, we construct a one-hot probability vector from the ground truth human action for the current observation. We denote this probability as P gt .</p><p>Thirdly, we merge these two probabilities using hyperparameters 0.8 and 0.2 (we select the combination that yields the best result). We also zero out the actions that cause collisions.</p><p>Finally, we renormalize the probability. The equation can be formulated as: P := Collision check and Renorm(0.8P SOTA + 0.2P gt ).</p><p>An example of the text output for P is "Stop with probability 0.03, move forward with probability 0.55, turn left with probability 0.38, turn right with probability 0.00, look up with probability 0.03, and look down with probability 0.01"</p><p>In this example, the action "turn right" has a probability of 0.00 because we set it to zero due to a detected collision.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">Experiments</head><p>We evaluate our method and compare it with baseline approaches on the Habitat-Matterport 3D Research Dataset (HM3D) <ref type="bibr" target="#b33">[34]</ref>. We use the validation split from the HM3D-Semantics dataset <ref type="bibr" target="#b40">[41]</ref>, which consists of 20 validation scenes. Following the evaluation pipeline of the work <ref type="bibr" target="#b28">[29]</ref>, we report metrics on 2k episodes. Our task is object goal navigation, where our agent starts at a random point within an indoor environment, and explores the environment until it reaches an object of a given object category (within 1 meter distance). The exploration is limited to 500 actions.</p><p>Metrics. We report two metrics: success rate (Success) and soft success rate weighted by path length (SoftSPL). The Success measures the agent's ability to locate the target object goal within the allocated limit of permissible actions. Let d init and d T denote the geodesic distances to the target upon episode start and termination. The SoftSPL for an episode is defined as:</p><formula xml:id="formula_0">SoftSPL = 1 -dT dinit • s max(s,p)</formula><p>, where s and p are the lengths of the shortest path and the path taken by the agent.</p><p>Baselines. We compare four groups of baselines to evaluate our method. In the first group, we compare our method with non-behavior cloning methods. Specifically, we select two representative baselines: reinforcement learning (RL) <ref type="bibr" target="#b40">[41]</ref> and Goal-Oriented Semantic Exploration (Sem-Exp) <ref type="bibr" target="#b4">[5]</ref>. The RL baseline is trained using the DDPPO <ref type="bibr" target="#b37">[38]</ref> method without human demonstrations. On the other hand, SemExp constructs a top-down semantic map by combining the first-person semantic segmentation predictions with depth. It determines an exploration objective by considering the semantic map and the target object using a trained exploration policy. Furthermore, SemExp devises low-level actions to achieve this objective.</p><p>For the second group, we compare our method with state-of-the-art behavior cloning methods. We consider two baselines from the paper <ref type="bibr" target="#b28">[29]</ref>: IL and RL Ft. IL <ref type="bibr" target="#b28">[29]</ref> stands for imitation learning, which is learned purely based on behavior cloning. RL Ft <ref type="bibr" target="#b28">[29]</ref> performs fine-tuning with reinforcement learning on top of the IL method. Note that, in Section 3.2.1, we pre-train our history collector model using the behavior cloning method. Hence, another way to understand our history collector is as the IL <ref type="bibr" target="#b28">[29]</ref> method.</p><p>For the third group, we compare our method with three variants. The first variant involves using the pre-trained multimodal large language model (referred to as LLM no ft ) without fine-tuning to directly output the action for the agent based on the text prompt. We adopt MiniGPT4 <ref type="bibr" target="#b45">[46]</ref> for this variant. The second variant replaces the history collector model with 15 consecutive observations (including images, GPS, compass values, and previous actions) to fine-tune LLMs, denoted as LLM consecutive obs . In the third variant, instead of providing a probability output over ac- For the fourth group, we aim to compare the impact of the collision check in our fine-tuning stage. In Section 3.3, our method sets the probability to zero for the action that leads to a collision during training. In this case, we introduce a variant for the baseline that does not include a collision check, denoted as LLM no collision check .</p><p>As a summary, we compare our method with RL, SemExp, IL, RL Ft, LLM no ft , LLM consecutive obs , LLM direct action , and LLM no collision check approaches. IL and RL Ft are SOTA behavior cloning approaches, and the latter four are variants of our method.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.">Comparisons with Non Behavior Cloning Methods</head><p>Here, we compare methods with and without human demonstrations. Specifically, in Table <ref type="table" target="#tab_0">1</ref>, we compare RL and SemExp with IL, RL Ft, and Ours. We observe that the methods trained without human demonstrations perform worse than the methods trained with human demonstrations. It is undeniable that human demonstrations provide us with exceptionally valuable information and can elevate the performance of models to the next level.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2.">Comparisons with SOTA Behavior Cloning Methods</head><p>In this section, we compare our method with IL <ref type="bibr" target="#b28">[29]</ref> and FL Ft <ref type="bibr" target="#b28">[29]</ref> approaches. Both our method and the baselines utilize behavior cloning. The difference is that IL <ref type="bibr" target="#b28">[29]</ref> and RL Ft <ref type="bibr" target="#b28">[29]</ref> approaches are trained with non-large language models, while ours is fine-tuned using large language models. We present the results in Table <ref type="table" target="#tab_0">1</ref>. First, we observe that RL Ft outperforms IL in terms of performance. It is important to note that IL is a pure imi- tation learning approach, while RL Ft is fine-tuned on top of IL using reinforcement learning. Therefore, we can conclude that reinforcement learning fine-tuning is beneficial. Second, we discover that our approach surpasses both IL and RL Ft, demonstrating the potential of LLMs to enhance visual navigation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3.">Comparisons with LLMs Variants</head><p>We present results that compare different variants of our approach using Language Models (LLMs). The results are shown in Table <ref type="table" target="#tab_1">2</ref>. The discussions in this section revolve around answering the following questions: "Does fine-tuning matter?", "Does the history collector help?", and "Direct action output or probability output?". Does fine-tuning matter? To address this question, we compare the results of LLM no ft with other approaches that involve fine-tuning of LLMs. We find that LLM no ft performs poorly, with a success rate of 0%. However, any method of fine-tuning can significantly improve visual navigation performance.</p><p>It is important to note that LLM no ft directly relies on a pre-trained large language model for action prediction, without using a history collector or performing fine-tuning. This approach is similar to zero-shot visual question answering experiments conducted in recent multimodal large language model research <ref type="bibr" target="#b2">[3,</ref><ref type="bibr" target="#b9">10,</ref><ref type="bibr" target="#b12">13,</ref><ref type="bibr" target="#b16">17,</ref><ref type="bibr" target="#b21">22,</ref><ref type="bibr" target="#b45">46]</ref>. These studies reported success in those experiments. Therefore, the fact that zero-shot visual navigation in unfamiliar environments produces poor results indicates that visual navigation is a much more challenging problem compared to zero-shot visual question answering. Hence, fine-tuning is needed.</p><p>Does the history collector help? To answer this question, we compare LLM consecutive obs and LLM direct action . The difference between these two approaches is that LLM consecutive obs considers input from 15 consecutive observations, while LLM direct action uses a history collector model to summarize all the information of the observations from the start of the episode until the current observation. We can clearly see a significant performance improvement  from LLM consecutive obs to LLM direct action , suggesting the benefits of using the history collector model.</p><p>Direct action output or probability output? To answer this question, we compare LLM direct action and our approach. The main difference between these two approaches is that LLM direct action directly produces an action as output, whereas our approach outputs a probability distribution over all possible actions. Our results show that our approach significantly outperforms LLM direct action , which suggests that, for visual navigation, generating probabilities as a form of uncertainty modeling is crucial. We also provide qualitative results comparing these two approaches in Figure <ref type="figure" target="#fig_1">3</ref>. The results show that our method has better path planning, with less turning and improved navigation in narrow aisles, compared to LLM direct action .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4.">Comparisons on Collision Check</head><p>Collision avoidance is crucial for visual navigation. In this section, we compare our method with a variant that does not include collision check (LLM no collision check ). In Section 3.3, we specify that during training, we zero out the action that leads to a collision. LLM no collision check simply removes this zeroing-out step. The results are reported in Table <ref type="table" target="#tab_2">3</ref>.</p><p>Based on the numbers, it is evident that the collision check has a positive impact on all the metrics. It improves We also provide qualitative results comparing these two approaches in Figure <ref type="figure" target="#fig_2">4</ref>. The results indicate that the method can achieve fewer collisions when a collision check is performed.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">Discussion and Future Work</head><p>This work tackles the challenge of multimodal large language modeling with partial observation. In particular, the multimodal large language model is only able to access a limited portion of the overall environment and needs to navigate and explore the entire environment in order to complete tasks. In other words, our work involves addressing the setup of using multimodal large language models for long-horizon tasks. This approach is different from existing work on multimodal large language models, which usually assume full or nearly full observation. For example, previous work focuses on tasks like visual question answering given a specific image <ref type="bibr" target="#b45">[46]</ref> or region grounding on a given image <ref type="bibr" target="#b41">[42]</ref>. We argue that our work is the first to adopt multimodal large language models with partial observations, using visual navigation as a prime example. Other examples include long video generation, Atari game playing, and search and rescue operations. Due to the limited context length in large language models, it is not possible to directly feed all the information into the models. Therefore, a memory module is necessary to interact with the large language models. In the following, we present several potential solutions for adopting multimodal large language models with partial observations, using visual navigation as an example to illustrate these solutions.</p><p>Text-based RAG with Text Prompts. One example of a memory module is extensive text-based prompt engineering system <ref type="bibr" target="#b44">[45]</ref>. The large language models retrieve relevant contents from the extensive prompt engineering, incorporate them into the input, and generate a response based on the input. This process is known as augmented retrieval generation (RAG) <ref type="bibr" target="#b20">[21]</ref>. While RAG has proven to be powerful for pure-text tasks, its performance with multi-modal context has not been thoroughly studied. Representing all the multimodal context information directly in text may seem like an obvious solution, but prior work on visual navigation has shown that this approach is suboptimal <ref type="bibr" target="#b44">[45]</ref>.</p><p>Multimodal RAG with Multimodal Prompts. In this approach, we create explicit memory with multimodal context. We retrieve relevant multimodal content from the memory and use it as a prompt for the large language models. For visual navigation, we can explore the idea of creating an SLAM (Simultaneous Localization And Mapping) system that generates maps in real-time. These maps can then be used as the relevant multimodal content. However, in order for the large language models to understand how to interpret maps, a fine-tuning process is necessary.</p><p>Multimodal Implicit Memory Module with Implicit Features Prompts. In this approach, we do not focus on forming an explicit memory. Instead, we utilize neural networks as an implicit memory module to condense all past information into a fixed-dimensional feature. This implicit feature is then fed into the large language models. The advantage of this approach is its simplicity, as there is no need to select the most appropriate multimodal content for the language models. However, the effectiveness of this approach heavily relies on the design and training of the implicit memory module (neural networks). Our paper follows this approach, using GRUs as the implicit memory module and training them with the same dataset as the large language models. Lastly, similar to the multimodal RAG with multimodal prompts, fine-tuning of the large language models is necessary to understand the implicit feature as a prompt.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.">More on Data</head><p>In this paper, we propose using human demonstrations as the training data for multimodal large language models with partial observations. Human demonstrations have the advantage of being high quality and low noise. However, collecting human demonstrations can be expensive, so it is important to consider other data sources as well.</p><p>In the context of visual navigation, prior work <ref type="bibr" target="#b28">[29]</ref> also explores using shortest path and frontier exploration as data sources. These data are easier to collect since they can be automatically gathered without human intervention. However, the quality of these data is not guaranteed, resulting in models trained with these data performing less favorably compared to models trained with human demonstrations. Taking inspiration from Tesla's data collection efforts, we argue the best approach is to curate human demonstrations with extensive data augmentations from simulation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.">More on Training</head><p>The concept of learning with partial observations or learning with long horizon tasks is often discussed in the rein-forcement learning (RL) literature <ref type="bibr" target="#b32">[33]</ref>. Therefore, in addition to the behavior cloning algorithm, RL algorithms can be a potential alternative for training or fine-tuning large language models. However, there is currently no evidence to suggest that RL algorithms can effectively work with large language models.</p><p>The main challenge for RL in training large language models is the sparse nature of the supervision signals. We argue that training large language models requires strong, dense, and semantically meaningful supervision signals.</p><p>We demonstrate an example of dense and semantically meaningful supervision signals in our paper, where the output for the large language models is designed to be a probability distribution over all possible actions.</p><p>To enable RL training with large language models, we need to convert sparse supervision signals into dense and semantically meaningful signals. However, this problem remains unsolved in the RL community <ref type="bibr" target="#b18">[19]</ref>. One potential workaround is to consider unsupervised auxiliary tasks <ref type="bibr" target="#b17">[18]</ref>, such as predicting the next action or predicting the next input. In summary, we believe that RL can be a potential method for training and fine-tuning multimodal large language models with partial observations. However, there is still a long way to go, and significant efforts are required to address the challenges.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3.">What's the next step?</head><p>So far, we have discussed several solutions, data, and training methods for adopting multimodal large language models with partial observations. For our next step, we plan to investigate the following: 1) multimodal RAG with multimodal prompts, 2) data augmentations on human demonstration data using simulators, and 3) exploring other datasets or tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.">Conclusion</head><p>In this paper, we explore the fine-tuning of Large Language Models (LLMs) for visual navigation. Unlike previous work, which focuses on complex prompt engineering for visual navigation using LLMs, our approach is simple. We use a basic text prompt, a history collector model that incorporates tokens from past observations, an observation encoding model that embeds observation tokens, and a pretrained large language model. During training, we employ two tricks based on human demonstrations. First, instead of directly outputting the action for the agent, we output the probability distribution over all possible actions. Second, we construct this probability distribution using a state-ofthe-art behavior cloning method, the action demonstrated by a human, while avoiding actions that cause collisions. We believe that our work highlights the advantages of finetuning LLMs for visual navigation. Our experimental re-sults support this claim, as our approach outperforms stateof-the-art methods.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 .</head><label>1</label><figDesc>Figure 1. Our approach leverages a finetune multimodal large language model to solve object goal navigation.</figDesc><graphic coords="1,315.30,264.38,116.39,83.03" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 3 .</head><label>3</label><figDesc>Figure 3. Qualitative results for comparing LLMs fine-tuned with visual navigation between direct action output and probability output. We show the results on the same scene, same initial location, and the same target object goal.</figDesc><graphic coords="6,313.52,72.00,224.43,94.92" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 4 .</head><label>4</label><figDesc>Figure 4. Qualitative results for comparing LLMs fine-tuned with visual navigation between with and without collision check. We show the results on the same scene, same initial location, and the same target object goal.</figDesc><graphic coords="6,313.52,227.89,224.43,100.68" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0"><graphic coords="3,98.37,72.01,395.99,245.85" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 .</head><label>1</label><figDesc>Quantitative results for the comparisons among nonbehavior-cloning methods, state-of-the-art behavior cloning methods, and our approach.</figDesc><table><row><cell>Methods</cell><cell>Success (↑)</cell><cell>Soft SPL (↑)</cell></row><row><cell cols="3">Non Behavior Cloning and No Large Language Models</cell></row><row><cell>RL [41]</cell><cell>0.3936</cell><cell>-</cell></row><row><cell>SemExp [5]</cell><cell>0.5560</cell><cell>-</cell></row><row><cell cols="3">Behavior Cloning without Large Language Models</cell></row><row><cell>IL [29]</cell><cell>0.5980</cell><cell>0.3051</cell></row><row><cell>RL Ft [29]</cell><cell>0.6615</cell><cell>0.3604</cell></row><row><cell cols="3">Behavior Cloning with Large Language Models</cell></row><row><cell>Ours</cell><cell>0.6790</cell><cell>0.3723</cell></row><row><cell cols="3">tions, the model directly predicts the action itself, denoted</cell></row><row><cell cols="2">as LLM direct action .</cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 2 .</head><label>2</label><figDesc>Quantitative results for the comparisons among variants of our approach.</figDesc><table><row><cell>LLM no ft</cell><cell>0.0000</cell><cell>0.0506</cell></row><row><cell cols="3">with Large Language Models Fine-tuning</cell></row><row><cell>LLM consecutive obs</cell><cell>0.0910</cell><cell>0.0977</cell></row><row><cell>LLM direct action</cell><cell>0.4610</cell><cell>0.2616</cell></row><row><cell>Ours</cell><cell>0.6790</cell><cell>0.3723</cell></row></table><note><p>Methods</p><p>Success (↑) Soft SPL (↑)</p><p>without Large Language Models Fine-tuning</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 3 .</head><label>3</label><figDesc>Quantitative results for the comparisons between our approach with and without collision check.</figDesc><table><row><cell>Methods</cell><cell>LLM no collision check</cell><cell>Ours</cell></row><row><cell>Success (↑)</cell><cell>0.6510</cell><cell>0.6790</cell></row><row><cell>Soft SPL (↑)</cell><cell>0.3641</cell><cell>0.3723</cell></row><row><cell>Collision Count (↓)</cell><cell>39.7755</cell><cell>27.7615</cell></row><row><cell cols="3">the success rate, enhances the SoftSPL, and reduces the</cell></row><row><cell cols="3">collision count. These results indicate the significance of</cell></row><row><cell cols="3">collision avoidance in visual navigation. Moving forward,</cell></row><row><cell cols="3">our future work involves exploring and developing a more</cell></row><row><cell cols="3">effective collision avoidance mechanism during the fine-</cell></row><row><cell>tuning of LLMs.</cell><cell></cell><cell></cell></row></table></figure>
+		</body>
+		<back>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Chatgpt as an educational tool: Opportunities, challenges, and recommendations for communication, business writing, and composition courses</title>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Awad Alafnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Samira</forename><surname>Dishari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marina</forename><surname>Jovic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Koba</forename><surname>Lomidze</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Artificial Intelligence and Technology</title>
+		<imprint>
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="60" to="68" />
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Visual navigation for mobile robots: A survey</title>
+		<author>
+			<persName><forename type="first">Francisco</forename><surname>Bonin-Font</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alberto</forename><surname>Ortiz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gabriel</forename><surname>Oliver</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Journal of intelligent and robotic systems</title>
+		<imprint>
+			<date type="published" when="2008">2008</date>
+			<biblScope unit="volume">53</biblScope>
+			<biblScope unit="page">2</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Rt-2: Vision-language-action models transfer web knowledge to robotic control</title>
+		<author>
+			<persName><forename type="first">Anthony</forename><surname>Brohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Justice</forename><surname>Carbajal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yevgen</forename><surname>Chebotar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xi</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Krzysztof</forename><surname>Choromanski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianli</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danny</forename><surname>Driess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Avinava</forename><surname>Dubey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chelsea</forename><surname>Finn</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.15818</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page">6</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Learning to explore using active neural slam</title>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Singh Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhiraj</forename><surname>Gandhi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saurabh</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhinav</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruslan</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2004.05155</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Object goal navigation using goal-oriented semantic exploration</title>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Singh Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhiraj Prakashchand</forename><surname>Gandhi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhinav</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Russ</forename><forename type="middle">R</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="issue">5</biblScope>
+			<biblScope unit="page" from="4247" to="4258" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Semantic curiosity for active visual learning</title>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Singh Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Helen</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saurabh</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhinav</forename><surname>Gupta</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Computer Vision-ECCV 2020: 16th European Conference</title>
+		<meeting><address><addrLine>Glasgow, UK</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2020">August 23-28, 2020. 2020</date>
+			<biblScope unit="page" from="309" to="326" />
+		</imprint>
+	</monogr>
+	<note>Proceedings, Part VI 16</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Neural topological slam for visual navigation</title>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Singh Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruslan</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhinav</forename><surname>Gupta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saurabh</forename><surname>Gupta</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="12875" to="12884" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">The adoption of self-driving delivery robots in last mile logistics</title>
+		<author>
+			<persName><forename type="first">Cheng</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emrah</forename><surname>Demir</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rongzu</forename><surname>Qiu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Transportation research part E: logistics and transportation review</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">146</biblScope>
+			<biblScope unit="page">102214</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Empirical evaluation of gated recurrent neural networks on sequence modeling</title>
+		<author>
+			<persName><forename type="first">Junyoung</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caglar</forename><surname>Gulcehre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyunghyun</forename><surname>Cho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yoshua</forename><surname>Bengio</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1412.3555</idno>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page">4</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<title level="m" type="main">Instructblip: Towards generalpurpose vision-language models with instruction tuning</title>
+		<author>
+			<persName><forename type="first">Wenliang</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junnan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dongxu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anthony</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huat</forename><surname>Tiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junqi</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weisheng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Boyang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pascale</forename><surname>Fung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Hoi</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2006">2023. 1, 2, 6</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bert</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1810.04805</idno>
+		<title level="m">Pre-training of deep bidirectional transformers for language understanding</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">An image is worth 16x16 words: Trans-formers for image recognition at scale</title>
+		<author>
+			<persName><forename type="first">Alexey</forename><surname>Dosovitskiy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucas</forename><surname>Beyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Kolesnikov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dirk</forename><surname>Weissenborn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaohua</forename><surname>Zhai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Unterthiner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostafa</forename><surname>Dehghani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Minderer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Georg</forename><surname>Heigold</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sylvain</forename><surname>Gelly</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2010.11929</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">Danny</forename><surname>Driess</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">M</forename><surname>Mehdi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Corey</forename><surname>Sajjadi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Lynch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ayzaan</forename><surname>Ichter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Wahid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quan</forename><surname>Tompson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianhe</forename><surname>Vuong</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Yu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.03378</idno>
+		<title level="m">Palme: An embodied multimodal language model</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page">6</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Lsdslam: Large-scale direct monocular slam</title>
+		<author>
+			<persName><forename type="first">Jakob</forename><surname>Engel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Schöps</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Cremers</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">European conference on computer vision</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="page" from="834" to="849" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Deep residual learning for image recognition</title>
+		<author>
+			<persName><forename type="first">Kaiming</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangyu</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaoqing</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Sun</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE conference on computer vision and pattern recognition</title>
+		<meeting>the IEEE conference on computer vision and pattern recognition</meeting>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="page" from="770" to="778" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Visual language maps for robot navigation</title>
+		<author>
+			<persName><forename type="first">Chenguang</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oier</forename><surname>Mees</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andy</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wolfram</forename><surname>Burgard</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE International Conference on Robotics and Automation (ICRA)</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="10608" to="10615" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Instruct2act: Mapping multimodality instructions to robotic actions with large language model</title>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengkai</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Qiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongsheng</forename><surname>Li</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.11176</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page">6</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Reinforcement learning with unsupervised auxiliary tasks</title>
+		<author>
+			<persName><forename type="first">Max</forename><surname>Jaderberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Volodymyr</forename><surname>Mnih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wojciech</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marian</forename><surname>Czarnecki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Schaul</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joel</forename><forename type="middle">Z</forename><surname>Leibo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Silver</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Koray</forename><surname>Kavukcuoglu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1611.05397</idno>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Reinforcement learning: A survey</title>
+		<author>
+			<persName><forename type="first">Leslie</forename><surname>Pack</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kaelbling</forename><surname>Michael L Littman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">W</forename><surname>Moore</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of artificial intelligence research</title>
+		<imprint>
+			<biblScope unit="volume">4</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page" from="237" to="285" />
+			<date type="published" when="1996">1996</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Rtab-map as an opensource lidar and visual simultaneous localization and mapping library for large-scale and long-term online operation</title>
+		<author>
+			<persName><forename type="first">Mathieu</forename><surname>Labbé</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Franc</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Michaud</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of field robotics</title>
+		<imprint>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="416" to="446" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Retrieval-augmented generation for knowledge-intensive nlp tasks</title>
+		<author>
+			<persName><forename type="first">Patrick</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ethan</forename><surname>Perez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aleksandra</forename><surname>Piktus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vladimir</forename><surname>Karpukhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Heinrich</forename><surname>Küttler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen-Tau</forename><surname>Yih</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tim</forename><surname>Rocktäschel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="issue">7</biblScope>
+			<biblScope unit="page" from="9459" to="9474" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Blip-2: Bootstrapping language-image pre-training with frozen image encoders and large language models</title>
+		<author>
+			<persName><forename type="first">Junnan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dongxu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Silvio</forename><surname>Savarese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Hoi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.12597</idno>
+		<imprint>
+			<date type="published" when="2006">2023. 1, 2, 4, 6</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<author>
+			<persName><forename type="first">Haotian</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunyuan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingyang</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong Jae</forename><surname>Lee</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.08485</idno>
+		<title level="m">Visual instruction tuning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Introducing llama: A foundational, 65-billionparameter large language model</title>
+		<author>
+			<persName><forename type="first">Meta</forename><surname>Ai</surname></persName>
+		</author>
+		<ptr target="https://ai.face-book.com/blog/large-language-model-llama-meta-ai" />
+	</analytic>
+	<monogr>
+		<title level="j">Meta AI</title>
+		<imprint>
+			<biblScope unit="issue">4</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Navigation</title>
+		<author>
+			<persName><surname>Daniel R Montello</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2005">2005</date>
+			<publisher>Cambridge University Press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Orb-slam2: An opensource slam system for monocular, stereo, and rgb-d cameras</title>
+		<author>
+			<persName><forename type="first">Raul</forename><surname>Mur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">-Artal</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Juan</forename><forename type="middle">D</forename><surname>Tardós</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE transactions on robotics</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="issue">5</biblScope>
+			<biblScope unit="page" from="1255" to="1262" />
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">Introduction to Simulation and SLAM II</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Alan</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Pritsker</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1984">1984</date>
+			<publisher>Halsted Press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">Aaron</forename><surname>Santhosh K Ramakrishnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Gokaslan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleksandr</forename><surname>Wijmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Maksymets</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Clegg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Turner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wojciech</forename><surname>Undersander</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Galuba</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Westbury</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Angel X Chang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2109.08238</idno>
+		<title level="m">Habitat-matterport 3d dataset (hm3d): 1000 large-scale 3d environments for embodied ai</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page">3</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Pirlnav: Pretraining with imitation and rl finetuning for objectnav</title>
+		<author>
+			<persName><forename type="first">Ram</forename><surname>Ramrakhya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Wijmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhishek</forename><surname>Das</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2007">2023. 2, 3, 4, 5, 7</date>
+			<biblScope unit="page" from="17896" to="17906" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Charmie: A collaborative healthcare and home service and assistant robot for elderly care</title>
+		<author>
+			<persName><forename type="first">Tiago</forename><surname>Ribeiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fernando</forename><surname>Gonc ¸alves</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Inês</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gil</forename><surname>Garcia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">António</forename><forename type="middle">F</forename><surname>Lopes</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ribeiro</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Applied Sciences</title>
+		<imprint>
+			<biblScope unit="volume">11</biblScope>
+			<biblScope unit="issue">16</biblScope>
+			<biblScope unit="page">7248</biblScope>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Habitat: A Platform for Embodied AI Research</title>
+		<author>
+			<persName><forename type="first">Manolis</forename><surname>Savva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhishek</forename><surname>Kadian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleksandr</forename><surname>Maksymets</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yili</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Wijmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bhavana</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julian</forename><surname>Straub</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jia</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vladlen</forename><surname>Koltun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jitendra</forename><surname>Malik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devi</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Batra</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)</title>
+		<meeting>the IEEE/CVF International Conference on Computer Vision (ICCV)</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Lmnav: Robotic navigation with large pre-trained models of language, vision, and action</title>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Shah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Błażej</forename><surname>Osiński</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergey</forename><surname>Levine</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Conference on Robot Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page">2</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">Reinforcement learning: An introduction</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Richard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">G</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Barto</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+			<publisher>MIT press</publisher>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Habitat 2.0: Training home assistants to rearrange their habitat</title>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Szot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Clegg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Undersander</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Wijmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yili</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Turner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><surname>Maestre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mustafa</forename><surname>Mukadam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devendra</forename><surname>Chaplot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleksandr</forename><surname>Maksymets</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaron</forename><surname>Gokaslan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vladimir</forename><surname>Vondrus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sameer</forename><surname>Dharur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Franziska</forename><surname>Meier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wojciech</forename><surname>Galuba</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angel</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zsolt</forename><surname>Kira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vladlen</forename><surname>Koltun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jitendra</forename><surname>Malik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manolis</forename><surname>Savva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Batra</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems (NeurIPS)</title>
+		<imprint>
+			<date type="published" when="2005">2021. 3, 5</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title level="m" type="main">Chatgpt is fun, but not an author</title>
+		<author>
+			<persName><forename type="first">Thorp</forename><surname>Holden</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Faisal</forename><surname>Azhar</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<title level="m">Open and efficient foundation language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Chatgpt for robotics: Design principles and model abilities</title>
+		<author>
+			<persName><forename type="first">Sai</forename><surname>Vemprala</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rogerio</forename><surname>Bonatti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Bucker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Kapoor</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Microsoft Auton. Syst. Robot. Res</title>
+		<imprint>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="issue">20</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Wijmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhishek</forename><surname>Kadian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Morcos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefan</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Irfan</forename><surname>Essa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devi</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manolis</forename><surname>Savva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Batra</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1911.00357</idno>
+		<title level="m">Dd-ppo: Learning near-perfect pointgoal navigators from 2.5 billion frames</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<monogr>
+		<title level="m" type="main">Visual chatgpt: Talking, drawing and editing with visual foundation models</title>
+		<author>
+			<persName><forename type="first">Chenfei</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shengming</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhen</forename><surname>Qi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zecheng</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Duan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.04671</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<monogr>
+		<author>
+			<persName><forename type="first">Haoran</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenxuan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxuan</forename><surname>Wan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenxiang</forename><surname>Jiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Lyu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.13648</idno>
+		<title level="m">Chatgpt or grammarly? evaluating chatgpt on grammatical error correction benchmark</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">Habitat-matterport 3d semantics dataset</title>
+		<author>
+			<persName><forename type="first">Karmesh</forename><surname>Yadav</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ram</forename><surname>Ramrakhya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Santhosh</forename><surname>Kumar Ramakrishnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Theo</forename><surname>Gervet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Turner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaron</forename><surname>Gokaslan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><surname>Maestre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuan</forename><surname>Angel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manolis</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Savva</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="4927" to="4936" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<monogr>
+		<author>
+			<persName><forename type="first">Zhengyuan</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Linjie</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianfeng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chung-Ching</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zicheng</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lijuan</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.17421</idno>
+		<title level="m">The dawn of lmms: Preliminary explorations with gpt-4v (ision)</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<monogr>
+		<author>
+			<persName><forename type="first">Bangguo</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hamidreza</forename><surname>Kasaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Cao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.05501</idno>
+		<title level="m">L3mvn: Leveraging large language models for visual target navigation</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page">2</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">A survey of autonomous driving: Common practices and emerging technologies</title>
+		<author>
+			<persName><forename type="first">Ekim</forename><surname>Yurtsever</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Lambert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexander</forename><surname>Carballo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kazuya</forename><surname>Takeda</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE access</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="58443" to="58469" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<monogr>
+		<author>
+			<persName><forename type="first">Gengze</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yicong</forename><surname>Hong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qi</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Navgpt</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.16986</idno>
+		<title level="m">Explicit reasoning in vision-and-language navigation with large language models</title>
+		<imprint>
+			<date type="published" when="2007">2023. 1, 2, 7</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<monogr>
+		<author>
+			<persName><forename type="first">Deyao</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoqian</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohamed</forename><surname>Elhoseiny</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.10592</idno>
+		<title level="m">Minigpt-4: Enhancing vision-language understanding with advanced large language models</title>
+		<imprint>
+			<date type="published" when="2007">2023. 1, 2, 5, 6, 7</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

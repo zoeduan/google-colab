@@ -1,0 +1,756 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Exploring the Intersection of Large Language Models and Agent-Based Modeling via Prompt Engineering</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-08-14">14 Aug 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName><forename type="first">Edward</forename><surname>Junprung</surname></persName>
+							<email>ejunprung@berkeley.edu</email>
+							<affiliation key="aff0">
+								<orgName type="department">School of Information</orgName>
+								<orgName type="institution">University of California</orgName>
+								<address>
+									<settlement>Berkeley</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Exploring the Intersection of Large Language Models and Agent-Based Modeling via Prompt Engineering</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-08-14">14 Aug 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">C759B172ECAF5B00A6BB91A5BC4E4F29</idno>
+					<idno type="arXiv">arXiv:2308.07411v1[cs.AI]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:56+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>The final frontier for simulation is the accurate representation of complex, real-world social systems. While agent-based modeling (ABM) seeks to study the behavior and interactions of agents within a larger system, it is unable to faithfully capture the full complexity of human-driven behavior. Large language models (LLMs), like ChatGPT, have emerged as a potential solution to this bottleneck by enabling researchers to explore human-driven interactions in previously unimaginable ways. Our research investigates simulations of human interactions using LLMs. Through prompt engineering, inspired by <ref type="bibr" target="#b8">Park et al. (2023)</ref>, we present two simulations of believable proxies of human behavior: a two-agent negotiation and a six-agent murder mystery game.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>The emergence of large language models (LLMs) has opened the door to realistic simulations of human behavior <ref type="bibr" target="#b5">(Horton, 2023;</ref><ref type="bibr" target="#b0">Aher et al., 2023;</ref><ref type="bibr" target="#b3">Griffin et al., 2023)</ref>. Prior to the introduction of LLMs, researchers had relied on a paradigm called Agent-Based Modeling (ABM) to simulate collective human behavior in social systems. In ABM, individual agents with specific rules and decisionmaking processes interact with each other, producing emergent behaviors at the system level. While a powerful paradigm, it is limited to high-level processes such as epidemiology or industrial processes and cannot be used to accurately simulate the influence of individual human actions.</p><p>The field of reinforcement learning draws inspiration from ABM such as the idea of simulation environments to explore agent behavior. Similarly, we aim to combine ABM with LLMs to enhance our understanding of human behavior. This will enable researchers to explore and analyze various human-driven scenarios with improved accuracy and sophistication. This paper makes the following contributions:</p><p>• Examples of LLM-driven simulations, allowing researchers to explore potential outcomes by adjusting the personas for each LLM agent<ref type="foot" target="#foot_0">foot_0</ref> .</p><p>• Categorizing LLM-driven simulations into three categories: one-to-one, one-to-many, and many-to-many <ref type="bibr" target="#b1">(Bi et al., 2019)</ref>.</p><p>• Discussion of limitations in building largescale, human-realistic simulations, specifically the bottleneck of context windows (i.e., 4,096 max input tokens).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Methods</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Model</head><p>We leverage OpenAI's gpt-3.5-turbo model to showcase interactions between LLM agents. This particular version of GPT is accessible through the OpenAI API and has been fine-tuned for dialog, making it suitable for our specific use case.</p><p>We also evaluated Meta AI's OPT model <ref type="bibr" target="#b11">(Zhang et al., 2022)</ref> as well as the open-source versions of OpenAI's GPT model obtained from Hugging Face. Regrettably, these models tended to ramble or veer off topic even if the conversations were deterministic in nature. As a result, they were unsuitable for demonstrating believable human interactions. The fluency in gpt-3.5-turbo's dialog seems to stem from its fine-tuning by reinforcement learning from human feedback <ref type="bibr" target="#b7">(Ouyang et al., 2022)</ref>.</p><p>Furthermore, we experimented with Meta AI's Llama-2-7b-chat-hf <ref type="bibr">(Touvron et al., 2023)</ref> and found its performance to be promising. However, due its large number of parameters, it took over a minute to generate responses to each prompt using our local machine, while the OpenAI API only takes milliseconds. This made Llama-2-7b-chat-hf impractical for rapid experimentation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Prompt Engineering</head><p>To facilitate autonomous conversations, we programmatically pass responses back and forth between LLM agents. This mechanism is described in detail below.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.1">Inputs</head><p>We use OpenAI's Chat Completions API with the gpt-3.5-turbo model, which requires three types of inputs:</p><p>1. System sets the persona of the Assistant (i.e.</p><p>LLM agent). This is analogous to defining an agent's unique personality. The persona that you define determines how an agent behaves given a prompt.</p><p>2. Assistant refers to the LLM agent defined in System. It embodies the specified persona and outputs responses accordingly.</p><p>3. User refers to the prompt inputted by a user (i.e. human) but in our case, the user is defined as another autonomous LLM agent. The Assistant responds to the User based on its persona and the context provided in the conversation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.2">Mechanics</head><p>Figure <ref type="figure" target="#fig_1">1</ref> illustrates the prompting mechanism used to simulate autonomous interactions between LLM agents. In this approach, each interaction's next response is conditioned on the cumulative conversation history thus far. Including this context is crucial to maintaining coherence and relevance throughout the conversation, preventing the LLM agents from deviating off-topic. However, the inclusion of context increases the prompt's length with each interaction. This continuous growth in the prompt's length imposes a limitation, as our simulations can only run until they reach the maximum prompt input size of 4,096 tokens <ref type="bibr">(Brown et al., 2020)</ref>. Consequently, the duration and complexity of our simulations are constrained by this bottleneck.</p><p>Figure <ref type="figure" target="#fig_1">1</ref>: Autonomous dialog with back-and-forth prompting mechanism. Each box represents a prompt that is passed to LLM agents in a round-robin fashion.</p><p>3 Results</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">One-to-One Simulation: Haggling for Pokémon Cards</head><p>We initiate a two-agent simulation categorized as "one-to-one," where one agent adversarially negotiates with another agent. First, we define the System for each agent. For clarity and better expression, we will henceforth refer to the System as "persona" to more accurately convey its purpose.</p><p>Define Persona Seller: You are a Pokémon card dealer at a Pokémon convention. Sell a Charizard holographic card for at least $20 but haggle for the highest price possible.</p><p>Be terse but explain your reasoning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Buyer:</head><p>You are at a Pokémon convention and you are interested in buying a Charizard holographic card. Negotiate for the lowest possible price.</p><p>Be rude and terse but explain your reasoning.</p><p>The persona dictates an agent's behavior. The yellow-highlighted phrases depict each agent's goal, while the orange-highlighted phrases define their personality. Agent personas are written freeform, meaning the order of sentences does not matter.</p><p>In this scenario, the seller agent seeks to sell for at least $20, with a preference for a higher price. In contrast, the buyer agent aims to obtain the lowest possible price and will behave rudely to achieve this objective. The conversation's trajectory and, ultimately, the outcome of the simulation (i.e., the selling price of the Pokémon card) are determined by the persona that we define for each agent.</p><p>Next, we commence the simulation by manually seeding the conversation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Initiate Conversation</head><p>Buyer: Hi, do you have a Charizard holographic card?</p><p>From hereon, each LLM agent responds autonomously. The mechanics of this back-and-forth interaction are as described in the Methods section.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Autonomous Interaction</head><p>Seller: Yes, I have a Charizard holographic card. How much are you willing to pay for it? Buyer: Look, I'm not here to waste my time or money. I want the lowest possible price for that Charizard holographic card. So give me your absolute rock-bottom price. No games, no gimmicks, just the cheapest you're willing to sell it for.</p><p>Seller: I understand your desire for a low price, but this Charizard holographic card is a highly sought-after collector's item. Due to its rarity and popularity, the lowest price I can offer is $50.</p><p>Buyer: Hmm, $50, huh? That seems a bit steep for a piece of cardboard. I expected to find it for a more reasonable price, especially considering it's just a card from a children's game. I mean, seriously, who would pay that much for a glorified sticker? I'll tell you what, I am willing to offer you $15 for it, and that's being generous.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Autonomous Interaction</head><p>Seller: I acknowledge your perspective, but Charizard holographic cards hold significant value in the Pokemon trading card community. Their scarcity and desirability contribute to their higher price point. Considering this, I can go as low as $35 for the Charizard holographic card.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Buyer: $35?</head><p>Are you trying to rob me blind? That's still way too steep for a silly card. I'm not buying into this hype. Look, I'll give you $25, and that's my absolute final offer.</p><p>Seller: I understand your hesitation and desire for a lower price.</p><p>However, the demand for Charizard holographic cards remains high, and their value has steadily increased over time. Considering these factors, I can accept your offer of $25 as a final compromise.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Buyer:</head><p>Finally, we're getting somewhere. $25 is still more than I'd like to pay, but I suppose it's better than nothing. Fine, we have a deal. Just give me that overpriced card so we can get this over with.</p><p>In this interaction, both LLM agents mutually agree to a price of $25, as highlighted in yellow. This outcome signifies a win for the seller, as the target price set in the persona was $20.</p><p>An intriguing observation is that the seller employed a strategy of inflating the sell price ($50) at the start of negotiations, which resulted in securing a higher final sell price. This emergent behavior was not explicitly defined anywhere in the simulation, highlighting the ability of LLM agents to come up with novel strategies autonomously. Given this observation, we explore different outcomes by re-writing the personas to express varying objectives. Lastly, consider the total token count, representing the final prompt length at the conclusion of the simulation. Recall that the prompt length grows with the number of interactions. In this simple simulation, the final token count varies between 300 and 600 input tokens<ref type="foot" target="#foot_1">foot_1</ref> , staying well within the 4,096 token limit.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">One-to-Many Simulation: Solving a Murder Mystery</head><p>In this next simulation, we construct a six-agent simulation categorized as "one-to-many," in which one LLM agent collaboratively works and communicates with five other LLM agents to solve a murder mystery. Similar to the previous 2-agent simulation, we define personas for each agent. Three types of personas are established: the captain, the passengers, and the killer.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Define Persona For Each Agent Type</head><p>Captain: You are the captain. Someone was murdered on your ship.</p><p>Interrogate the group to find out who matches the eyewitness report. An eyewitness has reported that the killer was seen wearing a dress, running from the cabin. Additionally, several eyewitnesses overheard the killer talking about gardening. It was also heard that the killer is a student. Be brief in your responses, do not reveal the eyewitness report, and ask questions to the group as a whole. Passenger: Your name is Bob, you are a humorous person, Define Persona For Each Agent Type and you work as a Data Science instructor. In your free time, you enjoy teaching. A random fact is that you are ethnically Polish. For this cruise, you packed a collared shirt and your favorite part of the ship is the lounge. Someone was murdered on the cruise and the captain wants you to help identify the killer. Help identify the killer. Please be concise in your responses. Killer: Your name is Nancy, you are a cheerful person, and you work as a Data Scientist. In your free time, you enjoy gardening. A random fact is that you are a student. For this cruise, you packed a dress and your favorite part of the ship is the cabin. Someone was murdered on the cruise and the captain wants you to help identify the killer. However, you are the killer. Mislead and lie to everyone to avoid getting caught. Please be concise in your responses.</p><p>Above are examples of the agent personas. The yellow-highlighted text outlines the objectives embodied by each of the three agent types. The green-highlighted text presents facts that could tie the agent back to the murder, while the orangehighlighted text represents the agent's personality.</p><p>The personas for each agent are dynamically generated<ref type="foot" target="#foot_2">foot_2</ref> . In total, six agent personas are initialized: one captain and five passengers, one of whom is randomly selected as the killer. We start the simulation by seeding the conversation. All subsequent agent interactions are autonomously executed. For each interaction, the captain agent poses the same question to each passenger agent in a roundrobin manner. With more than two agents interacting simultaneously, sharing context across agents becomes a significant challenge. To address this, the concept of a memory stream is introduced (Park et al., 2023). The memory stream is created by concatenating the responses from each passenger agent into one string, helping to preserve the ongoing context of the conversation. This memory stream serves as a log, recording all responses from passenger agents to the captain's question.</p><p>Once all agents have finished responding, the complete memory stream becomes the reply to the captain agent's question. Subsequently, the captain's next response is conditioned on the memory stream. This context enables the captain to craft relevant responses, including any additional follow-up questions. Without this mechanism, the captain's responses often deviate from the intended topic which we discovered through experimentation. Below is an example of this mechanism in action. Note that the text highlighted in yellow labels each passenger agent's response.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Autonomous Interaction</head><p>Captain: Introduce yourself.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Memory Stream:</head><p>Bob said: Hey there! I'm Bob, your friendly neighborhood Data Science instructor.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Autonomous Interaction</head><p>Diligently teaching others to navigate the world of data while cracking a few jokes along the way.</p><p>Nancy said: Hello, everyone! My name is Nancy, and I'm a Data Scientist. I'm also a student, which keeps me on my toes. Apart from work and studies, I have a passion for gardening and spending time in nature. Max said: Hello, my name is Max and I am a Medical Researcher. I speak German and enjoy reading in my free time. I have packed a lab coat for this cruise and my favorite part of the ship is the deck. Chris said: Hey everyone, my name is Chris. I'm a student who loves playing video games and I always wear my trusty glasses. Susan said: Hello, my name is Susan. I am a software engineer by profession and I enjoy traveling in my free time. I have a fondness for Tesla and am a reserved person.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Captain:</head><p>Thank you, everyone. Let's focus on the details surrounding the murder. Has anyone seen anyone wearing a dress running from the cabin?</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Memory Stream:</head><p>Bob said: I'm sorry, but nobody has reported seeing someone wearing a dress running from the cabin. Nancy said: Oh, that's terrible to hear about the murder. I hope we can get to the bottom of this. Regarding your question, I haven't seen anyone wearing a dress running from the cabin. Perhaps someone else might have noticed something? Max said: No, I have not been seen wearing a dress during this cruise. Chris said: No, I haven't been seen wearing a dress during this cruise. Susan said: No, I have not been seen wearing a dress during this cruise.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Captain:</head><p>Thank you all for your responses. One more question: Did anyone overhear anyone talking about gardening?</p><p>We conclude the simulation by asking the captain to guess the killer, which is correctly identified based on the eyewitness report. This simulation requires 1,734 total tokens<ref type="foot" target="#foot_3">foot_3</ref> , which represents almost half the maximum input token limit of gpt-3.5-turbo, despite the simulation's simplicity.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Pose Final Question</head><p>Human: Which of the suspects appear the most suspicious?</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Captain:</head><p>Based on the information provided, Nancy appears to be the most suspicious. She mentioned gardening, and confirmed being a student.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Many-to-Many Simulation</head><p>We characterize many-to-many simulations as a hybrid of one-to-one (i.e., LLM agent converses with another LLM agent) and one-to-many scenarios (i.e., LLM agent converses with a group of LLM agents). This type of simulation is relevant in realworld scenarios, such as modeling the spread of fake news, where rumors can be shared between individuals or groups of individuals.</p><p>In this paper, we do not explore many-to-many simulations due to the complexity of implementation and limitations related to OpenAI's gpt-3.5turbo's maximum input token limit. Nevertheless, we acknowledge that real-world scenarios often involve interactions between groups of individuals, making them valuable to simulate. For an illustrative example of a many-to-many simulation with LLMs, we refer to <ref type="bibr" target="#b8">Park et al. (2023)</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Related Work</head><p>This paper is inspired by <ref type="bibr" target="#b8">Park et al. (2023)</ref> and the work at the Stanford Institute for Human-Centered Artificial Intelligence (HAI). To the best of our knowledge, Generative Agents: Interactive Simulacra of Human Behavior is the first research paper attempting to model intricate, human-driven social interactions using LLMs. We borrow heavily from this work and generally reproduce their results, albeit at a high level.</p><p>Furthermore, we were interested in the concept of prompt engineering and its remarkable ability to leverage context for generating relevant responses.</p><p>As this mechanism closely mirrors real-world human interaction, it is a crucial ingredient in constructing our simulations. <ref type="bibr" target="#b6">Liu et al. (2023)</ref> empirically measures the effectiveness of this mechanism, finding that LLMs are most proficient at retrieving context from the beginning and end of the prompt. Additionally, <ref type="bibr" target="#b10">Wei et al. (2023)</ref> demonstrates that constructing few-shot prompts in the form of a chain-of-thought enhances LLMs' ability to engage in complex reasoning. These insights guided the design of our simulations.</p><p>Apart from the inference-only approach to constructing simulations with LLMs, significant innovation is taking place on the training side. The Reinforcement Learning Human Feedback (RLHF) paradigm, as pioneered by <ref type="bibr" target="#b7">Ouyang et al. (2022)</ref>, is seemingly essential for fine-tuning LLMs, especially in dialog-based use cases such as ours. From our experiments, LLMs without RLHF would ramble or veer off topic, making it impossible to demonstrate believable human behavior.</p><p>Finally, significant research has been conducted on training LLMs to learn how to retrieve information beyond what is implicitly stored in the parameters of the underlying neural network. <ref type="bibr" target="#b4">Guu et al. (2020)</ref> proposes a mechanism to train LLMs to perform reasoning over a large corpus of knowledge on-the-fly during inference. This process is analogous to a human internalizing what they have learned in school, which could prove crucial for dealing with the maximum 4,096 token input windows and the retrieval of long-term memories in our simulations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>Despite the simulations being rudimentary, this study highlights the potential of building largescale digital playgrounds to assess real-world, human-driven behaviors using LLMs. Regarding believability, Park et al. ( <ref type="formula">2023</ref>) quantifies the believability of LLM-driven simulations and finds that LLM agents can produce behavior that is even more believable than the human condition, as assessed by crowdsourced human evaluators.</p><p>We conclude by highlighting two challenges to producing large-scale, LLM-powered simulations.</p><p>• The 4,096 maximum prompt token limit of gpt-3.5-turbo constrained the complexity of our simulations. Larger context windows 5 could potentially enable large-scale simulations involving thousands of LLM agents and long-running simulations that span many years of simulated time.</p><p>• Retrieving relevant information from large context windows remains a complex task <ref type="bibr" target="#b6">(Liu et al., 2023)</ref>. Possible solutions may involve heuristics, summarization of conversation histories, or the incorporation of an attention mechanism to attend over the memory stream.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.2 Agent Personas For Negotiation Simulation</head><p>In scenario 1, we instruct the seller agent to haggle for the highest price possible. This constraint encourages the seller to pursue tactics that secure a higher price. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Buyer:</head><p>You are at a Pokémon convention and you are interested in buying a Charizard holographic card. Negotiate for the lowest possible price.</p><p>Be rude and terse but explain your reasoning.</p><p>In scenario 2, we provide the seller with the flexibility to negotiate higher or lower. Consequently, the seller settles on a price lower than $20 to close the deal. Note that we did not instruct the buyer to be rude in this case. We discovered that a rude buyer would lead to the seller negotiating for a price greater than $20. Negotiate to sell a Charizard holographic card for around $20. Be terse but explain your reasoning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Buyer:</head><p>You are at a Pokémon convention and you are interested in buying a Charizard holographic card. Negotiate for the lowest possible price.</p><p>Be terse but explain your reasoning.</p><p>In scenario 3, we impose limitations that prevent a deal. The seller is only willing to sell for $20 or more, while the buyer is only willing to buy for less than $20. As a consequence, no deal is reached. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Buyer:</head><p>You are at a Pokémon convention and you are interested in buying a Charizard holographic card. You will not pay more than $19.</p><p>Be terse but explain your reasoning.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: This illustration depicts interactions between agents, where each response from the captain is conditioned on the memory stream.</figDesc><graphic coords="5,70.87,70.86,218.27,195.85" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Scenario 1 :</head><label>1</label><figDesc>Sold for Over $20Seller: You are a Pokémon card dealer at a Pokémon convention. Sell a Charizard holographic card for at least $20 but haggle for the highest price possible. Be terse but explain your reasoning.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Scenario 2 :</head><label>2</label><figDesc>Sold for Under $20Seller: You are a Pokémon card dealer at a Pokémon convention.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>You are a Pokémon card dealer at a Pokémon convention. Sell a Charizard holographic card for at least $20 no matter what. Be terse but explain your reasoning.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Table1illustrates how adjusting the objectives in each agent's persona leads to a diverse set of outcomes.The full prompts used for each scenario are provided in Appendix A.2.</figDesc><table><row><cell>Seller Objective</cell><cell>Buyer Objective</cell><cell>Outcome</cell><cell>Final Prompt Token</cell></row><row><cell>Sell for over $20</cell><cell cols="2">Negotiate for lowest price Sold for $25</cell><cell>522</cell></row><row><cell cols="3">Sell for around $20 Negotiate for lowest price Sold for $17</cell><cell>369</cell></row><row><cell>Sell for over $20</cell><cell>Buy for under $20</cell><cell>No deal</cell><cell>472</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>LLM agents refer to agents powered by Large Language Models (LLMs) used in simulations for exploring potential outcomes.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>The final prompt tokens can vary due to the temperature hyperparameter.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>The code to reproduce this simulation is linked in Appendix A.1</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>Note that the final prompt tokens can vary due to the temperature hyperparameter.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_4"><p>As of this writing, gpt-4 permits 8,192 prompt tokens but we were unable to access it.</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Appendix</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.1 Simulation Code</head><p>To access the code used in this paper, please visit <ref type="url" target="https://github.com/ejunprung/llm-agents">https://github.com/ejunprung/llm-agents</ref>. This repository contains the full source code for the following simulations:</p><p>• One-to-One Simulation: Haggling for Pokémon Cards</p><p>• One-to-Many Simulation: Solving a Murder Mystery</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Using large language models to simulate multiple humans and replicate human subject studies</title>
+		<author>
+			<persName><forename type="first">Gati</forename><surname>Aher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rosa</forename><forename type="middle">I</forename><surname>Arriaga</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Tauman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kalai</forename></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Multi-agent learning for neural machine translation</title>
+		<author>
+			<persName><forename type="first">Tianchi</forename><surname>Bi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhongjun</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hua</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haifeng</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D19-1079</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)<address><addrLine>Hong Kong, China</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="856" to="865" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">B</forename><surname>Tom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ariel</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gretchen</forename><surname>Herbert-Voss</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Krueger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Henighan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aditya</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">M</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Ziegler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Clemens</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Winter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Hesse</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mateusz</forename><surname>Sigler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Litwin</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Gray</surname></persName>
+		</author>
+		<imprint>
+			<pubPlace>Benjamin Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec Radford</pubPlace>
+		</imprint>
+	</monogr>
+	<note>Ilya Sutskever, and Dario Amodei. 2020. Language models are few-shot learners</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Large language models respond to influence like humans</title>
+		<author>
+			<persName><forename type="first">Bennett</forename><surname>Lewis D Griffin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maximilian</forename><surname>Kleinberg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kimberly</forename><surname>Mozes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maria</forename><surname>Mai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Vau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Augustine</forename><surname>Caldwell</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Mavor-Parker</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Kelvin</forename><surname>Guu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zora</forename><surname>Tung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Panupong</forename><surname>Pasupatand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note>Realm: Retrievalaugmented language model pre-training</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<title level="m" type="main">Large language models as simulated economic agents: What can we learn from homo silicus?</title>
+		<author>
+			<persName><forename type="first">John</forename><forename type="middle">J</forename><surname>Horton</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">Lost in the middle: How language models use long contexts</title>
+		<author>
+			<persName><forename type="first">Nelson</forename><forename type="middle">F</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Hewitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashwin</forename><surname>Paranjape</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michele</forename><surname>Bevilacqua</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Petroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carroll</forename><forename type="middle">L</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katarina</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Schulman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fraser</forename><surname>Kelton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Miller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maddie</forename><surname>Simens</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Welinder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Christiano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Lowe</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note>Training language models to follow instructions with human feedback</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">Sung</forename><surname>Joon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">C</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carrie</forename><forename type="middle">J</forename><surname>O'brien</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meredith</forename><forename type="middle">Ringel</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Morris</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><forename type="middle">S</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bernstein</surname></persName>
+		</author>
+		<title level="m">Generative agents: Interactive simulacra of human behavior</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Louis</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amjad</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yasmine</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikolay</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Soumya</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prajjwal</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shruti</forename><surname>Bhosale</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Bikel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lukas</forename><surname>Blecher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cristian Canton</forename><surname>Ferrer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Moya</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guillem</forename><surname>Cucurull</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Esiobu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jude</forename><surname>Fernandes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeremy</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenyin</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Fuller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cynthia</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vedanuj</forename><surname>Goswami</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anthony</forename><surname>Hartshorn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Saghar</forename><surname>Hosseini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hakan</forename><surname>Inan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marcin</forename><surname>Kardas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Viktor</forename><surname>Kerkez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Madian</forename><surname>Khabsa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Isabel</forename><surname>Kloumann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Artem</forename><surname>Korenev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Punit</forename><surname>Singh Koura</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jenya</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diana</forename><surname>Liskovich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yinghai</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuning</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Todor</forename><surname>Mihaylov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pushkar</forename><surname>Mishra</surname></persName>
+		</author>
+		<title level="m">Igor Molybog</title>
+		<editor>
+			<persName><forename type="first">Yixin</forename><surname>Nie</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Andrew</forename><surname>Poulton</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jeremy</forename><surname>Reizenstein</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Rashi</forename><surname>Rungta</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Kalyan</forename><surname>Saladi</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Alan</forename><surname>Schelten</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ruan</forename><surname>Silva</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Eric</forename><forename type="middle">Michael</forename><surname>Smith</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ranjan</forename><surname>Subramanian</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ellen</forename><surname>Xiaoqing</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Binh</forename><surname>Tan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Ross</forename><surname>Tang</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Adina</forename><surname>Taylor</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Jian</forename><surname>Williams</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Puxin</forename><surname>Xiang Kuan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Zheng</forename><surname>Xu</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Iliyan</forename><surname>Yan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Yuchen</forename><surname>Zarov</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Angela</forename><surname>Zhang</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Melanie</forename><surname>Fan</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Sharan</forename><surname>Kambadur</surname></persName>
+		</editor>
+		<editor>
+			<persName><surname>Narang</surname></persName>
+		</editor>
+		<imprint>
+			<publisher>Aurelien Rodriguez</publisher>
+		</imprint>
+	</monogr>
+	<note>and Robert Stojnic Sergey Edunov Thomas Scialom. 2023. Llama 2: Open foundation and finetuned chat models</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brian</forename><surname>Ichter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Susan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Roller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mikel</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Moya</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuohui</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Dewan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mona</forename><surname>Diab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xian</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xi</forename><surname>Victoria Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Todor</forename><surname>Mihaylov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Myle</forename><surname>Ott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Shleifer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kurt</forename><surname>Shuster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Simig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Punit</forename><surname>Singh Koura</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anjali</forename><surname>Sridhar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianlu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note>Opt: Open pretrained transformer language models</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

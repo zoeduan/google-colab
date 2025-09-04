@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Get the Gist? Using Large Language Models for Few-Shot Decontextualization</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-10-10">10 Oct 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Benjamin</forename><surname>Kane</surname></persName>
+							<email>bkane2@ur.rochester.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">University of Rochester</orgName>
+								<orgName type="institution" key="instit2">University of Rochester</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Lenhart</forename><surname>Schubert</surname></persName>
+							<email>schubert@cs.rochester.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution" key="instit1">University of Rochester</orgName>
+								<orgName type="institution" key="instit2">University of Rochester</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Get the Gist? Using Large Language Models for Few-Shot Decontextualization</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-10-10">10 Oct 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">7DCDB3CB8F7A53A8D39DBF46A6150E01</idno>
+					<idno type="arXiv">arXiv:2310.06254v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:57+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>In many NLP applications that involve interpreting sentences within a rich context -for instance, information retrieval systems or dialogue systems -it is desirable to be able to preserve the sentence in a form that can be readily understood without context, for later reuse -a process known as "decontextualization". While previous work demonstrated that generative Seq2Seq models could effectively perform decontextualization after being finetuned on a specific dataset, this approach requires expensive human annotations and may not transfer to other domains. We propose a few-shot method of decontextualization using a large language model, and present preliminary results showing that this method achieves viable performance on multiple domains using only a small set of examples.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>As large language models (LLMs) improve in capabilities, work in NLP is increasingly turning towards systems that rely on natural text as a core representation, and that use LLMs as a foundation for reasoning <ref type="bibr" target="#b0">(Bommasani et al., 2022;</ref><ref type="bibr" target="#b5">Park et al., 2023)</ref>. In many cases, this requires the ability to preserve text from an input source in a form that can readily be reused for downstream tasks.</p><p>However, sentences in natural corpora are often heavily dependent on the surrounding context, making it difficult to extract a sentence directly. Sentences may contain anaphors that refer to other entities in the context, or they may contain discourse markers that relate to the overall structure of the embedding document, or they may contain a variety of elided material. Yet, in many cases it's possible to map a sentence into a semantically equivalent form that can be understood in the absence of context. For example, in the conversation in Figure <ref type="figure">1</ref>, given the previous two turns of context, an agent's utterance can be mapped to a form Well, mainly I like the complex characters that he creates, such as Tyrion.</p><p>My favorite book series is A Song of Ice and Fire by George R. R. Martin. I've heard they're quite popular. What do you like about them?</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>DELETION NP NAME ADDITION</head><p>I like the complex characters that George R. R. Martin creates in the book series A Song of Ice and Fire, such as Tyrion Lannister.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Decontextualization Information Extraction NLG Reasoning</head><p>Figure <ref type="figure">1</ref>: An example of decontextualization within a conversational context (indicated in yellow). The types of edits used to produce the decontextualized sentence -based on the scheme proposed by <ref type="bibr" target="#b1">(Choi et al., 2021)</ref> -are shown below the original and decontextualized sentences.</p><p>that can be readily understood without contextallowing it to be reused by downstream tasks. <ref type="bibr" target="#b1">Choi et al. (2021)</ref> provide a formal definition of this task -known as decontextualization -and decompose the process into several stages of edits. However, this approach -based on fine-tuning pretrained coreference models and language models -relied on the crowdsourcing of large numbers of decontextualization annotations, which may be infeasibly expensive, and may not transfer to other domains. A few-shot approach to decontextualization would allow this technique to be more widely adopted in NLP system design.</p><p>In this paper, we present a few-shot approach to decontextualization that uses an LLM to map a sentence to a decontextualized form through a series of edits. We present preliminary results involving both automatic and human evaluations demonstrating that this method can achieve viable performance across multiple domains, using only a single small set of annotated examples.</p><p>The term "decontextualization" was initially introduced by <ref type="bibr" target="#b4">Parikh et al. (2020)</ref>, and the concept was further refined and generalized by <ref type="bibr" target="#b1">Choi et al. (2021)</ref>. The latter relied on fine-tuning models on large amounts of annotated data. <ref type="bibr" target="#b7">Shin et al. (2021)</ref> demonstrated a few-shot method for deriving decontextualized canonical forms by using constrained decoding procedure. However, this approach is only viable within a closed domain where a grammar for the constrained language can be created.</p><p>Decontextualization is closely related to, but not identical to, the task of text summarization <ref type="bibr" target="#b2">(Gambhir and Gupta, 2017)</ref>. In summarization, a sentence need not be rendered into a form that can stand without context; indeed, a summary is often retrieved or generated relative to the context provided by a query. Decontextualization, therefore, is a more constrained problem that involves resolving complex linguistic phenomena such as anaphora and ellipsis that may be ignored by common text summarization methods.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Method</head><p>Given a context C = {c 1 , ..., c n } and a sentence s, the goal of decontextualization is to produce a new sentence s ′ such that s ′ is interpretable in the empty context, and carries the same truthconditional meaning as s does given context C.</p><p>We propose a pipelined approach to few-shot decontextualization using the GPT-3.5-TURBO LLM<ref type="foot" target="#foot_0">foot_0</ref> , based upon the categorization of possible edits described by <ref type="bibr" target="#b1">Choi et al. (2021)</ref>. Our method, diagrammed in Figure <ref type="figure">2</ref>, consists of several edit nodes that transform a given sentence s sequentially, each provided the context C and a set of examples.</p><p>We further decompose each edit node into several substeps (shown for the "NP" node in Figure <ref type="figure">2</ref>)<ref type="foot" target="#foot_1">foot_1</ref> . To ensure that each substep is accurate, we employ validator functions that compare the input sentence to the output sentence<ref type="foot" target="#foot_2">foot_2</ref> ; if the LLM cannot generate a correct output after N retries, then the input sentence is returned for that substep. Each edit step has access to K in-context examples for that edit type<ref type="foot" target="#foot_3">foot_3</ref> . We elaborate on each component</p><p>NP Context Sentence Name Deletion Check Addition Decontextualized Sentence Check Bracket Replace Validate ≤ N Validate ≤ N Examples Figure 2: A diagram of our few-shot pipeline. Given an input sentence, context, and set of examples, a sequence of edit nodes transform the input sentence into a decontextualized sentence. Each edit node consists of several substeps to ensure validity, and some edit nodes may also be optionally preceded by cutoff checks.</p><p>below; full details and prompts can be found in Appendix A).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Bracket Substep</head><p>We first prompt the LLM to bracket each candidate span for that edit type, using "[" and "]" as special delimiter tokens. For example, during the "NP" step in Figure <ref type="figure">2</ref>, the sentence from Figure <ref type="figure">1</ref> may be bracketed as "Well, mainly, I like the complex characters that [he] creates, such as Tyrion.". The validator function for this substep ensures that the output string is identical to the input apart from brackets.</p><p>Replace Substep Next, the LLM is prompted to replace each bracketed expression with edits of the appropriate type. E.g., after bracketing the previous sentence, the expression "[he]" may be replaced with "[George R. R. Martin]". We validate this substep by ensuring that the non-bracketed sections of the output string match those of the input string. However, we allow for some tolerance by thresholding based on the Jaccard similarity between the uni-grams of the input and output sentence, excluding brackets:</p><formula xml:id="formula_0">J(S I , S O ) = |S I ∩S O | |S I ∪S O | ≥ 0.5.</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Completion Checks</head><p>To avoid overmodification, we allow for cutoff checks -"Check" in Figure <ref type="figure">1</ref> -to be optionally introduced prior to certain edit nodes; in our pipeline, we use cutoff checks for the "Deletion" and "Addition" stages. If the LLM classifies a sentence as sufficiently decontextualized (given K examples), the sentence is returned and all subsequent edit nodes are skipped.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Datasets</head><p>For our primary experiment, we use the Decontext dataset<ref type="foot" target="#foot_4">foot_4</ref> created by <ref type="bibr" target="#b1">Choi et al. (2021)</ref>. This dataset, oriented towards text summarization, consists of sentences from the Wikipedia corpus embedded within a context paragraph, each annotated with decontextualized sentences by up to 5 annotators.</p><p>We also evaluate whether the performance of our method transfers to a conversational dataset, using the same example set from the Decontext dataset. For this, we use a subset of the validation split from the Switchboard corpus<ref type="foot" target="#foot_5">foot_5</ref>  <ref type="bibr" target="#b3">(Godfrey et al., 1992)</ref>. Additional details about our data preprocessing can be found in Appendix B.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Baselines</head><p>We consider two baselines for each experiment, following <ref type="bibr" target="#b1">(Choi et al., 2021)</ref>. First, we consider a method REPEAT that simply repeats the original sentence as an output. Second, we consider a HUMAN generated sentence, chosen by taking the median length annotation for each data sample and using the remaining annotations as references.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Metrics</head><p>We use the following automatic metrics as our primary method of comparison. First, we report the average percentage increase in length of the decontextualized sentences over the original sentences (Len inc.), as well as the percentage of items where the decontextualized sentence was not identical to the original sentences (% edited). Next, we report the percentage of items where the decontextualized sentence was an exact match to at least one of the gold annotations, excluding punctuation and stopwords (% match). Since some items did not require edits, we report this score both for all items, and for the subset of items where all gold annotations contained an edit.</p><p>Finally, we report the (SARI) score <ref type="bibr" target="#b8">(Xu et al., 2016)</ref>, which allows us to compute precision/recall/F1 scores between the output and gold annotation for edits relative to the input sentence. We compute this metric separately for add and delete edits (micro-averaging over all items), looking at unigrams only and using fractional counts for items with multiple gold annotations. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Decontextualization Experiment</head><p>We first evaluate the performance of our method on a random subset of 1000 items (approximately 50% of the data) from the Decontext test split<ref type="foot" target="#foot_6">foot_6</ref> .</p><p>We generate K = 20 in-context examples from the annotations in the development split of the Decontext dataset, filtering for items with 1-2 context sentences and each sentence having less than 30 words. We use an 80/20 ratio of positive to negative<ref type="foot" target="#foot_7">foot_7</ref> examples, and a 50/50 split for cutoff nodes.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4.1">Automatic Evaluation</head><p>We generate decontextualized sentences both with (+CHECK) and without (-CHECK) the cutoff check nodes in Figure <ref type="figure">2</ref>. Results for our automated evaluation metrics are shown in Table <ref type="table" target="#tab_1">1</ref>. We observe that including the cutoff check steps in the pipeline helps avoid extraneous modifications, leading to an average length increase that reflects human annotations, and substantially higher SARI F1 scores.</p><p>The scores achieved by our best performing method, while significantly above the baseline, are still well below human-level annotation; Further performance gains can likely be achieved by improved validation and filtering of delete edits (SARI del), which we found have quite low precision relative to recall. However, we note that our method tends to edit a larger fraction of sentences relative to the human annotators, likely diminishing its exact match and SARI add scores despite not being an inherent limitation<ref type="foot" target="#foot_8">foot_8</ref> . For this, we turn to a human evaluation of the decontextualized sentences.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4.2">Expert Evaluation</head><p>Due to the wide space of possible "acceptable" decontextualized sentences, we also ground our automatic evaluation in an expert evaluation of the generated decontextualizations. We randomly selected</p><p>LLM Either Human Sum % valid LLM 6 4 1 11 74 Either 6 45 11 62 -Human 3 6 18 27 87 Sum 15 55 30 100 % valid 75 -88 Table 2: Preferences between the LLM output and human annotations, as well as overall % marked as valid, with columns/rows showing judgments of expert A/B. 100 examples from our Decontext test subset; given pairs of randomly shuffled candidate decontextualizations, two of the authors annotated each pair for (a) whether each candidate is a valid decontextualization, and (b) which candidate is preferred (allowing for "either", i.e., indifference).</p><p>Our results are shown in Table <ref type="table">2</ref>. On average, the annotators judged 74.5% of LLM outputs as being sufficiently decontextualized, vs. 87.5% of human annotations; interannotator agreements measured by Cohen's kappa were 0.76 and 0.68. The preference annotations indicate that, while human annotations were slightly preferred to LLM outputs, in the majority of cases the expert annotators were indifferent between the two decontextualizations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5">Conversational Transfer Experiment</head><p>One question of interest is whether extending our approach to a new domain or application -such as extracting "gist clauses" in a conversational system <ref type="bibr" target="#b6">(Razavi et al., 2017)</ref> -requires a set of new hand-annotated examples, or whether the LLM's performance using the previous set of examples transfers to the new domain. To test this, we replicate the previous automatic evaluation on a small annotated subset of the Switchboard corpus, using the same 20 examples from Section 4.4.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5.1">Annotation Collection</head><p>After preprocessing data from the Switchboard validation set, we randomly select 150 sentences that have been determined by an LLM to be interpretable within a 2-turn context window for decontextualization by three expert annotators 10 -see Appendix B for more details about this procedure. Annotator agreement, which we compute using mean pairwise Jaccard similarity between annotators over sets of added/deleted unigrams, was significant -about 0.56 and 0.64 respectively.</p><p>10 Two of the authors + a PhD student studying NLP. Method Len % % match SARI add SARI del inc. edit all / edit F1 (P/R) F1 (P/R) REPEAT 0 0 19 / 0 0 (0/0) 0 (0/0) +CHECK 34 96 5 / 5 27 (22/34) 47 (56/41) HUMAN 8 84 44 / 37 62 (63/61) 75 (77/73)</p><p>Table 3: Automatic evaluation results on the Switchboard annotated subset for each set of decontextualizations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5.2">Automatic Evaluation</head><p>We generate results for the annotated Switchboard data using the best performing method from 4.4 (i.e., using cutoff checks); shown as +CHECK in Table <ref type="table">3</ref>. As before, the LLM tends to edit at a higher rate than human annotators, leading to a low percentage of exact matches. However, we achieve a comparable F1 score for SARI add as in Section 4.4, and actually achieve a significantly higher F1 score for SARI del -potentially due to the prominence of discourse markers and other removable content in the Switchboard sentences relative to the Decontext sentences.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.6">Qualitative Error Analysis</head><p>Of the items marked as invalid by both annotators in 4.4.2, 15 were due to missing NP edits (typically unresolved pronouns or definite NPs); 4 were due to failures to ADD disambiguating postmodifiers; and 2 were due to a failure to DELETE discourse markers. On inspection of the generated Switchboard decontextualizations, we found that missing DELETE edits were a relatively more common form of error -likely due to containing forms of discourse markers that were not common in the Decontext example set. Some specific examples for both datasets are shown in Appendix C.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion and Future Work</head><p>We proposed a few-shot LLM-based pipeline for performing decontextualization through a series of edits resembling human annotations, and presented preliminary results showing that this method achieves reasonable performance across multiple domains using few examples. In the future, we believe that the performance of our method can be improved by incorporating smaller specialized NLP models -e.g., a coreference model -as well as by experimenting with additional edit types for more complex linguistic phenomena, such as Wh-Question gaps or conversational implicatures.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitations</head><p>Our method is based on a "pure" LLM prompting strategy, and achieves lower performance in automatic metrics than the fine-tuned language models explored by <ref type="bibr" target="#b1">(Choi et al., 2021)</ref>. While our work aims to demonstrate that viable results can be achieved in a few-shot setting, in settings where large numbers of annotations are feasible to collect, it is still likely a better option to use a model specifically trained for that task. Additionally, due to cost and resource constraints, we show our results using a GPT-3.5 model; performance may differ using the more recent GPT-4 model. The automatic metrics used in our paper may be difficult to intuitively interpret, due to the openended nature of the possible edits that human annotators can make. While we ground our results for the Decontext dataset in an expert evaluation, our results should still be considered preliminaryfurther human evaluations, ablation studies, as well as user studies for downstream tasks using the proposed pipeline are likely necessary to fully assess the utility of this approach.</p><p>NP Given a sentence, put brackets around any personal pronouns, definite pronouns, and definite noun phrases that can be replaced with more specific expressions. If there are none, give the original sentence. NAME Given a sentence, put brackets around any acronyms, nominative pronouns, or proper names that can be replaced with more specific expressions. If there are none, give the original sentence. DEL Given a sentence, put brackets around any discourse markers and connectives that can only be understood in context. If there are none, give the original sentence. ADD Given a sentence, insert empty brackets wherever additional modifiers should be added in order to allow the sentence to be interpretable without context. If there is no need for modifiers, give the original sentence.</p><p>Table 4: The LLM prompts that are used for bracketing at each edit node.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Method Details</head><p>A.1 Hyperparameters</p><p>We use the GPT-3.5-TURBO LLM for all generation. We use the default hyperparameters, i.e., a temperature of 1, top p 1, frequency penalty 0, and presence penalty 0. We use N = 2 retries for substeps that fail validation, and K = 20 in-context examples for each step.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.2 LLM Prompts</head><p>For each edit node in Figure <ref type="figure">2</ref>, we show the LLM prompts that are used for bracketing in Table <ref type="table">4</ref>, and the prompts that are used for replacing in Table 5. For the cutoff checks, we use the following prompt: "Given a context and a sentence, decide whether the meaning of the sentence can be understood without the context. Answer "True" if the sentence can be understood without context, and "False" otherwise."</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Experiment Details</head><p>B.1 Decontextualization Experiment Details B.1.1 Subselection Procedure</p><p>We use the same procedure for subselecting data to use for our generation experiments as <ref type="bibr" target="#b1">(Choi et al., 2021)</ref> for both the Decontext and Switchboard datasets, which we reproduce here. First, we remove all examples where three or more annotators (out of five in the case of Decontext; out of three in the case of Switchboard) marked decontextualization as "impossible", and then discard any NP Given a context and a sentence, replace any bracketed expressions in the sentence with a more explicit referring expression from the context or general knowledge. If there are no bracketed expressions, do nothing. NAME Given a context and a sentence, replace any bracketed expressions in the sentence with a more explicit referring expression from the context or general knowledge. If there are no bracketed expressions, do nothing. DEL Given a context and a sentence, remove any bracketed expressions if they are extraneous or require context to interpret. If there are no bracketed expressions or if there is no need to make any changes, do nothing. ADD Given a context and a sentence, replace any bracketed expressions (which may be empty) with additional modifiers from the context or general knowledge that make the sentence more explicit. If there are no bracketed expressions or if there is no need to make any changes, do nothing. Do not change any content except for replacing brackets.</p><p>Table <ref type="table">5</ref>: The LLM prompts that are used for replacing at each edit node.</p><p>remaining annotations that mark the example as "impossible". To select the human annotation for comparison, we sort the annotations by length (in raw bytes) in descending order, take the median output as the human annotation, and use the remaining annotations as our gold references for the automatic evaluation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B.1.2 Expert Evaluation Setup</head><p>To collect expert annotations of decontextualization validity and preference, we randomly sample 100 items from the subset for which we've generated decontextualized sentences. For each item, we randomly swap the order of the generated output and the human annotation. Each annotator -i.e., two of the authors -annotated each item with the following:</p><p>1. Is candidate 1 a valid decontextualization? (I.e., is it in a form that can be understood without context?) Answer with "y" or "n".</p><p>2. Is candidate 2 a valid decontextualization? Likewise, answer with "y" or "n".</p><p>3. What is your preference between candidate 1 and candidate 2? Answer with "1" if candidate 1 is better, "2" if gist 2 is better, or "0" if you are indifferent between the two.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B.2 Switchboard Annotation Details</head><p>Since the Switchboard corpus is a fairly noisy dataset containing annotated transcriptions of telephone conversations, we first clean the data using GPT-3.5-TURBO. We split each full conversation into chunks of utterances such that each chunk fits within the LLM token limit, and generate cleaned conversations using the following prompt: "Given an annotated conversation between two people, clean the conversation by removing all annotations and backchannels.". We then re-combine the cleaned blocks and split each turn in the conversation into multiple sentences. Finally, we create sentence and context pairs using a sliding window of size 5 over each conversation.</p><p>After preprocessing the Switchboard data, we filter all sentences and keep those that have at least one turn of context, and that have at least 6 words. For each item, we remove all context turns except for the 2 most recent turns. Since there are many sentences in the dataset that cannot be decontextualized with only the 2 most recent turns, we also use GPT-3.5-TURBO to rank items by their quality, according to the following prompt:</p><p>Given a sentence and context sentences, provide a numerical quality rating between 1 (worst quality) and 5 (best quality) based on the following criteria:</p><p>-Whether every sentence is fluent and natural.</p><p>-Whether the sentences have interesting content.</p><p>-Whether the sentence can be understood given the provided context. Do not give an explanation. Just give a single integer between 1 and 5.</p><p>We filter out all items that have a rating of less than 3, and then randomly select 150 of the remaining examples to annotate.</p><p>The annotators (two of the authors, and one PhD student studying NLP in the same department) annotated each item with decontextualized sentences (referred to in the instructions as "gist clauses", due to the conversational setting) -the instructions provided to annotators are shown in Figure <ref type="figure" target="#fig_2">3</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B.3 Experiment Costs</head><p>We estimate that a full generation pass through 1000 examples from the Decontext dataset, using 20 examples for each edit step, cost about $20 and took about 4 hours to complete. A full generation pass through 150 annotated examples from the Switchboard dataset cost about $2.5, and took about 30 minutes to complete.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C Examples</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C.1 Decontext dataset</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Context</head><p>A starting pistol or starter pistol is a blank handgun that is fired to start track and field races , as well as competitive swimming races at some meets . Sentence Beside sporting events , they are also used in films and in TV or stage shows .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>LLM</head><p>Beside sporting events , starting pistols are also used in films and in TV or stage shows .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Human</head><p>Beside sporting events , starting pistols are also used in films and in TV or stage shows . </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>LLM</head><p>Although the children ' s book series " Geronimo Stilton " credits its title character as the author , the idea was originally thought of by Elisabetta Dami , who is the actual author of the series .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Human</head><p>Although the Geronimo Stilton Italian children 's book series credits its title character as the author , the idea was originally thought of by Elisabetta Dami .   </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Human</head><p>The medical group insurance area is the most important job benefit as far as covering medical costs for yourself or family members.</p><p>Table <ref type="table" target="#tab_1">10</ref>: A "good" example from the Switchboard dataset Context I need to know how do you feel about sending an elderly family member to a nursing home? Sentence Of course, it's one of the last few things in the world you'd ever want to do, unless it's really for their own good.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>LLM</head><p>Of course , the act of sending an elderly family member to a nursing home is considered one of the last resort options , unless it is genuinely in their best interest .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Human</head><p>You wouldn't want to send an elderly family member to a nursing home, unless you're sending them to the nursing home for thier own good.</p><p>Table 11: A "good" example from the Switchboard dataset  Table <ref type="table" target="#tab_1">13</ref>: A "bad" example from the Switchboard dataset (missing highlighted NP edits) </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Context A :</head><label>:</label><figDesc>What kind of hobbies do you have? B: I do a lot of cross-stitching and painting, when I do have spare time. Sentence A: Really, I like cross-stitch too.LLMA: Really ! I like cross -stitch too .HumanA: I like cross-stitching.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: The instructions shown to annotators for annotating decontextualized sentences, or "gist clauses", in the Switchboard corpus.</figDesc><graphic coords="9,70.87,251.01,453.55,305.99" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>Automatic evaluation results on the Decontext test set for each set of decontextualizations.</figDesc><table><row><cell cols="2">Method Len</cell><cell cols="4">% % match SARI add SARI del</cell></row><row><cell></cell><cell cols="5">inc. edit all / edit F1 (P/R) F1 (P/R)</cell></row><row><cell>REPEAT</cell><cell>0</cell><cell>0</cell><cell>36 / 0</cell><cell>0 (0/0)</cell><cell>0 (0/0)</cell></row><row><cell>-CHECK</cell><cell>32</cell><cell>92</cell><cell cols="2">8 / 0 24 (21/28)</cell><cell>8 (5/40)</cell></row><row><cell cols="2">+CHECK 24</cell><cell>91</cell><cell cols="3">10 / 5 31 (33/29) 21 (15/37)</cell></row><row><cell>HUMAN</cell><cell>24</cell><cell>78</cell><cell cols="3">44 / 30 55 (63/50) 59 (61/58)</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_7"><head>Table 6 :</head><label>6</label><figDesc>A "good" example from the Decontext dataset (exact match)Sentence Although the series credits its title character as the author , the idea was originally thought of by Elisabetta Dami .</figDesc><table><row><cell>Context</cell><cell>Geronimo Stilton is an Italian children 's book se-</cell></row><row><cell></cell><cell>ries published by Edizioni Piemme of Milan , Italy</cell></row><row><cell></cell><cell>, since 2000 .</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_8"><head>Table 7 :</head><label>7</label><figDesc>A "good" example from the Decontext dataset</figDesc><table><row><cell>Context</cell><cell>"Ms. Jackson" is a song by American alternative</cell></row><row><cell></cell><cell>hip hop duo OutKast .</cell></row><row><cell cols="2">Sentence It was released on October 3 , 2000 , as the second</cell></row><row><cell></cell><cell>single from their fourth album , Stankonia .</cell></row><row><cell>LLM</cell><cell>It was released on October 3 , 2000 , as the second</cell></row><row><cell></cell><cell>single of OutKast ' s fourth album "Stankonia" .</cell></row><row><cell>Human</cell><cell>The song "Ms. Jackson" was released on October</cell></row><row><cell></cell><cell>3 , 2000 , as the second single from the group</cell></row><row><cell></cell><cell>OutKast fourth album , Stankonia .</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_9"><head>Table 8</head><label>8</label><figDesc>May 1895 , the first North American cat show was hosted at Madison Square Garden in New York City. A female Maine Coon brown tabby , named Cosey , was entered into the show . Sentence Owned by Mrs. Fred Brown , Cosey won the silver collar and medal and was named Best in Show . LLM Owned by Mrs . Fred Brown , the female Maine Coon brown tabby named Cosey won the silver collar and medal and was named Best in Show . Human Owned by Mrs. Fred Brown , Cosey won the silver collar and medal and was named Best in Show in the first North American cat show in May 1895 .</figDesc><table><row><cell>: A "bad" example from the Decontext dataset</cell></row><row><cell>(missing highlighted NP edit)</cell></row><row><cell>In Tables 6, 7, 8, and 9, we provide some con-</cell></row><row><cell>crete examples of decontextualizations generated</cell></row><row><cell>using our method for the Decontext dataset. We</cell></row><row><cell>sample two examples of successful decontextual-</cell></row><row><cell>izations, and two examples of unsuccessful decon-</cell></row><row><cell>textualizations.</cell></row></table><note><p>Context</p><p>On 8</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_10"><head>Table 9 :</head><label>9</label><figDesc>A "bad" example from the Decontext dataset (missing highlighted ADD edit)C.2 Switchboard datasetIn Tables10, 11, 12, and 13, we provide some concrete examples of decontextualizations generated using our method for the Decontext dataset. We sample two examples of successful decontextualizations, and two examples of unsuccessful decontextualizations.What do you think, next to salary do you rank, is the most important job benefit? Sentence I would say the medical group insurance area as far as covering medical costs for yourself or family members.LLMI would say medical group insurance , as far as covering medical costs for yourself or family members , is the most important job benefit after salary .</figDesc><table><row><cell>Context</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_12"><head>Table 12 :</head><label>12</label><figDesc>A "bad" example from the Switchboard dataset (missing highlighted DEL edits)ContextA: Okay, the topic was, should the United States adopt the metric system, and if so, should.</figDesc><table><row><cell cols="2">Sentence B: How should they do it?</cell></row><row><cell>LLM</cell><cell>B: How should they do it?</cell></row><row><cell>Human</cell><cell>B: How should the United States adopt the metric</cell></row><row><cell></cell><cell>system?</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://platform.openai.com/docs/models/ overview</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>We found direct edit prompts to be hallucination-prone.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>The same validator functions are used for each edit node.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>Each example contains a bracketed and an edited sentence, though the former may be derived from the latter.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_4"><p>https://github.com/google-research/language/ tree/master/language/decontext</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="6" xml:id="foot_5"><p>https://huggingface.co/datasets/swda</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="7" xml:id="foot_6"><p>We use a subset of the data due to cost considerations.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="8" xml:id="foot_7"><p>I.e., examples where no edit is necessary.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="9" xml:id="foot_8"><p>We note that whether more or less information in the decontextualized sentence is desirable may depend on the particular application.</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Ethics Statement</head><p>Since this paper proposes a heavily constrained pipeline for mapping sentences to a semantically equivalent form (borrowing from a user-provided context), we do not believe that it presents notable ethical concerns in itself. Nevertheless, we would suggest that applications of this method in sensitive domains implement stricter validation functions than those used in this paper, in order to safeguard against potential hallucinated LLM outputs.</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">On the opportunities and risks of foundation models</title>
+		<author>
+			<persName><forename type="first">Rishi</forename><surname>Bommasani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Drew</forename><forename type="middle">A</forename><surname>Hudson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ehsan</forename><surname>Adeli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Russ</forename><surname>Altman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simran</forename><surname>Arora</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><forename type="middle">S</forename><surname>Sydney Von Arx</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeannette</forename><surname>Bernstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Bohg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emma</forename><surname>Bosselut</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Brunskill</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Decontextualization: Making sentences stand-alone</title>
+		<author>
+			<persName><forename type="first">Eunsol</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jennimaria</forename><surname>Palomaki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Lamm</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Kwiatkowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dipanjan</forename><surname>Das</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Collins</surname></persName>
+		</author>
+		<idno type="DOI">10.1162/tacl_a_00377</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="page" from="447" to="461" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Recent automatic text summarization techniques: a survey</title>
+		<author>
+			<persName><forename type="first">Mahak</forename><surname>Gambhir</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vishal</forename><surname>Gupta</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Artificial Intelligence Review</title>
+		<imprint>
+			<biblScope unit="volume">47</biblScope>
+			<biblScope unit="page" from="1" to="66" />
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Switchboard: telephone speech corpus for research and de-velopment . acoustics</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Godfrey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Holliman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Mcdaniel</surname></persName>
+		</author>
+		<idno>ICASSP-92</idno>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE International Conference on Speech, and Signal Processing</title>
+		<imprint>
+			<date type="published" when="1992">1992</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="517" to="520" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">ToTTo: A controlled table-to-text generation dataset</title>
+		<author>
+			<persName><forename type="first">Ankur</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Manaal</forename><surname>Faruqui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bhuwan</forename><surname>Dhingra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diyi</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dipanjan</forename><surname>Das</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.emnlp-main.89</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="1173" to="1186" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">Sung</forename><surname>Joon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">C</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carrie</forename><forename type="middle">J</forename><surname>O'brien</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meredith</forename><forename type="middle">Ringel</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Morris</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><forename type="middle">S</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bernstein</surname></persName>
+		</author>
+		<title level="m">Generative agents: Interactive simulacra of human behavior</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Managing casual spoken dialogue using flexible schemas , pattern transduction trees , and gist clauses</title>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">Z</forename><surname>Razavi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lenhart</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Schubert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ali</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hoque</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proc. of the 5th Annual Conference on Advances in Cognitive Systems</title>
+		<meeting>of the 5th Annual Conference on Advances in Cognitive Systems</meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Constrained language models yield few-shot semantic parsers</title>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Shin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Thomson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Charles</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Subhro</forename><surname>Roy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emmanouil</forename><surname>Antonios Platanios</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Pauls</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dan</forename><surname>Klein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Eisner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Van Durme</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.emnlp-main.608</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Dominican Republic. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="7699" to="7715" />
+		</imprint>
+		<respStmt>
+			<orgName>Online and Punta Cana</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Optimizing statistical machine translation for text simplification</title>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Courtney</forename><surname>Napoles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ellie</forename><surname>Pavlick</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quanze</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Callison-Burch</surname></persName>
+		</author>
+		<idno type="DOI">10.1162/tacl_a_00107</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">4</biblScope>
+			<biblScope unit="page" from="401" to="415" />
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

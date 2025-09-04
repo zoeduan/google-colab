@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Control Flow-Augmented Decompiler based on Large Language Model</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2025-03-10">10 Mar 2025</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Peipei</forename><surname>Liu</surname></persName>
+							<email>liupp@zgclab.edu</email>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Zhongguancun Laboratory</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Jian</forename><surname>Sun</surname></persName>
+							<email>sunjian@zgclab.edu</email>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Zhongguancun Laboratory</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Li</forename><surname>Chen</surname></persName>
+							<email>lichen@zgclab.edu</email>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Zhongguancun Laboratory</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Zhaoteng</forename><surname>Yan</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Zhongguancun Laboratory</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Peizheng</forename><surname>Zhang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Zhongguancun Laboratory</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Dapeng</forename><surname>Sun</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Dawei</forename><surname>Wang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Zhongguancun Laboratory</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Dan</forename><surname>Li</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="laboratory">Zhongguancun Laboratory</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="institution">Tsinghua University</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Control Flow-Augmented Decompiler based on Large Language Model</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2025-03-10">10 Mar 2025</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">411DDC05827584A3A8D2BF73EEE0666E</idno>
+					<idno type="arXiv">arXiv:2503.07215v1[cs.SE]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:50+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Binary decompilation plays a crucial role in various tasks related to security threat analysis and software engineering, such as binary vulnerability detection and software supply chain analysis. Current prevalent binary decompilation methods primarily rely on large language models (LLMs) and can be broadly classified into two main approaches: prompt-based decompilation and end-toend decompilation. Prompt-based methods typically require significant effort to analyze and summarize the predicted data to extract aspect-specific expert knowledge, which is then fed into a generalpurpose large language model to address specific decompilation tasks. End-to-end methods, on the other hand, carefully construct training datasets or neural networks to perform post-training on general-purpose large language models, thereby obtaining domain-specific large language models for decompiling the predicted data. However, both existing approaches still face significant challenges, including the absence of rich semantic representations of the input code and the neglect of control flow information, which is crucial for accurate decompilation. Furthermore, most current decompilation techniques are specifically tailored for the x86 architecture, making it difficult to efficiently adapt and generalize them to other bit width or instruction architectures. To address these limitations, we propose a novel end-to-end decompilation LLM, CFADecLLM, which aims to enhance existing end-to-end decompilation methods. We conduct extensive experiments on the public dataset Humaneval and Exebench across four optimization levels, and results demonstrate that our approach outperforms existing methods in multiple metrics, validating its effectiveness and superiority.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Binary reverse engineering is the technical process of extracting a program's structure, logic, and functional information from the compiled binary code <ref type="bibr" target="#b19">[Kruegel et al., 2004]</ref>. It serves a critical role in the field of software security, with its primary applications spanning across the several areas: vulnerability analysis and exploitation <ref type="bibr" target="#b19">[Szekeres et al., 2013]</ref>, malware analysis <ref type="bibr" target="#b7">[Egele et al., 2008]</ref>, software intellectual property protection and copyright disputes, software security assessment, protocol reverse engineering, and compatibility analysis <ref type="bibr" target="#b4">[Bossert et al., 2014]</ref>.</p><p>Decompilation, as a core technique of binary reverse engineering, aims to transform machine-readable binary code into human-readable high-level language code <ref type="bibr" target="#b9">[Fu et al., 2019]</ref>. By analyzing the control flow and data flow within the binary code, decompilation reconstructs program structures, infers variable names and types, and interprets function semantics, ultimately producing a high-level representation that closely approximates the original source code <ref type="bibr" target="#b5">[David et al., 2020]</ref>. Advanced decompilation techniques enable researchers to quickly grasp program logic, thereby significantly improving the efficiency of software security research.</p><p>Existing decompilation techniques can be broadly categorized into three types: (1) Tool and Expert Knowledge-Based Methods. These approaches rely on specialized reverse engineering tools and the in-depth knowledge of experts regarding system architecture, compiler behavior, and program semantics, and achieve structured analysis of the program with control flow graph (CFG) construction, data flow analysis, and symbolic execution <ref type="bibr" target="#b20">[Yakdan et al., 2015]</ref>.</p><p>(2) Statistical Machine Learning and Deep Neural Network-Based Methods. By modeling and learning the context and structural features of the code, these approaches predict patterns within binary code, thus significantly enhancing the automation level in decompilation. However, their generalization ability remains limited when dealing with complex control flows or heavily obfuscated code <ref type="bibr" target="#b11">[Zhu et al., 2024;</ref><ref type="bibr">Liang et al., 2021]</ref>. (3) Large Language Model-Based Methods. The success of large language models (LLMs) in natural language processing tasks has inspired research into their application in decompilation, bringing new heights in decompilation efficiency and performance. Two main technical channels exist for LLM-based decompilation: prompt-based channel <ref type="bibr" target="#b20">[Wong et al., 2023;</ref><ref type="bibr" target="#b15">Hu et al., 2024;</ref><ref type="bibr" target="#b8">Feng et al., 2024]</ref> and end-to-end channel <ref type="bibr">[Tan et al., 2024;</ref><ref type="bibr" target="#b16">Jiang et al., 2024;</ref><ref type="bibr" target="#b8">Feng et al., 2024]</ref>. Within the prompt-based channel, traditional decompilation tools (such as <ref type="bibr">Ghidra, IDA)</ref> are first used to generate initial pseudo-code from binary code. Expert knowledge is then applied to check the decompiled pseudo-code and design prompts. Finally, these prompts, along with the pseudo-code, are input into a general-purpose large language model to generate more precise decompilation results. Different from the former approach, end-to-end methods first disassemble binary code and regard the generated assembly code as a domain-specific language (DSL). A training dataset is then constructed in the form of 〈assembly code, source code〉, which is used for further post-training on a generalpurpose large model to develop a decompilation-specific large language model (e.g., CodeBERT, LLM4Decompile). During inference, the model can directly capture the semantics of assembly code and generate the corresponding highlevel language representation, thereby enhancing the accuracy and generalization capability of decompilation.</p><p>Currently, large language model-based decompilation methods are gradually emerging as a mainstream approach. Despite notable advancements in automating decompilation and handling complex code, current LLM-based decompilation methods face a key limitation: inadequate consideration and utilization of the global control flow structure. This structure is important for capturing a program's execution logic and understanding the semantics of complex functions, as evidenced by its critical role in previous research and many applications such as binary code similarity detection, binary code search, and third-party library identification <ref type="bibr">[Yang et al., 2022;</ref><ref type="bibr" target="#b16">Jin et al., 2022]</ref>. Moreover, existing methods are primarily designed for the x86 architecture and are difficult to extend to other instruction set architectures.</p><p>Based on the observation, we propose integrating the control flow structure information of binary code with large language models to build a Control Fow-Agmented Decompiler based on LLM (CFADecLLM), which can also be applied across different instruction set architectures, enabling efficient cross-architecture decompilation.</p><p>Specifically, the achievement of CFADecLLM consists of four steps. First, we compile the source code into binary code across different instruction architectures and bit-widths. Then, we disassemble the binary code using widely-used tools to obtain control flow graphs and assembly code. To leverage the strengths of different tools and enable complementary advantages in the generated assembly information, we use objdump to generate assembly code and IDA to produce control flow graphs. Next, we represent decompilationrelated information, including the control flow graph and assembly code, in a structured format and transform it into a form that can be effectively interpreted and understood by natural language models. Finally, we carefully design precise natural language prompts, incorporating as many instruction requirements and assembly details as possible to dynamically guide the decompilation process during both training and inference.</p><p>After training, we conduct experiments and analysis on two publicly available datasets, ExeBench and HumanEval. The results demonstrate the superiority of both our models compared to previous research.</p><p>In summary, our contributions can be summarized as follows:</p><p>1. We propose integrating control flow graphs into large models for decompilation, enabling us to fully leverage control flow information to recover program logic. To the best of our knowledge, this is the first work to incorporate control flow information into LLMs for decompilation.</p><p>2. We meticulously construct a dataset where each sample incorporates control flow information and instruction architecture details through rich and flexible natural language descriptions. Based on this dataset, we perform post-training on a general-purpose large model to obtain a domain-specific large model tailored for decompilation.</p><p>3. Through extensive experiments and analyses, we demonstrate the competitive performance of our model compared to the current top-performing models.</p><p>2 Related Works</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.1">Decompilation</head><p>The origins of decompilation can be traced back to Cristina Cifuentes' groundbreaking work <ref type="bibr">[Cifuentes, 1994]</ref>, which introduced interval theory-based techniques.</p><p>Traditional decompilation tools analyze a program's CFG for reverse engineering. The commercial Hex-Rays extension for IDA Pro <ref type="bibr" target="#b13">[Hex-Rays, 2025</ref>] is an industry standard, offering a balance of efficiency and usability for structural analysis. Open-source alternatives like Ghidra <ref type="bibr" target="#b10">[Ghidra, 2025]</ref> improve accessibility and transparency but often fail to effectively reverse compiler optimizations, reflecting assembly code structure instead of reconstructing high-level source code.</p><p>Phoenix <ref type="bibr" target="#b4">[Brumley et al., 2013]</ref> enhances control flow analysis through iterative techniques. DREAM <ref type="bibr" target="#b20">[Yakdan et al., 2015]</ref> removes goto statements to generate more structured code, though sometimes at the expense of readability. Revng <ref type="bibr" target="#b7">[Federico et al., 2018]</ref> employs the Control Flow Combing algorithm to minimize goto usage, which can result in code bloat, while <ref type="bibr">Revng-c [Gussoni et al., 2020]</ref> generates gotofree code to reduce complexity. In contrast, SAILR <ref type="bibr">[Basque et al., 2024]</ref> argues that decompilers should preserve the structure of the original source code, aiming to reverse transformations that induce goto statements for better alignment with the original code.</p><p>Building on DREAM, DREAM++ [Yakdan et al., 2016] introduces function inlining transformations but is limited by its predefined handling of library functions, restricting scalability. <ref type="bibr">ERASE [Zhang et al., 2024a]</ref> addresses these limitations by optimizing function inlining and improving data flow handling, particularly in recursive inlining scenarios.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2">Neural Network-Based Decompilation</head><p>Drawing inspiration from neural machine translation (NMT), decompilation has been reformulated as a translation problem between two programming languages. Early efforts utilized recurrent neural networks to decompile binary code into higher-level code, marking a significant departure from traditional rule-based decompilers <ref type="bibr">[Katz et al., 2018a]</ref>. While these approaches demonstrated the feasibility of applying NMT to decompilation, they were limited in both accuracy</p><p>int imc_fits_dtype_string(char *dtype) { int fitsdtype = -1; if (dtype != NULL &amp;&amp; dtype[0] != '\0') { if (strstr(dtype, "SHORT")) { … return fitsdtype; } Source Code CFG Disassembly Tools endbr64 test %rdi,%rdi je 87 &lt;imc_fits_dtype_string+0x87&gt; push %rbp cmpb $0x0,(%rdi) mov %rdi,%rbp je 80 &lt;imc_fits_dtype_string+0x80&gt; lea 0x0(%rip),%rsi callq 1e &lt;imc_fits_dtype_string+0x1e&gt; mov %rax,%r8</p><p>...</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Assembly Code</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Structured Data Instance</head><p>The assembly code is obtained by disassembling the binary file (compiled by GCC) using objdump, and its content is represented as a JSON dictionary: \n{assembly_prompt}\n\n-The control flow graph (CFG) information is extracted by IDA from the binary file and is represented as another JSON dictionary: \n{cfg_prompt}\n\\nThe high-level source code is: and complex binary structures. Building on this foundation, Katz et al. <ref type="bibr" target="#b19">[Katz et al., 2019]</ref> identified the core challenge as the information asymmetry between high-level programming languages (PLs) and low-level PLs, and they proposed the TraFix to improve sequence prediction tasks by enhancing alignment between low-level instructions and high-level constructs. However, the automation and precision were still limited.</p><formula xml:id="formula_0">Prompt LLM int imc_fits_dtype_string(char *dtype) { int fitsdtype = -1; if (dtype != NULL &amp;&amp; dtype[0] != '\0') { if (strstr(dtype, "SHORT")) { … return fitsdtype; } Source Code</formula><p>Coda <ref type="bibr" target="#b9">[Fu et al., 2019]</ref> introduced an end-to-end neural framework for decompilation, employing multiple models for specific statement types, yet struggled with complex binary code. <ref type="bibr">Neutron [Liang et al., 2021]</ref>, an attention-based approach, improved accuracy by better mapping assembly to high-level constructs, but a gap still remained. <ref type="bibr">NeurDP [Cao et al., 2022]</ref> utilized graph neural networks to bridge the gap for compiler-optimized binaries, introducing intermediate representations and Optimized Translation Units (OTU) to enhance the decompilation of optimized binary code.</p><p>Recent advancements in decompilation have been motivated by the success of Large Language Models, exploring two primary approaches: prompt-based decompilation and end-to-end decompilation. Prompt-based decompilation uses LLMs to enhance traditional decompilers like Ghidra and IDA Pro, improving readability and re-executability. For instance, DeGPT <ref type="bibr" target="#b15">[Hu et al., 2024]</ref> reduced cognitive load in Ghidra by 24.4%, and DecGPT <ref type="bibr" target="#b20">[Wong et al., 2023]</ref> boosted IDA Pro's re-executability rate to over 75% by integrating error messages into the refinement process.</p><p>End-to-End decompilation fine-tunes LLMs to directly generate high-level code from binaries. Early efforts, like BTC <ref type="bibr" target="#b14">[Hosseini and Dolan-Gavitt, 2022]</ref>, demonstrated the potential of transformers but struggled with complex binaries. Slade <ref type="bibr">[Armengol-Estapé et al., 2024]</ref> introduced a smaller, efficient model optimized for assembly, while Nova <ref type="bibr" target="#b16">[Jiang et al., 2024]</ref> scaled the approach with a 1-billion-parameter model, improving accuracy. However, open-source models are still limited to around 200 million parameters. Feng et al. <ref type="bibr" target="#b8">[Feng et al., 2024]</ref> proposed the sc2dec method to improve performance without fine-tuning by recompiling decompilation results for in-context learning and aligning assembly code with source code using debugging informa-tion. LLM4Decompile <ref type="bibr">[Tan et al., 2024]</ref>, built on DeepSeek-Coder, introduced models for both direct binary decompilation and refining Ghidra's outputs. It achieved notable gains in readability and executability, and set a new performance standard for decompilation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.3">Binary Comprehension</head><p>Focusing on recovering semantic information to optimize binary comprehension, previous studies have proposed various optimization methods. These approaches aim to recover details such as function names, variable types, and data structures from stripped binaries. For instance, Nero <ref type="bibr" target="#b5">[David et al., 2020]</ref> and <ref type="bibr">NFRE[Gao et al., 2021]</ref> used encoder-decoder frameworks, with Nero leveraging graph neural network (GNN) and long short-term memory (LSTM) for function name prediction and NFRE incorporating instruction-level control flow information to reduce analysis costs. DEBIN <ref type="bibr" target="#b12">[He et al., 2018]</ref> employed Conditional Random Field (CRF) based dependency graphs to predict both function names and variable information, while SYMLM[Jin et al., 2022] integrated calling context into function embeddings for enhanced name predictions. OSPREY[Zhang et al., 2021] focused on variable type recovery, combining deterministic rules with probabilistic inference for improved accuracy. TYGR[Zhu et al., 2024] utilized graph-based data-flow analysis with GNNs to enhance type inference, and Epitome[Zhang et al., 2024b] applied multi-task learning and vote-based tokenization to improve function name prediction across different optimization levels, using pre-trained assembly models and fine-grained CFGs for better semantic understanding.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Method</head><p>As shown in Figure <ref type="figure" target="#fig_0">1</ref>, this section presents the detailed implementation of our CFADecLLM. Section 3.1 presents the data construction process and provides a detailed explanation of its specific format. Section 3.2 explains how the control flow graph is transformed into a natural language representation, and Section 3.3 demonstrates the construction of instructions for guiding the large language model in the decompilation task. "comassem": XXX # concatenate the entire assembly code of the function body ( compilable) using "\n" for line breaks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>6</head><p>"sourcecode": XXX # concatenate the target high-level C code using "\n" for line breaks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>7</head><p>"assemgraph": { 8 "nodes":</p><formula xml:id="formula_1">9 [ 10 { 11</formula><p>"bytecode": ["55", "89", "e5", "83", "e4", "f0"], # the bytecode of all instructions in a CFG block.</p><p>12 "addr": (Ox000001, Ox200001) # the starting and ending addresses of the instructions in a CFG block.</p><p>13 "assemblock": ["push rbp", "mov ebp, esp", "and esp, 0xfffffff0"]</p><p>14 }, # assembly instructions in a CFG block. 15 ... ... 16 ], 17 "edges":[(1,3), (0,4), (4,6), (1,5), ...], # a list of tuples, where each tuple represents the indices of CFG blocks that have a connecting edge. 18 "nodeNum": XXX # the number of CFG blocks contained in the function body. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Dataset</head><p>We here first present the process of dataset collection and organization, then describe the representation of each data instance including CFG, assembly code, and source code generated based on multi-optimization and dual-bitwidth compilation<ref type="foot" target="#foot_0">foot_0</ref> .</p><p>(1) Data Collection We build our datasets on top of existing source code datasets, Exebench [Armengol-Estapé et al., 2022], a ML-scale, function-level dataset that pairs real-world C code sourced from GitHub with input-output (IO) examples enabling these programs to be executed. Using 0.8 million C functions from Exebench, we generate our datasets through the following steps: Step1 Resolve Data Type Conflicts. To generate 32-bit executables of C functions, we address data type conflicts between 32-bit standard libraries and Exebench-generated .c files. For instance, we replace the 64-bit-specific definition typedef unsigned long size t; used in Exebench with typedef unsigned int size t; to comply with the 32-bit program standards. Step2 Compile. The .c files containing the source code of the target functions are compiled using GCC into executables with four different optimization levels (O0, O1, O2, and O3) and two bitwidths (32-bit and 64-bit). After compilation, the executables are stripped to remove debugging information for further processing. Step3 Disassemble. To ensure variety and accuracy in the disassembled assembly code, we utilize both Objdump[Binutils, 2025] and IDA Pro[Hex-Rays, 2025] for disassembly. We also develop a custom IDA plugin to facilitate this process. Additionally, when IDA cannot correctly identify the boundaries of a target function, we use function boundaries identified by Objdump to augment the IDA-generated assembly code, ensuring comprehensive coverage of the target function. Step4 Generate CFG. Recognizing the importance of semantically accurate CFGs, we develop an IDA plugin to construct CFGs from the target function's assembly code. Basic blocks are formed by grouping instructions between branch instructions. Using the disassembled code, IDA Pro identifies transitions between blocks by analyzing jump and branch instructions, thereby creating a precise representation of the target function's control flow.</p><p>(2) Structured Data Representation After all the processing steps, we represent each data instance in a structured dictionary format that contains various functional and attribute information, making it easy to use in following downstream tasks. The data representation can be seen in Figure <ref type="figure" target="#fig_2">2</ref>. This data structure comprises six main features, including the instruction set architecture, bit width, optimization level, assembly code generated by Objdump, and the CFG. The CFG feature encodes information about all basic blocks ("nodes"), the number of basic blocks</p><p>Python Code 1 def convert_cfg(datapoint): 2 assembly_prompt = { 3 "instruction set architecture": datapoint["arch"], 4 "bit width": datapoint["mode"], 5 "compiler optimization level": datapoint["opts"], 6 "assembly code": datapoint["comassem"]} 7 cfg_prompt = { 8 "a list of cfg_blocks": datapoint["assemgraph"]["nodes"], 9 "edges between two connected cfg_blocks": datapoint["assemgraph"]["edges"], 10 "cfg_block count": datapoint["assemgraph"]["nodenum"] 11 } 12 assembly_prompt = json.dumps(assembly_prompt) 13 cfg_prompt = json.dumps(cfg_prompt) 14 15</p><p>prompt4input = f"The assembly code is obtained by disassembling the binary file ( compiled by GCC) using objdump, and its content is represented as a JSON dictionary: \n{assembly_prompt}\n\n-The control flow graph (CFG) information is extracted by IDA from the binary file and is represented as another JSON dictionary: \n{cfg_prompt}\n\nEach 'cfg_block' in 'a list of cfg_blocks' contains: \n -'assemblock': The assembly instructions within the block.\n -' bytecode': The hexadecimal bytecode corresponding to the block. \n -'addr': The tuple of start and end addresses of the instructions.\n\nThe high-level source code is: " ("nodeNum"), and the transition edges between basic blocks ("edges"). The "edges" represent an undirected graph, where each value corresponds to the index of a basic block in the "nodes". Additionally, each basic block includes its bytecode ("bytecode"), boundary addresses ("addr"), and assembly code ("assemblock"). This unified representation provides not only low-level details about the function's implementation logic but also rich contextual data, enabling more accurate and interpretable model training during the decompilation process.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Natural Language Transformation of Structured CFG</head><p>In this section, we transform assembly code and the structured CFG information into human-readable natural language descriptions to facilitate processing and understanding by large language models. The details are shown in Figure <ref type="figure" target="#fig_3">3</ref>.</p><p>We first improve the initial data construction format by using key-value pairs to clearly describe the specific roles and functions of each assembly information in the decompilation process, ensuring that each field has a clear and easily interpretable semantic meaning.</p><p>Then, to enable the large model to better understand and process this structured data, we convert the dictionary into a JSON string with natural language description. Through this conversion, we not only preserve the hierarchical structure of the original data but also make it more compatible with the model's input requirements, enhancing its ability to comprehend instruction attributes. Additionally, this approach reduces the constraints imposed by structured data on input formatting, allowing the model to perform reasoning in a more natural textual environment, thereby improving its performance in complex tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Instruction Prompt</head><p>In this section, we concatenate the prompt4input with the training instruction "You are a professional decompilation assistant. Your task is to analyze the input assembly code and control flow graph (CFG) information, understand the function's logic, and derive the corresponding high-level source code. Please ensure that the output source code is well-structured, syntactically correct, and accurately reflects the logic and functionality of the assembly code. ", which includes LLM's roles and task objectives to design an optimized prompt. The prompt aims to enhance the multidimensional features of the input information, enabling the large model to effectively parse the syntax, semantics, and control flow structure of the assembly code during decompilation, thereby improving the model's performance in the source code generation task.</p><p>Finally, the prompt is input into the large model for endto-end fine-tuning with source code as the target output. Through this process, we expect the large model to accurately recover the corresponding high-level source code while preserving the original assembly code features.  <ref type="bibr">Hu-manEval [Chen et al., 2021]</ref>, a widely used benchmark for code generation evaluation. Since HumanEval only supports compilation for x86-64, we extended it to include 32-bit compilations as well. The original test dataset of ExeBench comprises 5,000 C programs extracted from real-world GitHub repositories. These programs include not only complete C function definitions but also provide input-output (IO) examples and external functions/header files, ensuring the executability of each function. However, due to unresolved conflicts preventing some functions from compiling into 32-bit executables, we randomly selected 300 compilable functions as an actual benchmark for our experiments.</p><p>Metrics. Following prior research, we adopt the Reexecutability Rate (%) and Edit Similarity (%) as metrics <ref type="bibr">[Tan et al., 2024;</ref><ref type="bibr">Armengol-Estapé et al., 2024]</ref> to provide a comprehensive evaluation of decompilation methods' performance.</p><p>The Re-executability Rate evaluates whether the decompiled code can be executed to produce the same behavior as the original program. This is achieved by running the decompiled C code of a test function alongside its corresponding assertions to verify the correctness of the decompilation results.</p><p>The Edit Similarity is a key metric for evaluating the readability of decompiled code, and it quantifies the similarity between the decompiled code and original code. Following the work of <ref type="bibr">[Armengol-Estapé et al., 2024]</ref>, we use edit distance, a standard metric employed in other neural approaches <ref type="bibr">[Katz et al., 2018b;</ref><ref type="bibr" target="#b14">Hosseini and Dolan-Gavitt, 2022]</ref>, to define edit similarity. The result, 1 -edit distance sequence length , is normalized by the length of the ground truth sequence, where a higher edit similarity indicates better readability of the decompiled code.</p><p>Baselines. We compare our CFADecLLM with a recent prominent LLMs in the field of decompilation and some wellknown universal LLMs, specifically including:</p><p>• DeepSeek-Coder <ref type="bibr" target="#b11">[Guo et al., 2024]</ref>, the current state-ofthe-art open-source code LLM, representing the leading publicly available model tailored for coding tasks. Table 4: Main comparison between our method with the baselines models at O0, O1, O2, O3 on Exebench 32-bit for one epoch. All experiments are done on NVIDIA H100-80GB GPU clusters. We adopt greedy search for generating decompiled high-level source code in model inference.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Main Results</head><p>The main experimental results can be seen at Table <ref type="table">1</ref>, Table <ref type="table" target="#tab_5">2</ref>, Table <ref type="table" target="#tab_6">3</ref>, Table <ref type="table">4</ref>. From the experimental results, our method consistently outperforms other methods (gpt-4o, Deepseek Coder, LLM4Decompile, Deepseek V3) across both datasets and bitwidths. Below is a detailed analysis of the results:</p><p>(1) Human-eval 64-bit Results Analysis</p><p>• Re-exe: Our method outperforms all other methods in terms of Re-exe on all test sets (O0, O1, O2, O3), with an average value of 41.51%. In comparison, gpt-4o achieves 20.73%, Deepseek Coder 5.49%, LLM4Decompile 27.32%, and Deepseek V3 22.56%. • ES: Our method also achieves a significant ES of 40.92%, surpassing gpt-4o (17.65%) and Deepseek V3 (30.02%). Conclusion: On Human-eval 64-bit, our method demonstrates superior performance in both Re-exe and ES, showcasing a stronger decompilation capability than existing methods.</p><p>(2) Human-eval 32-bit Results Analysis</p><p>• Re-exe: Our method achieves a Re-exe of 36.74%, significantly outperforming gpt-4o (18.25%), Deepseek Coder (3.36%), LLM4Decompile (0%), and Deepseek V3 (20.08%). • ES: Our method achieves a remarkable ES of 40.67%, which is higher than Deepseek V3 (31.20%) and gpt-4o (30.95%). Conclusion: On Human-eval 32-bit, our method leads in both Re-exe and ES, with a notable improvement in executable rate, surpassing Deepseek Coder by over 10 times and gpt-4o by almost double.</p><p>(3) Exebench 64-bit Results Analysis</p><p>• Re-exe: Our method has an average Re-exe of 12.83%, which is competitive, though slightly lower on O0. However, on O1, O2, and O3, our method outperforms others.</p><p>• ES: Our method achieves an impressive ES of 39.79%, far exceeding Deepseek V3 (14.00%).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Conclusion:</head><p>On Exebench 64-bit, our method demonstrates a significant advantage in ES, with competitive Re-exe, especially excelling in certain sub-tasks.</p><p>(4) Exebench 32-bit Results Analysis</p><p>• Re-exe: Our method achieves Re-exe of 18.08% on Exebench 32-bit, outperforming all other methods including gpt-4o (4.17%) and Deepseek V3 (6.17%).</p><p>• ES: Our method also achieves ES of 44.51%, significantly higher than Deepseek V3 (15.12%) and gpt-4o (15.74%).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Conclusion:</head><p>On Exebench 32-bit, our method outperforms others in both Re-exe and ES, demonstrating its superiority in smaller-width decompilation tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Overall Experimental Conclusion</head><p>• Our method outperforms all other methods in terms of Re-exe, proving its reliability in generating executable decompiled code.</p><p>1 int archHcubDomTerm(const ArchHcub * const archptr, ArchHcubDom * const domnptr, const ArchDomNum domnnum) 2 { 3 if (domnnum &lt; (1 &lt;&lt; archptr-&gt; dimnnbr)) 4 { 5 domnptr-&gt;dimncur = 0; 6 domnptr-&gt;bitsset = domnnum;</p><p>• Our method also leads in ES, which indicates that the generated code is closer to the ground truth both in structure and semantics.</p><p>• On both Human-eval (64-bit &amp; 32-bit) datasets, our method shows significant improvements, outperforming existing methods.</p><p>• On Exebench (64-bit &amp; 32-bit), our method still holds a clear advantage, especially in ES.</p><p>• The consistent performance of our model across two different bitwidths (32-bit and 64-bit) demonstrates its strong decompilation capability in cross-bitwidth scenarios and further extended cross-architecture. This highlights the robustness of our approach in handling diverse and complex decompilation tasks.</p><p>Final Conclusion: Our model demonstrates overall superior performance in decompilation tasks, excelling in both executable rate and code similarity, outperforming current stateof-the-art methods.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Case Study</head><p>In this section, we present two cases that highlight the advantages of CFADecLLM in terms of decompilation correctness and readability compared to four other baseline models.</p><p>(1) Correctness of control flow  <ref type="bibr">3, 7 and 11)</ref>. This same issue is observed in the GPT-4o, DeepSeek-v3, and DeepSeek-Coder decompilations. This indicates that the baseline models cannot correctly infer branch transitions from the assembly code directly. Additionally, in the LLM4Decompile decompilation, the two assignment operations to the second input parameter (Fig. <ref type="figure" target="#fig_4">4</ref>(c), Lines 5 and 6) are incorrectly executed before return 1 (Fig. <ref type="figure" target="#fig_4">4</ref>(c), Line 8), whereas they should occur before return 0 (Fig. <ref type="figure" target="#fig_4">4</ref>(a), Lines 5, 6, and 7) in the source code, forming a basic block in the control flow. Similarily, one of the assignment operations is misplaced before both returns in the GPT-4o (Fig. <ref type="figure" target="#fig_4">4(d)</ref>, Lines 12 and 13), DeepSeek-v3 (Fig. <ref type="figure" target="#fig_4">4</ref>(e), Lines 12 and 13), and DeepSeek-Coder (Fig. <ref type="figure" target="#fig_4">4</ref>(f), Lines 12 and 13) decompilations. This issue suggests that the baseline models fail to correctly form basic blocks within the control flow from the assembly code directly. In contrast, while the if condition in CFADecLLM's decompilation (Fig. <ref type="figure" target="#fig_4">4</ref>(b), Line 3) is the inverse of the source code's, the overall control flow is correctly reconstructed. This correctness benefits from CFADecLLM's ability to learn and utilize control flow graph (CFG) knowledge. Moreover, the inversion of the if condition results in more compact and structured true branch blocks enclosed in curly braces { }, improving the readability of the decompilation.</p><p>(2) Readability of decompilation Figure <ref type="figure">5</ref> presents a case study based on a test sample from ExeBench, demonstrating how CFADecLLM enhances the readability of its decompilation--surpassing even the source code. The figure compares the decompilations of CFADecLLM and four baseline models for the '-O1' compiled 64-bit binary of the sample's source code. While maintaining correctness, CFADecLLM effectively eliminates unnecessary if-else nesting by avoiding explicit else branches, which are present in both the source code (Fig. <ref type="figure">5</ref>(a), Lines 3 and 8) and the LLM4Decompile decompilation (Fig. <ref type="figure">5</ref>(c), Line 8). This reduction in nested conditionals simplifies the code structure and improves readability. Additionally, CFADecLLM generates more concise code, avoiding goto statements, unlike DeepSeek-v3 (Fig. <ref type="figure">5</ref>(e), Lines 13 and 20) and DeepSeek-Coder (Fig. <ref type="figure">5</ref>(f), Lines 13 and 20). The CFADecLLM decompilation consists of only 10 lines of valid code, whereas DeepSeek-v3 and DeepSeek-Coder produce significantly longer code with 32 and 31 lines, respectively. Furthermore, compared to the source code and the four baseline decompilations, CFADecLLM adheres to the "Early Return" principle in modern C coding style (Fig. <ref type="figure">5(b)</ref>, Lines 6 and 10), reducing complexity and enhancing readability. The model also generates meaningful variable names and avoids unnecessary procedural variables, aligning more closely with human-written code. In contrast, DeepSeek-v3 and DeepSeek-Coder (Fig. <ref type="figure">5</ref>(e) and Fig. <ref type="figure">5</ref>(f)) produce decompilations that resemble assembly code, using register names as variable names and explicitly rendering each register operation, making them far less comprehensible to humans. Overall, CFADecLLM produces more streamlined and readable decompilation than the source code and the four baselines. This improvement stems from its ability to leverage control flow graph (CFG) knowledge effectively.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Conclusion</head><p>In this paper, we propose CFADecLLM, a novel control flow-augmented decompilation framework based on large language models. Unlike existing LLM-based decompilation approaches, our method explicitly integrates control flow graph (CFG) information into the decompilation process, enabling a more comprehensive understanding of program execution logic and improving the accuracy of high-level code reconstruction. To achieve this, we construct a structured dataset that combines assembly code and control flow information, allowing for more effective learning and generalization. Furthermore, we enhance decompilation efficiency by designing natural language prompts that dynamically guide the model during both training and inference.</p><p>Extensive experiments on two publicly available benchmarks, HumanEval and ExeBench, across multiple bitwidths (32-bit and 64-bit), demonstrate the superior performance of our approach. Our model significantly outperforms existing state-of-the-art methods in terms of both reexecutability (Re-exe) and semantic similarity (ES), highlighting its effectiveness in real-world decompilation tasks.</p><p>The results further validate that incorporating global control flow information enhances decompilation quality, particularly in scenarios involving complex control structures.</p><p>Additionally, our findings underscore the potential of large language models in decompilation tasks and highlight the importance of cross-architecture adaptability. Unlike prior approaches primarily designed for x86, our idea may generalize well across different instruction set architectures through different bitwidths, paving the way for more versatile and robust decompilation solutions.</p><p>In future work, we aim to explore the integration of additional program analysis techniques, such as data dependency analysis and symbolic execution, to further refine the decompilation process. Moreover, we plan to investigate methods for improving model interpretability, ensuring that decompiled results not only achieve high execution accuracy but also maintain human readability and logical consistency.</p><p>Overall, our work advances the state of binary decompilation by bridging the gap between control flow analysis and large language models, setting a new benchmark for future research in the field.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Architecture of our proposed CFADecLLM</figDesc><graphic coords="3,306.97,142.13,138.04,60.51" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>: XXX, # arm/mips/x86 3 "mode":XXX, # 32/64 4 "opts": XXX, #O0,O1,O2,O3 5</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Data instance within dictionary format</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Python function for converting CFG to NLP description</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 4</head><label>4</label><figDesc>Figure 4 presents a case study based on a test sample from ExeBench, where only CFADecLLM successfully recovers</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 2 :</head><label>2</label><figDesc>Main comparison between our method with the baselines models at O0, O1, O2, O3 on Human-eval 32-bit</figDesc><table><row><cell>Benchmark</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell cols="2">Human-eval 64-bit</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Model</cell><cell>gpt-4o</cell><cell></cell><cell cols="2">Deepseek Coder</cell><cell cols="2">LLM4Decompile</cell><cell cols="2">Deepseek V3</cell><cell cols="2">ours(SF)</cell></row><row><cell>Metric</cell><cell cols="10">Re-exe(%) ES(%) Re-exe(%) ES(%) Re-exe(%) ES(%) Re-exe(%) ES(%) Re-exe(%) ES(%)</cell></row><row><cell>O0</cell><cell>42.68</cell><cell>20.72</cell><cell>9.15</cell><cell>20.75</cell><cell>47.20</cell><cell>28.21</cell><cell>45.73</cell><cell>41.01</cell><cell>59.76</cell><cell>46.43</cell></row><row><cell>O1</cell><cell>14.02</cell><cell>18.54</cell><cell>3.66</cell><cell>14.03</cell><cell>20.61</cell><cell>14.94</cell><cell>16.46</cell><cell>28.33</cell><cell>42.07</cell><cell>38.49</cell></row><row><cell>O2</cell><cell>14.63</cell><cell>16.93</cell><cell>6.10</cell><cell>12.01</cell><cell>21.22</cell><cell>7.01</cell><cell>17.68</cell><cell>27.56</cell><cell>33.54</cell><cell>38.47</cell></row><row><cell>O3</cell><cell>11.59</cell><cell>14.39</cell><cell>3.05</cell><cell>9.45</cell><cell>20.24</cell><cell>9.47</cell><cell>10.37</cell><cell>25.16</cell><cell>28.66</cell><cell>38.3</cell></row><row><cell>AVG</cell><cell>20.73</cell><cell>17.65</cell><cell>5.49</cell><cell>14.06</cell><cell>27.32</cell><cell>14.91</cell><cell>22.56</cell><cell>30.02</cell><cell>41.51</cell><cell>40.92</cell></row><row><cell cols="10">Table 1: Main comparison between our method with the baselines models at O0, O1, O2, O3 on Human-eval 64-bit</cell><cell></cell></row><row><cell>Benchmark</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell cols="2">Human-eval 32-bit</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Model</cell><cell>gpt-4o</cell><cell></cell><cell cols="2">Deepseek Coder</cell><cell cols="2">LLM4Decompile</cell><cell cols="2">Deepseek V3</cell><cell cols="2">ours(SF)</cell></row><row><cell>Metric</cell><cell cols="10">Re-exe(%) ES(%) Re-exe(%) ES(%) Re-exe(%) ES(%) Re-exe(%) ES(%) Re-exe(%) ES(%)</cell></row><row><cell>O0</cell><cell>31.1</cell><cell>35.07</cell><cell>3.66</cell><cell>28.1</cell><cell>0</cell><cell>13.48</cell><cell>39.63</cell><cell>35.99</cell><cell>54.88</cell><cell>45.64</cell></row><row><cell>O1</cell><cell>14.63</cell><cell>29.72</cell><cell>2.44</cell><cell>27.42</cell><cell>0</cell><cell>21.33</cell><cell>17.68</cell><cell>30.46</cell><cell>29.88</cell><cell>38.54</cell></row><row><cell>O2</cell><cell>14.63</cell><cell>29.13</cell><cell>3.05</cell><cell>25.66</cell><cell>0</cell><cell>19.38</cell><cell>11.59</cell><cell>30.72</cell><cell>32.93</cell><cell>38.74</cell></row><row><cell>O3</cell><cell>14.63</cell><cell>27.88</cell><cell>4.27</cell><cell>25.04</cell><cell>0</cell><cell>19.02</cell><cell>13.41</cell><cell>29.63</cell><cell>29.27</cell><cell>37.77</cell></row><row><cell>AVG</cell><cell>18.25</cell><cell>30.95</cell><cell>3.36</cell><cell>26.56</cell><cell>0.00</cell><cell>18.80</cell><cell>20.08</cell><cell>31.20</cell><cell>36.74</cell><cell>40.67</cell></row><row><cell cols="2">4 Experiments</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="3">4.1 Experimental Setups</cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table><note><p>Benchmarks. We useHumanEval-Decompile [Tan et al.,  2024]  </p><p>and ExeBench<ref type="bibr" target="#b0">[Armengol-Estapé et al., 2022]</ref> </p><p>as our benchmarks. HumanEval-Decompile includes 164 C functions derived from Python solutions and assertions in</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_6"><head>Table 3 :</head><label>3</label><figDesc>We use theLLM4Decompile-1.3B  model [Tan et al., 2024]  as the base. When finetuning the model, we set the batch-size as 16, learning rate as 2e-5, max sequence length as 4096. The training process is conducted Main comparison between our method with the baselines models at O0, O1, O2, O3 on Exebench 64-bit</figDesc><table><row><cell>• LLM4Decompile [Tan et al., 2024], the latest and most</cell></row><row><cell>advanced LLM for end-to-end decompilation, built on</cell></row><row><cell>DeepSeek-Coder. It supports both direct binary decom-</cell></row><row><cell>pilation and the refinement of Ghidra's outputs, deliv-</cell></row><row><cell>ering significant improvements in readability and exe-</cell></row><row><cell>cutability.</cell></row><row><cell>• GPT-4o [OpenAI et al., 2024], a top-performing</cell></row><row><cell>general-purpose LLM, renowned for its outstanding ca-</cell></row><row><cell>pabilities in understanding and generating high-level</cell></row><row><cell>programming languages.</cell></row><row><cell>• DeepSeek-V3 [DeepSeek-AI et al., 2024] is an ad-</cell></row><row><cell>vanced open-source language model designed for high-</cell></row><row><cell>performance natural language processing tasks, opti-</cell></row><row><cell>mized for multilingual understanding and generation. It</cell></row><row><cell>emphasizes efficiency and scalability, supporting diverse</cell></row><row><cell>applications like code generation, mathematical reason-</cell></row><row><cell>ing, and context-aware dialogue.</cell></row><row><cell>Implementation.</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>Here, we use dual bit-width as an example to illustrate cross-X (including different architectures) data processing.</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0" />			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title/>
+		<author>
+			<persName><surname>Armengol-Estapé</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Jordi Armengol-Estapé</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Exebench: an ml-scale dataset of executable c functions</title>
+		<author>
+			<persName><forename type="first">Jackson</forename><surname>Woodruff</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 6th ACM SIGPLAN International Symposium on Machine Programming, MAPS 2022</title>
+		<meeting>the 6th ACM SIGPLAN International Symposium on Machine Programming, MAPS 2022<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computing Machinery</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="50" to="59" />
+		</imprint>
+	</monogr>
+	<note>Armengol-Estapé et al., 2024] Jordi Armengol-Estapé</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Zion Leonahenahe Basque, Ati Priya Bajaj, and et al. Ahoy SAILR! there is no need to DREAM of c: A Compiler-Aware structuring algorithm for binary decompilation</title>
+		<author>
+			<persName><forename type="first">Jackson</forename><surname>Woodruff</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2024 IEEE/ACM International Symposium on Code Generation and Optimization, CGO &apos;24</title>
+		<meeting>the 2024 IEEE/ACM International Symposium on Code Generation and Optimization, CGO &apos;24<address><addrLine>Philadelphia, PA</addrLine></address></meeting>
+		<imprint>
+			<publisher>USENIX Association</publisher>
+			<date type="published" when="2024-08">2024. August 2024</date>
+			<biblScope unit="page" from="361" to="378" />
+		</imprint>
+	</monogr>
+	<note>Basque et al., 2024 A portable small language model decompiler for optimized assembly 33rd USENIX Security Symposium (USENIX Security 24)</note>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title/>
+		<author>
+			<persName><surname>Binutils</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Binutils. objdump</title>
+		<imprint>
+			<date type="published" when="2025">2025. 2025</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Native x86 decompilation using Semantics-Preserving structural analysis and iterative Control-Flow structuring</title>
+		<author>
+			<persName><surname>Bossert</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 9th ACM Symposium on Information, Computer and Communications Security, ASIA CCS &apos;14</title>
+		<meeting>the 9th ACM Symposium on Information, Computer and Communications Security, ASIA CCS &apos;14<address><addrLine>New York, NY, USA; Washington, D.C.; New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="1994">2014. 2014. 2013. August 2013. 2022. 2022. 2021. 2021. 1994</date>
+			<biblScope unit="page" from="508" to="518" />
+		</imprint>
+	</monogr>
+	<note>Towards automated protocol reverse engineering using semantic information 22nd USENIX Security Symposium (USENIX Security 13) USENIX Association Boosting neural networks to decompile optimized bina-ries Proceedings of the 38th Annual Computer Security Applications Conference, ACSAC &apos;22 Evaluating large language models trained on code Cifuentes, 1994] Cristina Garcia Cifuentes. Reverse compilation techniques</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Neural reverse engineering of stripped binaries using augmented control flow graphs</title>
+		<author>
+			<persName><surname>David</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Proc. ACM Program. Lang</title>
+		<imprint>
+			<biblScope unit="volume">4</biblScope>
+			<date type="published" when="2020-11">2020. November 2020</date>
+		</imprint>
+		<respStmt>
+			<orgName>OOP-SLA)</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<author>
+			<persName><forename type="first">Deepseek-Ai</forename></persName>
+		</author>
+		<idno>ArXiv, abs/2412.19437</idno>
+		<title level="m">Deepseek-v3 technical report</title>
+		<imprint>
+			<date type="published" when="2024">2024. 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">rev.ng: A multi-architecture framework for reverse engineering and vulnerability discovery</title>
+		<author>
+			<persName><surname>Egele</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Carnahan Conference on Security Technology (ICCST)</title>
+		<imprint>
+			<date type="published" when="2008-03">2008. March 2008. 2018. 2018. 2018</date>
+			<biblScope unit="volume">44</biblScope>
+			<biblScope unit="page" from="1" to="5" />
+		</imprint>
+	</monogr>
+	<note>A survey on automated dynamic malware-analysis techniques and tools</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title level="m" type="main">Self-constructed context decompilation with fined-grained alignment enhancement</title>
+		<author>
+			<persName><surname>Feng</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2024">2024. 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">A lightweight framework for function name reassignment based on large-scale stripped binaries</title>
+		<author>
+			<persName><surname>Fu</surname></persName>
+		</author>
+		<idno>ISSTA 2021</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 30th ACM SIGSOFT International Symposium on Software Testing and Analysis</title>
+		<meeting>the 30th ACM SIGSOFT International Symposium on Software Testing and Analysis<address><addrLine>Red Hook, NY, USA; New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>Curran Associates Inc</publisher>
+			<date type="published" when="2019">2019. 2019. 2021. 2021</date>
+			<biblScope unit="page" from="607" to="619" />
+		</imprint>
+	</monogr>
+	<note>Coda: an end-to-end neural program decompiler Proceedings of the 33rd International Conference on Neural Information Processing Systems</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><surname>Ghidra</surname></persName>
+		</author>
+		<title level="m">Ghidra. Ghidra software reverse engineering framework</title>
+		<imprint>
+			<date type="published" when="2025">2025. 2025</date>
+			<biblScope unit="page" from="2025" to="2026" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Gussoni et al., 2020] Andrea Gussoni, Alessandro Di Federico, and et al. A comb for decompiled c code</title>
+		<author>
+			<persName><surname>Guo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 15th ACM Asia Conference on Computer and Communications Security, ASIA CCS &apos;20</title>
+		<meeting>the 15th ACM Asia Conference on Computer and Communications Security, ASIA CCS &apos;20<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2020">2024. 2024. 2020</date>
+			<biblScope unit="page" from="637" to="651" />
+		</imprint>
+	</monogr>
+	<note>Deepseek-coder: When the large language model meets programming -the rise of code intelligence</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Debin: Predicting debug information in stripped binaries</title>
+		<author>
+			<persName><surname>He</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 ACM SIGSAC Conference on Computer and Communications Security, CCS &apos;18</title>
+		<meeting>the 2018 ACM SIGSAC Conference on Computer and Communications Security, CCS &apos;18<address><addrLine>New York, NY, USA</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2018">2018. 2018</date>
+			<biblScope unit="page" from="1667" to="1680" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<author>
+			<persName><surname>Hex-Rays</surname></persName>
+		</author>
+		<title level="m">Hex-Rays. Hex-rays decompiler</title>
+		<imprint>
+			<date type="published" when="2025">2025. 2025</date>
+			<biblScope unit="page" from="2025" to="2026" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Beyond the c: Retargetable decompilation using neural machine translation</title>
+		<author>
+			<persName><forename type="first">Dolan-Gavitt ;</forename><surname>Hosseini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iman</forename><surname>Hosseini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brendan</forename><surname>Dolan-Gavitt</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings 2022 Workshop on Binary Analysis Research, BAR 2022</title>
+		<meeting>2022 Workshop on Binary Analysis Research, BAR 2022</meeting>
+		<imprint>
+			<publisher>Internet Society</publisher>
+			<date type="published" when="2022">2022. 2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Degpt: Optimizing decompiler output with llm</title>
+		<author>
+			<persName><surname>Hu</surname></persName>
+		</author>
+		<ptr target="https://api.semanticscholar.org/Cor-pusID" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings 2024 Network and Distributed System Security Symposium</title>
+		<meeting>2024 Network and Distributed System Security Symposium</meeting>
+		<imprint>
+			<date type="published" when="2024">2024. 2024. 2024</date>
+			<biblScope unit="volume">267622140</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Symlm: Predicting function names in stripped binaries via contextsensitive execution-aware code embeddings</title>
+		<author>
+			<persName><surname>Jiang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Submitted to The Thirteenth International Conference on Learning Representations, 2024. under review</title>
+		<imprint>
+			<date type="published" when="2022">2024. 2022</date>
+		</imprint>
+	</monogr>
+	<note>Jin et al., 2022 Nova: Generative language models for assembly code with hierarchical attention and contrastive learning Proceedings of the 2022 ACM SIGSAC Conference on Computer and Communications Security</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Using recurrent neural networks for decompilation</title>
+		<author>
+			<persName><surname>Katz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2018 IEEE 25th International Conference on Software Analysis, Evolution and Reengineering (SANER)</title>
+		<imprint>
+			<date type="published" when="2018">2018. 2018</date>
+			<biblScope unit="page" from="346" to="356" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Using recurrent neural networks for decompilation</title>
+		<author>
+			<persName><surname>Katz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2018 IEEE 25th International Conference on Software Analysis, Evolution and Reengineering (SANER)</title>
+		<imprint>
+			<date type="published" when="2018">2018. 2018</date>
+			<biblScope unit="page" from="346" to="356" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Detecting kernel-level rootkits through binary analysis</title>
+		<author>
+			<persName><surname>Katz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 20th Annual Computer Security Applications Conference, ACSAC &apos;04</title>
+		<meeting>the 20th Annual Computer Security Applications Conference, ACSAC &apos;04<address><addrLine>USA</addrLine></address></meeting>
+		<imprint>
+			<publisher>IEEE Computer Society</publisher>
+			<date type="published" when="2004">2019. 2019. 2004. 2004. 2021. Cybersecurity, 4:5, 03 2021. 2024. 2013. 2024</date>
+			<biblScope unit="page" from="48" to="62" />
+		</imprint>
+	</monogr>
+	<note>Towards neural decompilation Neutron: an attention-based neural decompiler OpenAI et al., 2024 Szekeres et al., 2013 Sok: Eternal war in memory 2013 IEEE Symposium on Security and Privacy Tan et al., 2024] Hanzhuo Tan, Qi Luo, and et al. Llm4decompile: Decompiling binary code with large language models</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Refining decompiled c code with large language models</title>
+		<author>
+			<persName><surname>Wong</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">No more gotos: Decompilation using pattern-independent control-flow structuring and</title>
+		<imprint>
+			<date type="published" when="2015">2023. 2023. 2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

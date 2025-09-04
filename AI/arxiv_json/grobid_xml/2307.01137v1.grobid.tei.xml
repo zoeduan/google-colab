@@ -1,0 +1,1555 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">EXPLORING THE IN-CONTEXT LEARNING ABILITY OF LARGE LANGUAGE MODEL FOR BIOMEDICAL CONCEPT LINKING A PREPRINT</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Qinyong</forename><surname>Wang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">Center for Artificial Intelligence in Drug Discovery Case</orgName>
+								<orgName type="institution">Western Reserve University Cleveland</orgName>
+								<address>
+									<postCode>44106</postCode>
+									<region>OH</region>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Zhenxiang</forename><surname>Gao</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="department">Center for Artificial Intelligence in Drug Discovery Case</orgName>
+								<orgName type="institution">Western Reserve University Cleveland</orgName>
+								<address>
+									<postCode>44106</postCode>
+									<region>OH</region>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Rong</forename><surname>Xu</surname></persName>
+							<affiliation key="aff2">
+								<orgName type="department">Center for Artificial Intelligence in Drug Discovery Case</orgName>
+								<orgName type="institution">Western Reserve University Cleveland</orgName>
+								<address>
+									<postCode>44106</postCode>
+									<region>OH</region>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">EXPLORING THE IN-CONTEXT LEARNING ABILITY OF LARGE LANGUAGE MODEL FOR BIOMEDICAL CONCEPT LINKING A PREPRINT</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">B56E275D089EBD831D44156806767E21</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:29+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>The biomedical field relies heavily on concept linking in various areas such as literature mining, graph alignment, information retrieval, question-answering, data, and knowledge integration. Although large language models (LLMs) have made significant strides in many natural language processing tasks, their effectiveness in biomedical concept mapping is yet to be fully explored. This research investigates a method that exploits the in-context learning (ICL) capabilities of large models for biomedical concept linking. The proposed approach adopts a two-stage retrieve-and-rank framework. Initially, biomedical concepts are embedded using language models, and then embedding similarity is utilized to retrieve the top candidates. These candidates' contextual information is subsequently incorporated into the prompt and processed by a large language model to re-rank the concepts. This approach achieved an accuracy of 90.1% in BC5CDR disease entity normalization and 94.7% in chemical entity normalization, exhibiting a competitive performance relative to supervised learning methods. Further, it showed a significant improvement, with an over 20-point absolute increase in F1 score on an oncology matching dataset. Extensive qualitative assessments were conducted, and the benefits and potential shortcomings of using large language models within the biomedical domain were discussed.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Biomedical concept linking is a critical procedure in knowledge integrationHimmelstein et al. <ref type="bibr">[2017]</ref> and information retrievalGopalakrishnan et al. <ref type="bibr">[2019]</ref>. This process identifies biomedical concepts within the text and associates these concepts with matching entities in a biomedical knowledge base. It essentially forms a bridge between text and structured knowledge databases, facilitating the efficient extraction and utilization of intricate biomedical information. Concept linking is integral to diverse applications, such as literature mining, graph alignmentZeng et al. <ref type="bibr">[2021]</ref>, and information retrieval within the biomedical domain. Moreover, the efficacy of concept linking directly influences the performance of graph-based algorithms, search algorithms, and question-answering systems.</p><p>While significant progress has been made in the field of biomedical concept linking, major issues still pertain to their limited capacity to handle the ambiguity and complexity characteristic of biomedical conceptsHuang et al. <ref type="bibr">[2020]</ref>. Supervised Training or fine-tuning methods typically require extensive labeled data, which is labor-intensive and expensive to compile <ref type="bibr" target="#b4">Ji et al. [2020]</ref>, <ref type="bibr" target="#b5">Li et al. [2019]</ref>. The reliance on labeled data also introduces the data expiration problem, given the evolving nature of biomedical knowledge. For instance, biomedical entities linking arXiv:2307.01137v1 [cs.CL] 3 Jul 2023 datasets often utilize an ontology system for labeling text mentions; however, these systems change over time. The Medical Subject Headings (MeSH) system housed 28,000 concepts in 2016, but by 2023, the count has increased to 32,000 conceptsLipscomb <ref type="bibr">[2000]</ref>. Consequently, if we were to employ label-dependent supervised methods, models may need recurrent retraining to stay updated. Additionally, these techniques are often task-specific, lacking the requisite adaptability to handle different datasets or tasks without comprehensive retraining. There is a need for a more generalized framework for biomedical concept linking that can navigate the complex landscape of biomedical text data effectively. The ideal system should be adaptable, capable of processing various datasets and tasks without the need for task-specific training data. It should also possess the robustness to handle the ambiguity and complexity of biomedical concepts. Biomedical concept linking can be described as the process of identifying concepts within a given text and associating them with corresponding concepts in a biomedical knowledge base. This task encompasses a range of specific tasks, including biomedical entity linkingKalyan et al. <ref type="bibr">[2022]</ref>, disease name normalizationHuang et al. <ref type="bibr">[2020]</ref>, and ontology matching <ref type="bibr" target="#b8">Harrow et al. [2019]</ref>. Biomedical entity linking or disease name normalization typically involves mapping unstructured text to an ontology system. On the other hand, ontology matching refers to identifying identical concepts across two distinct ontology systems and establishing a link between them. Notably, there are differences between tasks like entity normalization and ontology matching. While entity normalization operates on free text, ontology matching deals with more structured text and the related contextual information of the concepts. Furthermore, entity normalization typically encompasses a smaller percentage of an ontology's concepts, while ontology matching often covers a larger and more diverse array of concepts. Biomedical concept linking extends beyond tasks such as entity normalizationHuang et al. <ref type="bibr">[2020]</ref> and ontology matchingHarrow et al. <ref type="bibr">[2019]</ref>. For instance, a concept linking method should be capable of matching two heterogeneous biomedical graphs at the concept level. This task presents a significant challenge for supervised training methods, as it's nearly impossible to generate labels for arbitrary heterogeneous graphs. It's important to note that concept linking does not include entity recognitionSong et al. <ref type="bibr">[2021]</ref>, a common procedure in text-mining tasks. Entity recognition often precedes concept linking and may not even feature in some tasks. Thus, concept linking is a distinct, wider task, facilitating effective navigation of intricate biomedical information.</p><p>Traditional BERT-based methods may struggle to adapt to the diverse array of datasets and tasks associated with this fieldKalyan et al. <ref type="bibr">[2022]</ref>, <ref type="bibr" target="#b5">Li et al. [2019]</ref>. LLMs <ref type="bibr" target="#b10">Zhou et al. [2023]</ref>, however, have recently demonstrated remarkable proficiency in the biomedical domain De <ref type="bibr" target="#b11">Angelis et al. [2023]</ref>, <ref type="bibr" target="#b12">Wang et al. [2023]</ref>. This paper aims to investigate a generalized and effective framework for biomedical concept linking, leveraging the ICL capabilities of LLMs. In-context learning forms the backbone of our proposed methodology. It operates on the principle of learning by analogy, offering a unique method for LLMs to make informed predictionsDong et al. <ref type="bibr">[2023]</ref>. This novel paradigm offers several compelling benefits. As the demonstration is rendered in natural language, it provides an interpretive interface for interaction with LLMs, making it significantly simpler to incorporate biomedical knowledge into LLMs by altering the demonstration and templates. Compared to supervised training, in-context learning is a training-free learning framework. This drastically cuts down the developing time required to adapt the model to new tasks. As such, it can be readily applied to real-world tasks, broadening its applicability and utility.</p><p>In this research, we propose a classic yet effective, generalized methodology for biomedical concept linking that leverages the ICL capabilities of LLMs. Our method involves a two-stage retrieve-and-rank system: The first stage embeds biomedical concepts using language models and uses these embedding to retrieve top candidate concepts. In the second stage, the contextual information of these candidates is incorporated into the prompt, and an LLM ranks these concepts. Our proposed method presents several advantages. Firstly, it is adaptable, requiring no task-specific training, and can be applied to different datasets and tasks. Secondly, it demonstrates competitive performance with state-of-the-art supervised learning methodsNeumann et al. <ref type="bibr">[2019]</ref>, <ref type="bibr">He et al. [2022a]</ref>, as evidenced by our results on entity normalization datasets and ontology matching datasets. Lastly, by leveraging the ICL abilities of large models, it effectively navigates the inherent ambiguity and complexity of biomedical concepts, significantly improving the efficacy of concept linking in the biomedical domain.</p><p>The objective of this paper is to delve into a more comprehensive framework utilizing LLMs for broader and more challenging tasks in the biomedical field. Our contributions are manifold; We identify a straightforward yet effective approach for tackling the complexity inherent in biomedical linking problems, and we also carry out an extensive application test to scrutinize various embedding methods and different language models. We further analyze the functioning of the large model and identify circumstances leading to its failure. A qualitative test is conducted to provide nuanced insights into the model's operation. All these explorations collectively guide the development of the next generation of accurate and trustworthy artificial intelligence solutions in the biomedical domain.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Backgrounds</head><p>Entity Linking and Entity Normalization Entity linking refers to the task of mapping mentions in free text to unique concepts in ontologies <ref type="bibr" target="#b3">Huang et al. [2020]</ref>. This can take the form of linking a certain drug to its specific drug ID or associating the disease with its corresponding disease/symptom ID. The Unified Medical Language System (UMLS) <ref type="bibr" target="#b16">Bodenreider [2004]</ref> is a compendium of biomedical vocabularies, The Unified Medical Language System (UMLS), a representative ontology for biomedicine, contains over 4 million entities. UMLS has been extensively used as a knowledge base to link biomedical entities in the text to their corresponding concepts. These tasks often involve mapping free text terms in the biomedical literature to UMLS Concept Unique Identifiers(CUIs). A notable tool in this field is the MetaMap system Demner-Fushman et al. <ref type="bibr">[2017]</ref>. MetaMap utilizes natural language processing techniques to map biomedical text to concepts in the UMLS. Although robust, its rule-based method can struggle with semantic ambiguity, demanding supplementary solutions like advanced deep learning models to improve its accuracy and adaptability. Traditional methods often rely on rule-based approaches or string matchingSoldaini and Goharian <ref type="bibr">[2016]</ref>, which unfortunately proved to be ill-suited for dealing with concepts carrying contextual meanings and disease subtypes. A popular approach in recent years has been to utilize <ref type="bibr">BERT-based methodsNeumann et al. [2019]</ref>, <ref type="bibr" target="#b3">Huang et al. [2020]</ref>, which are primarily supervised. However, these techniques encounter significant challenges due to the scarcity of annotated examples, particularly given the vast number of entities involved. Recently, the development of self-supervised methods has introduced a fresh perspectiveZhang et al. <ref type="bibr">[2022]</ref>, <ref type="bibr" target="#b20">Liu et al. [2020]</ref>. These methods, requiring no supervised samples, have demonstrated comparable results to supervised training methods. Despite these advances, such techniques cannot be applied universally across an array of tasks. Additionally, the process of constructing a dataset and training model is time-consuming. By leveraging the ICL capabilities of LLMs, the difficulties associated with constructing training corpora and executing training are significantly alleviated. By adjusting the prompts in natural language, this framework can be easily adapted to various tasks, demonstrating its potential for efficiency and versatility.</p><p>Ontology Matching Ontology matching, a key area of research, is the process of identifying corresponding entities or concepts across diverse ontology systemsHarrow et al. <ref type="bibr">[2019]</ref>. This procedure is fundamental for integrating heterogeneous databasesYi et al. <ref type="bibr">[2022]</ref> and enhancing interoperability in the biomedical sector. Historically, ontology matching approaches primarily relied on exploiting lexical, structural, and semantic similaritiesAnam et al. <ref type="bibr">[2015]</ref>. The advent of deep learning has ushered in an era where many current studies are investigating the use of Transformer, or specifically <ref type="bibr">BERTHe et al. [2022a]</ref>, for ontology matching. However, these BERT-based methods often grapple with the challenges previously outlined. Moreover, their performance is less than ideal when it comes to biomedical ontologyHe et al. <ref type="bibr">[2022b]</ref>. Biomedical ontology often encompasses a multitude of concepts that demand expert-level understanding, such as the ability to distinguish between two rare diseases that may appear similar but are caused by distinct genes. BERT-based methods frequently struggle to address these scenarios. Yet, the identification of the relationship between genes and diseases is paramount to advancements in biomedical discoveries. By capitalizing on the in-context learning capabilities of large language models, we're able to more accurately differentiate between complex biomedical concepts and enhance the efficacy of ontology matching in the biomedical sector.</p><p>Text Embedding The quality of text embedding plays a critical role in enhancing the recall rate of concept linking. Many text embedding methods Lately, transformer-based models have been gaining traction due to their ability to generate context-aware embeddings. Moreover, recent studies have made significant strides in training BERT models on the biomedical textLiu et al. <ref type="bibr">[2020]</ref>, <ref type="bibr" target="#b24">Lee et al. [2020]</ref> and using innovative training techniques such as contrastive learningLe-Khac et al. <ref type="bibr">[2020]</ref>. Domain-specific language models, those specifically trained on biomedical texts, have demonstrated superior performance compared to standard <ref type="bibr">BERT modelsLee et al. [2020]</ref>. This performance boost highlights the importance of domain-specific knowledge in enhancing the accuracy of embedding.</p><p>Large Language Models LLMs have demonstrated remarkable capabilities in natural language understanding and generation. These models are trained on massive amounts of text data and can generate coherent and contextually appropriate responses <ref type="bibr" target="#b10">Zhou et al. [2023]</ref>. However, they often lack domain-specific knowledge and struggle with understanding specialized terminologies, which is a crucial aspect of biomedical concept linking. LLMs are built using deep learning architectures like <ref type="bibr">TransformersVaswani et al. [2017]</ref> and have demonstrated remarkable proficiency in understanding and generating human-like text. Two of the most well-known LLMs are <ref type="bibr">GPT-3Brown et al. [2020] and</ref><ref type="bibr">GPT4Bubeck et al. [2023]</ref>. GPT-3, with 175 billion parameters, has displayed impressive results in a wide range of NLP tasks. The most popular open-source LLM is <ref type="bibr">LLaMaTouvron et al. [2023]</ref> which showed comparatively good performers with GPT 3.5, and there's a wide range of domain-specific fine-tuned llama modelsWu et al. <ref type="bibr">[2023]</ref>, <ref type="bibr">Zhang et al. [2023a]</ref> from 7 billion to 65 billion parameters. However, the usage of LLMs also presents challenges. One such issue is the "hallucination" problem <ref type="bibr" target="#b10">Zhou et al. [2023]</ref>, <ref type="bibr">Zhang et al. [2023b]</ref>, where the model generates outputs that seem plausible but are factually incorrect. Furthermore, due to their size and complexity, these models require substantial computational resources for training and deployment. Despite these challenges, LLMs have ushered in a new era in NLP and are continuously being explored for their potential in a wide range of biomedical concept linking.</p><p>In-context Learning Generally, in-context learning necessitates a few examples to create a demonstration con-textDong et al. <ref type="bibr">[2023]</ref>. These examples are typically expressed using natural language templates. Following this, a query question is concatenated with the demonstration context to generate a prompt. This prompt is then processed by the language model to predict an outcome. The definition of in-context learning is continuously evolving, in our proposed method, we not only include the conventional approach of using knowledge examples in the prompt, but we also supply more relevant information related to a given biomedical concept. By doing so, we equip the LLM with the necessary contextual information, thereby LLM learns from extra information rather than just analogy. Unlike supervised learning which necessitates a training stage involving backward gradientsNeumann et al. <ref type="bibr">[2019]</ref>, <ref type="bibr" target="#b3">Huang et al. [2020]</ref> for model parameter updates, ICL eschews parameter updates and makes predictions directly using pre-trained LLMs. The expectation is that the model will discern patterns hidden within the demonstration and make appropriate predictions accordinglyBubeck et al. <ref type="bibr">[2023]</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Methodology</head><p>Formally, we set the objective of concept linking as the development of an algorithm Link: (e source , C source ) → (e target , C target ). This algorithm maps a source entity e source within the context C source to a unique target entity e target with context C target . The source entity could be derived from free text, a graph, or a source ontology system in ontology matching, and it's worth noting that C source may sometimes be absent. Generally, we require the context of the target concept to be provided. A concept is more well-defined when its associated information is supplied. In the process of developing a zero-training algorithm, we operate under the assumption that no access to gold-mention examples or labels is available. Our assumption extends to the availability of a target domain ontology O target and an unlabeled text corpus T , or a source ontology O source . Specifically, we necessitate a concept list that provides a unique identifier, a canonical name, and a description for each concept. Our framework also has the capacity to incorporate additional knowledge present in the ontology.</p><p>Figure <ref type="figure">2</ref>: Workflow of the proposed methodology for exploring the in-context learning ability of large language models for biomedical concept linking.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Text embedding</head><p>The first stage in our methodology involves transforming textual data into semantic representations. The quality of these embeddings is crucial as it significantly affects downstream tasksLiu et al. LLaMa symbolizes an open-source option for Large Language Model embeddings, boasting high applicability across diverse language tasks. Finally, we utilize GPT-3 embeddings, specifically "text-embedding-ada-002", representing one of the most powerful and proprietary embedding methodologies currently available.</p><p>Considering a target ontology O target and an embedding model f emb (), we generate text embeddings for each entity/concept e target . This process involves generating embeddings for both the canonical concept name string and a combined version that includes the name string and its context. The purpose of creating an 'entity-name-only' representation is to recall entities that can be easily matched with the string, serving as an efficient approach for exact or simple matches. On the other hand, generating 'entity-name-context' embeddings targets a more complex objective. Despite entities not bearing similarity in appearance, they may be describing the same concept, and this intricate relation can be captured through context-inclusive embeddings. This dual approach caters to both explicit matches and the nuanced equivalences in the realm of biomedical concepts. As we will illustrate in the appendix, embedding with context plays a significant role in the success of our approach.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Candidate generation</head><p>Following the generation of contextual embeddings, we persist all embeddings from the ontology into a vector database, alternatively referred to as a long-term memory store <ref type="bibr" target="#b34">Park et al. [2023]</ref>. This enables efficient computation of cosine similarity between any given query text embedding and all the ontology embeddings. This stored ontology is referred to as 'mem'.</p><p>When a query entity (e source , C source ) is presented, we employ the same embedding process. The top k candidates are then retrieved based on the cosine similarity of their contextual embeddings. The process of memory creation and candidate generation can be outlined in Algorithm 1.</p><p>Algorithm 1 Memory Creation and Candidate Generation Require: Target domain ontology O target , Source entity e source , Source context C source , Embedding function f emb , VectorDatabase mem, Number of candidates k 1: Memory Creation 2: Initialize VectorDatabase: mem ← VectorDatabase() 3: for (e target , C target ) in O target do 4: mem.add(f emb (e target )) 5: mem.add(f emb ([e target , C target ])) 6: end for 7: Candidate Generation 8: function GENERATE_CANDIDATES(e source , C source , mem, k) 9: query emb ← f emb ([e source , C source ]) 10: top_k_candidates ← mem.retrieve_top_k(query emb , k) 11:</p><p>return top_k_candidates 12: end function</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3">Rank with LLM</head><p>LLMs possess text comprehension capabilities and a degree of logical reasoning abilityBubeck et al. <ref type="bibr">[2023]</ref>. Consequently, our approach revolves around providing comprehensive contextual information related to the biomedical concept linking task, enabling the model to execute an extensive reading task and subsequently select the most appropriate answer from the given options.</p><p>When constructing the prompt, we initially define the task and inform the model that our aim is to identify analogous concepts. We then present the candidate concepts retrieved from long-term memory. These candidates are options within the prompt. Further, we fetch the descriptions of these candidates from the ontology and associated text of the source entity. Ultimately, the prompt asks the model to select the concept that aligns best with the options; if none are suitable, the model is to select the 'None' option.</p><p>The configuration of the prompt is adaptable, accommodating the unique requirements of different tasks. For instance, in entity linking tasks, we may also include related text. The BC5CDR datasetLi et al. <ref type="bibr">[2016]</ref>, which extracts named entities from PubMed abstracts, would necessitate the addition of abstract tags within the prompt. Similarly, for tasks like graph alignment, we could incorporate neighborhood information into the prompt. The overall workflow of the ontology matching task is illustrated in figure <ref type="figure">2</ref>.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Experiments</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Dataset</head><p>Choosing an appropriate dataset to benchmark our proposed method and probe the capabilities of LLMs poses a few challenges. Firstly, as LLMs are trained on a vast amount of text data including published papers and webpages, data leakage becomes an inevitable concern for many existing datasets. Estimating the impact of this leakage on performance is not straightforwardBubeck et al. <ref type="bibr">[2023]</ref>. Moreover, biomedical NLP datasets can be sensitive, with some prohibiting any form of redistribution. This becomes problematic when using the GPT API, as the dataset is exposed to OpenAI, potentially leading to indirect redistribution via the LLM. Another obstacle is the slow inference speed of LLMs. For datasets with over 100,000 samples, the inference could take more than ten days, and with multiple models to benchmark and various ablation tests to conduct, it necessitates a smaller dataset.</p><p>Consequently, we chose the BC5CDR datasetLi et al. <ref type="bibr">[2016]</ref> for benchmarking. This well-known dataset in biomedical entity normalization requires mapping named entities in PubMedRoberts <ref type="bibr">[2001]</ref> abstracts to unique MeSH IDs. It encompasses two types of entities -chemicals, and diseases. By using this dataset, we can readily compare our proposed framework with previous supervised or self-supervised training methodsLiu et al. <ref type="bibr">[2020]</ref>, <ref type="bibr" target="#b19">Zhang et al. [2022]</ref>. Additionally, the BC5CDR dataset is relatively small, with 4797 mentions in the test set, making it manageable given the slow inference speed of LLMs.</p><p>For the ontology matching task, we selected the Machine Learning-Friendly Biomedical Datasets for Equivalence and Subsumption Ontology Matching <ref type="bibr">He et al. [2022b]</ref>, published in 2022. Being recently published, unlikely to be accessed by Llama, GPT3, or GPT4. We focused on two challenging sub-tasks from this dataset: OMIM-ORDO and SNOMED-NCIT Neoplas. OMIM (Online Mendelian Inheritance in Man) <ref type="bibr">McKusick [2011]</ref> OMIM provides extensive data on genes and genetic phenotypes and their relationships, curated meticulously from biomedical literature. ORDO (Orphanet Rare Disease Ontology) <ref type="bibr" target="#b37">Vasant et al. [2014]</ref>encompasses a classification of rare diseases and establishes relationships between diseases, genes, and epidemiological features. Given that many rare diseases are genetic disorders, ORDO and OMIM share considerable overlap. However, linking these rare disease names poses a significant challenge. Such diseases are typically unfamiliar to individuals without specialized medical knowledge, and their mentions in literature are often infrequent. We selected SNOMED-NCIT Neoplas Stearns et al. <ref type="bibr">[2001]</ref> ontology matching, as differentiating neoplasm names is challenging for Bert-based methods. The test sets for OMIM-ORDO and SNOMED-NCIT Neoplas contain 3,721 pairs and 3,804 pairs, respectively.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.1">Implementation details</head><p>Unlike many previous studies that utilize somewhat complex systems, such as developing corpora for fine-tuning, and incorporating synonym dictionaries, and abbreviation dictionariesLiu et al. <ref type="bibr">[2020]</ref>, <ref type="bibr" target="#b19">Zhang et al. [2022]</ref>, our approach is guided by the principle of simplicity. Our goal is to establish a universal framework for biomedical concept linking, without adding complexity or tailoring our system to a specific task or dataset. The only aspect we modify is the prompt. For instance, in the BC5CDR task, we include the PubMed abstract text and insert the instruction "read the abstract" in the prompt. We perform one-shot learning in the ablation test, similar to the application of Chain of ThoughtsWei et al. <ref type="bibr">[2022]</ref>. However, we do not use the Self-Consistency methodWang et al. <ref type="bibr">[2022]</ref> in this paper. The reason is discussed in the appendix. We chose to include GPT-3.5-turbo (ChatGPT) in our study because it is one of the most widely known LLMs and offers the advantages of being both fast and cost-effective. We also decided to incorporate GPT-4, given its exceptional power and performance. Finally, we used a 4-bit quantization of LLama-65b (known as alpaca-lora), which is a highly popular open-source LLM that can be conveniently deployed on a standard desktop computer due to its quantization. For the LLama-65b, we utilized a desktop machine equipped with 64GB of RAM, running llama-cpp for inference. As for GPT-3.5 and GPT-4, we accessed these models through OpenAI's API, conducting our experiments on an ordinary laptop.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.2">Evaluation</head><p>As our proposed framework does not require training, we have no need for training and development sets. We directly evaluate our framework using the test sets from our chosen datasets. As discussed in the dataset section, benchmarking larger models needs to take data leakage into account, as it may impact the quantitative results. For BC5CDR, we employ accuracy as the metric for evaluation, consistent with previous research, enabling comparison. . Among these, BERTMap is the most recent and capable contender. And we use Precision, Recall, and F1 score as our evaluation criteria. We also test the effect of using context information or one-shot learning in the prompt.</p><p>Our primary objective is to delve into the capabilities of LLMs for biomedical concepts linking in with ICL. Consequently, we also undertake extensive qualitative result analysis. We will assess both false positives and false negatives, providing a more comprehensive evaluation of our model's performance. Furthermore, we ask the model to elucidate the rationale behind its concept linking decisions, a practice known as process correctnessBubeck et al. <ref type="bibr">[2023]</ref>. In the quest to build accurate and trustworthy AI in the biomedical field, achieving the correct predictions is crucial, but equally important is understanding the explanations underpinning these results.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Results</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">Quantitative results</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.1">Main results</head><p>The results of our framework on the BC5CDR dataset are presented in Table <ref type="table" target="#tab_1">1</ref>. Utilizing GPT-4 as the ranker, our model achieved an accuracy of 90.1% on disease name entity linking and 94.7% on chemical name entity linking. We primarily compared our approach with the self-supervised KRISSBERT method and the more complex hybrid system BERN2. In terms of linking disease names, our model's results surpass KRISSBERT's and are competitive with BERN2's, with just a 3.85% difference. Notably, our results were achieved without the use of any customized rules, abbreviation dictionaries, or synonym dictionaries. For chemical name entity linking, our model's performance is approximately 2% lower than KRISSBERT's and BERN2's. Considering our framework requires no training, these results are quite promising and outperform earlier BERT-based methods like ScispaCy. When we switch to GPT-3 as the ranker, the performance remains reasonably good. However, with the Llama model as a ranker, performance drops significantly for chemical entity linking, even falling behind early BERT models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Method</head><p>Accuracy Table <ref type="table" target="#tab_2">2</ref> presents the results of ontology matching between OMIM and ORDO and ontology matching between SNOMED and NCIT Neoplas. Our framework, utilizing the ICL capabilities of GPT-4, achieved over a 20 percentage point increase in F1 score in comparison to the previous best-performing method, BERTmap. When GPT-3.5 was employed as the ranker, there was still a notable increase of approximately 10 percentage points in the F1 score. These outcomes underscore the effectiveness of the ICL provided by LLMs. Meanwhile, Llama's performance just marginally surpassed BERTmap in OMIM-ORDO matching but lagged behind in the SNOMED-NCIT Neoplas matching task. Given that we used a 4-bit quantized version of Llama that was not specifically aligned to biomedical tasks, the results remain promising. However, the disparity in performance between Llama and the GPT models indicates that there's significant room for the enhancement of open-source LLMs in the future. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>OMIM-ORDO (</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.2">Ablation test</head><p>Table <ref type="table">3</ref> presents the results of various prompting methods for rare disease concept matching in OMIM-ORDO (Disease) using GPT-4. The findings indicate that without the use of a one-shot example and no context information about these rare disease concepts, the F1-score is merely 0.698. This is approximately 19 points lower than the proposed method and shows no significant improvement compared to the previous BERTMap method. These results suggest that even the most powerful language model does not automatically perform well on certain biomedical tasks without additional context. The implementation of both one-shot learning and the addition of related concept information significantly improves performance, demonstrating the value of using the ICL ability of large language models for concept-linking tasks.It's interesting to note that adding OMIM context information provides a larger performance increase than one-shot learning without context. When combining both one-shot learning and OMIM context, the performance increase is marginal compared to just using OMIM context. This suggests that introducing the correct and relevant information for each case is more beneficial than providing an analogous example. Interestingly, it's noteworthy to observe that one-shot learning significantly enhances precision to a greater extent than it does recall.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Method Precision Recall F1</head><p>No context 0.783 0.629 0.698 One-shot 0.871 0.708 0.781 OMIM context only(source concepts) 0.860 0.773 0.814 OMIM context + One-shot 0.914 0.7495 0.824 ORDO context only(options) 0.856 0.792 0.823 Both OMIM and ORDO 0.906 0.859 0.882 Table <ref type="table">3</ref>: Ablation test results with different prompting methods on OMIM-ORDO (Disease) rear disease concepts matching with GPT4.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Qualitative results</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.1">Abbreviations</head><p>Abbreviations are a prevalent feature in biomedical text. Previous methodsZhang et al. <ref type="bibr">[2022]</ref>, <ref type="bibr" target="#b41">Sung et al. [2022]</ref> we compared employed an abbreviation dictionary to enhance performance. But does an LLM understand biomedical abbreviations? The answer is affirmative, but LLMs tend to struggle with less common abbreviations. For familiar abbreviations such as AD (Alzheimer's Disease) or PD (Parkinson's Disease), LLMs can easily link them to the correct concept when provided with a medical context. However, for less common abbreviations like MR (Mitral Valve Insufficiency) or VT (Tachycardia, Ventricular), LLMs tend to either choose a 'None' option from the list of candidates or erroneously select an incorrect option. Detailed cases could be checked in the appendix. Therefore, we believe it's still valuable to supply LLMs with abbreviation dictionary information to improve accuracy in more infrequent cases.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.2">Disease subtypes</head><p>The task of linking disease subtype concepts presents a significant challenge in the biomedical field. These disease subtypes often share a lot of similarities, particularly for rare diseases in ORPHA. Even human experts might need some time to gather information to discern the differences between these rare disease subtypes. GPT-4 is capable of understanding common disease subtypes, such as different types of diabetes, with ease. However, LLama tends to struggle with identifying these common disease subtypes. Regarding rare disease subtypes, GPT-4 can comprehend most of them when provided with appropriate descriptions. In contrast, LLama fails in most cases involving rare diseases subtypes. In situations where GPT-4 failed, rare disease subtypes constitute a significant portion. For instance, "Dentinogenesis imperfecta, shields iia 3" in OMIM corresponds to "Dentinogenesis imperfecta type 3". However, GPT chose "Dentinogenesis imperfecta type 2". Generally, GPT-4 can provide the correct answer for diseases labeled with "type n". However, it does occasionally falter in a few of these cases.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.3">Process Correctness</head><p>The rationale behind an LLM ranking a candidate first is critical. To construct precise and trustworthy AI in the biomedical domain, we aim for both the prediction and the process to be accurate. We noticed from the LLama results that there are instances where the process was incorrect, yet the final answer was right. For example, in case 9 from the appendix, LLama provided the correct prediction, yet the reasoning appeared to be based on shared keywords between disease concept names. This is not ideal, especially for rare disease concept linking, where many concepts share keywords yet refer to different diseases. GPT-4 exhibits a more accurate and consistent reasoning process than LLaMa, which sometimes even outputs code (as seen in case 8 in the appendix), indicating that the LLama model we utilized may not be well-aligned for this task. Although we are not medical experts and cannot offer an accurate assessment of LLM's process correctness, the process correctness of GPT-4 is generally satisfactory when given the correct concept description. Most of the time, the process is associated with the context we provided, further emphasizing the importance of using LLM's ICL. By qualitatively evaluating the process correctness of LLM, we enhance the interpretability of using large models in concept linking tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Limitations and discussion</head><p>While our framework holds promise, it also comes with notable limitations. Primarily, the inference speed of LLMs is exceedingly slow, making the process expensive and long. For instance, our experimental setup involving GPT4 inference on 3700 OMIM-ORDO pairs costs approximately $150 USD. When employing locally deployable LLMs, such as LLama 13B, the inference speed is roughly 103 ms/token, processing only a few words per second. Larger models like Galantica and LLama 65B are even slower, handling only about one word per second with cpu. In light of these constraints, future research could explore fine-tuning (without supervision) a LLM specifically designed for this task with low resourcesHu et al. <ref type="bibr">[2021]</ref>.</p><p>Considering the rigorous hardware requirements, our framework's accessibility is rather constrained. This is further exacerbated by GPT's closed-source nature, leading to diminished transparency. Moreover, even when using opensource LLama for inference, powerful GPUs or large amounts of RAM are required -resources that most researchers and potential users in the biomedical domain do not have readily available. Training and compressing a quantified <ref type="bibr">LLMDettmers et al. [2023]</ref> for the biomedical domain is also beneficial in future work. Furthermore, our framework sometimes exhibits unexpected failures. For instance, when two share the same name, our framework may fail to provide the correct answer. This could be due to context embedding -if the accurately labeled name is contextually farther than other candidates, the correct option may not appear. Moreover, this framework also exhibits frequent shortcomings in handling abbreviations. Both of these issues could potentially be mitigated by utilizing dictionaries, suggesting that a hybrid system might be an avenue worth exploring for future concept linking tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Conclusion</head><p>In conclusion, this research explores the use of the in-context learning capabilities of large language models for biomedical concept linking. Our proposed two-stage framework effectively retrieves and ranks biomedical concepts, achieving competitive results without needing any training.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Method</head><p>Hits@1 Hits@5 Hits@10 sapBert + context 0.719 SapBERT's hits@10 is less than 3% compared to GPT-3, which suggests that despite being more cost-efficient and faster, Bert-based embedding methods still have relevance and utility in future.</p><p>On the other hand, Llama embeddings were significantly less effective, which might be due to the fact that the model wasn't specifically fine-tuned for use in embedding. SapBERT employs contrastive learning for its embedding model, and it's plausible that OpenAI employs a similar method for their models. Future research could explore using open-source LLMs for embeddings, as this could potentially yield better performance than Bert-based models.</p><p>An experiment involving OMIM context information, ORDO information, and a one-shot example was not conducted, as the resulting prompt would contain too many tokens, making the experiment both time-consuming and costly. Given the minimal improvement observed when adding one-shot learning to the OMIM context, it is likely that any further gains from this additional experiment would be minor. Table 6: Error cases of BC5CDR</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8.3">error</head><p>GPT4: The same concept to "bleeding disorder, platelet-type, 8" is option 0: Bleeding disorder due to P2Y12 defect. This is because both terms refer to a bleeding disorder caused by a defect in the platelet P2Y12 receptor, which results in impaired platelet responses to adenosine diphosphate and leads to mild to moderate bleeding diathesis.</p><p>LLaMa: Bleeding disorder due to P2Y12 defect (option 0) and bleeding diathesis due to integrin alpha2-beta1 deficiency (option 1) are similar concepts because they both refer to platelet function disorders that result in increased risk of bleeding. However, the underlying causes differ. In the case of P2Y12 defect, the platelets do not respond properly to the ADP released from damaged blood vessels. This leads to a failure of platelet aggregation and impaired hemostasis. In contrast, integrin alpha2-beta1 deficiency refers to a genetic disorder in which there is a defect in the expression or function of the alpha2beta1 integrin receptor on the surface of platelets. This leads to an increased risk of bleeding due to impaired platelet aggregation and adhesion.</p><p>Case2: cortical dysplasia, complex, with other brain malformations 7 || Polymicrogyria due to TUBB2B mutation GPT4: The same concept to "cortical dysplasia, complex, with other brain malformations 7" is 0: Polymicrogyria due to TUBB2B mutation. This is because it is characterized by generalized or focal dysgyria (also named polymicrogryialike cortical dysplasia) or alternatively by microlissencephaly with dysmorphic basal ganglia and dysgenesis of the corpus callosum, which are similar features to those described in CDCBM7. Additionally, the clinical manifestations, such as microcephaly, seizures, hypotonia, developmental delay, severe psychomotor delay, ataxia, spastic diplegia or tetraplegia, and ocular abnormalities, are also similar to those found in CDCBM7.</p><p>LLaMa: The "cortical dysplasia, complex, with other brain malformations 7" is one of the several phenotypes of cortical dysplasias. It describes a specific set of anatomical abnormalities in the cortex and associated brain structures such as polymicrogyria, symmetric or asymmetric.</p><p>The options that you listed are different conditions that may cause similar neuroanatomical patterns but do not specifically refer to the cortical dysplasia, complex, with other brain malformations 7 phenotype.</p><p>Polymicrogyria due to TUBB2B mutation is a genetic condition caused by a mutation in the TUBB2B gene that leads to the formation of excessive folds on the surface of the brain (polymicrogyria).</p><p>Megalencephaly-capillary malformation-polymicrogyria syndrome is a rare disorder characterized by an abnormally large brain (megalencephaly), capillary malformations, and polymicrogyria.</p><p>Case3: ceroid lipofuscinosis, neuronal, 8, northern epilepsy variant || Progressive epilepsy-intellectual disability syndrome, Finnish type GPT4: The same concept to "ceroid lipofuscinosis, neuronal, 8, northern epilepsy variant" is option 1: Progressive epilepsy-intellectual disability syndrome, Finnish type. This is because it is also known as Northern epilepsy, which is a subtype of neuronal ceroid lipofuscinosis (NCL) characterized by seizures, progressive decline of intellectual capacities, and variable loss of vision.</p><p>LLaMa: We are looking for a diagnosis of "ceroid lipofuscinosis, neuronal, 8, northern epilepsy variant." It is a rare and progressive genetic disorder characterized by worsening seizures, intellectual disability, and vision loss. The condition is caused by mutations in the CLN8 gene, which provides instructions for making a protein called Hydrolase CNPase that is essential for the breakdown of a specific type of fat (lipofuscin) in the brain and other tissues. When the protein is defective or absent, there is an accumulation of lipofuscin in the brain's neurons, which leads to their death and impairs normal brain function.</p><p>One of the conditions that shares some similar features with "ceroid lipofuscinosis, neuronal, 8, northern epilepsy variant" is "progressive epilepsy-intellectual disability syndrome, Finnish type," which is also a rare and progressive genetic disorder characterized by worsening seizures, intellectual disability, and vision loss. However, this condition is caused by mutations in Progressive epilepsy-intellectual disability syndrome.</p><p>Case4: neurodevelopmental disorder with microcephaly and gray sclerae || Severe growth deficiency-strabismusextensive dermal melanocytosis-intellectual disability syndrome GPT4: The same concept to "neurodevelopmental disorder with microcephaly and gray sclerae" is option 2: Severe growth deficiency-strabismus-extensive dermal melanocytosis-intellectual disability syndrome. This is because it also involves microcephaly, intellectual disability, and gray sclerae (blue-gray sclerae) as part of its clinical features.</p><p>LLaMa: This question can be answered by a medical professional, such as a doctor or nurse practitioner. It cannot be answered by an AI language model like me, Open Assistant. If you have any concerns about your health, it's always best to consult with a medical professional.</p><p>Case5: foveal hypoplasia 2 || Foveal hypoplasia-optic nerve decussation defect-anterior segment dysgenesis syndrome GPT4: The same concept to "foveal hypoplasia 2" is option 0: Foveal hypoplasia-optic nerve decussation defectanterior segment dysgenesis syndrome. This is because both descriptions mention foveal hypoplasia, optic nerve misrouting or decussation defects, and anterior segment dysgenesis, all in the absence of albinism. Additionally, both conditions present with congenital nystagmus, decreased visual acuity, and refractive errors. truth: Foveal hypoplasia-optic nerve decussation defect-anterior segment dysgenesis syndrome LLaMa: It depends on your perspective, but I would say that all of these options could be considered the same concept as "foveal hypoplasia 2" since they all have some common symptoms and characteristics. For example:</p><p>Option 0 mentions "anterior segment dysgenesis," which is a type of eye abnormality that can affect the development of the cornea, iris, or lens. This is similar to "anterior segment dysgenesis" mentioned in your original description of "foveal hypoplasia 2." Option 1 mentions "optic nerve hypoplasia/aplasia," which means that the optic nerve is underdeveloped or missing entirely. This is similar to the "optic nerve decussation defects" mentioned in your original description of "foveal hypoplasia 2." Option 2 mentions "microphthalmia-retinitis pigmentosa-foveoschisis-optic disc drusen syndrome," which is a rare genetic disorder that can cause small eyes (microphthalmia), a breakdown of the retina (retinitis p Foveal hypoplasia-optic nerve decussation defect-anterior segment dysgenesis syndrome (cut off becasue of max output limit)</p><p>Case6: hypermanganesemia with dystonia 2 || Dystonia-parkinsonism-hypermanganesemia syndrome GPT4: The same concept to "hypermanganesemia with dystonia 2" is option 2: Cirrhosis-dystonia-polycythemiahypermanganesemia syndrome. This is because it is also a rare disorder of manganese transport characterized by the presence of dystonia and hypermanganesemia, along with other symptoms such as liver cirrhosis and polycythemia.</p><p>The brain imaging findings in this syndrome are also consistent with the deposition of manganese in the basal ganglia and other regions, similar to "hypermanganesemia with dystonia 2". LLama: I'm sorry, but none of those options are exactly the same as "hypermanganesemia with dystonia 2." However, one of them does come close. Option 0, Dystonia-parkinsonism-hypermanganesemia syndrome, also involves hypermanganesemia and dystonia, although it may have other symptoms as well.</p><p>The main difference between "hypermanganesemia with dystonia 2" and Dystonia-parkinsonism-hypermanganesemia syndrome is that the former seems to be a specific type of the latter. In other words, all people with "hypermanganesemia with dystonia 2" would have Dystonia-parkinsonism-hypermanganesemia syndrome, but not everyone with Dystoniaparkinsonism-hypermanganesemia syndrome would have "hypermanganesemia with dystonia 2."</p><p>I hope that helps! Let me know if you have any other questions.</p><p>Case7: epiphyseal dysplasia, multiple, with miniepiphyses || Multiple epiphyseal dysplasia, with miniepiphyses GPT4: The same concept to "epiphyseal dysplasia, multiple, with miniepiphyses" is option 0: Multiple epiphyseal dysplasia, with miniepiphyses. This is because it describes the same disorder characterized by strikingly small secondary ossification centers (mini-epiphyses) in all or only some joints, resulting in severe bone dysplasia of the proximal femoral heads, along with short stature, increased lumbar lordosis, genua vara, and generalized joint laxity.</p><p>LLaMa: The correct answer is option number one: Multiple epiphyseal dysplasia, with miniepiphyses.</p><p>Multiple epiphyseal dysplasia (MED) is a group of rare skeletal disorders characterized by abnormalities in the growth and development of the bones and joints. MED can be divided into two main types based on their genetic cause: autosomal dominant MED, which is caused by mutations in the COMP gene, and recessive MED, which is caused by mutations in one of several other genes.</p><p>One of the distinguishing features of MED is the presence of miniepiphyses, which are small bony projections that develop at the ends of long bones instead of the normal single growth plate (epiphysis). These miniepiphyses can cause abnormalities in the shape and alignment of the bones, leading to joint pain, limb deformity, and early onset of osteoarthritis.</p><p>The term "multiple epiphyseal dysplasia, with miniepiphyses" is used specifically to describe a form of Multiple epiphyseal dysplasia, with miniepiphyses(cut off becasue of max output limit)</p><p>Case8: myopathy, myofibrillar, 3 || Distal myotilinopathy GPT4: The same concept to "myopathy, myofibrillar, 3" is 1: Myofibrillar myopathy. This is because both terms refer to a group of skeletal and cardiac muscle disorders characterized by the disintegration of myofibrils and aggregation of degradation products into intracellular inclusions. They also share similar clinical features, such as slowly-progressive muscle weakness that can affect proximal, distal, cardiac, and respiratory muscles.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>LLaMa: code</head><p>Case9: 2-methylbutyryl-coa dehydrogenase deficiency || 2-methylbutyryl-CoA dehydrogenase deficiency GPT4: The same concept to "2-methylbutyryl-CoA dehydrogenase deficiency" is option 0: 2-methylbutyryl-CoA dehydrogenase deficiency. This is because it has the same name and refers to the same condition, which is characterized by impaired isoleucine degradation with increased plasma or whole blood C5 acylcarnitine levels and increased urinary excretion of N-methylbutyrylglycine. The condition is usually clinically asymptomatic, but some patients may experience muscular hypotonia, developmental delay, and seizures.</p><p>LLaMa: option 0.It's because they have one or more related keywords in common.</p><p>Here are the keywords of 2-methylbutyryl-CoA dehydrogenase deficiency: -"2-methylbutyryl glycinuria" -"short/branched-chain acyl-coa dehydrogenase deficiency"</p><p>And here are the keywords of Isobutyryl-CoA dehydrogenase deficiency: -"2-methylbutyryl glycinuria" -"short/branched-chain acyl-coa dehydrogenase deficiency"</p><p>As you can see, they have the same keywords in common. So it's reasonable to say that they are related.</p><p>The other options don't have these specific keywords, so they are less likely to be related.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Overview of the proposed methodology and comparison with previous methods.</figDesc><graphic coords="2,133.56,138.23,342.40,295.80" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>[2020]. To meet our objective of exploring a training-free framework, we opt for three different embedding models. Our first model of choice is SapBERTLiu et al. [2020], a Self-Aligned Pretrained BERT model specifically designed for the biomedical domain. Serving as a representation of the BERTDevlin et al. [2018] family of models, SapBERT has superior performance in biomedical tasks. Next, we leverage the LLaMa model's embeddings Zhang et al. [2023a].</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><figDesc>For comparison, we chooseKRISSBERTZhang et al. [2022],BERN2Sung et al. [2022], ScispaCyNeumann et al. [2019], and QuickUMLSSoldaini and Goharian[2016]  as baselines. KRISSBERT is representative of self-supervised training methods that, like ours, do not require training and development datasets. BERN2 is a hybrid system that employs both rule-based and BERT models for named entity normalization and claims superior performance. ScispaCy is a BERT-based method.QuickUMLS is a dictionary-based method. For the ontology matching task, we make comparisons withLSMatchSharma et al. [2021],ATMatcherHe et al. [2022b],LogMapJiménez-Ruiz and<ref type="bibr" target="#b43">Cuenca Grau [2011], and</ref>  BERTMapHe et al. [2022a]</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>Comparison of Retrieve-Rank with different LLMs with previous methods on BC5CDR dataset. The highest accuracy of our methodology and previous methods are both highlighted.</figDesc><table><row><cell>-Disease Accuracy-Chemical</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 2 :</head><label>2</label><figDesc>Comparison of different methods.</figDesc><table><row><cell></cell><cell></cell><cell cols="5">Rare disease) SNOMED-NCIT(Neoplas )</cell></row><row><cell></cell><cell cols="2">Precision Recall</cell><cell>F1</cell><cell cols="2">Precision Recall</cell><cell>F1</cell></row><row><cell>LSMatch</cell><cell>0.650</cell><cell>0.221</cell><cell>0.329</cell><cell>0.902</cell><cell>0.238</cell><cell>0.377</cell></row><row><cell>ATMatcher</cell><cell>0.940</cell><cell>0.247</cell><cell>0.391</cell><cell>0.866</cell><cell>0.284</cell><cell>0.428</cell></row><row><cell>LogMap</cell><cell>0.827</cell><cell>0.498</cell><cell>0.622</cell><cell>0.947</cell><cell>0.520</cell><cell>0.671</cell></row><row><cell>BERTMap</cell><cell>0.730</cell><cell>0.572</cell><cell>0.641</cell><cell>0.815</cell><cell>0.709</cell><cell>0.759</cell></row><row><cell>Retrieve-Rank with LLaMa 65B</cell><cell>0.797</cell><cell>0.543</cell><cell>0.646</cell><cell>0.699</cell><cell>0.665</cell><cell>0.679</cell></row><row><cell>Retrieve-Rank with GPT3.5</cell><cell>0.777</cell><cell>0.704</cell><cell>0.738</cell><cell>0.760</cell><cell>0.736</cell><cell>0.748</cell></row><row><cell>Retrieve-Rank with GPT4</cell><cell>0.906</cell><cell>0.859</cell><cell>0.882</cell><cell>0.916</cell><cell>0.893</cell><cell>0.904</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 4 :</head><label>4</label><figDesc>Ablation test of different embedding methods</figDesc><table><row><cell></cell><cell></cell><cell>0.833</cell><cell>0.873</cell></row><row><cell>sapBert</cell><cell>0.626</cell><cell>0.771</cell><cell>0.829</cell></row><row><cell cols="2">LLama + context 0.1274</cell><cell>0.2148</cell><cell>0.2681</cell></row><row><cell>LLama</cell><cell>0.0616</cell><cell>0.1021</cell><cell>0.1271</cell></row><row><cell>GPT3+context</cell><cell>0.764</cell><cell>0.875</cell><cell>0.908</cell></row><row><cell>GPT3</cell><cell>0.637</cell><cell>0.778</cell><cell>0.815</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 5 :</head><label>5</label><figDesc>Error cases of model predictions for the OMIM-ORDO task.</figDesc><table><row><cell>cases</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>OMIM</cell><cell></cell><cell>ORDO</cell><cell></cell><cell>Prediction</cell></row><row><cell cols="2">Angelman syndrome</cell><cell cols="2">Angelman syndrome</cell><cell cols="2">Christianson syndrome</cell></row><row><cell cols="2">Cheilitis glandularis</cell><cell cols="2">Cheilitis glandularis</cell><cell>None.</cell></row><row><cell cols="2">Pyknoachondrogenesis</cell><cell cols="2">Pyknoachondrogenesis</cell><cell>None</cell></row><row><cell cols="5">Cleidorhizomelic syndrome Cleidorhizomelic syndrome None</cell></row><row><cell cols="2">Hypochondroplasia</cell><cell cols="2">Hypochondroplasia</cell><cell cols="2">Achondroplasia</cell></row><row><cell cols="2">Immunodeficiency 8</cell><cell cols="2">Severe combined immunode-</cell><cell>Combined</cell><cell>immunodefi-</cell></row><row><cell></cell><cell></cell><cell cols="2">ficiency due to CORO1A de-</cell><cell cols="2">ciency due to DOCK8</cell></row><row><cell></cell><cell></cell><cell>ficiency</cell><cell></cell><cell>deficiency;</cell></row><row><cell cols="2">Immunodeficiency 12</cell><cell>Combined</cell><cell>immunodefi-</cell><cell>None</cell></row><row><cell></cell><cell></cell><cell cols="2">ciency due to MALT1</cell><cell></cell></row><row><cell></cell><cell></cell><cell>deficiency</cell><cell></cell><cell></cell></row><row><cell cols="2">Ceroid lipofuscinosis, neu-</cell><cell cols="2">CLN4A disease</cell><cell>CLN6 disease</cell></row><row><cell cols="2">ronal, 6b (kufs type)</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="2">Dentinogenesis imperfecta,</cell><cell cols="2">Dentinogenesis imperfecta</cell><cell cols="2">Dentinogenesis imperfecta</cell></row><row><cell>shields iia 3</cell><cell></cell><cell>type 3</cell><cell></cell><cell>type 2</cell></row><row><cell>Palmoplantar</cell><cell>carcinoma,</cell><cell>Corneal</cell><cell>intraepithelial</cell><cell cols="2">Multiple self-healing squa-</cell></row><row><cell cols="2">multiple self-healing</cell><cell cols="2">dyskeratosis-palmoplantar</cell><cell cols="2">mous epithelioma</cell></row><row><cell></cell><cell></cell><cell cols="2">hyperkeratosis-laryngeal</cell><cell></cell></row><row><cell></cell><cell></cell><cell cols="2">dyskeratosis syndrome</cell><cell></cell></row><row><cell cols="2">Mitral valve prolapse, myxo-</cell><cell cols="2">Familial mitral valve pro-</cell><cell cols="2">FLNA-related X-linked myx-</cell></row><row><cell>matous</cell><cell></cell><cell>lapse</cell><cell></cell><cell cols="2">omatous valvular dysplasia</cell></row><row><cell cols="2">Erythrokeratodermia vari-</cell><cell cols="2">Erythrokeratodermia vari-</cell><cell cols="2">Progressive symmetric ery-</cell></row><row><cell cols="2">abilis et progressiva</cell><cell>abilis</cell><cell></cell><cell cols="2">throkeratodermia</cell></row><row><cell cols="4">Miyoshi muscular dystrophy Distal anoctaminopathy</cell><cell cols="2">Miyoshi myopathy</cell></row><row><cell cols="2">8.4 Reasoning process cases</cell><cell></cell><cell></cell><cell></cell></row><row><cell cols="5">Case1: bleeding disorder, platelet-type, 8 || Bleeding disorder due to P2Y12 defect</cell></row></table></figure>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8">Appendix</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8.1">Implementation details</head><p>Techniques such as Chain of Thoughts and Self-Consistency are frequently employed in prompt engineering. We perform a one-shot learning in the ablation test, similar to the application of Chain of Thoughts. However, we do not use the Self-Consistency method in this paper. Here, we would like to discuss the necessity of these techniques. The primary notion of Chain of Thoughts is that by presenting an analogy and requiring the LLM to recount the original process, more computational power is used during the inference, leading to better performance. Self-Consistency, on the other hand, requires even more computational power, as it prompts the model to reason in various ways, ensuring that the results are internally consistent.</p><p>In the context of our ICL definition, we already include substantial text information in the prompt (a full example can be found in the appendix), which is lengthy and necessitates significant LLM inference time. Furthermore, we consider concept linking as a fundamental, high-usage application. Implementing Self-Consistency would at least triple the inference cost, and given the current high costs and slow speed of inference and Self-Consistency are design of LLM reasoning task, we believe it is not advantageous to use Self-Consistency for such a basic task.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8.2">abblation test</head><p>Table <ref type="table">4demonstrates</ref> the performance of different language models in the candidate generation or retrieval stage during the OMIM-ORDO ontology matching. Across all three types of large language models, incorporating concept descriptions from ontologies in the embedding process generally improves performance. It's worth noting that</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Systematic integration of biomedical knowledge prioritizes drugs for repurposing</title>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Scott Himmelstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Antoine</forename><surname>Lizee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christine</forename><surname>Hessler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leo</forename><surname>Brueggeman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sabrina</forename><forename type="middle">L</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dexter</forename><surname>Hadley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Green</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pouya</forename><surname>Khankhanian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergio</forename><forename type="middle">E</forename><surname>Baranzini</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+	<note>Elife, 6:e26726</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">A survey on literature based discovery approaches in biomedical domain</title>
+		<author>
+			<persName><forename type="first">Kishlay</forename><surname>Vishrawas Gopalakrishnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Jha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidong</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of biomedical informatics</title>
+		<imprint>
+			<biblScope unit="volume">93</biblScope>
+			<biblScope unit="page">103141</biblScope>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">A comprehensive survey of entity alignment for knowledge graphs</title>
+		<author>
+			<persName><forename type="first">Kaisheng</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chengjiang</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Juanzi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ling</forename><surname>Feng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">AI Open</title>
+		<imprint>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="1" to="13" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Biomedical named entity recognition and linking datasets: survey and our recent development</title>
+		<author>
+			<persName><forename type="first">Ming-Siang</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Po-Ting</forename><surname>Lai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pei-Yen</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu-Ting</forename><surname>You</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Tzong-Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wen-Lian</forename><surname>Tsai</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hsu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Briefings in Bioinformatics</title>
+		<imprint>
+			<biblScope unit="volume">21</biblScope>
+			<biblScope unit="issue">6</biblScope>
+			<biblScope unit="page" from="2219" to="2238" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Bert-based ranking for biomedical entity normalization</title>
+		<author>
+			<persName><forename type="first">Zongcheng</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiang</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hua</forename><surname>Xu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">AMIA Summits on Translational Science Proceedings</title>
+		<imprint>
+			<biblScope unit="page">269</biblScope>
+			<date type="published" when="2020">2020. 2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Fine-tuning bidirectional encoder representations from transformers (bert)-based models on large-scale electronic health record notes: an empirical study</title>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghao</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weisong</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bhanu</forename><surname>Pratap Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengshan</forename><surname>Rawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hong</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Yu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">JMIR medical informatics</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page">14830</biblScope>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Medical subject headings (mesh)</title>
+		<author>
+			<persName><forename type="first">Carolyn</forename><forename type="middle">E</forename><surname>Lipscomb</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Bulletin of the Medical Library Association</title>
+		<imprint>
+			<biblScope unit="volume">88</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page">265</biblScope>
+			<date type="published" when="2000">2000</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Ammu: a survey of transformer-based biomedical pretrained language models</title>
+		<author>
+			<persName><forename type="first">Katikapalli</forename><surname>Subramanyam Kalyan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ajit</forename><surname>Rajasekharan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sivanesan</forename><surname>Sangeetha</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of biomedical informatics</title>
+		<imprint>
+			<biblScope unit="volume">126</biblScope>
+			<biblScope unit="page">103982</biblScope>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Ontology mapping for semantically enabled applications</title>
+		<author>
+			<persName><forename type="first">Ian</forename><surname>Harrow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rama</forename><surname>Balakrishnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ernesto</forename><surname>Jimenez-Ruiz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Jupp</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jane</forename><surname>Lomax</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jane</forename><surname>Reed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Romacker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christian</forename><surname>Senger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrea</forename><surname>Splendiani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jabe</forename><surname>Wilson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Drug discovery today</title>
+		<imprint>
+			<biblScope unit="volume">24</biblScope>
+			<biblScope unit="issue">10</biblScope>
+			<biblScope unit="page" from="2068" to="2075" />
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Deep learning methods for biomedical named entity recognition: a survey and qualitative comparison</title>
+		<author>
+			<persName><forename type="first">Bosheng</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fen</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuansheng</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangxiang</forename><surname>Zeng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Briefings in Bioinformatics</title>
+		<imprint>
+			<biblScope unit="volume">22</biblScope>
+			<biblScope unit="issue">6</biblScope>
+			<biblScope unit="page">282</biblScope>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ce</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qian</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chen</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yixin</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guangjing</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cheng</forename><surname>Ji</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiben</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lifang</forename><surname>He</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.09419</idno>
+		<title level="m">A comprehensive survey on pretrained foundation models: A history from bert to chatgpt</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Chatgpt and the rise of large language models: the new ai-driven infodemic threat in public health</title>
+		<author>
+			<persName><forename type="first">Luigi</forename><surname>De Angelis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Francesco</forename><surname>Baglivo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guglielmo</forename><surname>Arzilli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pierpaolo</forename><surname>Gaetano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paolo</forename><surname>Privitera</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alberto</forename><forename type="middle">Eugenio</forename><surname>Ferragina</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caterina</forename><surname>Tozzi</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Rizzo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Frontiers in Public Health</title>
+		<imprint>
+			<biblScope unit="volume">11</biblScope>
+			<biblScope unit="page">1166120</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Accelerating the integration of chatgpt and other large-scale ai models into biomedical research and healthcare</title>
+		<author>
+			<persName><forename type="first">Ding-Qiao</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Long-Yu</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jin-Guo</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jin-Gen</forename><surname>Zou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying-Feng</forename><surname>Zheng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">MedComm-Future Medicine</title>
+		<imprint>
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page">43</biblScope>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<author>
+			<persName><forename type="first">Qingxiu</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Damai</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ce</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiyong</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baobao</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingjing</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhifang</forename><surname>Sui</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2301.00234" />
+		<title level="m">A survey on in-context learning. arXiv</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Scispacy: fast and robust models for biomedical natural language processing</title>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Neumann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>King</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Iz</forename><surname>Beltagy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Waleed</forename><surname>Ammar</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1902.07669</idno>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Bertmap: a bert-based ontology alignment system</title>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaoyan</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denvar</forename><surname>Antonyrajah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ian</forename><surname>Horrocks</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="page" from="5684" to="5691" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">The unified medical language system (umls): integrating biomedical terminology</title>
+		<author>
+			<persName><forename type="first">Olivier</forename><surname>Bodenreider</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Nucleic acids research</title>
+		<imprint>
+			<biblScope unit="volume">32</biblScope>
+			<biblScope unit="issue">suppl_1</biblScope>
+			<biblScope unit="page" from="267" to="D270" />
+			<date type="published" when="2004">2004</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Metamap lite: an evaluation of a new java implementation of metamap</title>
+		<author>
+			<persName><forename type="first">Dina</forename><surname>Demner-Fushman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Willie</forename><forename type="middle">J</forename><surname>Rogers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alan</forename><forename type="middle">R</forename><surname>Aronson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of the American Medical Informatics Association</title>
+		<imprint>
+			<biblScope unit="volume">24</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="841" to="844" />
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Quickumls: a fast, unsupervised approach for medical concept extraction</title>
+		<author>
+			<persName><forename type="first">Luca</forename><surname>Soldaini</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nazli</forename><surname>Goharian</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">MedIR workshop, sigir</title>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="page" from="1" to="4" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Knowledge-rich self-supervision for biomedical entity linking</title>
+		<author>
+			<persName><forename type="first">Sheng</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shikhar</forename><surname>Vashishth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Cliff</forename><surname>Wong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinfeng</forename><surname>Xiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tristan</forename><surname>Naumann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianfeng</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hoifung</forename><surname>Poon</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2022</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="868" to="880" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<author>
+			<persName><forename type="first">Fangyu</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ehsan</forename><surname>Shareghi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zaiqiao</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Basaldella</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nigel</forename><surname>Collier</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2010.11784</idno>
+		<title level="m">Self-alignment pretraining for biomedical entity representations</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Graph representation learning in bioinformatics: trends, methods and applications</title>
+		<author>
+			<persName><forename type="first">Hai-Cheng</forename><surname>Yi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhu-Hong</forename><surname>You</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">De-Shuang</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chee</forename><surname>Keong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kwoh</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Briefings in Bioinformatics</title>
+		<imprint>
+			<biblScope unit="volume">23</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page">340</biblScope>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Review of ontology matching approaches and challenges</title>
+		<author>
+			<persName><forename type="first">Sarawat</forename><surname>Anam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><forename type="middle">Sok</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Byeong</forename><surname>Ho Kang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qing</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">International journal of Computer Science and Network Solutions</title>
+		<imprint>
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="1" to="27" />
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Machine learning-friendly biomedical datasets for equivalence and subsumption ontology matching</title>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaoyan</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hang</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ernesto</forename><surname>Jiménez-Ruiz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ali</forename><surname>Hadian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ian</forename><surname>Horrocks</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Semantic Web-ISWC 2022: 21st International Semantic Web Conference, Virtual Event</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2022">October 23-27, 2022. 2022</date>
+			<biblScope unit="page" from="575" to="591" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Biobert: a pre-trained biomedical language representation model for biomedical text mining</title>
+		<author>
+			<persName><forename type="first">Jinhyuk</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wonjin</forename><surname>Yoon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sungdong</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Donghyeon</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sunkyu</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chan</forename><surname>Ho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">So</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaewoo</forename><surname>Kang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Bioinformatics</title>
+		<imprint>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="1234" to="1240" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Contrastive representation learning: A framework and review</title>
+		<author>
+			<persName><forename type="first">Graham</forename><surname>Phuc H Le-Khac</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alan</forename><forename type="middle">F</forename><surname>Healy</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Smeaton</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Ieee Access</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="page" from="193907" to="193934" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Niki</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jakob</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Llion</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Łukasz</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Illia</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Benjamin</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Melanie</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jared</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prafulla</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arvind</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Girish</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<author>
+			<persName><forename type="first">Sébastien</forename><surname>Bubeck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Varun</forename><surname>Chandrasekaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ronen</forename><surname>Eldan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Johannes</forename><surname>Gehrke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Horvitz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ece</forename><surname>Kamar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yin</forename><surname>Tat Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuanzhi</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Scott</forename><surname>Lundberg</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.12712</idno>
+		<title level="m">Sparks of artificial general intelligence: Early experiments with gpt-4</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Faisal</forename><surname>Azhar</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<title level="m">Open and efficient foundation language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">Pmc-llama: Further finetuning llama on medical papers</title>
+		<author>
+			<persName><forename type="first">Chaoyi</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoman</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ya</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanfeng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weidi</forename><surname>Xie</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.14454</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title level="m" type="main">Llama-adapter: Efficient fine-tuning of language models with zero-init attention</title>
+		<author>
+			<persName><forename type="first">Renrui</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaming</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aojun</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiangfei</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shilin</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pan</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongsheng</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Qiao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.16199</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<author>
+			<persName><forename type="first">Muru</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ofir</forename><surname>Press</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Merrill</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alisa</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><forename type="middle">A</forename><surname>Smith</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.13534</idno>
+		<title level="m">How language model hallucinations can snowball</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bert</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1810.04805</idno>
+		<title level="m">Pre-training of deep bidirectional transformers for language understanding</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<author>
+			<persName><forename type="first">Sung</forename><surname>Joon</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C O'</forename><surname>Joseph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carrie</forename><forename type="middle">J</forename><surname>Brien</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Meredith</forename><forename type="middle">Ringel</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Morris</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><forename type="middle">S</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bernstein</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.03442</idno>
+		<title level="m">Generative agents: Interactive simulacra of human behavior</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title level="m" type="main">Biocreative v cdr task corpus: a resource for chemical disease relation extraction</title>
+		<author>
+			<persName><forename type="first">Jiao</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yueping</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robin</forename><forename type="middle">J</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniela</forename><surname>Sciaky</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chih-Hsuan</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Robert</forename><surname>Leaman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Allan</forename><forename type="middle">Peter</forename><surname>Davis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carolyn</forename><forename type="middle">J</forename><surname>Mattingly</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><forename type="middle">C</forename><surname>Wiegers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiyong</forename><surname>Lu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2016">2016. 2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Pubmed central: The genbank of the published literature</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Richard</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Roberts</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Victor McKusick. Omim (online mendelian inheritance in man)</title>
+		<imprint>
+			<date type="published" when="2001">2001. 2011</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Ordo: an ontology connecting rare disease, epidemiology and genetic data</title>
+		<author>
+			<persName><forename type="first">Drashtti</forename><surname>Vasant</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Laetitia</forename><surname>Chanas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Malone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marc</forename><surname>Hanauer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Annie</forename><surname>Olry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Jupp</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Helen</forename><surname>Peter N Robinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ana</forename><surname>Parkinson</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Rath</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of ISMB</title>
+		<meeting>ISMB</meeting>
+		<imprint>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="volume">30</biblScope>
+		</imprint>
+	</monogr>
+	<note>researchgate. net</note>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Snomed clinical terms: overview of the development process and project status</title>
+		<author>
+			<persName><forename type="first">Colin</forename><surname>Michael Q Stearns</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kent</forename><forename type="middle">A</forename><surname>Price</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amy</forename><forename type="middle">Y</forename><surname>Spackman</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AMIA Symposium</title>
+		<meeting>the AMIA Symposium</meeting>
+		<imprint>
+			<date type="published" when="2001">2001</date>
+			<biblScope unit="page">662</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<monogr>
+		<title level="m" type="main">Chain of thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2201.11903</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<monogr>
+		<title level="m" type="main">Self-consistency improves chain of thought reasoning in language models</title>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2203.11171</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Bern2: an advanced neural biomedical named entity recognition and normalization tool</title>
+		<author>
+			<persName><forename type="first">Mujeen</forename><surname>Sung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Minbyul</forename><surname>Jeong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghwa</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Donghyeon</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jinhyuk</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaewoo</forename><surname>Kang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Bioinformatics</title>
+		<imprint>
+			<biblScope unit="volume">38</biblScope>
+			<biblScope unit="issue">20</biblScope>
+			<biblScope unit="page" from="4837" to="4839" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Lsmatch results for oaei 2021</title>
+		<author>
+			<persName><forename type="first">Abhisek</forename><surname>Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Archana</forename><surname>Patel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sarika</forename><surname>Jain</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">OM@ ISWC</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="178" to="184" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">Logmap: Logic-based and scalable ontology matching</title>
+		<author>
+			<persName><forename type="first">Ernesto</forename><surname>Jiménez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">-</forename><surname>Ruiz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bernardo</forename><forename type="middle">Cuenca</forename><surname>Grau</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Semantic Web-ISWC 2011: 10th International Semantic Web Conference</title>
+		<meeting><address><addrLine>Bonn, Germany</addrLine></address></meeting>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2011">October 23-27, 2011. 2011</date>
+			<biblScope unit="page" from="273" to="288" />
+		</imprint>
+	</monogr>
+	<note>Proceedings, Part I 10</note>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Edward</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yelong</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phillip</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zeyuan</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuanzhi</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shean</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weizhu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lora</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2106.09685</idno>
+		<title level="m">Low-rank adaptation of large language models</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<monogr>
+		<author>
+			<persName><forename type="first">Tim</forename><surname>Dettmers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Artidoro</forename><surname>Pagnoni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Qlora</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.14314</idno>
+		<title level="m">Efficient finetuning of quantized llms</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

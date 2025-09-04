@@ -1,0 +1,2074 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Evaluating Large Language Models on Controlled Generation Tasks</title>
+				<funder>
+					<orgName type="full">Amazon</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2023-10-23">23 Oct 2023</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Jiao</forename><surname>Sun</surname></persName>
+							<email>jiaosun@usc.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Southern</orgName>
+								<address>
+									<country>California</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Yufei</forename><surname>Tian</surname></persName>
+							<email>yufeit@cs.ucla.edu</email>
+							<affiliation key="aff1">
+								<orgName type="institution">University of California</orgName>
+								<address>
+									<settlement>Los Angeles</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Wangchunshu</forename><surname>Zhou</surname></persName>
+							<email>wangchunshu.zhou@inf.ethz.ch</email>
+						</author>
+						<author>
+							<persName><forename type="first">Nan</forename><surname>Xu</surname></persName>
+							<email>nanx@usc.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Southern</orgName>
+								<address>
+									<country>California</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Qian</forename><surname>Hu</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Rahul</forename><surname>Gupta</surname></persName>
+							<email>gupra@amazon.com</email>
+						</author>
+						<author>
+							<persName><forename type="first">John</forename><surname>Wieting</surname></persName>
+							<email>jwieting@google.com</email>
+						</author>
+						<author>
+							<persName><forename type="first">Nanyun</forename><surname>Peng</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="institution">University of California</orgName>
+								<address>
+									<settlement>Los Angeles</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Xuezhe</forename><surname>Ma</surname></persName>
+							<email>xuezhema@usc.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Southern</orgName>
+								<address>
+									<country>California</country>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Evaluating Large Language Models on Controlled Generation Tasks</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2023-10-23">23 Oct 2023</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">6C50D772D76A0AAD94006EAD734215CD</idno>
+					<idno type="arXiv">arXiv:2310.14542v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:26+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>While recent studies have looked into the abilities of large language models in various benchmark tasks, few studies have looked into the controllability of large language models on generation tasks. We present a systematic and extensive analysis of the controllability of large language models on ten benchmarks, including a new simple yet challenging numerical planning benchmark with different granularities. After comparing large language models against state-of-the-start finetuned smaller models, we present a spectrum showing when large language models fall behind, are comparable, or exceed the ability of smaller models. We conclude that large language models struggle at meeting fine-grained hard constraints.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Text generation models should generate texts that meet controllable constraints as humans wish <ref type="bibr" target="#b60">(Zhang et al., 2022)</ref>. For example, one can avoid the blandness caused by repetitive patterns by controlling the syntax of generated sentences <ref type="bibr" target="#b18">(Iyyer et al., 2018;</ref><ref type="bibr" target="#b38">Qian et al., 2019)</ref>. In a customized dialogue system, one should be able to control the persona of the utterance <ref type="bibr">(Smith et al., 2020)</ref>. Previous works either finetune generation models such as BART <ref type="bibr" target="#b26">(Lewis et al., 2019)</ref> on specific tasks for better controllability (e.g., controlled paraphrase generation <ref type="bibr" target="#b48">(Sun et al., 2021)</ref>) or design constrained decoding strategies (e.g., look-back decoding strategy by <ref type="bibr">Xu et al. (2023a)</ref>) for controlled generation.</p><p>Large Language Models (LLMs) have recently shown great potential in various generation tasks. For example, <ref type="bibr">Jiao et al. (2023a)</ref> shows that ChatGPT with GPT-4 as an engine achieves commercial-level machine translation quality. <ref type="bibr" target="#b25">Laskar et al. (2023)</ref> find that annotators prefer summaries generated from ChatGPT over state-of-the-art summarization models. However,</p><p>Task Control Benchmark Evaluation numerical planning prefix &amp; number of words &amp; end word NPB MSE, success rate constrained content generation sentiment, topic, keyword Amazon Review CommonGen M2D2 off-the-shelf model, ppl story generation prefix rationale generation correct answer ROC writing prompts repetition, diversity, coherence CoS-E ECQA increased accuracy paraphrase generation semantic &amp; syntax ParaNMT QQPPoS lexical overlapping, syntax match good poor</p><p>Figure <ref type="figure">1</ref>: We test large language models on five controlled generation tasks with various control factors using automatic evaluation methods. We show a spectrum of abilities of large language models on such tasks and conclude that large language models struggle at finegrained hard constraints such as numerical planning.</p><p>few works investigate the controllability of large language models. Towards this end, we aim to study and understand the controllability of large language models to answer the question: Are large language models better than finetuned smaller models at controllability on generation tasks?.</p><p>The main contribution of this work is to conduct a comprehensive analysis of LLM's controllability on five tasks and ten generation benchmarks, including controlled story generation, controlled free-form generation with sentiment and topics, controlled paraphrase generation, and controlled rationale generation as in Figure <ref type="figure">1</ref>. We further design a new simple yet challenging benchmark named Numerical Planning Benchmark (NPB), where the task is to satisfy numerical constraints from four granularities (word-, syllable-, sentenceand paragraph-level) and under different content controls (e.g., prefix and ending). For evaluation, we use automatic metrics, which are imperfect yet convenient and reproducible. <ref type="foot" target="#foot_0">1</ref>After an in-depth examination, we categorize LLM's controllability on a spectrum: from lagging behind and being on par with to surpassing smaller finetuned models. Our findings indicate that large language models have difficulties adhering to specific hard constraints, such as numerical planning.</p><p>We first introduce the numerical planning task and the associated evaluation as this is a new, intuitively simple, yet challenging task ( §2). For the rest, we rank them by the task difficulty indicated in Figure <ref type="figure">1</ref> from easy to hard: constrained content generation ( §3), story generation ( §4), rationale generation ( §5) and paraphrase generation ( §6).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Numerical Planning</head><p>Can LLMs count from two to ten? Task Description. We introduce the Numerical Planning Benchmark (NPB) as an intuitive task that tests the basic numerical planning ability of LLMs. The high-level task descriptions can be found in Table 1. We are inspired by real-world scenarios such as creative writing. For example, writers may wish to generate sentences or poems with a specific structure, such as a fixed number of words or syllables in each line, aiming to adhere to particular forms (e.g., sonnets, where each line contains exactly 10 or 11 syllables <ref type="bibr" target="#b52">(Tian and Peng, 2022)</ref>). Meanwhile, humans may also want full control over the start and end of each line for rhetorical purposes such as alliteration and rhyming. Inductively, we formulate our numerical planning benchmark from four different granularities: generating a piece of text that contains a predefined number of words, syllables, sentences, or paragraphs given a plausible pair of prefix (start) and suffix (ending) as constraints. The prefix is given to LLMs such that they are only queried to generate the continuations.</p><p>Evaluation Metrics. We use success rate (SR) and mean squared error (MSE) as automatic evaluation metrics. As our control is two-fold, we separately calculate the success rates of 1) generating the continuation with the correct counts and 2) generating the continuation with the proper ending. We also calculate the MSE between our input numbers and output numbers.</p><p>Evaluate with LLMs. We evaluate ChatGPT and Alpaca-7b on our NPB benchmark in zero-shot and few-shot settings. Each request used to query the LLMs corresponds to a real case in the datasets</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>llm-controlgen</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Granularity Task Illustration</head><p>Word/Syllable Generate a sentence using exactly 5 words/syllables.</p><p>Complete sentence "This is a story" using exactly 5 words/syllables.</p><p>Complete sentence "This is a story" using exactly 5 words/syllables, including the last word as "town".</p><p>Sentence Generate a paragraph with 5 sentences, ...</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Paragraph</head><p>Generate an article with 5 paragraphs, ...</p><p>Table 1: Task illustration for the Numerical Planning Benchmark. We test LLMs' numerical planning ability under various constraints (word counting and end word) and granularities (word, syllable, sentence, and paragraph). Due to space limitations, we only show the full constraints under the word granularity here.</p><p>of Romance Books and Reddit Short Stories.<ref type="foot" target="#foot_1">foot_1</ref> For word-level planning tasks (word and syllable count), we randomly select sentences from the above datasets. Then, we select the last word in each sentence as the suffix. Depending on how many additional words we query the LLMs to generate, we select the first few words in each sentence as the prefix (if we simply ask LLMs to generate freely without a prefix, the outputs lack diversity).</p><p>Our prompt is written as Complete a sentence that starts with {prefix} using exactly {N} additional words (including the last word {last word}). The sentence must end with the word {last word}. Sentence: {prefix}, and LLMs will continue. In the few-shot setting, we provide the task description and three examples. For each example, we also provide explanations to help LLMs better understand our task. For example, ##Prefix: This is a story about a young girl's ##Last word: town ##N: 5 ##Output: This is a story about a young girl's redemption in a small town. ##Explanation: We generated "redemption in a small town". It contains exactly 5 words and ends with the last word 'town'.</p><p>We query the LLMs to generate outputs from N = 2 to N = 10 words. Each number N has 100 evaluation samples. For paragraph-level tasks, the prefix and suffix are the first and last sentences in the corresponding paragraphs. For all experi- Model SRcount SRlast word SRboth MSEcount GPT-2 (fine-tuned) 0.64 0.86 0.60 1.62 Alpaca-7b zs 0.17 0.31 0.09 9.19 Alpaca-7b ICL 0.14 0.34 0.07 9.76 Vicuna zs 0.08 0.09 0.03 27.68 Vicuna ICL 0.13 0.30 0.04 13.43 Falcon zs 0.13 0.42 0.08 11.60 Falcon-7b ICL 0.11 0.34 0.03 13.72 ChatGPT 0.41 0.74 0.36 3.64 ChatGPT ICL 0.37 0.78 0.34 4.95 Table 2: Success rates for the word count planning task. Surprisingly, few-shot in-context learning (ICL) underperforms zero-shot (zs) on numerical planning. ments, our decoding strategy is top p (p = 0.95) sampling with temperature T = 0.3 unless otherwise specified. Result. We report the model performance of LLMs and a fine-tuned GPT-2-large model on the task of word count planning in Table 2. Due to space limitations, we compile the results of the remaining tasks in Appendix A. First, it is clear LLMs are poor at numerical planning, although it is an extremely simple task for humans. Given its extremely poor performance, we consider Alpaca incapable of doing numerical planning. Secondly, LLMs learn to incorporate literal constraints, such as the last word, via few-shot in-context learning. Interestingly, few-shot in-context learning deteriorates the performance of numerical planning. Upon further inspection, we find that LLMs try to mimic the style or features (such as length) in the in-context examples and are, therefore, more likely to generate outputs with the wrong word counts once the input number N cannot be found in the examples. Our results resonate with Yin et al. (2023); Kung and Peng (2023); Sinha et al. (2023) that LMs do not truly understand task definitions via in-context learning.</p><p>Figure <ref type="figure" target="#fig_0">2</ref> is a fine-grained visualization of the input and output numbers distribution by zero-shot ChatGPT. Specifically, we compare LLMs' numerical planning abilities with (e.g., complete sentence with "redemption in a small town" using exactly 5 words, including the last word as "happy") and without additional suffix constraint (e.g., complete sentence with "redemption in a small town" using exactly 5 words). LLMs can generate more freely without suffix constraints to meet the numerical constraint. However, ChatGPT doesn't always translate to a higher success rate. We find out that only when N is small (i.e., 2 and 3), ChatGPT achieves a higher success rate if explicitly told the last word of the target sentence.</p><p>Finally, we would like to point out a few behaviors. First, although the general trend is that LLMs' numerical planning ability drops as N increases, N = 3 is a clear exception (performs worse) among various experiments we repeated. Second, by checking the failure cases, we find that ChatGPT always generates shorter continuations than required. Moreover, we see a sudden drop in model performances (from above ∼0.6 to ∼0.4) when the input number N increases from 5 to 6. We encourage future research to investigate these behaviors.</p><p>3 Content-Controlled Generation Task Description. We consider three types of content constraints: topic, sentiment, and keyword. The detailed task definitions and dataset can be found in Appendix B.</p><p>Evaluation Metrics. We use the success rate as the evaluation metric to measure how well LLMs can follow the content constraints. Specifically, we use GPT-3.5 <ref type="bibr" target="#b35">(Ouyang et al., 2022)</ref> based topic/sentiment classifiers with in-context learning using five examples per category to evaluate whether the generated texts belong to the specified topic or sentiment class. We consider an LLM to succeed in one example if the predicted class of the generated text is identical to the input constraint. For a keyword-constrained generation, we use the keyword coverage metric that measures the percentage of input keywords included in generated texts.</p><p>Evaluate with LLMs. For the content constrained generation with LLMs, we follow <ref type="bibr" target="#b62">Zhou et al. (2023)</ref> and use natural language instructions to prompt LLMs. Specifically, we use a prompt template of "Write a sentence about {topic name}" for topic-constrained generation, "Write an Amazon review with {level number} star about a random thing. The number of stars ranges from one to five. One star is the most negative, and five stars are the most positive" for sentiment constraints, and "Write a sentence using the following keywords: {keywords}" for keyword constraints.</p><p>In addition to zero-shot evaluation, we also evaluate LLMs in the in-context learning setting by appending the following demonstration template: "Below are some examples for the task: Input: {input 1}, Output: {output 1}; Input: {input 2}, Output: {output 2} ... ". We use 5 in-context examples per class following the practice in <ref type="bibr" target="#b62">Zhou et al. (2023)</ref>.</p><p>We compare various LLMs including ChatGPT, LLaMA, Alpaca, Vicuna, and Falcon in our experiments. We also report the results of Diffusion-LM <ref type="bibr">(Li et al., 2022b)</ref>  Results. The results are shown in Table <ref type="table" target="#tab_3">3</ref>. We find that Alpaca significantly outperforms LLaMA in the zero-shot setting. This is intuitive since natural language instruction of constraints resembles instruction tuning data. However, this performance gap is significantly reduced when in-context learning is used. We think this is because the role of instruction tuning is mainly to adapt an LLM to human-friendly prompt formats instead of increasing the LLM's capability. We also find that ChatGPT achieves competitive performance without in-context learning and outperforms Diffusion-LM, a competitive supervised baseline, by a large margin. Moreover, the performance of ChatGPT can be further improved by adding in-context examples to the prompt. This suggests that LLMs' ability to follow content constraints expressed in natural language depends on three confounding factors: instruction tuning or supervised fine-tuning, in-context learning, and model capacity.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Story Generation</head><p>Task Description. Given the beginning text of a story, open-ended story generation aims to decode texts that are coherent with previous topics, and informative without undesired repetitions <ref type="bibr">(Su et al., 2022;</ref><ref type="bibr" target="#b47">Su and Xu, 2022;</ref><ref type="bibr">Xu et al., 2023b)</ref>. Despite the impressive success on generating fluent and accurate sentences for low-entropy tasks such as summarization or translation, large-scale language models (LLMs) still suffer from serious degeneration problems, such as undesired repetitions <ref type="bibr" target="#b16">(Holtzman et al., 2020;</ref><ref type="bibr">Su et al., 2022)</ref> and Datasets. We evaluate different generation methods on two popular benchmark story datasets: ROCStories and Writing Prompts. ROCStories (ROC) <ref type="bibr" target="#b34">(Mostafazadeh et al., 2016</ref>) is a corpus comprising commonsense stories written by crowdsourced workers within 5 short sentences. Given the first sentence as a prefix, generation methods are required to produce four continuing sentences. Writing Prompts (WP) is a challenging task for inspiring continuations with abstract, high-level story prompts submitted by online users and continuations by others on Reddit <ref type="bibr" target="#b11">(Fan et al., 2018)</ref>. Following prior literature <ref type="bibr">(Xu et al., 2023b)</ref>, we utilize the first 32 tokens as the prefix and ask for continuation with 256 tokens. Since we prompt different language models or decoding algorithms without extra fine-tuning, we directly sample 1,000 development and 1,000 testing instances from both ROC and WP.</p><p>Baselines. We evaluate the pre-trained LLM, GPT-2-XL <ref type="bibr" target="#b41">(Radford et al., 2019)</ref>, with both search (SimCTG <ref type="bibr">(Su et al., 2022)</ref> and Look-back <ref type="bibr">(Xu et al., 2023b)</ref>) and sampling decoding methods (Nucleus sampling <ref type="bibr" target="#b16">(Holtzman et al., 2020)</ref>, Typical decoding <ref type="bibr" target="#b32">(Meister et al., 2022)</ref> and η-sampling (Hewitt et al., 2022)).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Evaluation</head><p>Metrics. Following open-ended story generation literature <ref type="bibr">(Su et al., 2022;</ref><ref type="bibr">Li et al., 2022a;</ref><ref type="bibr">Xu et al., 2023b)</ref>, we adopt the following automatic metrics to evaluate generation quality: 1) rep-n to measure sequence-level repetition according to the portion of duplicate n-grams <ref type="bibr" target="#b55">(Welleck et al., 2019)</ref>; 2) diversity to assess the overall model repetition by considering rep-n at different n-gram levels; 3) coherence measured as the cosine similarity between prefix and continuation embeddings represented by SimCSE <ref type="bibr" target="#b14">(Gao et al., 2021)</ref>. We do not report MAUVE <ref type="bibr" target="#b36">(Pillutla et al., 2021)</ref> score due to the concern that MAUVE may not accurately reflect human preferences considering contradicted results between MAUVE and human evaluations observed in prior work <ref type="bibr" target="#b47">(Su and Xu, 2022)</ref>.</p><p>Evaluate with LLMs. Chatbots that fine-tune LLMs on instructions are also evaluated: Vicuna-7B <ref type="bibr" target="#b7">(Chiang et al., 2023)</ref>, Falcon-7B-Instruct <ref type="bibr" target="#b3">(Almazrouei et al., 2023)</ref> and ChatGPT. <ref type="foot" target="#foot_2">3</ref> We prepend the following instruction before the story prefix as prompt: 1) ROC: "Please continue writing this story within 4 very short sentences: &lt;prefix&gt;", 2) WP: "Please continue writing this story within 256 words: &lt;prefix&gt;"<ref type="foot" target="#foot_3">foot_3</ref> .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Results. As shown in</head><p>Table 4, both Vicuna-7B and ChatGPT are able to continue writing more fluent and coherent stories on both ROC and WP compared with other decoding methods based on GPT2-XL. Falcon-7B-Instruct obtains consistently lower diversity than other baselines, while ChatGPT achieves more robust performance in terms of diversity and coherence on both datasets. 5 Rationale Generation Task Description. Free-form rationales are known to aid model interpretability by providing additional world knowledge or commonsense reasoning steps (Kim, 2015; Lipton, 2018; Alvarez-Melis and Jaakkola, 2018). Wei et al. (2022) show that rationales can improve large language models' ability to solve complex reasoning tasks. Extractive rationales in question-answering tasks are based on the input passage to extract related information to answer the question. Conversely, free-form rationales in the question-answering tasks are open-I→O 0.87 I+R CoS-E →O 0.92 I+R ECQA →O 0.99 Model Leakage Non-Leakage I+R Alpaca-7B →O 0.91 0.86 I+R LLaMA-7B →O 0.87 0.79 I+R Vicuna-7B →O 0.95 0.74 I+R Falcon-7B →O 0.83 0.65 I+R ChatGPT →O 0.98 0.93 Table 5: Rationales generated by ChatGPT are on par with best-crowdsourced rationales ECQA with FlanT5-XXL (Chung et al., 2022b) as the backbone model. Ruling out leakage results in at least 5% accuracy drop.</p><p>ended and condition on purely the question and options. <ref type="bibr" target="#b49">(Sun et al., 2022)</ref> studies how different the quality of rationales would impact rationales' utilities in terms of improving the model performance and claims that crowdsourced rationales are superior to generated rationales. <ref type="bibr" target="#b49">Sun et al. (2022)</ref> finetunes T5-base for both rationale generation and question answering. With the power of LLMs, we want to revisit the problem and see whether the utility of generated rationales conditioned on the question and options has been improved.</p><p>Evaluation. We follow previous works and use the performance gap before and after adding rationales in the input to measure the utility of rationales, written as acc(I+R→O) -acc(I→O), where I stands for question and options as input, R stands for rationales, and O stands for one of the options as output. For the backbone model for question answering, we use flanT5-XXL (Chung et al., 2022a) instead of T5-base as it can handle longer sequences and is better at reasoning. <ref type="bibr" target="#b49">Sun et al. (2022)</ref> shows that two factors are mainly affecting the utility of rationales. One is leakage, which means that the correct answer is explicitly written in the rationales, and one can choose the correct answer among all the options by rationales without knowing the questions. The other is background knowledge, which is the additional background knowledge or reasoning step that can help answer the question.</p><p>Datasets. CoS-E (Rajani et al., 2019) and ECQA <ref type="bibr" target="#b1">(Aggarwal et al., 2021)</ref> are the most popular free-form rationale datasets through crowdsourcing. ECQA builds on CoS-E and improves the quality of the CoS-E dataset from various aspects, including completeness, comprehensiveness, coherence, etc.</p><p>They share the same sets of questions and options. Based on the findings from <ref type="bibr" target="#b49">Sun et al. (2022)</ref>, both CoS-E and ECQA tend to leak the correct answer in the rationale, while ECQA rationales contain the background necessary to answer the questions. We conduct our analysis on question-answer pairs from the test set. Based on the evaluation acc(I+R→O)acc(I→O), since we are evaluating on the same set of question-answer pairs, acc(I→O) is always the same. Therefore, we only compare acc(I+R→O) with different LLMs.</p><p>Evaluate with LLMs. We prompt LLMs to provide background knowledge that can help answer the question and control whether to leak the correct options in rationales. We use ChatGPT as the example for illustration:</p><p>• Leakage. We have ChatGPT take the role of A teacher who is trying to explain to students the rationale behind choosing the correct option for a multiple-choice question.</p><p>Then prompt it with Question: {question} Options: {concatenated options} Explain the rationale behind choosing the correct option "{correct answer}".</p><p>• Non-leakage. The role of ChatGPT becomes A teacher who is trying to explain to students the rationale behind a multiple-choice question. However, you do not want to leak the correct answer directly. and prompt it with Question: {question} Options: {concatenated options} Explain the rationale behind choosing the correct answer. Do not mention the correct answer "{correct answer}" explicitly.</p><p>We highlight the difference between the two modes with underline. When prompting LLaMA and Alpaca, we remove the role description and only use the prompts. Through analysis, we aim to answer two questions: 1) Are LLM-generated rationales on par with crowdsourced rationales? 2) How much would leakage impact the utility of rationales?</p><p>Result. Compared to T5, FlanT5 has better reasoning abilities <ref type="bibr">(Chung et al., 2022b)</ref> and is more capable of understanding instructions. Therefore, we use FlanT5 instead of using T5 as the backbone model for question answering, which can theoretically examine the utility of rationales better ruling out the incapability of models. Simply given the question and the option strings, Table <ref type="table">5</ref> shows that FlanT5-XXL has an accuracy of 0.87 (while T5 in <ref type="bibr" target="#b49">(Sun et al., 2022)</ref> scores 0.57 under the same setting). We then show the performance with crowdsourced rationales from both ECQA and CoS-E. With crowdsourced rationales from ECQA, the model almost solved the task and reached a performance of 0.99. With CoS-E rationales, the accuracy is 0.92. Our finding echoes with <ref type="bibr" target="#b49">Sun et al. (2022)</ref> that ECQA rationales are better quality.</p><p>We then evaluate the utility of LLM-generated rationales under both the Leakage and Non-leakage scenarios. As the majority of crowdsourced rationales contain leakage <ref type="bibr" target="#b49">(Sun et al., 2022)</ref>, we consider it fair to compare LLM-generated rationales under the Leakage scenarios against crowdsourced rationales. We have two major findings:</p><p>• ChatGPT generated rationales are on par with ECQA rationales from crowdsourcing.</p><p>• We quantify the influence of leakage in measuring the utility of rationales: whether or not having leakage in rationales could result in an accuracy difference of at least 5%.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Controlled Paraphrase Generation</head><p>Task Description. Syntactically-controlled paraphrase generation can benefit a wide range of NLP applications such as dialogue generation <ref type="bibr" target="#b13">(Gao et al., 2020)</ref>, improving the robustness of models <ref type="bibr" target="#b17">(Huang and Chang, 2021)</ref> or metrics <ref type="bibr" target="#b0">(Aggarwal et al., 2022)</ref>, and diversifying other generation tasks such as diverse question generation. Syntacticallycontrolled paraphrase generation is challenging because it requires satisfying two folds of control signals: semantic preservation and syntactic conformation. By definition of paraphrases, the generation should have exactly the same semantics as the input text. With syntax as part of the input, generated paraphrases should also conform with the indicated syntax. The input syntax can come from a variety of sources.</p><p>Datasets. We evaluate on ParaNMT-small <ref type="bibr" target="#b6">(Chen et al., 2019)</ref>, derived from ParaNMT <ref type="bibr" target="#b56">(Wieting and Gimpel, 2018)</ref>, and QQP-Pos <ref type="bibr" target="#b23">(Kumar et al., 2020)</ref>.</p><p>Our train/dev/test split follows previous works <ref type="bibr" target="#b23">(Kumar et al., 2020;</ref><ref type="bibr" target="#b48">Sun et al., 2021)</ref>. Each instance is a tuple of {source sentence, exemplar, ground-truth paraphrase}, where the exemplar shares the same syntax with the ground-truth paraphrase.</p><p>Evaluation Metrics. We use two sets of evaluation metrics to evaluate the quality of generated paraphrases. We use lexical-overlapping-based scores to evaluate the semantic preservation and tree-edit distances to evaluate the syntactic conformation. For lexical-overlapping-based scores, the higher is better. For tree edit distance, the lower is better, indicating that the newly derived syntax matches more closely with the expected syntax. In this work, we prune the constituency parse trees at a level of 2 and only compare the high-level syntactic structure. TED-R means the tree edit distance between the candidate-generated sentence with the ground-truth paraphrase as the reference. TED-E compares the candidate sentence against the exemplar that only provides the syntax.</p><p>Evaluate with LLMs. We provide three ways to prompt for the controlled paraphrase generation:</p><p>• Direct. We prompt LLMs directly without specifying any constraints. The prompt is written as Paraphrase {source sentence}. Please only have the paraphrase in the response.</p><p>• Control. Under this mode, we use the exemplar sentence for the syntactic control signal. The prompt is written as Paraphrase "{source sen-tence}" so that it uses the syntactic structure from "{exemplar}"; please only have the paraphrase in the response.</p><p>We observe that under the Control mode, the generated paraphrases would sometimes take the syntactic information from the exemplars and the semantic meaning from exemplar sentences. To solve this, we introduce the third mode Control with syntax explanation. We first extract the constituency parse structure from the exemplar sentence using Stanford CoreNLP, prune the parse tree at the height of two (i.e., parse at H2), and then ask ChatGPT to generate a natural language explanation of the pruned syntactic parse, which we refer to as syntax explanation. The generated syntax explanation will be part of the input.</p><p>• Control with Syntax Explanation. The prompt is written as Paraphrase "{source sentence}" so that the sentence has a syntactic structure of "{pruned syntax}". {generated explanation for the syntax.} Please only have the generated paraphrase, not its parse, in the response.</p><p>Table <ref type="table">7</ref> shows examples of generated explanations for constituency parse trees pruned at height</p><p>BLEU↑ METEOR↑ ROUGE-1↑ ROUGE-2↑ ROUGE-L↑ TED-R↓ (H=2) TED-E↓ (H=2) ParaNMT -Small Direct 10.8 26.2 44.2 18.6 44.9 1.4 1.5 Ctrl 14.3 30.7 51.4 25.8 50.7 1.3 1.2 Syntax exp. 13.6 27.3 46.4 20.2 47.0 1.4 1.4 AESOP 22.9 32.7 54.4 29.8 56.4 0.9 0.5 QQPPos Direct 6.7 25.2 39.8 15.6 41.5 1.8 1.8 Ctrl 10.5 25.6 43.0 19.8 45.2 1.4 1.4 Syntax exp. 9.0 26.5 42.8 17.8 14.2 1.8 1.8 AESOP 47.3 49.7 73.3 54.1 75.6 0.4 0.3</p><p>Table <ref type="table">6</ref>: Performance comparison with ground-truth syntactic control for AESOP <ref type="bibr" target="#b48">(Sun et al., 2021)</ref> and fine-shot ChatGPT. With coarse syntactic control from a shallow height of pruning, AESOP, the state of the finetuned small model, outperforms five-shot ChatGPT across all semantic preservation (BLUE, ROUGE Scores, and METEOR) and syntactic conformation metrics (TED-R and TED-E at the height of two) by a large margin. ↑ means higher is better, while ↓ means lower is better. By comparing ctrl with syntax explanation, we show that ChatGPT is better at mimicking the syntactic structure from an exemplar than utilizing the syntactic information directly from the syntax.</p><p>Pruned Parse at H=2 Explanation</p><formula xml:id="formula_0">(ROOT (S (NP ) (VP )))</formula><p>This represents a sentence structure with a noun phrase and a verb phrase as its constituents.</p><p>(ROOT (FRAG (SBAR ) (. )))</p><p>This is a sentence with a fragment that includes a subordinate clause followed by a period.</p><p>(ROOT (SBARQ (WHADVP ) (SQ ) (. )))</p><p>This sentence structure represents an interrogative sentence with a subord -inate clause before the main clause.</p><p>(ROOT (SQ (VBP ) (RB ) (NP ) (VP ) (. )))</p><p>This is a parse tree for a sentence containing a main verb and its subject, with a possible adverb and complement structure.</p><p>Table <ref type="table">7</ref>: Examples of generated explanations for pruned constituency parse trees by ChatGPT.</p><p>two by ChatGPT. We prompt ChatGPT from zero shots to five shots for our experiments, find that ChatGPT's performance peaks with five shots as expected, and compare the performance of fiveshot ChatGPT with AESOP <ref type="bibr" target="#b48">(Sun et al., 2021)</ref>. The backbone of AESOP is the BART-base model, a 140m-parameter model finetuned with specialized input and output format tailored for the controlled paraphrase generation task. To the best of our knowledge, AESOP remains the state-of-the-art paraphrase generation model on both ParaNMTsmall and QQPPos datasets.</p><p>Result. Table <ref type="table">6</ref> shows the performance comparison between five-shot ChatGPT and AESOP. We show that AESOP surpasses ChatGPT across all evaluation metrics for both semantic preservation metrics (lexical-overlapping based metrics including BLEU, ROUGE scores, and METEOR) and syntactic conformation metrics (TED-R and TED-E at the height of two). In addition, we find that ChatGPT's performance is the best under the setting of Control, where we use exemplar sentences for control signals. Compared with the setting Control with syntax explanation, Table <ref type="table">6</ref> shows that ChatGPT is good at mimicking syntactic structures from sentences instead of directly incorporating the syntactic parses. Besides ChatGPT, we also tried Alpaca <ref type="bibr" target="#b50">(Taori et al., 2023)</ref> and LLaMA <ref type="bibr">(Touvron et al., 2023)</ref> on the controlled paraphrase generation task. However, they repeat input sentences and struggle to generate meaningful content. Therefore, we do not include them here for comparison.</p><p>7 Related Works LLM Evaluation. While the advancement of more potent large language models drives our work, our focus aligns more with recent studies evaluating LLMs' performance on academic NLP benchmarks. We roughly categorize these studies as either general or specific NLP tasks. For general NLP tasks, <ref type="bibr" target="#b39">Qin et al. (2023)</ref> shows that ChatGPT performs well on many tasks involving reasoning capabilities but not on sequence tagging. <ref type="bibr" target="#b2">Ahuja et al. (2023)</ref> evaluate LLMs on various multilingual NLP tasks. For specific tasks, <ref type="bibr">Jiao et al. (2023b)</ref> shows that ChatGPT has achieved competitive performance on machine translation. <ref type="bibr" target="#b12">Gao et al. (2023)</ref> uses ChatGPT for event extraction and shows that it only matches with around a half percent of specialized event extraction models. To the best of the authors' knowledge, we are the first to study the controllability of LLMs and the tasks in our work</p><p>have not been previously studied. Instead of having a single conclusion on if LLMs perform well at certain task, we provide a spectrum showcasing how LLMs' abilities vary according to different control granularities.</p><p>8 Discussion: Why and How</p><p>We believe that our work makes a substantial contribution to the field of benchmarking LLMs' controllabiltiy, especially considering the prevalence of LLMs these days. That being said, we do have a few hypotheses to investigate why LLMs fail at numerical planning and how we could potentially increase their controllability.</p><p>Tokenization. On one hand, tokenization indeed makes the task of numerical planning more challenging than without, by separating the generative process (i.e., subword-level generation) and the numerical planning process (i.e., counting complete words). However, we posit that tokenizers not necessarily impact the ability of word planning, as it is a standard practice that a subword starting with a special token will indicate the start of a new word (e.g., " Ġ" in BPE tokenizer,<ref type="foot" target="#foot_4">foot_4</ref> has been used by many LLMs such as GPT and RoBERTa). Nor are we aware of evidence that the subwords of a tokenizer roughly correspond to units of syllables. For example, <ref type="bibr" target="#b51">Tian et al. (2023)</ref> shows that smaller models such as GPT-2-large fine-tuned on syllablerelated data can achieve a success rate of close to 90% on the same syllable-planning task. On the other hand, the best performance of ChatGPT is 37%.</p><p>Decoding Methods. The reported results are based on sampling with a temperature of 0.3. Moreover, we have experiments showing that our conclusion is robust to the change of decoding mechanisms, where we try other decoding methods beyond sampling with T = 0.3. Specifically, we tried 1) greedy decoding, 2) beam search with beam size 8, and 3) sampling with temperature T = {0.3, 0.7, 1.0}. For the prior two, most of the generated outputs are highly similar, plain, and lack diversity. As for sampling with T = {0.3, 0.7, 1.0}, the success rate decreases as T increases. We think T = 0.3 is a reasonable balance between diversity and quality. We believe that our results convey meaningful signals since each number N has been averaged over 100 different evaluation samples to reduce noise. However, none of these experiments show that LLMs can do better than fine-tuned GPT-2.</p><p>In-Context Learning. We try to give more demonstration of NPB in our prompts and we surprisingly found that this does not help once the input number N cannot be found in the examples. Our results resonate with <ref type="bibr" target="#b59">Yin et al. (2023)</ref>; <ref type="bibr" target="#b24">Kung and Peng (2023)</ref> that LLMs do not truly understand task definitions via in-context learning.</p><p>How to Improve. We encourage future work to explore from two different directions: 1) chain/tree/graph-of-thought reasoning, and 2) bridging LLMs with non-autoregressive generation abilities (e.g., NADO <ref type="bibr" target="#b33">(Meng et al., 2022)</ref>). For the first one, one can try both simple chain/tree/graphof-thought prompting or even pretrained LLMs with chain-of-thought/scratchpad pairs, as it shows promises for mathematical reasoning <ref type="bibr" target="#b61">(Zhou et al., 2022)</ref>. However, this will not fundamentally solve the planning issue. It is straightforward that autoregressively generating the next tokens will lead to the problem of models not "looking back" and therefore not adhering to the fine-grained control signals. Therefore, we encourage researchers to also investigate multi-step planning and iterative revisions with LLMs, or, more fundamentally, challenge the autoregressive architecture of LLMs.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="9">Conclusion</head><p>We test the controllability of large language models on five tasks and ten benchmarks, including a numerical planning benchmark that is easy for humans while challenging for LLMs. From there, we draw a spectrum by comparing the performance between LLMs and smaller specialized models. LLMs are able to generate human-level rationales and conform with coarse control signals, such as sentiment, topic and keyword incorporation. However, they struggle at fine-grained hard constraints, such as numerical planning and paraphrase generations. We hope that our work can inspire downstream applications on when to adopt LLMs. For example, we find that LLMs are good at generating rationales, and these automatic rationales could be used to further boost LLMs' performance through chain-of-thought reasoning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Limitations</head><p>This work is subject to couple of limitations. First, all of our experiments involved heavy prompt engineering effort. Although we have attempted to choose the best performing prompts, there might be room for better prompts which could influence the reported evaluation metrics. Second, automatic evaluations are imperfect. Last, we have not proposed solutions after identifying tasks where LLMs struggle. We leave this for future work.</p><p>Model SRcount SRsuffix SRboth MSEcount syllable planning ChatGPT 0.37 0.75 0.32 4.83 ChatGPT ICL 0.30 0.84 0.28 6.10 Alpaca-7b 0.15 0.33 0.07 9.44 Alpaca-7b ICL 0.12 0.36 0.05 10.61 sentence planning ChatGPT 0.38 0.625 0.29 1.69 ChatGPT ICL 0.36 0.66 0.27 2.05 Alpaca-7b 0.19 0.19 0.07 6.56 Alpaca-7b ICL 0.17 0.26 0.10 8.04 paragraph planning ChatGPT 0.69 0.17 0. 3.24 ChatGPT ICL 0.57 0.17 0.34 4.43 Alpaca-7b Failed Alpaca-7b ICL Failed</p><p>Table 8: Success rates for the syllable, sentence, and paragraph count planning tasks. LLMs are best at sentence count planning and worst at syllable count planning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A SPB additional results</head><p>We report the additional results of ChatGPT and Alpaca on the SPB benchmark in Table <ref type="table">8</ref>. Recall that the suffix for the paragraph planning task is the last sentence. In practice, LLMs are unable to follow instructions and copy the requirement as prompted. Hence, when we compute the success rate for this last task, we check the token overlap between the generated sentence and our requirement, and if more than 2/3 of the tokens overlap, we will consider it as a success.</p><p>Taking all four tasks in the SPB benchmark into account, we find out that Alpaca-7b have very little numerical planning ability. ChatGPT on the hother hand is best at sentence count planning, and worst at syllable count planning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Additional Information of Content Controlled Generation</head><p>Controlled content generation refers to the task of controlling the content of generated texts. We consider three types of content constraints:</p><p>• Topic constraint. It requires the model to generate texts about certain topics. Traditional methods for topic constrained generation either append a special token for different topics <ref type="bibr" target="#b63">(Çaglayan and Karakaya, 2021)</ref> or use trained topic classifiers <ref type="bibr" target="#b40">(Qin et al., 2022)</ref> to guide the generation process. • Sentiment constraint. Similar to topic constraint, this task requires the model to generate texts of certain sentiments. The aforementioned methods for topic constrained generation also apply to sentiment constrained generation. • Keyword constraint. Keyword constrained, or lexical constrained text generation requires the model to generate texts that contain certain keywords or tokens. Traditional methods for keyword constrained text generation generally enforce lexical constraints on the outputs by modifying the search space according to the constraints <ref type="bibr" target="#b5">(Anderson et al., 2017;</ref><ref type="bibr" target="#b37">Post and Vilar, 2018;</ref><ref type="bibr" target="#b31">Lu et al., 2021)</ref>.</p><p>Datasets. For topic constraints, we use a subset of the topics from the first hierarchy in the M2D2 dataset <ref type="bibr" target="#b43">(Reid et al., 2022)</ref> which contains domains such as health, history, society, technology, arts, science, etc. The total number of topics is 10 in our experiments. We use the Amazon Review dataset <ref type="bibr" target="#b21">(Keung et al., 2020)</ref> for sentiment constrained text generation. The sentiment is measure by 1 to 5 stars. For lexical constrained text generation, we use the CommonGEN dataset <ref type="bibr" target="#b29">(Lin et al., 2020)</ref> which requires the model to generate a sentence using three to five keywords.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 2 :</head><label>2</label><figDesc>Figure2: Histogram visualization in the distribution (frequency, z-axis) of input numbers (x-axis) and output numbers (y-axis) for word count planning. Left: querying ChatGPT to generate a continuation of a given prefix with N words. Right: querying ChatGPT to generate a continuation with N words of a given prefix that ends with a given word. Small red dots • mark those bars where output numbers equal input numbers. These bars represent the fine-grained success rates. For either case, there is a significant drop when the input number reaches six.</figDesc><graphic coords="3,282.81,36.61,241.43,231.77" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 3 :</head><label>3</label><figDesc>based on BERT-large(Devlin    Results on content-constrained text generation.</figDesc><table><row><cell>Model</cell><cell cols="3">Topic Sentiment Keyword</cell></row><row><cell>Diffusion-LM</cell><cell>68.9</cell><cell>83.7</cell><cell>93.2</cell></row><row><cell>GPT-2 (1.5B, fine-tuned)</cell><cell>63.4</cell><cell>76.5</cell><cell>88.9</cell></row><row><cell>T5 (3B, fine-tuned)</cell><cell>67.3</cell><cell>83.9</cell><cell>94.8</cell></row><row><cell>LLaMA-7B zs</cell><cell>45.3</cell><cell>58.4</cell><cell>83.5</cell></row><row><cell>LLaMA-7B ICL</cell><cell>63.5</cell><cell>85.1</cell><cell>93.0</cell></row><row><cell>Alpaca-7B zs</cell><cell>58.9</cell><cell>78.4</cell><cell>91.2</cell></row><row><cell>Alpaca-7B ICL</cell><cell>65.2</cell><cell>86.9</cell><cell>94.8</cell></row><row><cell>Vicuna-7B zs</cell><cell>61.0</cell><cell>80.5</cell><cell>91.6</cell></row><row><cell>Vicuna-7B ICL</cell><cell>65.8</cell><cell>87.4</cell><cell>94.3</cell></row><row><cell>Falcon-7B zs</cell><cell>61.9</cell><cell>81.0</cell><cell>92.1</cell></row><row><cell>Falcon-7B ICL</cell><cell>66.0</cell><cell>87.7</cell><cell>94.2</cell></row><row><cell>ChatGPT zs</cell><cell>66.4</cell><cell>84.5</cell><cell>97.3</cell></row><row><cell>ChatGPT ICL</cell><cell>88.4</cell><cell>90.3</cell><cell>98.1</cell></row></table><note><p>et al., 2019)  </p><p>and task-specific classifiers as a competitive non-LLM baseline</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 4 :</head><label>4</label><figDesc>Performance of different decoding strategiesand LLMs for open-ended story generation. Vicuna stands for Vicuna-7B, Falcon for Falcon-7B-Instruct.</figDesc><table><row><cell cols="2">LM Method</cell><cell cols="5">rep-2↓ rep-3↓ rep-4↓ diversity↑ coherence↑</cell></row><row><cell></cell><cell></cell><cell></cell><cell>ROC</cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>Human</cell><cell>1.74</cell><cell>0.32</cell><cell>0.04</cell><cell>0.97</cell><cell>0.48</cell></row><row><cell>GPT-2-XL</cell><cell>Nucleus Typical η-sampling SimCTG Look-back</cell><cell>1.80 2.06 0 3.10 7.24</cell><cell>0.35 0.4 0 0.46 0.92</cell><cell>0.12 0.16 0 0.23 0.14</cell><cell>0.97 0.97 1.00 0.96 0.92</cell><cell>0.33 0.33 0.34 0.32 0.47</cell></row><row><cell>LLM</cell><cell>Vicuna Falcon ChatGPT</cell><cell>2.36 2.52 1.18</cell><cell>0.45 1.87 0.10</cell><cell>0.15 1.86 0.02</cell><cell>0.97 0.94 0.98</cell><cell>0.60 0.69 0.52</cell></row><row><cell></cell><cell></cell><cell></cell><cell cols="2">Writing Promts</cell><cell></cell><cell></cell></row><row><cell></cell><cell>Human</cell><cell>15.61</cell><cell>3.78</cell><cell>1.24</cell><cell>0.80</cell><cell>0.31</cell></row><row><cell>GPT-2-XL</cell><cell>Nucleus Typical η-sampling SimCTG Look-back</cell><cell>5.40 3.60 6.17 2.84 7.94</cell><cell>2.41 1.51 2.88 0.36 1.25</cell><cell>1.72 1.10 2.16 0.19 0.33</cell><cell>0.91 0.94 0.89 0.97 0.91</cell><cell>0.34 0.30 0.35 0.31 0.52</cell></row><row><cell>LLM</cell><cell>Vicuna Falcon ChatGPT</cell><cell>8.27 11.20 5.99</cell><cell>2.59 7.79 1.15</cell><cell>1.14 6.94 0.35</cell><cell>0.88 0.76 0.92</cell><cell>0.49 0.53 0.52</cell></row></table><note><p>unnatural topic drifts(Li et al., 2022a)</p><p>, under openended settings.</p></note></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>https://github.com/sunjiao123sun/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>huggingface.co/datasets/AlekseyKorshuk/romancebooks, www.kaggle.com/datasets/trevordu/reddit-short-stories</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3" xml:id="foot_2"><p>https://chat.openai.com/</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4" xml:id="foot_3"><p>We adopt generation parameters for different LLMs suggested from their respective documents or APIs. We leave evaluation on more configurations in our repository: https: //github.com/sunjiao123sun/llm-controlgen.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="5" xml:id="foot_4"><p>https://huggingface.co/learn/nlp-course/ chapter6/5?fw=pt#byte-pair-encoding-tokenization</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgement</head><p>The authors thank anonymous reviewers for their constructive feedback and suggestions that helped improve the draft, especially reviewer rXWW. Jiao and Yufei are supported by <rs type="funder">Amazon</rs> fellowships.</p></div>
+			</div>
+			<listOrg type="funding">
+			</listOrg>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Towards robust NLG bias evaluation with syntactically-diverse prompts</title>
+		<author>
+			<persName><forename type="first">Arshiya</forename><surname>Aggarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiao</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nanyun</forename><surname>Peng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2022</title>
+		<meeting><address><addrLine>Abu Dhabi, United Arab Emirates</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="6022" to="6032" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Explanations for Common-senseQA: New Dataset and Models</title>
+		<author>
+			<persName><forename type="first">Shourya</forename><surname>Aggarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Divyanshu</forename><surname>Mandowara</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vishwajeet</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dinesh</forename><surname>Khandelwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Parag</forename><surname>Singla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dinesh</forename><surname>Garg</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.acl-long.238</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</title>
+		<meeting>the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="3050" to="3065" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<author>
+			<persName><forename type="first">Kabir</forename><surname>Ahuja</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Harshita</forename><surname>Diddee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishav</forename><surname>Hada</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Millicent</forename><surname>Ochieng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Krithika</forename><surname>Ramesh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Prachi</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Akshay</forename><surname>Nambi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tanuja</forename><surname>Ganu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sameer</forename><surname>Segal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maxamed</forename><surname>Axmed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kalika</forename><surname>Bali</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sunayana</forename><surname>Sitaram</surname></persName>
+		</author>
+		<title level="m">Mega: Multilingual evaluation of generative ai</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<author>
+			<persName><forename type="first">Ebtesam</forename><surname>Almazrouei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hamza</forename><surname>Alobeidli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abdulaziz</forename><surname>Alshamsi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alessandro</forename><surname>Cappelli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruxandra</forename><surname>Cojocaru</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Merouane</forename><surname>Debbah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Etienne</forename><surname>Goffinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Heslow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Julien</forename><surname>Launay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quentin</forename><surname>Malartic</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Badreddine</forename><surname>Noune</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Pannier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guilherme</forename><surname>Penedo</surname></persName>
+		</author>
+		<title level="m">Falcon-40B: an open large language model</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>with state-of-the-art performance</note>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">Towards robust interpretability with self-explaining neural networks</title>
+		<author>
+			<persName><forename type="first">David</forename><surname>Alvarez-Melis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Jaakkola</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note>In NeurIPS</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Guided open vocabulary image captioning with constrained beam search</title>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Anderson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Basura</forename><surname>Fernando</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Gould</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D17-1098</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2017 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2017 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Copenhagen, Denmark</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+			<biblScope unit="page" from="936" to="945" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">A multi-task approach for disentangling syntax and semantics in sentence representations</title>
+		<author>
+			<persName><forename type="first">Mingda</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qingming</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sam</forename><surname>Wiseman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Gimpel</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<publisher>Association for Computational Linguistics</publisher>
+			<biblScope unit="page" from="2453" to="2464" />
+			<pubPlace>Minneapolis, Minnesota</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Vicuna: An opensource chatbot impressing gpt-4</title>
+		<author>
+			<persName><forename type="first">Wei-Lin</forename><surname>Chiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuohan</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zi</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ying</forename><surname>Sheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhanghao</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hao</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lianmin</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siyuan</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yonghao</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Joseph</forename><forename type="middle">E</forename><surname>Gonzalez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ion</forename><surname>Stoica</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><forename type="middle">P</forename><surname>Xing</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note>with 90%* chatgpt quality</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Chung</forename><surname>Hyung Won</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shayne</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostafa</forename><surname>Dehghani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siddhartha</forename><surname>Brahma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Albert</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shane</forename><surname>Shixiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuyun</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mirac</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyun</forename><surname>Suzgun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aakanksha</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sharan</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gaurav</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adams</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vincent</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yanping</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongkun</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Slav</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Petrov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Dean</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><forename type="middle">V</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wei</surname></persName>
+		</author>
+		<idno type="DOI">10.48550/ARXIV.2210.11416</idno>
+		<imprint/>
+	</monogr>
+	<note>2022a. Scaling instruction-finetuned language models</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><forename type="first">Chung</forename><surname>Hyung Won</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shayne</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Barret</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostafa</forename><surname>Dehghani</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.11416</idno>
+		<title level="m">Siddhartha Brahma, et al. 2022b. Scaling instruction-finetuned language models</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">BERT: Pre-training of deep bidirectional transformers for language understanding</title>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kenton</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kristina</forename><surname>Toutanova</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/N19-1423</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<title level="s">Long and Short Papers</title>
+		<meeting>the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies<address><addrLine>Minneapolis, Minnesota</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="4171" to="4186" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Hierarchical neural story generation</title>
+		<author>
+			<persName><forename type="first">Angela</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yann</forename><surname>Dauphin</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/P18-1082</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 56th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Melbourne, Australia</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="889" to="898" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Exploring the feasibility of chatgpt for event extraction</title>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huan</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Changlong</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruifeng</forename><surname>Xu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Paraphrase augmented task-oriented dialog generation</title>
+		<author>
+			<persName><forename type="first">Silin</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yichi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhijian</forename><surname>Ou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhou</forename><surname>Yu</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2004.07462</idno>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">SimCSE: Simple contrastive learning of sentence embeddings</title>
+		<author>
+			<persName><forename type="first">Tianyu</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xingcheng</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danqi</forename><surname>Chen</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.emnlp-main.552</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Dominican Republic. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="6894" to="6910" />
+		</imprint>
+		<respStmt>
+			<orgName>Online and Punta Cana</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Truncation sampling as language model desmoothing</title>
+		<author>
+			<persName><forename type="first">John</forename><surname>Hewitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Manning</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2022</title>
+		<meeting><address><addrLine>Abu Dhabi, United Arab Emirates</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="3414" to="3427" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">The curious case of neural text degeneration</title>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Buys</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maxwell</forename><surname>Forbes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Generating syntactically controlled paraphrases without using annotated parallel pairs</title>
+		<author>
+			<persName><forename type="first">Kuan-Hao</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai-Wei</forename><surname>Chang</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2101.10579</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Adversarial example generation with syntactically controlled paraphrase networks</title>
+		<author>
+			<persName><forename type="first">Mohit</forename><surname>Iyyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Wieting</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Gimpel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/N18-1170</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<title level="s">Long Papers</title>
+		<meeting>the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies<address><addrLine>Louisiana</addrLine></address></meeting>
+		<imprint>
+			<publisher>New Orleans</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1875" to="1885" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Wenxiang</forename><surname>Jiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenxuan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jen</forename><forename type="middle">Tse</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xing</forename><surname>Wang</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>and Zhaopeng Tu. 2023a. Is chatgpt a good translator? yes with gpt-4 as the engine</note>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Wenxiang</forename><surname>Jiao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenxuan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jen</forename><forename type="middle">Tse</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xing</forename><surname>Wang</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>and Zhaopeng Tu. 2023b. Is chatgpt a good translator? yes with gpt-4 as the engine</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">The multilingual Amazon reviews corpus</title>
+		<author>
+			<persName><forename type="first">Phillip</forename><surname>Keung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yichao</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">György</forename><surname>Szarvas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><forename type="middle">A</forename><surname>Smith</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.emnlp-main.369</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</title>
+		<meeting>the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="4563" to="4568" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Interactive and interpretable machine learning models for human machine collaboration</title>
+		<author>
+			<persName><forename type="first">Been</forename><surname>Kim</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2015">2015</date>
+		</imprint>
+		<respStmt>
+			<orgName>Massachusetts Institute of Technology</orgName>
+		</respStmt>
+	</monogr>
+	<note type="report_type">Ph.D. thesis</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Syntax-guided controlled generation of paraphrases</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Kumar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kabir</forename><surname>Ahuja</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raghuram</forename><surname>Vadapalli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Talukdar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association for Computational Linguistics</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="page" from="330" to="345" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Do models really learn to follow instructions? an empirical study of instruction tuning</title>
+		<author>
+			<persName><forename type="first">Po-Nien</forename><surname>Kung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nanyun</forename><surname>Peng</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">A systematic study and comprehensive evaluation of chatgpt on benchmark datasets</title>
+		<author>
+			<persName><forename type="first">Md</forename><surname>Tahmid Rahman Laskar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Saiful Bari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mizanur</forename><surname>Rahman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Md</forename><surname>Amran Hossen Bhuiyan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Shafiq</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Joty</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Huang</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Denoising sequence-to-sequence pre-training for natural language generation, translation, and comprehension</title>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yinhan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marjan</forename><surname>Ghazvininejad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Omer</forename><surname>Abdel Rahman Mohamed</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Veselin</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Stoyanov</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zettlemoyer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting><address><addrLine>Bart</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">Lisa</forename><surname>Xiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Fried</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tatsunori</forename><surname>Eisner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mike</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lewis</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.15097</idno>
+		<title level="m">Contrastive decoding: Open-ended text generation as optimization</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">2022b. Diffusion-LM improves controllable text generation</title>
+		<author>
+			<persName><forename type="first">Lisa</forename><surname>Xiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ishaan</forename><surname>Thickstun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Gulrajani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tatsunori</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hashimoto</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">CommonGen: A constrained text generation challenge for generative commonsense reasoning</title>
+		<author>
+			<persName><forename type="first">Wangchunshu</forename><surname>Bill Yuchen Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pei</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chandra</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Bhagavatula</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiang</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Ren</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2020.findings-emnlp.165</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2020</title>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="1823" to="1840" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">The mythos of model interpretability: In machine learning, the concept of interpretability is both important and slippery</title>
+		<author>
+			<persName><surname>Zachary C Lipton</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Queue</title>
+		<imprint>
+			<biblScope unit="volume">16</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="31" to="57" />
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Neuro-Logic decoding: (un)supervised neural text generation with predicate logic constraints</title>
+		<author>
+			<persName><forename type="first">Ximing</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>West</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rowan</forename><surname>Zellers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Le</forename><surname>Ronan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chandra</forename><surname>Bras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Bhagavatula</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Choi</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.naacl-main.339</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</meeting>
+		<imprint>
+			<publisher>Online. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="4288" to="4299" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<author>
+			<persName><forename type="first">Clara</forename><surname>Meister</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tiago</forename><surname>Pimentel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gian</forename><surname>Wiher</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Cotterell</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2202.00666</idno>
+		<title level="m">Typical decoding for natural language generation</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Controllable text generation with neurallydecomposed oracle</title>
+		<author>
+			<persName><forename type="first">Tao</forename><surname>Meng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sidi</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nanyun</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai-Wei</forename><surname>Chang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<publisher>Curran Associates, Inc</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="28125" to="28139" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">A corpus and cloze evaluation for deeper understanding of commonsense stories</title>
+		<author>
+			<persName><forename type="first">Nasrin</forename><surname>Mostafazadeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nathanael</forename><surname>Chambers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Devi</forename><surname>Parikh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dhruv</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lucy</forename><surname>Vanderwende</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pushmeet</forename><surname>Kohli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">James</forename><surname>Allen</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/N16-1098</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2016 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2016 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies<address><addrLine>San Diego, California</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+			<biblScope unit="page" from="839" to="849" />
+		</imprint>
+	</monogr>
+	<note>Association for Computational Linguistics</note>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeff</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xu</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diogo</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carroll</forename><forename type="middle">L</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pamela</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chong</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katarina</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Ray</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Schulman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jacob</forename><surname>Hilton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fraser</forename><surname>Kelton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Miller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maddie</forename><surname>Simens</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amanda</forename><surname>Askell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peter</forename><surname>Welinder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Christiano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Leike</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Lowe</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note>Training language models to follow instructions with human feedback</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Mauve: Measuring the gap between neural text and human text using divergence frontiers</title>
+		<author>
+			<persName><forename type="first">Krishna</forename><surname>Pillutla</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Swabha</forename><surname>Swayamdipta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rowan</forename><surname>Zellers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Thickstun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sean</forename><surname>Welleck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zaid</forename><surname>Harchaoui</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="s">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="4816" to="4828" />
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Fast lexically constrained decoding with dynamic beam allocation for neural machine translation</title>
+		<author>
+			<persName><forename type="first">Matt</forename><surname>Post</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Vilar</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/N18-1119</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies<address><addrLine>Long Papers; New Orleans, Louisiana</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1314" to="1324" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Exploring diverse expressions for paraphrase generation</title>
+		<author>
+			<persName><forename type="first">Lihua</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lin</forename><surname>Qiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Weinan</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yong</forename><surname>Yu</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D19-1313</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)</title>
+		<meeting>the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)<address><addrLine>Hong Kong, China</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="3173" to="3182" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<monogr>
+		<title level="m" type="main">Is chatgpt a general-purpose natural language processing task solver?</title>
+		<author>
+			<persName><forename type="first">Chengwei</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aston</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhuosheng</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaao</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michihiro</forename><surname>Yasunaga</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diyi</forename><surname>Yang</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">COLD decoding: Energy-based constrained text generation with langevin dynamics</title>
+		<author>
+			<persName><forename type="first">Lianhui</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sean</forename><surname>Welleck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Khashabi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yejin</forename><surname>Choi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Language models are unsupervised multitask learners</title>
+		<author>
+			<persName><forename type="first">Alec</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jeffrey</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rewon</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dario</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Sutskever</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">OpenAI blog</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page">9</biblScope>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Explain yourself! leveraging language models for commonsense reasoning</title>
+		<author>
+			<persName><forename type="first">Nazneen</forename><surname>Fatema Rajani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bryan</forename><surname>Mccann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caiming</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Richard</forename><surname>Socher</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference of the Association for Computational Linguistics</title>
+		<meeting>the 2019 Conference of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2019">2019. 2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">M2D2: A massively multidomain language modeling dataset</title>
+		<author>
+			<persName><forename type="first">Machel</forename><surname>Reid</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Victor</forename><surname>Zhong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Suchin</forename><surname>Gururangan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2022 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Abu Dhabi</addrLine></address></meeting>
+		<imprint>
+			<publisher>United Arab Emirates. Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="964" to="975" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<analytic>
+		<title level="a" type="main">Language model acceptability judgements are not always robust to context</title>
+		<author>
+			<persName><forename type="first">Koustuv</forename><surname>Sinha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jon</forename><surname>Gauthier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaron</forename><surname>Mueller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kanishka</forename><surname>Misra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keren</forename><surname>Fuentes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roger</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adina</forename><surname>Williams</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.acl-long.333</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics<address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="6043" to="6063" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<monogr>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Michael</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Smith</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Diana</forename><surname>Gonzalez-Rico</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emily</forename><surname>Dinan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y-Lan</forename><surname>Boureau</surname></persName>
+		</author>
+		<title level="m">Controlling style in generated dialogue</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<monogr>
+		<author>
+			<persName><forename type="first">Yixuan</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tian</forename><surname>Lan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dani</forename><surname>Yogatama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lingpeng</forename><surname>Kong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nigel</forename><surname>Collier</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2202.06417</idno>
+		<title level="m">A contrastive framework for neural text generation</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<monogr>
+		<title level="m" type="main">An empirical study on contrastive search and contrastive decoding for open-ended text generation</title>
+		<author>
+			<persName><forename type="first">Yixuan</forename><surname>Su</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jialu</forename><surname>Xu</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2211.10797</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">AESOP: Paraphrase generation with adaptive syntactic control</title>
+		<author>
+			<persName><forename type="first">Jiao</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhe</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nanyun</forename><surname>Peng</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2021.emnlp-main.420</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Dominican Republic. Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="5176" to="5189" />
+		</imprint>
+		<respStmt>
+			<orgName>Online and Punta Cana</orgName>
+		</respStmt>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<analytic>
+		<title level="a" type="main">Investigating the benefits of freeform rationales</title>
+		<author>
+			<persName><forename type="first">Jiao</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Swabha</forename><surname>Swayamdipta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>May</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhe</forename><surname>Ma</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of the Association for Computational Linguistics: EMNLP 2022</title>
+		<meeting><address><addrLine>Abu Dhabi, United Arab Emirates</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="5867" to="5882" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<monogr>
+		<author>
+			<persName><forename type="first">Rohan</forename><surname>Taori</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ishaan</forename><surname>Gulrajani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianyi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yann</forename><surname>Dubois</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuechen</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Carlos</forename><surname>Guestrin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tatsunori</forename><forename type="middle">B</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<ptr target="https://github.com/tatsu-lab/stanford_alpaca" />
+		<title level="m">Stanford alpaca: An instruction-following llama model</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<analytic>
+		<title level="a" type="main">Unsupervised melody-to-lyrics generation</title>
+		<author>
+			<persName><forename type="first">Yufei</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anjali</forename><surname>Narayan-Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shereen</forename><surname>Oraby</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alessandra</forename><surname>Cervone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gunnar</forename><surname>Sigurdsson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chenyang</forename><surname>Tao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenbo</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tagyoung</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nanyun</forename><surname>Peng</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2023.acl-long.513</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 61st Annual Meeting of the Association for Computational Linguistics<address><addrLine>Toronto, Canada</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="9235" to="9254" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">Zero-shot sonnet generation with discourse-level planning and aesthetics features</title>
+		<author>
+			<persName><forename type="first">Yufei</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nanyun</forename><surname>Peng</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/2022.naacl-main.262</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</meeting>
+		<imprint>
+			<publisher>Seattle, United States. Association for Computational Linguistics</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="3587" to="3597" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<monogr>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thibaut</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gautier</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xavier</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marie-Anne</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timothée</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baptiste</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Naman</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eric</forename><surname>Hambro</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<title level="m">Faisal Azhar, et al. 2023. Llama: Open and efficient foundation language models</title>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<monogr>
+		<title level="m" type="main">Chain of thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><forename type="middle">H</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Quoc</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno>CoRR, abs/2201.11903</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b55">
+	<monogr>
+		<author>
+			<persName><forename type="first">Sean</forename><surname>Welleck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ilia</forename><surname>Kulikov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Roller</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emily</forename><surname>Dinan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kyunghyun</forename><surname>Cho</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Weston</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1908.04319</idno>
+		<title level="m">Neural text generation with unlikelihood training</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b56">
+	<analytic>
+		<title level="a" type="main">ParaNMT-50M: Pushing the limits of paraphrastic sentence embeddings with millions of machine translations</title>
+		<author>
+			<persName><forename type="first">John</forename><surname>Wieting</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Gimpel</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/P18-1042</idno>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 56th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Melbourne, Australia</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="451" to="462" />
+		</imprint>
+	</monogr>
+	<note>Long Papers)</note>
+</biblStruct>
+
+<biblStruct xml:id="b57">
+	<monogr>
+		<title level="m" type="main">2023a. Look-back decoding for open-ended text generation</title>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunting</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Asli</forename><surname>Celikyilmaz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhe</forename><surname>Ma</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b58">
+	<monogr>
+		<title level="m" type="main">2023b. Look-back decoding for open-ended text generation</title>
+		<author>
+			<persName><forename type="first">Nan</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chunting</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Asli</forename><surname>Celikyilmaz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhe</forename><surname>Ma</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.13477</idno>
+		<imprint/>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b59">
+	<monogr>
+		<title level="m" type="main">Did you read the instructions? rethinking the effectiveness of task definitions in instruction learning</title>
+		<author>
+			<persName><forename type="first">Fan</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jesse</forename><surname>Vig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Philippe</forename><surname>Laban</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shafiq</forename><surname>Joty</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Caiming</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chien-Sheng Jason</forename><surname>Wu</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023. 2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b60">
+	<monogr>
+		<title level="m" type="main">A survey of controllable text generation using transformer-based pre-trained language models</title>
+		<author>
+			<persName><forename type="first">Hanqing</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haolin</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaoyu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dawei</forename><surname>Song</surname></persName>
+		</author>
+		<idno>ArXiv, abs/2201.05337</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b61">
+	<monogr>
+		<title level="m" type="main">Teaching algorithmic reasoning via in-context learning</title>
+		<author>
+			<persName><forename type="first">Hattie</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Azade</forename><surname>Nova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hugo</forename><surname>Larochelle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaron</forename><surname>Courville</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Behnam</forename><surname>Neyshabur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hanie</forename><surname>Sedghi</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b62">
+	<monogr>
+		<title level="m" type="main">Controlled text generation with natural language instructions</title>
+		<author>
+			<persName><forename type="first">Wangchunshu</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuchen</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eleanor</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ethan</forename><surname>Wilcox</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Cotterell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mrinmaya</forename><surname>Sachan</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b63">
+	<analytic>
+		<title level="a" type="main">Topiccontrolled text generation</title>
+		<author>
+			<persName><forename type="first">Cansen</forename><surname>Çaglayan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Murat</forename><surname>Karakaya</surname></persName>
+		</author>
+		<idno type="DOI">10.1109/UBMK52708.2021.9558910</idno>
+	</analytic>
+	<monogr>
+		<title level="m">2021 6th International Conference on Computer Science and Engineering (UBMK)</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="533" to="536" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

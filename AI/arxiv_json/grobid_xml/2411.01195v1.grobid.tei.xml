@@ -1,0 +1,1163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Transfer Learning for Finetuning Large Language Models</title>
+				<funder>
+					<orgName type="full">Federal Ministry of Education and Research</orgName>
+				</funder>
+				<funder ref="#_nbMQ5Pb">
+					<orgName type="full">INST</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">Hector Foundation</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">Baden-Württemberg Ministry of Science, Research and the Arts</orgName>
+				</funder>
+				<funder>
+					<orgName type="full">German Research Foundation (DFG)</orgName>
+				</funder>
+				<funder ref="#_YHsx2DV #_JqmkmkA">
+					<orgName type="full">Deutsche Forschungsgemeinschaft (DFG, German Research Foundation</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Tobias</forename><surname>Strangmann</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Freiburg</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Lennart</forename><surname>Purucker</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Freiburg</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Jörg</forename><forename type="middle">K H</forename><surname>Franke</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Freiburg</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Ivo</forename><surname>Rapant</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Freiburg</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Fabio</forename><surname>Ferreira</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Freiburg</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Frank</forename><surname>Hutter</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">University of Freiburg</orgName>
+							</affiliation>
+							<affiliation key="aff1">
+								<orgName type="institution">ELLIS Institute Tübingen</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Transfer Learning for Finetuning Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+					<idno type="MD5">B72B355961254B1F1FE4C1096EAF65B2</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:49+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>As the landscape of large language models expands, efficiently finetuning for specific tasks becomes increasingly crucial. At the same time, the landscape of parameter-efficient finetuning methods rapidly expands. Consequently, practitioners face a multitude of complex choices when searching for an optimal finetuning pipeline for large language models. To reduce the complexity for practitioners, we investigate transfer learning for finetuning large language models and aim to transfer knowledge about configurations from related finetuning tasks to a new task. In this work, we transfer learn finetuning by meta-learning performance and cost surrogate models for grey-box meta-optimization from a new meta-dataset. Counter-intuitively, we propose to rely only on transfer learning for new datasets. Thus, we do not use task-specific Bayesian optimization but prioritize knowledge transferred from related tasks over task-specific feedback. We evaluate our method on eight synthetic question-answer datasets and a meta-dataset consisting of 1,800 runs of finetuning Microsoft's Phi-3. Our transfer learning is superior to zero-shot, default finetuning, and meta-optimization baselines. Our results demonstrate the transferability of finetuning to adapt large language models more effectively.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>The landscape of large language models (LLMs) rapidly expands to a zoo of models <ref type="bibr">(Team, 2024a;</ref><ref type="bibr" target="#b1">Abdin et al., 2024;</ref><ref type="bibr" target="#b2">Liu et al., 2024;</ref><ref type="bibr" target="#b3">DeepSeek-AI et al., 2024;</ref><ref type="bibr" target="#b4">Dubey et al., 2024;</ref><ref type="bibr">Jiang et al., 2023;</ref><ref type="bibr" target="#b6">Mistral AI, 2024;</ref><ref type="bibr">Team, 2024b;</ref><ref type="bibr" target="#b8">Yang et al., 2024)</ref>, where different models exhibit varying strengths on specific tasks <ref type="bibr" target="#b9">(Wei et al., 2022)</ref>. At the same time, the landscape of parameter-efficient finetuning methods rapidly expands <ref type="bibr" target="#b10">(Hu et al., 2021;</ref><ref type="bibr" target="#b11">Dettmers et al., 2023;</ref><ref type="bibr" target="#b12">Poth et al., 2023;</ref><ref type="bibr" target="#b13">Hayou et al., 2024)</ref>.</p><p>Consequently, practitioners face a multitude of complex choices for finetuning LLMs. To support practitioners and reduce complexity, we investigate transfer learning of deep-learning pipelines for an LLM and specifications for the finetuning process, including all associated hyperparameters. We aim to transfer knowledge about pipelines from related finetuning tasks to a new task. Thus enabling practitioners to adapt LLMs more effectively to new tasks.</p><p>In this work, we transfer learn finetuning by meta-learning performance and cost surrogate models for grey-box meta-optimization from a new meta-dataset. We implement grey-box meta-optimizing by adjusting the Quick-Tune algorithm <ref type="bibr" target="#b14">(Arango et al., 2024)</ref>. Quick-Tune, was introduced for image classification and supports meta-learning surrogate models. In our version, we propose to rely only on the meta-learned surrogate models trained from scratch. That is, we do not use task-specific Bayesian optimization because we do not refit the surrogate models for a new dataset. In other words, our version of Quick-Tune can be understood as a dataset-aware portfolio builder <ref type="bibr" target="#b15">(Xu et al., 2010)</ref>. While counter-intuitive, we hypothesize that disabling Bayesian optimization leads to better generalization.</p><p>NeurIPS 2024 Workshop on Adaptive Foundation Models arXiv:2411.01195v1 [cs.CL] 2 Nov 2024</p><p>We verify the effectiveness of our method for large language models by generating a meta-dataset based on a synthetic question-answer dataset and 1,800 runs of pipelines for finetuning <ref type="bibr">Microsoft's Phi-3 model (Abdin et al., 2024)</ref>. Our results show that transfer learning finetuning is superior to random search, DEHB <ref type="bibr" target="#b16">(Awad et al., 2021)</ref>, and Quick-Tune with Bayesian optimization. Moreover, meta-optimizing finetuning is, as expected, better than zero-shot and default LoRa <ref type="bibr" target="#b10">(Hu et al., 2021)</ref>.</p><p>Our Contributions. To make LLMs more easily adaptable and facilitate future studies, we contribute (1) synthetic datasets that serve a dual purpose: a) to create a meta-dataset for transfer learning and b) as an evaluation framework for LLM models; (2) a version of Quick-Tune for LLM finetuning adapted from the image to language domain; and (3) a novel counter-intuitive yet effective approach to finding the optimal pipeline for finetuning LLMs through transfer learning.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related Work</head><p>Synthetic NLP Datasets &amp; Meta-dataset. Question-answer datasets are scarce, with only a few notable examples such as TriviaQA, SQuAD, NaturalQuestions, and PubMedQA <ref type="bibr" target="#b17">(Joshi et al., 2017;</ref><ref type="bibr" target="#b18">Rajpurkar et al., 2016;</ref><ref type="bibr" target="#b19">Kwiatkowski et al., 2019;</ref><ref type="bibr" target="#b20">Jin et al., 2019)</ref>. Collecting large-scale questionanswer datasets is resource-intensive, prompting researchers to explore synthetic generation methods to reduce annotation costs <ref type="bibr" target="#b21">(Yang et al., 2017;</ref><ref type="bibr" target="#b22">Nayak et al., 2024;</ref><ref type="bibr" target="#b23">Lee et al., 2023;</ref><ref type="bibr" target="#b24">Puri et al., 2020;</ref><ref type="bibr" target="#b25">Ovadia et al., 2024)</ref>. A recent approach by <ref type="bibr" target="#b26">Mecklenburg et al. (2024)</ref> utilized <ref type="bibr">GPT-4 (OpenAI et al., 2024)</ref> as an LLM teacher to extract facts from Wikipedia articles and generate question-answer pairs. We use a similar method but apply it to arXiv papers with Llama-3.1-70b <ref type="bibr" target="#b4">(Dubey et al., 2024)</ref>.</p><p>Optimizing Finetuning Many finetuning methods with many hyperparameters exist, cf. <ref type="bibr" target="#b10">(Hu et al., 2021;</ref><ref type="bibr" target="#b11">Dettmers et al., 2023;</ref><ref type="bibr" target="#b28">Li et al., 2023;</ref><ref type="bibr" target="#b13">Hayou et al., 2024;</ref><ref type="bibr" target="#b12">Poth et al., 2023;</ref><ref type="bibr" target="#b29">Liu et al., 2022;</ref><ref type="bibr" target="#b30">Wu et al., 2024)</ref>. Likewise, many other hyperparameters of the finetuning pipeline exist, such as the choice of optimizer <ref type="bibr" target="#b31">Shazeer and Stern (2018)</ref>; <ref type="bibr" target="#b32">Loshchilov and Hutter (2019);</ref><ref type="bibr" target="#b33">Franke et al. (2023)</ref>; <ref type="bibr" target="#b34">Chen et al. (2023)</ref>. To address the multitude of choices for finetuning, recent work proposed (automated) meta-optimization to determine the optimal combination of finetuning method, optimizer, and hyperparameters. Methods like AutoGluon Multimodal <ref type="bibr" target="#b35">(Tang et al., 2024)</ref>, AutoPEFT <ref type="bibr" target="#b36">(Zhou et al., 2024)</ref>, AutoLoRa <ref type="bibr" target="#b37">(Xu et al., 2023)</ref>, and Quick-Tune <ref type="bibr">(Rapant et al., 2024)</ref>. However, these methods do not support finetuning LLMs for text generation, which is the focus of our work.</p><p>Transfer Learning Finetuning. In general, Quick-Tune <ref type="bibr" target="#b14">(Arango et al., 2024)</ref> and its abstraction Quick-Tune-Tool <ref type="bibr">(Rapant et al., 2024)</ref>, building on earlier frameworks such as <ref type="bibr">Öztürk et al. (2022)</ref>, focus on transfer learning finetuning pipelines during meta-optimization. However, these prior works are limited to image classification. Our work extends Quick-Tune to finetuning LLMs and proposes a novel algorithmic adjustment. For LLMs, <ref type="bibr" target="#b40">Zhang et al. (2024)</ref> introduced a meta-learning-related method for LoRA <ref type="bibr" target="#b10">Hu et al. (2021)</ref>. This method, however, does not transfer knowledge from related tasks to a new task. Instead, it performs a bi-level optimization for the LoRA rank and weights for one task. In other words, it is comparable to meta-optimizing only the rank of LoRA. In contrast, our work transfers knowledge between tasks via meta-learning. Likewise, all methods we consider can meta-optimize all hyperparameters of a finetuning pipeline.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Method</head><p>Our method, illustrated in Figure <ref type="figure" target="#fig_0">1</ref>, consist of three steps: A) create synthetic NLP datasets from scientific papers, B) create a meta-dataset by training and evaluating finetuning pipelines; and C) transfer learning by pre-training our version of Quick-Tune on our meta-dataset. We then apply pre-trained Quick-Tune to find the optimal finetuning pipeline for new, related NLP tasks. The complete computational resources used for this method are listed in Section E. Limitations of our method can be found in appendix F.</p><p>A) Synthetic NLP Datasets. We follow <ref type="bibr" target="#b26">Mecklenburg et al. (2024)</ref> to generate synthetic questionanswer datasets from scientific papers from arxiv.org. In detail, we crawl papers and convert them to plain text papers with mathematical formulas translated to LaTeX. Next, we use a self-hosted version of Llama-3.1-70B Instruct (L3-70B) (AI@Meta, 2024) to extract atomic facts from each chapter of a paper. Then, we generate a set of 12 question-answer pairs for each fact. We add ten to training, one to validation, and one to testing data. Finally, our new question-answer dataset consists of training, validation, and test question-answer pairs for all facts. Appendix A details our prompt templates. B) Our Meta-dataset. We create a meta-dataset by collecting meta-features, performance, and cost values for finetuning pipelines on synthetic datasets. Therefore, we create question-answer datasets from 30 papers. Then, for each paper, we train 60 finetuning pipelines with the training and validation question-answer pairs and evaluate them on the test pairs, producing 1,800 runs in total. Finally, we compute meta-features for each paper; see Appendix B for an overview. We visualize an overview of all runs in our meta-dataset in Figure <ref type="figure" target="#fig_1">2</ref>. For each paper, we randomly sample finetuning pipelines from a search space based on hyperparameters for LoRA <ref type="bibr" target="#b10">(Hu et al., 2021)</ref>, optimizers (AdamW <ref type="bibr" target="#b32">(Loshchilov and Hutter, 2019)</ref> or Adam-CPR <ref type="bibr" target="#b33">(Franke et al., 2023)</ref>), and the learning rate scheduler. We also include a default finetuning pipeline as a baseline. We detail the search space in Appendix D.</p><p>After each epoch, we evaluate the finetuned models in the form of a student with L3-70B as a teacher. Given a finetuned model's answer to a question, L3-70B evaluates whether the generated answer is correct (0 or 1). Thus, L3-70B assess whether the student model learned to answer new questions about facts in papers after being finetuned on question-answer pairs about these facts. See Appendix C for the prompt template and an example of this process.</p><p>We use four meta-features to characterize each synthetic question-answer dataset: the total number of tokens, average sample length, vocabulary size, and the ratio of question-to-answer lengths.</p><p>C) Transfer Learning Finetuning with Quick-Tune. We use the performance metrics and metafeatures stored in our meta-dataset to pre-train Quick-Tune, implemented in Quick-Tune-Tool <ref type="bibr">(Rapant et al., 2024)</ref>. That is, we meta-train the Gaussian Process-based surrogate models of Quick-Tune. This allows Quick-Tune to start with a strong prior for the performance and cost of finetuning pipeline on a new dataset, transferring knowledge across tasks. By default, the surrogate models are continuously refitted during optimization to facilitate Bayesian optimization.</p><p>In our version of Quick-Tune, we disable Bayesian optimization by disabling refitting. We hypothesize that disabling Bayesian optimization leads to better generalization by relying more on the knowledge transferred from related tasks than task-specific noise. In other words, while Bayesian optimization exploits the most promising pipeline on validation data, only relying on the prior from transfer learning could lead the meta-optimizer to find better, more general pipelines.</p><p>From a broader perspective, our version of Quick-Tune can be understood as a dataset-aware portfolio builder. Portfolios <ref type="bibr" target="#b15">(Xu et al., 2010)</ref> are known as robust transfer learning methods <ref type="bibr" target="#b42">(Feurer et al., 2022;</ref><ref type="bibr" target="#b43">Salinas and Erickson, 2023)</ref>.</p><p>Figure <ref type="figure">3</ref>: Optimizer Performance Over Time. We visualize the average validation (left) and test (right) performance across the eight datasets over time. At each time point, we evaluated the best pipeline found so far. We observe that DEHB and Quick-Tune (default) stagnant after 1 to 1.5 hours, with little progress on test scores afterward. Quick-Tune (ours) only stagnates after 3 hours. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Results</head><p>Experimental Setup. We experiment with finetuning Phi 3 Mini Instruct (3.8B parameters) <ref type="bibr" target="#b1">(Abdin et al., 2024)</ref> on eight newly generated synthetic question-answer datasets (see Appendix B). We employ random search, DEHB <ref type="bibr" target="#b16">(Awad et al., 2021</ref><ref type="bibr">), default Quick-Tune (Arango et al., 2024)</ref>, and our version of Quick-Tune to meta-optimize the finetuning pipeline. Furthermore, we evaluate a default finetuning pipeline and zero-shot performance. Each optimizer is given a five-hour time budget. We again use our Llama-3.1-70B teacher for evaluation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>HYPOTHESIS: TRANSFER LEARNING LEADS TO BETTER GENERALIZATION.</head><p>Figure <ref type="figure">3</ref> presents the performance over time of the meta-optimizers for validation and test data. Figure <ref type="figure" target="#fig_2">4</ref> shows the performance of the best pipeline, see Appendix G for configuration details. The error bars in both figures represent the standard error of the mean. Note the initial performance represents the zero-shot performance of Phi 3. We observe that Quick-Tune (default) and DEHB get stuck after 1.5 hours during meta-optimization and fail to find a significantly better finetuning pipeline afterward. In contrast, Quick-Tune (ours), which relies only on transfer learning, further improves test performance. A similar trend manifests when training the best pipeline found by each meta-optimizer. The pipeline found by Quick-Tune (ours) generalizes best to test data.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Conclusion.</head><p>In this study, we demonstrated that relying only on transfer learning for finetuning yields better performance than alternative methods, challenging conventional approaches and potentially simplifying the process of adapting large language models to specific tasks. In future work, we plan to understand this phenomenon in more detail and to generalize it to a meta-optimization method. Thus allowing us to effectively manage the zoo of and the plethora of methods for adapting large language models to specific tasks.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Appendix A Prompt Templates To Generate Our Synthetic NLP Dataset</head><p>We follow the prompt (Facts generation) to extract atomic facts out of unlabeled text. Our self-hosted version of L3-70B extracts as many as possible facts out of reprocessed approximately 2k token long text fragments. For each fact, we generate 12 question-answers pairs by using Q &amp; A generation prompt , skipping facts that are too general or insufficiently specific to the article's topic (generated by Key topic generation). We aim to generate as many questions and answers as possible that explicitly relate to the fact, then paraphrase them to achieve the required 12 pairs. Facts generation prompt <ref type="bibr" target="#b26">(Mecklenburg et al., 2024)</ref> System: "You are an AI assistant who knows about current artificial intelligence. Be precise but concise in your answer." User: "Please break down the following snippet from an article about {key_topic} into atomic facts.\nGoal 1: The atomic facts should be as simple as possible, if it's a compound sentence, break down one more time.\nGoal 2: For clarity, avoid using pronouns like 'it', 'he', 'she', 'this', 'that' etc., and instead use the full names or titles.\nGoal 3: Output in the format: 1.fact_1\n\n{passage}\n\n1."</p><p>Q &amp; A generation prompt <ref type="bibr" target="#b26">(Mecklenburg et al., 2024)</ref> System: "You are an AI assistant who knows about factual information about the paper with the title: {paper title}. Be precise but concise in your answer." User: "Write 12 pairs of questions and answers probing the facts and statistics the given fact {fact} about {key_topic}.\nConsider first generating questions and answers that are very relevant and explicit to the fact, then paraphrase those questions and answers to reach the desired 12 Q&amp;A pairs. If the fact is too broad or not specific enough to theme, you may reply with only with 'SKIP' and be done. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B Synthetic Datasets Details</head><p>We list our meta-features from our meta-dataset in Table <ref type="table" target="#tab_0">1</ref> and the meta-dataset used for our experiments in Table <ref type="table">2</ref>. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>C LLM Model Evaluation Details</head><p>For the evaluation, we continue to use our in-house hosted L3-70B model implemented with llama.cpp, leveraging it for both performance and resource efficiency. We make a small adjustment to our configuration, setting llama.cpp to process 128 parallel sequences and limiting the context size to 500 tokens, which is sufficient for our evaluation needs. To ensure efficient processing, we limit the maximum number of new tokens to 50 for each generated answer. Given that a comprehensive evaluation of the entire validation and test datasets would be time-prohibitive, we opted to select 20 random, fixed validation and test indices per paper (dataset) for this study.</p><p>Based on <ref type="bibr" target="#b26">Mecklenburg et al. (2024)</ref> we use Evaluation prompt to generate our evaluation score.</p><p>Resulting to either a positive (Positive evaluation response) or negative (Negative evaluation response) result.</p><p>Evaluation prompt (based on <ref type="bibr" target="#b26">Mecklenburg et al. (2024)</ref>)</p><p>System: "You are a high school teacher grading student's responses for questions about {key_topic}. These responses are either correct or incorrect." User: "Please evaluate the correctness of a sentence in answering the question: "{question}".\nThe correct answer is: "{sample_answer}"\nThe student response is: "{gen_answer}".\nYour grading is binary. Give 0 if the sentence is incorrect, give 1 if the sentence is correct, based on the given correct answer and the question.\n"Please note that your output is either 0 or 1, with the corresponding justification as python dict in the following format and nothing else:\n r"{'rating': &lt;rating&gt;, 'justification': &lt;justification&gt;}"</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Positive evaluation response</head><p>Question: what does imitation learning (il) rely on to learn? Generated answer: imitation learning (il) relies on expert demonstrations to learn. Sample answer: il learns from expert guidance. Decision: 'rating': 1, 'justification': 'The student response is correct because it conveys the same meaning as the correct answer, which is that imitation learning relies on some form of expert input, whether it is called "guidance" or "demonstrations".'</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Negative evaluation response</head><p>Question: do agents and equipped functions work together in taskgen? Generated answer: yes, they work together as part of the hybrid approach. Sample answer: no, agents and equipped functions operate independently. Decision: 'rating': 0, 'justification': 'The student response is incorrect because it states that agents and equipped functions work together, whereas the correct answer is that they operate independently.'</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>D Search Space Details</head><p>We employ AdamW and AdamCPR optimizers (Table <ref type="table">3</ref>) as well cosine schedulers (Table <ref type="table">4</ref>) with varying warmup steps (as a percentage of training set length) and decay factors. LoRA configurations (Table <ref type="table">5</ref>) include different ranks, alpha values, and dropout rates, with target modules being either query, key, and value; only the output layer; or all linear layers.</p><p>While we train 10 epochs, the batch size is fixed at 32, with gradient accumulation steps of 2, 4, or 8 to achieve mini-batch sizes of 64, 128, or 256. We utilize the Hugging Face tokenizer's chat template for Phi 3 Instruct to maintain consistency with the model's original template during training.</p><p>An additional configuration option is the return_assistant_mask, which generates an attention mask excluding "user" and "system" segments, focusing the model's learning on "assistant" responses.</p><p>Fixed settings across all configurations include:</p><p>• torch.nn.CrossEntropyLoss as the loss function</p><p>• Gradient clip value of 1.0 • torch.bfloat16 precision • Flash Attention 2 (Dao et al., 2022) • Left-side padding (due to Flash Attention requirements)</p><p>To ensure all samples in the train set are used, we augment the dataset with random samples to make it divisible by the product of batch size and gradient accumulation steps. The number of additional samples (asc) is calculated as: asc = (⌈ltrain/bg⌉ * bg) -ltrain</p><p>where bg is the product of batch size and gradient accumulation steps, and ltrain is the length of the train dataset.</p><p>Default values used for "Default LoRA" in Figure <ref type="figure" target="#fig_2">4</ref> are marked in bold in Tables <ref type="table">3</ref>, <ref type="table">4</ref>, and 5. A gradient accumulation step of 2 was used.</p><p>Table 3: Optimizer configuration space parameter optimizer AdamW AdamCPR learning_rate 1e-6, 1e-5.5, 1e-5, 1e-4.5, 1e-4, 1e-3.5, 1e-3 weight_decay 1e-0.5, 1e-1, 1e-1.5, 1e-2, 1e-3, 1e-4 kappa_init_method warm_start kappa_init_param warmup_steps x (1,2,4) Table 4: Scheduler hyperparameter parameter schedule cosine warmup_steps % 10, 20, 30, 40, 50 decay_factor 0, 0.1, 0.01 Table 5: Lora configuration space With q = query, k = key, v = value, o = output. all-linear = q, k, v. parameter target_modules [q, k, v], o, all-linear rank 8, 16, 32, 64 alpha 16, 32 dropout 0, 0.1</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>E Experiments Compute Resources</head><p>It took 900 compute hours to run all 1800 configurations for our meta-dataset and 170 compute hours for the experiments on a single NVIDIA A100 GPU. Each run for the meta-dataset and experiments was allocated 8 CPU cores and 16 GB RAM. Concurrently, we utilized two NVIDIA A6000 GPUs in parallel to run our self-hosted L3-70B model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>F Limitations Of Our Method</head><p>Although our method shows promising results compared to alternative methods, our meta-features are not based on an importance analysis. Furthermore, the evaluation does not take into account whether the model to be fine-tuned might start hallucinating during training and add further invented facts to the correct answer. Furthermore, at the current state we have too little data to understand why we achieve better performance when we only do transfer learning without Bayesian optimization.</p><p>Another limitation is that we do not know how our finetuning generalizes with real tasks, i.e. not with synthetic data and without a teacher model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>G Results Configuration Details</head><p>The best pipeline configurations found by the individual optimizers, listed below. Resulting configurations by Quick-Tune (ours), Quick-Tune (default), DEHB, and random optimizer in Table <ref type="table" target="#tab_4">6</ref>, 7, 8, and 9. Justification: We create a meta-dataset from our synthetic data for transfer learning and present a novel counter-intuitive approach of finding the optimal pipeline for finetuning LLMs through transfer learning.</p><p>Guidelines:</p><p>• The answer NA means that the abstract and introduction do not include the claims made in the paper. • The abstract and/or introduction should clearly state the claims made, including the contributions made in the paper and important assumptions and limitations. A No or NA answer to this question will not be perceived well by the reviewers. • The claims made should match theoretical and experimental results, and reflect how much the results can be expected to generalize to other settings. • It is fine to include aspirational goals as motivation as long as it is clear that these goals are not attained by the paper.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Limitations</head><p>Question: Does the paper discuss the limitations of the work performed by the authors?</p><p>Answer: <ref type="bibr">[Yes]</ref> Justification: Limitations can be found in appendix F.</p><p>Guidelines:</p><p>• The answer NA means that the paper has no limitation while the answer No means that the paper has limitations, but those are not discussed in the paper. • The authors are encouraged to create a separate "Limitations" section in their paper.</p><p>• The paper should point out any strong assumptions and how robust the results are to violations of these assumptions (e.g., independence assumptions, noiseless settings, model well-specification, asymptotic approximations only holding locally). The authors should reflect on how these assumptions might be violated in practice and what the implications would be. • The authors should reflect on the scope of the claims made, e.g., if the approach was only tested on a few datasets or with a few runs. In general, empirical results often depend on implicit assumptions, which should be articulated. • The authors should reflect on the factors that influence the performance of the approach.</p><p>For example, a facial recognition algorithm may perform poorly when image resolution is low or images are taken in low lighting. Or a speech-to-text system might not be used reliably to provide closed captions for online lectures because it fails to handle technical jargon. • The authors should discuss the computational efficiency of the proposed algorithms and how they scale with dataset size. • If applicable, the authors should discuss possible limitations of their approach to address problems of privacy and fairness. • While the authors might fear that complete honesty about limitations might be used by reviewers as grounds for rejection, a worse outcome might be that reviewers discover limitations that aren't acknowledged in the paper. The authors should use their best judgment and recognize that individual actions in favor of transparency play an important role in developing norms that preserve the integrity of the community. Reviewers will be specifically instructed to not penalize honesty concerning limitations.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Theory Assumptions and Proofs</head><p>Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?</p><p>Question: Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results, as described in supplemental material? Answer: <ref type="bibr">[No]</ref> Justification: We describe our method in section 3. The Quick-Tune-Tool <ref type="bibr">(Rapant et al., 2024)</ref> is publicly available, to run similar experiments. The code is not executable with one click as it requires the setup of the server for the evaluation, as well as additional steps such as the setup of SSH keys and connections. Guidelines:</p><p>• The answer NA means that paper does not include experiments requiring code.</p><p>• Please see the NeurIPS code and data submission guidelines (<ref type="url" target="https://nips.cc/public/guides/CodeSubmissionPolicy">https://nips.cc/  public/guides/CodeSubmissionPolicy</ref>) for more details. • While we encourage the release of code and data, we understand that this might not be possible, so "No" is an acceptable answer. Papers cannot be rejected simply for not including code, unless this is central to the contribution (e.g., for a new open-source benchmark). • The instructions should contain the exact command and environment needed to run to reproduce the results. See the NeurIPS code and data submission guidelines (<ref type="url" target="https://nips.cc/public/guides/CodeSubmissionPolicy">https:  //nips.cc/public/guides/CodeSubmissionPolicy</ref>) for more details. • The authors should provide instructions on data access and preparation, including how to access the raw data, preprocessed data, intermediate data, and generated data, etc. • The authors should provide scripts to reproduce all experimental results for the new proposed method and baselines. If only a subset of experiments are reproducible, they should state which ones are omitted from the script and why. • At submission time, to preserve anonymity, the authors should release anonymized versions (if applicable). • Providing as much information as possible in supplemental material (appended to the paper) is recommended, but including URLs to data and code is permitted.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.">Experimental Setting/Details</head><p>Question: Does the paper specify all the training and test details (e.g., data splits, hyperparameters, how they were chosen, type of optimizer, etc.) necessary to understand the results?</p><p>Answer: [Yes] Justification: See section 3 (A) and (B), Appendix D and A for information about the dataset and hyperparameters details. Guidelines:</p><p>• The answer NA means that the paper does not include experiments.</p><p>• The experimental setting should be presented in the core of the paper to a level of detail that is necessary to appreciate the results and make sense of them. • The full details can be provided either with the code, in appendix, or as supplemental material.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.">Experiment Statistical Significance</head><p>Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments? Answer: Justification: In section 4 we state that we use standard error of the mean over eight datasets in both of our main plots 3 and 4, calculated with Seaborn (Waskom, 2021). Guidelines:</p><p>• The answer NA means that the paper does not include experiments.</p><p>• The authors should answer "Yes" if the results are accompanied by error bars, confidence intervals, or statistical significance tests, at least for the experiments that support the main claims of the paper.</p><p>• The factors of variability that the error bars are capturing should be clearly stated (for example, train/test split, initialization, random drawing of some parameter, or overall run with given experimental conditions). • The method for calculating the error bars should be explained (closed form formula, call to a library function, bootstrap, etc.) • The assumptions made should be given (e.g., Normally distributed errors).</p><p>• It should be clear whether the error bar is the standard deviation or the standard error of the mean. • It is OK to report 1-sigma error bars, but one should state it. The authors should preferably report a 2-sigma error bar than state that they have a 96% CI, if the hypothesis of Normality of errors is not verified. • For asymmetric distributions, the authors should be careful not to show in tables or figures symmetric error bars that would yield results that are out of range (e.g. negative error rates). • If error bars are reported in tables or plots, The authors should explain in the text how they were calculated and reference the corresponding figures or tables in the text.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8.">Experiments Compute Resources</head><p>Question: For each experiment, does the paper provide sufficient information on the computer resources (type of compute workers, memory, time of execution) needed to reproduce the experiments?</p><p>Answer: <ref type="bibr">[Yes]</ref> Justification: See appendix E.</p><p>Guidelines:</p><p>• The answer NA means that the paper does not include experiments.</p><p>• The paper should indicate the type of compute workers CPU or GPU, internal cluster, or cloud provider, including relevant memory and storage. • The paper should provide the amount of compute required for each of the individual experimental runs as well as estimate the total compute. • The paper should disclose whether the full research project required more compute than the experiments reported in the paper (e.g., preliminary or failed experiments that didn't make it into the paper).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="9.">Code Of Ethics</head><p>Question: Does the research conducted in the paper conform, in every respect, with the NeurIPS Code of Ethics <ref type="url" target="https://neurips.cc/public/EthicsGuidelines">https://neurips.cc/public/EthicsGuidelines</ref>? Answer:</p><p>Justification: Code of Ethics was observed to the best of our knowledge and belief.</p><p>Guidelines:</p><p>• The answer NA means that the authors have not reviewed the NeurIPS Code of Ethics.</p><p>• If the authors answer No, they should explain the special circumstances that require a deviation from the Code of Ethics. • The authors should make sure to preserve anonymity (e.g., if there is a special consideration due to laws or regulations in their jurisdiction).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="10.">Broader Impacts</head><p>Question: Does the paper discuss both potential positive societal impacts and negative societal impacts of the work performed?</p><p>Answer: <ref type="bibr">[NA]</ref> Justification: Even if we change Quick-Tune so that we don't do Bayesian optimization, we haven't designed a new tool. We show that better performance can be achieved in the language domain. For potential positive as well as negative social influences, further experiments are needed.</p><p>Guidelines:</p><p>• The answer NA means that there is no societal impact of the work performed.</p><p>• If the authors answer NA or No, they should explain why their work has no societal impact or why the paper does not address societal impact. • Examples of negative societal impacts include potential malicious or unintended uses (e.g., disinformation, generating fake profiles, surveillance), fairness considerations (e.g., deployment of technologies that could make decisions that unfairly impact specific groups), privacy considerations, and security considerations. • The conference expects that many papers will be foundational research and not tied to particular applications, let alone deployments. However, if there is a direct path to any negative applications, the authors should point it out. For example, it is legitimate to point out that an improvement in the quality of generative models could be used to generate deepfakes for disinformation. On the other hand, it is not needed to point out that a generic algorithm for optimizing neural networks could enable people to train models that generate Deepfakes faster. • The authors should consider possible harms that could arise when the technology is being used as intended and functioning correctly, harms that could arise when the technology is being used as intended but gives incorrect results, and harms following from (intentional or unintentional) misuse of the technology. • If there are negative societal impacts, the authors could also discuss possible mitigation strategies (e.g., gated release of models, providing defenses in addition to attacks, mechanisms for monitoring misuse, mechanisms to monitor how a system learns from feedback over time, improving the efficiency and accessibility of ML).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="11.">Safeguards</head><p>Question: Does the paper describe safeguards that have been put in place for responsible release of data or models that have a high risk for misuse (e.g., pretrained language models, image generators, or scraped datasets)?</p><p>Answer: answerNA Justification: The paper proposes no risk, as the finetuned models are trained on scientific papers and will not be published either way.</p><p>Guidelines:</p><p>• The answer NA means that the paper poses no such risks.</p><p>• Released models that have a high risk for misuse or dual-use should be released with necessary safeguards to allow for controlled use of the model, for example by requiring that users adhere to usage guidelines or restrictions to access the model or implementing safety filters. • Datasets that have been scraped from the Internet could pose safety risks. The authors should describe how they avoided releasing unsafe images. • We recognize that providing effective safeguards is challenging, and many papers do not require this, but we encourage authors to take this into account and make a best faith effort.</p><p>12. Licenses for existing assets Question: Are the creators or original owners of assets (e.g., code, data, models), used in the paper, properly credited and are the license and terms of use explicitly mentioned and properly respected?</p><p>Answer: <ref type="bibr">[Yes]</ref> Justification: The only non-own code that was used is Quick-Tune-Tools and DEHB, which is cited. The models (llama3.1 and phi3) are cited as well. Contents of arXiv e-prints are free to use for research purposes (Terms of Use for arXiv APIs).</p><p>Guidelines:</p><p>• The answer NA means that the paper does not use existing assets.</p><p>• The authors should cite the original paper that produced the code package or dataset.</p><p>• The authors should state which version of the asset is used and, if possible, include a URL.</p><p>• The name of the license (e.g., CC-BY 4.0) should be included for each asset.</p><p>• For scraped data from a particular source (e.g., website), the copyright and terms of service of that source should be provided. • If assets are released, the license, copyright information, and terms of use in the package should be provided. For popular datasets, paperswithcode.com/datasets has curated licenses for some datasets. Their licensing guide can help determine the license of a dataset. • For existing datasets that are re-packaged, both the original license and the license of the derived asset (if it has changed) should be provided. • If this information is not available online, the authors are encouraged to reach out to the asset's creators.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="13.">New Assets</head><p>Question: Are new introduced in the paper well documented and is the documentation provided alongside the assets?</p><p>Answer: <ref type="bibr">[NA]</ref> Justification: The paper does not release new assets.</p><p>Guidelines:</p><p>• The answer NA means that the paper does not release new assets.</p><p>• Researchers should communicate the details of the dataset/code/model as part of their submissions via structured templates. This includes details about training, license, limitations, etc. • The paper should discuss whether and how consent was obtained from people whose asset is used. • At submission time, remember to anonymize your assets (if applicable). You can either create an anonymized URL or include an anonymized zip file.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="14.">Crowdsourcing and Research with Human Subjects</head><p>Question: For crowdsourcing experiments and research with human subjects, does the paper include the full text of instructions given to participants and screenshots, if applicable, as well as details about compensation (if any)?</p><p>Answer: <ref type="bibr">[NA]</ref> .</p><p>Justification: This paper does not involve crowdsourcing nor research with human subjects.</p><p>Guidelines:</p><p>• The answer NA means that the paper does not involve crowdsourcing nor research with human subjects. • Including this information in the supplemental material is fine, but if the main contribution of the paper involves human subjects, then as much detail as possible should be included in the main paper. • According to the NeurIPS Code of Ethics, workers involved in data collection, curation, or other labor should be paid at least the minimum wage in the country of the data collector.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="15.">Institutional Review Board (IRB) Approvals or Equivalent for Research with Human Subjects</head><p>Question: Does the paper describe potential risks incurred by study participants, whether such risks were disclosed to the subjects, and whether Institutional Review Board (IRB) approvals (or an equivalent approval/review based on the requirements of your country or institution) were obtained?</p><p>Answer: <ref type="bibr">[NA]</ref> .</p><p>Justification: This paper does not involve crowdsourcing nor research with human subjects.</p><p>Guidelines:</p><p>• The answer NA means that the paper does not involve crowdsourcing nor research with human subjects.</p><p>• Depending on the country in which research is conducted, IRB approval (or equivalent) may be required for any human subjects research. If you obtained IRB approval, you should clearly state this in the paper. • We recognize that the procedures for this may vary significantly between institutions and locations, and we expect authors to adhere to the NeurIPS Code of Ethics and the guidelines for their institution. • For initial submissions, do not include any information that would break anonymity (if applicable), such as the institution conducting the review.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Method Overview. We generate new NLP datasets from scientific papers and then create a meta-dataset, which we use for transfer learning to finetune by pre-training Quick-Tune (left). For a new dataset, we compute meta-features and then apply the pre-trained Quick-Tune (right).</figDesc><graphic coords="3,108.00,72.00,395.99,125.33" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Our Meta-Dataset. For each run stored in our meta-dataset, represented by a blue circle, we present the accuracy and finetuning time in seconds.</figDesc><graphic coords="3,313.92,325.28,190.08,125.47" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Final Performance. We show the validation (left) and test (right) learning curve of the best pipeline returned by the optimizers after 5 hours, averaged across eight datasets. The finetuning pipeline returned by Quick-Tune (ours) performs best.</figDesc><graphic coords="4,139.68,266.07,332.65,125.06" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><figDesc>\nEXAMPLE:\nFACT: 14 million viewers tuned in to the opening game of the series.\n1. Q: How many viewers watched the first game? A: 14 million people watched the first game of the series.\n\nEXAMPLE:\nFACT: The rose is red.\nSKIP\n\nFACT: fact['fact']\n1. " Key topic generation prompt System: "You are given a summary of the scientific paper. Return the key topic of this paper an nothing else" User: {paper summary} Atomic fact example "Masked Image Modeling (MIM) is a learning framework that derives visual representations from unlabeled image data." Q &amp; A example Question: "What does Masked Image Modeling (MIM) derive from unlabeled image data?" Answer: "Masked Image Modeling (MIM) derives visual representations from unlabeled image data."</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Meta-features trainings dataset</figDesc><table><row><cell>Dataset</cell><cell cols="4">token size sample length ratio q/a length vocab size</cell></row><row><cell>2407.15849v1</cell><cell>46913</cell><cell>137.63</cell><cell>1.43</cell><cell>1530</cell></row><row><cell>2407.15847v1</cell><cell>82307</cell><cell>144.92</cell><cell>1.55</cell><cell>2570</cell></row><row><cell>2407.15845v1</cell><cell>75410</cell><cell>145.55</cell><cell>1.51</cell><cell>2330</cell></row><row><cell>2407.15843v1</cell><cell>117247</cell><cell>139.03</cell><cell>1.72</cell><cell>3840</cell></row><row><cell>2407.15839v1</cell><cell>59966</cell><cell>146.83</cell><cell>1.57</cell><cell>1900</cell></row><row><cell>2407.15837v1</cell><cell>83873</cell><cell>139.39</cell><cell>2.08</cell><cell>2720</cell></row><row><cell>2406.18451v2</cell><cell>91480</cell><cell>161.24</cell><cell>1.4</cell><cell>2520</cell></row><row><cell>2407.15835v1</cell><cell>87863</cell><cell>134.18</cell><cell>1.66</cell><cell>2940</cell></row><row><cell>2407.15831v1</cell><cell>3874</cell><cell>157.48</cell><cell>1.19</cell><cell>120</cell></row><row><cell>2405.04657v3</cell><cell>65048</cell><cell>144.11</cell><cell>1.3</cell><cell>2070</cell></row><row><cell>2407.15820v1</cell><cell>73764</cell><cell>164.01</cell><cell>1.51</cell><cell>1980</cell></row><row><cell>2402.16822v2</cell><cell>131833</cell><cell>141.71</cell><cell>1.57</cell><cell>4190</cell></row><row><cell>2401.00009v3</cell><cell>87762</cell><cell>131.66</cell><cell>2.42</cell><cell>2740</cell></row><row><cell>2407.15815v1</cell><cell>69078</cell><cell>142.61</cell><cell>1.41</cell><cell>2210</cell></row><row><cell>2407.15814v1</cell><cell>76705</cell><cell>149.07</cell><cell>1.55</cell><cell>2540</cell></row><row><cell>2403.20262v2</cell><cell>93673</cell><cell>131.59</cell><cell>1.91</cell><cell>2930</cell></row><row><cell>2407.13044v2</cell><cell>27154</cell><cell>129.01</cell><cell>1.8</cell><cell>920</cell></row><row><cell>2307.15220v3</cell><cell>146050</cell><cell>142.7</cell><cell>1.55</cell><cell>4840</cell></row><row><cell>2407.15786v1</cell><cell>109720</cell><cell>143.94</cell><cell>1.8</cell><cell>3410</cell></row><row><cell>2407.15784v1</cell><cell>44928</cell><cell>151.83</cell><cell>1.44</cell><cell>1460</cell></row><row><cell>2405.17814v4</cell><cell>88773</cell><cell>144.15</cell><cell>1.65</cell><cell>2720</cell></row><row><cell>2407.15771v1</cell><cell>84305</cell><cell>139.16</cell><cell>1.67</cell><cell>2680</cell></row><row><cell>2407.15762v1</cell><cell>133882</cell><cell>139.16</cell><cell>1.62</cell><cell>4030</cell></row><row><cell>2407.15748v1</cell><cell>136205</cell><cell>140.48</cell><cell>1.57</cell><cell>4260</cell></row><row><cell>2407.15739v1</cell><cell>94869</cell><cell>145.1</cell><cell>1.74</cell><cell>2990</cell></row><row><cell>2407.15738v1</cell><cell>143443</cell><cell>137.99</cell><cell>1.52</cell><cell>4570</cell></row><row><cell>2407.15734v1</cell><cell>144566</cell><cell>131.11</cell><cell>1.57</cell><cell>5010</cell></row><row><cell>2407.04856v2</cell><cell>147437</cell><cell>141.79</cell><cell>1.48</cell><cell>4600</cell></row><row><cell>2402.07370v2</cell><cell>64881</cell><cell>134.8</cell><cell>1.57</cell><cell>2100</cell></row><row><cell>2403.07805v3</cell><cell>87032</cell><cell>140.16</cell><cell>1.8</cell><cell>2810</cell></row><row><cell></cell><cell cols="3">Table 2: Meta-features HPO comparison</cell><cell></cell></row><row><cell>Dataset</cell><cell cols="4">token size sample length ratio q/a length vocab size</cell></row><row><cell>2407.15723v1</cell><cell>54923</cell><cell>139.66</cell><cell>1.67</cell><cell>1840</cell></row><row><cell>2407.15720v1</cell><cell>157268</cell><cell>147.32</cell><cell>1.49</cell><cell>4740</cell></row><row><cell>2407.15719v1</cell><cell>86733</cell><cell>148.17</cell><cell>1.41</cell><cell>2570</cell></row><row><cell>2407.15708v1</cell><cell>45482</cell><cell>139.93</cell><cell>1.70</cell><cell>1390</cell></row><row><cell>2407.15656v1</cell><cell>124420</cell><cell>145.04</cell><cell>1.72</cell><cell>3900</cell></row><row><cell>2407.15617v1</cell><cell>82637</cell><cell>142.93</cell><cell>1.57</cell><cell>2580</cell></row><row><cell>2407.15600v1</cell><cell>89996</cell><cell>139.59</cell><cell>1.49</cell><cell>2970</cell></row><row><cell>2401.04152v2</cell><cell>42769</cell><cell>147.14</cell><cell>1.53</cell><cell>1280</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 6 :</head><label>6</label><figDesc>Quick-Tune (Ours) Found ConfigurationsWith batch size = batch size 32 and gradient accumulation step[2, 4, 8].</figDesc><table><row><cell>Dataset</cell><cell cols="4">batch decay fidelity kappa</cell><cell>lora</cell><cell>lora</cell><cell>lora</cell><cell cols="2">lora lr</cell><cell cols="2">warmup optimizer</cell><cell>return</cell><cell>weight</cell></row><row><cell></cell><cell>size</cell><cell>factor</cell><cell></cell><cell cols="4">init param alpha dropout layer</cell><cell>rank</cell><cell></cell><cell>steps %</cell><cell></cell><cell cols="2">assistant mask decay</cell></row><row><cell cols="2">2407.15723v1 64</cell><cell>1.0</cell><cell>4</cell><cell>nan</cell><cell>16</cell><cell>0.0</cell><cell cols="2">all-linear 64</cell><cell cols="2">1e-3 10</cell><cell>AdamW</cell><cell>False</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15720v1 64</cell><cell>0.01</cell><cell>7</cell><cell>4.0</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>32</cell><cell cols="2">1e-3 10</cell><cell cols="2">AdamCPR False</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15719v1 64</cell><cell>1.0</cell><cell>8</cell><cell>nan</cell><cell>16</cell><cell>0.0</cell><cell cols="2">all-linear 64</cell><cell cols="2">1e-3 10</cell><cell>AdamW</cell><cell>False</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15708v1 64</cell><cell>0.01</cell><cell>4</cell><cell>4.0</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>32</cell><cell cols="2">1e-3 10</cell><cell cols="2">AdamCPR False</cell><cell>1e-0.5</cell></row><row><cell>407.15656v1</cell><cell>64</cell><cell>0.1</cell><cell>9</cell><cell>nan</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>16</cell><cell cols="2">1e-3 10</cell><cell>AdamW</cell><cell>False</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15617v1 64</cell><cell>1.0</cell><cell>8</cell><cell>nan</cell><cell>16</cell><cell>0.0</cell><cell cols="2">all-linear 64</cell><cell cols="2">1e-3 10</cell><cell>AdamW</cell><cell>False</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15600v1 128</cell><cell>0.01</cell><cell>8</cell><cell>nan</cell><cell>16</cell><cell>0.1</cell><cell>o</cell><cell>64</cell><cell cols="2">1e-3 10</cell><cell>AdamW</cell><cell>True</cell><cell>1e-3</cell></row><row><cell cols="2">2401.04152v2 64</cell><cell>0.01</cell><cell>4</cell><cell>4.0</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>32</cell><cell cols="2">1e-3 10</cell><cell cols="2">AdamCPR False</cell><cell>1e-0.5</cell></row><row><cell></cell><cell></cell><cell></cell><cell cols="9">Table 7: Quick-Tune (Default) Found Configurations</cell><cell></cell></row><row><cell></cell><cell cols="12">With batch size = batch size 32 and gradient accumulation step [2, 4, 8].</cell></row><row><cell>Dataset</cell><cell cols="4">batch decay fidelity kappa</cell><cell>lora</cell><cell>lora</cell><cell>lora</cell><cell cols="2">lora lr</cell><cell cols="2">warmup optimizer</cell><cell>return</cell><cell>weight</cell></row><row><cell></cell><cell>size</cell><cell>factor</cell><cell></cell><cell cols="4">init param alpha dropout layer</cell><cell>rank</cell><cell></cell><cell>steps %</cell><cell></cell><cell cols="2">assistant mask decay</cell></row><row><cell cols="2">2407.15723v1 64</cell><cell>0.01</cell><cell>2</cell><cell>1.0</cell><cell>32</cell><cell>0.1</cell><cell cols="2">all-linear 8</cell><cell>1e-3</cell><cell>10</cell><cell cols="2">AdamCPR True</cell><cell>1e-2</cell></row><row><cell cols="2">2407.15720v1 64</cell><cell>0.01</cell><cell>5</cell><cell>4.0</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>32</cell><cell>1e-3</cell><cell>10</cell><cell cols="2">AdamCPR False</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15719v1 64</cell><cell>0.01</cell><cell>3</cell><cell>4.0</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>32</cell><cell>1e-3</cell><cell>10</cell><cell cols="2">AdamCPR False</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15708v1 64</cell><cell>0.01</cell><cell>2</cell><cell>4.0</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>32</cell><cell>1e-3</cell><cell>10</cell><cell cols="2">AdamCPR False</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15656v1 128</cell><cell>0.01</cell><cell>2</cell><cell>nan</cell><cell>16</cell><cell>0.1</cell><cell>o</cell><cell>64</cell><cell>1e-3</cell><cell>10</cell><cell>AdamW</cell><cell>True</cell><cell>1e-3</cell></row><row><cell cols="2">2407.15617v1 64</cell><cell>0.01</cell><cell>4</cell><cell>4.0</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>32</cell><cell>1e-3</cell><cell>10</cell><cell cols="2">AdamCPR False</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15600v1 128</cell><cell>0.01</cell><cell>1</cell><cell>4.0</cell><cell>16</cell><cell>0.1</cell><cell cols="2">all-linear 16</cell><cell cols="2">1e-4.5 30</cell><cell cols="2">AdamCPR False</cell><cell>1e-4</cell></row><row><cell cols="2">2401.04152v2 64</cell><cell>0.01</cell><cell>2</cell><cell>4.0</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>32</cell><cell>1e-3</cell><cell>10</cell><cell cols="2">AdamCPR False</cell><cell>1e-0.5</cell></row><row><cell></cell><cell></cell><cell></cell><cell></cell><cell cols="7">Table 8: DEHB Found Configurations</cell><cell></cell><cell></cell></row><row><cell></cell><cell cols="12">With batch size = batch size 32 and gradient accumulation step [2, 4, 8].</cell></row><row><cell>Dataset</cell><cell cols="4">batch decay fidelity kappa</cell><cell>lora</cell><cell>lora</cell><cell>lora</cell><cell cols="2">lora lr</cell><cell cols="2">warmup optimizer</cell><cell>return</cell><cell>weight</cell></row><row><cell></cell><cell>size</cell><cell>factor</cell><cell></cell><cell cols="4">init param alpha dropout layer</cell><cell>rank</cell><cell></cell><cell>steps %</cell><cell></cell><cell cols="2">assistant mask decay</cell></row><row><cell cols="2">2407.15723v1 128</cell><cell>1.0</cell><cell>3</cell><cell>nan</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>16</cell><cell>1e-3</cell><cell>10</cell><cell>AdamW</cell><cell>True</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15720v1 64</cell><cell>1.0</cell><cell>10</cell><cell>2.0</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>32</cell><cell>1e-3</cell><cell>10</cell><cell cols="2">AdamCPR True</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15719v1 256</cell><cell>1.0</cell><cell>3</cell><cell>4.0</cell><cell>16</cell><cell>0.0</cell><cell>o</cell><cell>16</cell><cell cols="2">1e-3.5 10</cell><cell cols="2">AdamCPR True</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15708v1 128</cell><cell>0.1</cell><cell>1</cell><cell>2.0</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>32</cell><cell cols="2">1e-06 30</cell><cell cols="2">AdamCPR True</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15656v1 64</cell><cell>0.01</cell><cell>10</cell><cell>nan</cell><cell>16</cell><cell>0.0</cell><cell cols="2">all-linear 16</cell><cell>1e-3</cell><cell>30</cell><cell>AdamW</cell><cell>False</cell><cell>1e-1.5</cell></row><row><cell cols="2">2407.15617v1 128</cell><cell>0.1</cell><cell>10</cell><cell>nan</cell><cell>32</cell><cell>0.1</cell><cell>o</cell><cell>32</cell><cell>1e-3</cell><cell>10</cell><cell>AdamW</cell><cell>True</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15600v1 64</cell><cell>0.1</cell><cell>3</cell><cell>4.0</cell><cell>16</cell><cell>0.0</cell><cell cols="2">all-linear 16</cell><cell cols="2">1e-06 20</cell><cell cols="2">AdamCPR False</cell><cell>1e-1.5</cell></row><row><cell cols="2">2401.04152v2 128</cell><cell>1.0</cell><cell>3</cell><cell>2.0</cell><cell>16</cell><cell>0.0</cell><cell cols="2">all-linear 32</cell><cell>1e-3</cell><cell>20</cell><cell cols="2">AdamCPR True</cell><cell>1e-2</cell></row><row><cell></cell><cell></cell><cell></cell><cell></cell><cell cols="7">Table 9: Random Found Configurations</cell><cell></cell><cell></cell></row><row><cell></cell><cell cols="12">With batch size = batch size 32 and gradient accumulation step [2, 4, 8].</cell></row><row><cell>Dataset</cell><cell cols="4">batch decay fidelity kappa</cell><cell>lora</cell><cell>lora</cell><cell>lora</cell><cell cols="2">lora lr</cell><cell cols="2">warmup optimizer</cell><cell>return</cell><cell>weight</cell></row><row><cell></cell><cell>size</cell><cell>factor</cell><cell></cell><cell cols="4">init param alpha dropout layer</cell><cell>rank</cell><cell></cell><cell>steps %</cell><cell></cell><cell cols="2">assistant mask decay</cell></row><row><cell cols="2">2407.15723v1 256</cell><cell>0.10</cell><cell>1</cell><cell>4.0</cell><cell>16</cell><cell>0.1</cell><cell>o</cell><cell>16</cell><cell>1e-5</cell><cell>10</cell><cell cols="2">AdamCPR True</cell><cell>1e-4</cell></row><row><cell cols="2">2407.15720v1 64</cell><cell>0.01</cell><cell>1</cell><cell>NaN</cell><cell>16</cell><cell>0.0</cell><cell>o</cell><cell>16</cell><cell cols="2">1e-3.5 40</cell><cell>AdamW</cell><cell>False</cell><cell>1e-3</cell></row><row><cell cols="2">2407.15719v1 64</cell><cell>1.00</cell><cell>1</cell><cell>NaN</cell><cell>32</cell><cell>0.0</cell><cell>o</cell><cell>64</cell><cell>1e-3</cell><cell>20</cell><cell>AdamW</cell><cell>True</cell><cell>1e-1.5</cell></row><row><cell cols="2">2407.15708v1 256</cell><cell>0.01</cell><cell>1</cell><cell>4.0</cell><cell>16</cell><cell>0.0</cell><cell>qkv</cell><cell>32</cell><cell>1e-5</cell><cell>40</cell><cell cols="2">AdamCPR True</cell><cell>1e-0.5</cell></row><row><cell cols="2">2407.15656v1 128</cell><cell>0.01</cell><cell>3</cell><cell>2.0</cell><cell>32</cell><cell>0.1</cell><cell>o</cell><cell>64</cell><cell>1e-3</cell><cell>10</cell><cell cols="2">AdamCPR False</cell><cell>1e-2</cell></row><row><cell cols="2">2407.15617v1 64</cell><cell>0.01</cell><cell>1</cell><cell>NaN</cell><cell>32</cell><cell>0.1</cell><cell cols="2">all-linear 32</cell><cell>1e-3</cell><cell>10</cell><cell>AdamW</cell><cell>True</cell><cell>1e-1.5</cell></row><row><cell cols="2">2407.15600v1 64</cell><cell>0.10</cell><cell>1</cell><cell>4.0</cell><cell>32</cell><cell>0.0</cell><cell>qkv</cell><cell>16</cell><cell cols="2">1e-3.5 50</cell><cell cols="2">AdamCPR False</cell><cell>1e-4</cell></row><row><cell cols="2">2401.04152v2 64</cell><cell>0.01</cell><cell>1</cell><cell>NaN</cell><cell>16</cell><cell>0.1</cell><cell>o</cell><cell>64</cell><cell>1e-3</cell><cell>10</cell><cell>AdamW</cell><cell>True</cell><cell>1e-2</cell></row></table></figure>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgments</head><p>This work was carried out at the <rs type="institution">HoreKa Cluster</rs>, which is funded by the <rs type="funder">Baden-Württemberg Ministry of Science, Research and the Arts</rs>, and the <rs type="funder">Federal Ministry of Education and Research</rs>. The authors would also like to thank the state of <rs type="person">Baden-Württemberg</rs> for the support provided by the bwHPC and the <rs type="funder">German Research Foundation (DFG)</rs> for funding through <rs type="funder">INST</rs> <rs type="grantNumber">35/1597-1 FUGG</rs>. We acknowledge funding by the <rs type="funder">Deutsche Forschungsgemeinschaft (DFG, German Research Foundation</rs>) under SFB 1597 (SmallData), grant numbers <rs type="grantNumber">499552394</rs> and <rs type="grantNumber">417962828</rs>. <rs type="person">Frank Hutter</rs> acknowledges the financial support of the <rs type="funder">Hector Foundation</rs>.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_nbMQ5Pb">
+					<idno type="grant-number">35/1597-1 FUGG</idno>
+				</org>
+				<org type="funding" xml:id="_YHsx2DV">
+					<idno type="grant-number">499552394</idno>
+				</org>
+				<org type="funding" xml:id="_JqmkmkA">
+					<idno type="grant-number">417962828</idno>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Answer: <ref type="bibr">[NA]</ref> Justification: We have empirical findings rather than theoretical results. Guidelines:</p><p>• The answer NA means that the paper does not include theoretical results.</p><p>• All the theorems, formulas, and proofs in the paper should be numbered and crossreferenced. • All assumptions should be clearly stated or referenced in the statement of any theorems.</p><p>• The proofs can either appear in the main paper or the supplemental material, but if they appear in the supplemental material, the authors are encouraged to provide a short proof sketch to provide intuition. • Inversely, any informal proof provided in the core of the paper should be complemented by formal proofs provided in appendix or supplemental material. • Theorems and Lemmas that the proof relies upon should be properly referenced.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">Experimental Result Reproducibility</head><p>Question: Does the paper fully disclose all the information needed to reproduce the main experimental results of the paper to the extent that it affects the main claims and/or conclusions of the paper (regardless of whether the code and data are provided or not)?</p><p>Answer: [Yes] Justification: Despite the fact that we do not publish any code, we have described our method (3) in detail. All necessary hyperparameters (D), meta-features, tools, prompts (A, C) and paper names (B) as well as models are mentioned. Guidelines:</p><p>• The answer NA means that the paper does not include experiments.</p><p>• If the paper includes experiments, a No answer to this question will not be perceived well by the reviewers: Making the paper reproducible is important, regardless of whether the code and data are provided or not. • If the contribution is a dataset and/or model, the authors should describe the steps taken to make their results reproducible or verifiable. • Depending on the contribution, reproducibility can be accomplished in various ways.</p><p>For example, if the contribution is a novel architecture, describing the architecture fully might suffice, or if the contribution is a specific model and empirical evaluation, it may be necessary to either make it possible for others to replicate the model with the same dataset, or provide access to the model. In general. releasing code and data is often one good way to accomplish this, but reproducibility can also be provided via detailed instructions for how to replicate the results, access to a hosted model (e.g., in the case of a large language model), releasing of a model checkpoint, or other means that are appropriate to the research performed. • While NeurIPS does not require releasing code, the conference does require all submissions to provide some reasonable avenue for reproducibility, which may depend on the nature of the contribution.  <ref type="bibr">(d)</ref> We recognize that reproducibility may be tricky in some cases, in which case authors are welcome to describe the particular way they provide for reproducibility.</p><p>In the case of closed-source models, it may be that access to the model is limited in some way (e.g., to registered users), but it should be possible for other researchers to have some path to reproducing or verifying the results. 5. Open access to data and code</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">Gemma</forename><surname>Team</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Gemma</surname></persName>
+		</author>
+		<idno type="DOI">10.34740/KAGGLE/M/3301</idno>
+		<ptr target="https://www.kaggle.com/m/3301" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title level="m" type="main">Phi-3 technical report: A highly capable language model locally on your phone</title>
+		<author>
+			<persName><forename type="first">Jyoti</forename><surname>Marah Abdin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hany</forename><surname>Aneja</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ahmed</forename><surname>Awadalla</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Awadallah</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2404.14219" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Grin: Gradient-informed moe</title>
+		<author>
+			<persName><forename type="first">Liyuan</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Young</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jin</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shuohang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chen</forename><surname>Liang</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2409.12136" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<monogr>
+		<title level="m" type="main">Deepseek-v2: A strong, economical, and efficient mixtureof-experts language model</title>
+		<author>
+			<persName><forename type="first">Deepseek-Ai</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aixin</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bei</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bin</forename><surname>Wang</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2405.04434" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<title level="m" type="main">The llama 3 herd of models</title>
+		<author>
+			<persName><forename type="first">Abhimanyu</forename><surname>Dubey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhinav</forename><surname>Jauhri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhinav</forename><surname>Pandey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhishek</forename><surname>Kadian</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2407.21783" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">Albert</forename><forename type="middle">Q</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandre</forename><surname>Sablayrolles</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arthur</forename><surname>Mensch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chris</forename><surname>Bamford</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2310.06825" />
+		<title level="m">Mistral 7b, 2023</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">I</forename><surname>Mistral</surname></persName>
+		</author>
+		<ptr target="https://mistral.ai/news/mistral-nemo/" />
+		<title level="m">Mistral nemo</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="2024" to="2029" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Qwen2.5: A party of foundation models</title>
+		<author>
+			<persName><forename type="first">Qwen</forename><surname>Team</surname></persName>
+		</author>
+		<ptr target="https://qwenlm.github.io/blog/qwen2.5/" />
+		<imprint>
+			<date type="published" when="2024-09">September 2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName><forename type="first">An</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Baosong</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Binyuan</forename><surname>Hui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bo</forename><surname>Zheng</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2407.10671</idno>
+		<title level="m">Qwen2 technical report</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<monogr>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rishi</forename><surname>Bommasani</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2206.07682" />
+		<title level="m">Colin Raffel et al. Emergent abilities of large language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Lora: Low-rank adaptation of large language models</title>
+		<author>
+			<persName><forename type="first">Edward</forename><forename type="middle">J</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yelong</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Phillip</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zeyuan</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2106.09685" />
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<monogr>
+		<title level="m" type="main">Qlora: Efficient finetuning of quantized llms</title>
+		<author>
+			<persName><forename type="first">Tim</forename><surname>Dettmers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Artidoro</forename><surname>Pagnoni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ari</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2305.14314" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Adapters: A unified library for parameter-efficient and modular transfer learning</title>
+		<author>
+			<persName><forename type="first">Clifton</forename><surname>Poth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hannah</forename><surname>Sterz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Indraneil</forename><surname>Paul</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sukannya</forename><surname>Purkayastha</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2311.11077" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Lora+: Efficient low rank adaptation of large models</title>
+		<author>
+			<persName><forename type="first">Soufiane</forename><surname>Hayou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nikhil</forename><surname>Ghosh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bin</forename><surname>Yu</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2402.12354" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Quick-tune: Quickly learning which pretrained model to finetune and how</title>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Pineda Arango</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Ferreira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Arlind</forename><surname>Kadra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Frank</forename><surname>Hutter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Josif</forename><surname>Grabocka</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=tqh1zdXIra" />
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Automatically configuring algorithms for portfoliobased selection</title>
+		<author>
+			<persName><forename type="first">Lin</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Holger</forename><surname>Hoos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kevin</forename><surname>Leyton-Brown</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hydra</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2010">2010</date>
+			<biblScope unit="volume">24</biblScope>
+			<biblScope unit="page" from="210" to="216" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title level="m" type="main">Dehb: Evolutionary hyperband for scalable, robust and efficient hyperparameter optimization</title>
+		<author>
+			<persName><forename type="first">Noor</forename><surname>Awad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Neeratyoy</forename><surname>Mallik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Frank</forename><surname>Hutter</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2105.09821</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Triviaqa: A large scale distantly supervised challenge dataset for reading comprehension</title>
+		<author>
+			<persName><forename type="first">Mandar</forename><surname>Joshi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Eunsol</forename><surname>Choi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">S</forename><surname>Weld</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luke</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/1705.03551" />
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<title level="m" type="main">Squad: 100,000+ questions for machine comprehension of text</title>
+		<author>
+			<persName><forename type="first">Pranav</forename><surname>Rajpurkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jian</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Konstantin</forename><surname>Lopyrev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Percy</forename><surname>Liang</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/1606.05250" />
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Natural questions: a benchmark for question answering research</title>
+		<author>
+			<persName><forename type="first">Tom</forename><surname>Kwiatkowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jennimaria</forename><surname>Palomaki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Olivia</forename><surname>Redfield</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Collins</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions of the Association of Computational Linguistics</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<title level="m" type="main">Pubmedqa: A dataset for biomedical research question answering</title>
+		<author>
+			<persName><forename type="first">Qiao</forename><surname>Jin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bhuwan</forename><surname>Dhingra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhengping</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><forename type="middle">W</forename><surname>Cohen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinghua</forename><surname>Lu</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/1909.06146" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<monogr>
+		<title level="m" type="main">Semi-supervised qa with generative domain-adaptive nets</title>
+		<author>
+			<persName><forename type="first">Zhilin</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junjie</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ruslan</forename><surname>Salakhutdinov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">William</forename><forename type="middle">W</forename><surname>Cohen</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/1702.02206" />
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Learning to generate instruction tuning datasets for zero-shot task adaptation</title>
+		<author>
+			<persName><forename type="first">V</forename><surname>Nihal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiyang</forename><surname>Nayak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Avi</forename><surname>Nan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><forename type="middle">H</forename><surname>Trost</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bach</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2402.18334" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<monogr>
+		<title level="m" type="main">Liquid: A framework for list question answering dataset generation</title>
+		<author>
+			<persName><forename type="first">Seongyun</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hyunjae</forename><surname>Kim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaewoo</forename><surname>Kang</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2302.01691" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Training question answering models from synthetic data</title>
+		<author>
+			<persName><forename type="first">Raul</forename><surname>Puri</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ryan</forename><surname>Spring</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mostofa</forename><surname>Patwary</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammad</forename><surname>Shoeybi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bryan</forename><surname>Catanzaro</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2002.09599" />
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<monogr>
+		<title level="m" type="main">Fine-tuning or retrieval? comparing knowledge injection in llms</title>
+		<author>
+			<persName><forename type="first">Oded</forename><surname>Ovadia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Menachem</forename><surname>Brief</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Moshik</forename><surname>Mishaeli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oren</forename><surname>Elisha</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2312.05934" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">Injecting new knowledge into large language models via supervised fine-tuning</title>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Mecklenburg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiyou</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoxiao</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Holstein</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2404.00213" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">Josh</forename><surname>Openai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Steven</forename><surname>Achiam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sandhini</forename><surname>Adler</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Agarwal</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2303.08774" />
+		<title level="m">Gpt-4 technical report</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<monogr>
+		<title level="m" type="main">Loftq: Lora-fine-tuning-aware quantization for large language models</title>
+		<author>
+			<persName><forename type="first">Yixiao</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yifan</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chen</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengcheng</forename><surname>He</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2310.08659" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">Few-shot parameter-efficient fine-tuning is better and cheaper than in-context learning</title>
+		<author>
+			<persName><forename type="first">Haokun</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Derek</forename><surname>Tam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohammed</forename><surname>Muqeeth</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jay</forename><surname>Mohta</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2205.05638" />
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">Reft: Representation finetuning for language models</title>
+		<author>
+			<persName><forename type="first">Zhengxuan</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aryaman</forename><surname>Arora</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zheng</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Atticus</forename><surname>Geiger</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2404.03592" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<title level="m" type="main">Adafactor: Adaptive learning rates with sublinear memory cost</title>
+		<author>
+			<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mitchell</forename><surname>Stern</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/1804.04235" />
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<title level="m" type="main">Decoupled weight decay regularization</title>
+		<author>
+			<persName><forename type="first">Ilya</forename><surname>Loshchilov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Frank</forename><surname>Hutter</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/1711.05101" />
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">H</forename><surname>Jörg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><surname>Franke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gregor</forename><surname>Hefenbrock</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Frank</forename><surname>Koehler</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Hutter</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2311.09058" />
+		<title level="m">Constrained parameter regularization</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title level="m" type="main">Symbolic discovery of optimization algorithms</title>
+		<author>
+			<persName><forename type="first">Xiangning</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chen</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Da</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Esteban</forename><surname>Real</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2302.06675" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title level="m" type="main">Autogluon-multimodal (automm): Supercharging multimodal automl with foundation models</title>
+		<author>
+			<persName><forename type="first">Zhiqiang</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Haoyang</forename><surname>Fang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Su</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Taojiannan</forename><surname>Yang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2404.16233</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<title level="m" type="main">Autopeft: Automatic configuration search for parameter-efficient fine-tuning</title>
+		<author>
+			<persName><forename type="first">Han</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xingchen</forename><surname>Wan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ivan</forename><surname>Vulić</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anna</forename><surname>Korhonen</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2301.12132" />
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<title level="m" type="main">Autolora: A parameter-free automated robust fine-tuning framework</title>
+		<author>
+			<persName><forename type="first">Xilie</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingfeng</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohan</forename><surname>Kankanhalli</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2310.01818" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Quick-tune-tool: A practical tool and its user guide for automatically finetuning pretrained models</title>
+		<author>
+			<persName><forename type="first">Ivo</forename><surname>Rapant</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lennart</forename><surname>Purucker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fabio</forename><surname>Ferreira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Pineda Arango</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">AutoML Conference 2024</title>
+		<imprint>
+			<biblScope unit="page">2024</biblScope>
+		</imprint>
+	</monogr>
+	<note>Workshop Track</note>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">Zero-shot automl with pretrained models</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Öztürk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Ferreira</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">S</forename><surname>Jomaa</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Scmidth-Thieme</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proc. of ICML&apos;22</title>
+		<meeting>of ICML&apos;22</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="1128" to="1135" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<monogr>
+		<title level="m" type="main">Autolora: Automatically tuning matrix ranks in low-rank adaptation based on meta learning</title>
+		<author>
+			<persName><forename type="first">Ruiyi</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rushi</forename><surname>Qiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ashish</forename><surname>Sai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pengtao</forename><surname>Somayajula</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Xie</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.09113</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<monogr>
+		<author>
+			<persName><surname>Ai@meta</surname></persName>
+		</author>
+		<ptr target="https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md" />
+		<title level="m">Llama 3.1 model card</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Auto-sklearn 2.0: Hands-free automl via meta-learning</title>
+		<author>
+			<persName><forename type="first">Matthias</forename><surname>Feurer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Katharina</forename><surname>Eggensperger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefan</forename><surname>Falkner</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marius</forename><surname>Lindauer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Frank</forename><surname>Hutter</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">23</biblScope>
+			<biblScope unit="issue">261</biblScope>
+			<biblScope unit="page" from="1" to="61" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<monogr>
+		<author>
+			<persName><forename type="first">David</forename><surname>Salinas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nick</forename><surname>Erickson</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2311.02971</idno>
+		<title level="m">Tabrepo: A large scale repository of tabular model evaluations and its automl applications</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<monogr>
+		<title level="m" type="main">Flashattention: Fast and memory-efficient exact attention with io-awareness</title>
+		<author>
+			<persName><forename type="first">Tri</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><forename type="middle">Y</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefano</forename><surname>Ermon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Atri</forename><surname>Rudra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Ré</surname></persName>
+		</author>
+		<ptr target="https://arxiv.org/abs/2205.14135" />
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">seaborn: statistical data visualization</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Michael</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Waskom</surname></persName>
+		</author>
+		<idno type="DOI">10.21105/joss.03021</idno>
+		<ptr target="https://doi.org/10.21105/joss.03021" />
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Open Source Software</title>
+		<imprint>
+			<biblScope unit="volume">6</biblScope>
+			<biblScope unit="issue">60</biblScope>
+			<biblScope unit="page">2021</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

@@ -1,0 +1,2567 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Evolving Subnetwork Training for Large Language Models</title>
+				<funder ref="#_7DQTduv #_w7WHhSa #_jeKZYZB">
+					<orgName type="full">China NSFC Projects</orgName>
+				</funder>
+				<funder ref="#_pHAmDFP">
+					<orgName type="full">Shanghai Municipal Science and Technology Major Project</orgName>
+				</funder>
+				<funder ref="#_gFE5hBz">
+					<orgName type="full">unknown</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability  status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-06-11">11 Jun 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Hanqi</forename><surname>Li</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Lu</forename><surname>Chen</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Da</forename><surname>Ma</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Zijian</forename><surname>Wu</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Su</forename><surname>Zhu</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Kai</forename><surname>Yu</surname></persName>
+						</author>
+						<title level="a" type="main">Evolving Subnetwork Training for Large Language Models</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-06-11">11 Jun 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">965BAE4431C85CB7F80B09C13601A839</idno>
+					<idno type="arXiv">arXiv:2406.06962v1[cs.CL]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.2-SNAPSHOT" ident="GROBID" when="2025-04-29T15:39+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<label type="revision">92ea31e</label>
+					<label type="parameters">startPage=-1, endPage=-1, consolidateCitations=1, consolidateHeader=1, consolidateFunders=0, includeRawAffiliations=false, includeRawCitations=false, includeRawCopyrights=false, generateTeiIds=false, generateTeiCoordinates=[], flavor=null</label>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large language models have ushered in a new era of artificial intelligence research. However, their substantial training costs hinder further development and widespread adoption. In this paper, inspired by the redundancy in the parameters of large language models, we propose a novel training paradigm: Evolving Subnetwork Training (EST). EST samples subnetworks from the layers of the large language model and from commonly used modules within each layer, Multi-Head Attention (MHA) and Multi-Layer Perceptron (MLP). By gradually increasing the size of the subnetworks during the training process, EST can save the cost of training. We apply EST to train GPT2 model and TinyLlama model, resulting in 26.7% FLOPs saving for GPT2 and 25.0% for TinyLlama without an increase in loss on the pre-training dataset. Moreover, EST leads to performance improvements in downstream tasks, indicating that it benefits generalization. Additionally, we provide intuitive theoretical studies based on training dynamics and Dropout theory to ensure the feasibility of EST. Our code is available at <ref type="url" target="https://github.com/OpenDFM/EST">https://github.com/OpenDFM/EST</ref>.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Introduction</head><p>Large language models (LLMs) have become significantly larger recently, bringing tremendous potential in Natural Language Processing (NLP) tasks. The computational cost of training such large language models has become a bottleneck, hindering further development in research and applications. Additionally, the escalating hardware demands and increasing carbon footprints associated with training 1 X-LANCE Lab, Department of Computer Science and Engineering, MoE Key Lab of Artificial Intelligence, SJTU AI Institute, Shanghai Jiao Tong University, Shanghai, China 2 Suzhou Laboratory, Suzhou, China 3 AISpeech Co., Ltd., Suzhou, China. Correspondence to: Lu Chen &lt;chenlusz@sjtu.edu.cn&gt;, Kai Yu &lt;kai.yu@sjtu.edu.cn&gt;.</p><p>Proceedings of the 41 st International Conference on Machine <ref type="bibr">Learning, Vienna, Austria. PMLR 235, 2024.</ref> Copyright 2024 by the author(s). large language models are also crucial issues <ref type="bibr">(Schwartz et al., 2020)</ref>. This highlights the importance of researching efficient algorithms for training large language models.</p><p>The enormous training cost of large language models stems from their massive number of parameters. For instance, the GPT3 <ref type="bibr">(Brown et al., 2020)</ref> model has 175 billion parameters, requiring 355 GPU-years and incurring a training cost of $4.6M. However, numerous studies have highlighted the redundancy in the parameters of large language models, manifested in the over-parameterization <ref type="bibr">(Li et al., 2020)</ref> and conditional sparsity <ref type="bibr">(Li et al., 2023b</ref>) of these models. This inspires us to optimize the training process by exploring the possibility of not training the complete model at certain stages but focusing on training subnetworks, thereby reducing the overall training cost of large language models.</p><p>In this paper, we propose a novel training paradigm, Evolving Subnetwork Training (EST), towards efficient training for large language models. EST paradigm consists of two main components: 1) sample from the large language model for subnetwork training. We maintain the complete model and sample subnetworks in each training step from the model across three dimensions, including the number of attention heads, the intermediate size of multi-layer perceptron, and the total number of Transformer layers. 2) We design a sampling scheduler to plan the training process. By increasing the size of subnetworks during training and, finally, training the complete model, EST achieves training acceleration.</p><p>To demonstrate the effectiveness of EST, we first conduct experiments on GPT2 model <ref type="bibr">(Radford et al., 2019)</ref>, and conduct scale-up experiments on 1.1B TinyLlama <ref type="bibr" target="#b63">(Zhang et al., 2024)</ref> model. The results show that: 1) EST saves 26.7% training cost for GPT2 model and 25.0% training cost for TinyLlama model, with a comparable loss on the pre-training dataset. 2) Models trained by EST achieve even higher downstream performance, indicating that EST benefits model generalization.</p><p>Furthermore, we dive into theoretical studies to answer the following two questions: 1) why EST can save training cost without compromising model performance? 2) Why EST can benefit model generalization? We provide a comprehensive theoretical framework based on deep learning dynamics and Dropout theory to ensure the superiority and feasibility of EST.</p><p>In general, the contributions of this work include the following aspects:</p><p>• We propose a novel model training paradigm, EST, achieving higher optimization efficiency of training large language models.</p><p>• We conduct experiments on GPT2 and TinyLlama. The results show that EST saves training cost without sacrificing model performance and benefits generalization.</p><p>• We provide intuitive theoretical studies to ensure the feasibility of EST.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Related Work</head><p>2.1. Efficient Training for Large Language Models Many previous works aim at improving the efficiency of training large language models, ranging from addressing low-level hardware computations and memory bottlenecks to designing high-level training strategies.</p><p>There are numerous approaches to overcome the computation bottleneck of Transformer-based models. FlashAttention <ref type="bibr">(Dao et al., 2022b)</ref> identifies that the attention module is bottlenecked by memory access, and optimizes the process of attention computation, effectively reducing the training cost. Reformer <ref type="bibr">(Kitaev et al., 2020)</ref> approximates attention computation based on locality-sensitive hashing and Performer <ref type="bibr">(Choromanski et al., 2021)</ref> simplifies attention computation with low-rank approximation.</p><p>Sparse training methods also benefit optimization efficiency.</p><p>The main component of sparse training methods is the Mixture of Experts (MoE). MoE methods <ref type="bibr">(Fedus et al., 2022;</ref><ref type="bibr">Du et al., 2022)</ref> apply conditional computation according to different inputs in order to scale up models without significantly increasing training costs. The drawback of the MoE model is that its performance cannot match that of the dense model with an equivalent number of parameters. Another category of sparse training methods is based on the lottery ticket hypothesis <ref type="bibr">(Frankle &amp; Carbin, 2019;</ref><ref type="bibr">Chen et al., 2021)</ref>, that certain subnetworks exhibit comparable performance to that of the original complete network. However, the sparsity generated by such methods is typically unstructured, making it challenging to translate into acceleration on general GPU devices. Monarch <ref type="bibr">(Dao et al., 2022a)</ref> and Pixelated Butterfly <ref type="bibr">(Dao et al., 2021)</ref> lower the training overhead of models without compromising their performance by introducing structured sparsity in matrix operations, which are more low-level and can be combined with our approach for complementary benefits. <ref type="bibr">Ma et al. (2024)</ref> leverages sparsity in pre-trained LLMs to expedite the training process.</p><p>In this paper, we mainly focus on the design of a top-level training strategy, which is orthogonal to these approaches. Different from MoE methods that choose subnetworks based on input tokens, our method samples subnetworks randomly.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.2.">Incremental Training</head><p>The most similar prior works are those called incremental training methods <ref type="bibr">(Shen et al., 2022)</ref>. This kind of work typically starts from smaller models and gradually scales up to larger ones. Incremental training methods are effective in both the NLP and CV domains since they reduce the time needed for model training and enhance training stability. Net2net <ref type="bibr">(Chen et al., 2016)</ref> first reveals the feasibility of using the parameters of smaller models as initialization for larger model parameters and provides some operations for scaling up model sizes. <ref type="bibr">Shen et al. (2022)</ref> involves multistage training of the GPT2 model across both depth and width dimensions. bert2BERT <ref type="bibr">(Chen et al., 2022)</ref> applies the principles of Net2net to pre-trained language models. MSG <ref type="bibr" target="#b62">(Yao et al., 2023)</ref> employs a masking mechanism that sets newly expanded parameters to zero when scaling up small models. Unlike these methods that individually train smaller models, disregarding interactions between parameters, our approach EST maintains the complete model and samples subnetworks from it to train.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Methodology</head><p>In this section, we first review the most popular LLM architecture Transformer <ref type="bibr" target="#b60">(Vaswani et al., 2017)</ref> in Section 3.1. In Section 3.2, we discuss how to sample subnetworks from the Transformer model for subnetwork training. In Section 3.3, we propose our efficient training paradigm, Evolving Subnetwork Training (EST).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.">Preliminaries</head><p>Recent large language models are mainly based on Transformer architecture. Before presenting our method, we first introduce the structure of Transformer, including two main components, multi-head attention (MHA) and multi-layer perceptron (MLP).</p><p>Transformer Layer: Let X l-1 ∈ R N ×d denote the input sequence of layer l, where N is the sequence length and d denotes the hidden size. The sequence is processed iteratively by several Transformer layers with residual connection</p><formula xml:id="formula_0">X l = X l-1 + Layer l (X l-1 ), ∀l ∈ {1, 2, ..., N L },<label>(1)</label></formula><p>where N L denotes the number of Transformer layers. Each Transformer layer is composed of one MHA module and one MLP module.</p><p>MHA: MHA is used to mix information along the sequence axes to capture token-level dependencies. Let N H denote the number of heads and d k denote the dimension of each head. In layer l, for each head i, key, query, value projections are</p><formula xml:id="formula_1">W Q l,i ,W K l,i ,W V l,i ∈ R d×d k and the output projection is W O l,i . MHA is formulated as follows, h l,i = softmax X l-1 W Q l,i (X l-1 W K l,i ) T √ d k X l-1 W V l,i , X MHA l = N H i=1 h l,i W O l,i .</formula><p>(2)</p><p>MLP: MLP is used to mixes information along the hidden dimension axes. It consists of two linear layers</p><formula xml:id="formula_2">W 1 l , W 2 l ∈ R d×N M where N M is the intermediate size of MLP. The MLP computation is X MLP l = σ(X MHA l W 1 l )(W 2 l ) T , (<label>3</label></formula><formula xml:id="formula_3">)</formula><p>where σ is the activation function.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.">Subnetwork Training via Random Sampling</head><p>Subnetwork training is a training paradigm that trains a subnetwork of the model in each step rather than training the complete model. Let Φ denote the parameters of the model, ϕ ⊂ Φ denote the parameters of the subnetwork, and L denote the loss function. Let f ϕ denote the function of the subnetwork, which takes sequence X as input and outputs the prediction of next tokens. The object of subnetwork training is formulated as</p><formula xml:id="formula_4">min ϕ L(f ϕ (X), y), (<label>4</label></formula><formula xml:id="formula_5">)</formula><p>where y is the ground truth label.</p><p>In our approach, we sample subnetworks randomly from the complete model in each training step.</p><p>To obtain subnetworks, we sample across three dimensions related to the size of the Transformer model: the number of attention heads N H , the intermediate size of MLP module N M , and the total number of Transformer layers N L . Sampling Attention Heads N H : For each MHA module, during the subnetwork training, we randomly sample a subset of heads I H for computation at each training step, where I H ⊂ {1, 2, ..., N H }, |I H | = N H p H and p H is the sampling rate. Formally, during the subnetwork training, the output of MHA module is</p><formula xml:id="formula_6">h l,i = softmax X l-1 W Q l,i (X l-1 W K l,i ) T √ d k X l-1 W V l,i , X MHA l = 1 p H i∈I H h l,i W O l,i .<label>(5)</label></formula><p>The normalization operation 1 p H is crucial as it ensures that the output distribution is consistent with the complete model. The computational cost of the MHA module in the subnetwork is reduced to a fraction p H of that in the complete model. The detailed implementation is shown in Appendix B.1.</p><p>Sampling MLP Intermediate Size N M : For each MLP module, we sample the intermediate dimension, i.e., the columns of W 1 l and W 2 l , at each training step. Let I M ⊂ {1, 2, ..., N M } denote the index of sampled columns where |I M | = N M p M and p M is the sampling rate. We select columns in I M from the W 1 l and W 2 l to obtain Ŵ1 l and Ŵ2</p><p>l . The subnetwork's MLP computation is</p><formula xml:id="formula_7">X MLP l = 1 p M σ(X MHA l Ŵ1 l )( Ŵ2 l ) T . (6)</formula><p>Similarly, the the output of MLP module requires normalization to ensure the consistency of the output distribution. The computational cost of the MLP module during subnetwork training is reduced to a fraction p M . The detailed implementation is shown in Appendix B.2.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Sampling Transformer The Number of Layer N L :</head><p>We employ a sampling strategy similar to Stochastic Depth <ref type="bibr">(Huang et al., 2016)</ref>, randomly skipping some layers of the Transformer model. Let p L denote the sampling rate. We sample from Transformer layers to obtain a subset</p><formula xml:id="formula_8">I L ⊂ {1, 2, ..., N L } where |I L | = N L p L .</formula><p>For each layer in the Transformer, we compute the layer output as</p><formula xml:id="formula_9">X l = X l-1 + Layer l (X l-1 ), if l ∈ I L X l-1 , if l / ∈ I L . (<label>7</label></formula><formula xml:id="formula_10">)</formula><p>During subnetwork training, the computational cost of the subnetwork can be reduced to a fraction p L of the complete model, for only N L p L layers are activated.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3.">Evolving Subnetwork Training</head><p>In this section, we propose our novel training paradigm for large language models, Evolving Subnetwork Training (EST), which applies subnetwork training method in Section 3.2, and progressively increases the size of subnetworks. Finally, train the complete model. Definition 3.1. Let T denote the total stages of training. A sampling scheduler consists of two parts: 1) S = (s 1 , ..., s T ) that contains the time points of stage transitions, indicating when to increase the size of subnetworks; 2)</p><formula xml:id="formula_11">P = [(p 1 H , p 1 M , p 1 L ), ..., (p T H , p T M , p T L )</formula><p>] that contains sampling rates in each stage, indicating how to increase the size of subnetworks.</p><p>EST employs the sampling scheduler to plan the training process. By incrementally increasing the size of subnet- Practical Sampling Scheduler: In this paper, we won't dive into complex sampling schedulers. For convenience, we use a kind of three-stage sampling scheduler in practice. Specifically, our sampling scheduler consists of the following three stages:</p><p>• Stage 1: In this stage, we sample from all three dimensions to achieve the highest acceleration ratio. That is,</p><formula xml:id="formula_12">0 &lt; p H &lt; 1, 0 &lt; p M &lt; 1, 0 &lt; p L &lt; 1.</formula><p>• Stage 2: In this stage, we stop sampling from the Transformer layers, ensuring that the number of activated layers in the subnetwork is consistent with the complete model, while continuing sampling from the MHA and MLP modules. That is,</p><formula xml:id="formula_13">0 &lt; p H &lt; 1, 0 &lt; p M &lt; 1, p L = 1.</formula><p>Additionally, in this stage, we keep p H and p M consistent with the first stage.</p><p>• Stage 3: In the final stage, train the complete model, where</p><formula xml:id="formula_14">p H = 1, p M = 1, p L = 1.</formula><p>The process of EST with this kind of sampling scheduler is illustrated in Figure <ref type="figure" target="#fig_0">1</ref>.</p><p>Training Cost Saving: Assuming that, under the condition of equal training steps, the model trained by EST achieves the same performance as the original model, EST can indeed achieve a reduction in training cost. This is because the cost of training subnetworks is smaller than that of training the complete model. For ease of analysis, we calculate how much training cost is saved by EST with the practical sampling scheduler. Let C H , C M denote the cost of each MHA module and MLP Algorithm 1 Evolving Subnetwork Training Input: Dataset (X , Y), sampling scheduler S = (s 1 , ..., s T ), P = [(p 1 H , p 1 M , p 1 L ), ..., (p T H , p T M , p T L )]. 1: Randomly initialize the model. 2: for t = 1 → T do {Training stages} 3:</p><formula xml:id="formula_15">for k = s t-1 → s t do {Training steps, s 0 = 0} 4: Sample (X, y) ∼ (X , Y). 5: Sample I L ⊂ {1, 2, ..., N L }, |I L | = p L N L . 6: X 0 = EMBEDDING(X). 7: for l = 1 → N L do {Transformer layers} 8: if l / ∈ I L then 9:</formula><p>X l = X l-1 .</p><p>10:</p><p>Continue.</p><p>11:</p><formula xml:id="formula_16">end if 12: Sample I H ⊂ {1, 2, ..., N H }, |I H | = p H N H . 13: Sample I M ⊂ {1, 2, ..., N M }, |I M | = p M N M .</formula><p>14:</p><p>Compute X MHA l condition on I M .</p><p>15:</p><p>Compute X MLP l condition on I H .</p><p>16:</p><formula xml:id="formula_17">X l = X l-1 + X MLP l . 17:</formula><p>end for</p><formula xml:id="formula_18">18: ŷ = PROJECTION(X N L ).</formula><p>19:</p><p>Compute loss with L(ŷ, y) .</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>20:</head><p>Backward and optimize.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>21:</head><p>end for 22: end for module, neglecting other modules like Layer Normalization <ref type="bibr">(Ba et al., 2016)</ref> as their cost is relatively small compared to MHA and MLP. So the training cost of a single training step in each stage is formulated as</p><formula xml:id="formula_19">C 1 = N L p L (p H C H + p M C M ), C 2 = N L (p H C H + p M C M ), C 3 = N L (C H + C M ). (8)</formula><p>Based on the training steps for each stage, the total training cost can be calculated. Let r 1 , r 2 , r 3 denote training steps of each stage, respectively. The total training cost is formulated as</p><formula xml:id="formula_20">C EST = r 1 C 1 + r 2 C 2 + r 3 C 3 = (r 1 N L p L p H + r 2 N L p H + r 3 N L )C H + (r 1 N L p L p M + r 2 N L p M + r 3 N L )C M . (9)</formula><p>On the other hand, the training cost of training the complete model is</p><formula xml:id="formula_21">C original = (r 1 + r 2 + r 3 )N L (C H + C M ). (<label>10</label></formula><formula xml:id="formula_22">)</formula><p>For a more intuitive illustration, Table <ref type="table" target="#tab_4">1 shows</ref>   </p><formula xml:id="formula_23">(C H + C M ) rN L (C H + C M ) Stage 2 0.5rN L (C H + C M ) rN L (C H + C M ) Stage 3 rN L (C H + C M ) rN L (C H + C M ) Total 1.75rN L (C H + C M ) 3rN L (C H + C M ) Saving 1.25rN L (C H + C M ) 0</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">Experiments</head><p>In this section, we first present our main results with GPT2 model on the in-domain pre-train task and out-domain downstream tasks in Section 4.1. In addition, to show the scalability of our approach, we conduct experiments with TinyLlama model in Section 4.2.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.">Main Results with GPT2</head><p>Experiment Setup: We conduct experiments with GPT2base model, which has 117M parameters in total, pretrained on OpenWebText dataset <ref type="bibr">(Radford et al., 2019)</ref> with AdamW optimizer <ref type="bibr">(Loshchilov &amp; Hutter, 2019)</ref> from scratch. The batch size is set to 512 and the sequence length is 1024. The total training step is 150k. For the downstream performance, we experiment on three tasks: GLUE <ref type="bibr" target="#b61">(Wang et al., 2018)</ref>, SQuAD <ref type="bibr">(Rajpurkar et al., 2016)</ref> , and LAM-BADA <ref type="bibr">(Paperno et al., 2016)</ref>.</p><p>For GPT2-base model, the practical sampling scheduler is set to S = (20k, 70k, 150k) and P = [(0.5, 0.5, 0.5), (0.5, 0.5, 1), (1, 1, 1)], which saves 26.7% computation cost of training.</p><p>We choose Staged Training <ref type="bibr">(Shen et al., 2022)</ref>, which is a kind of incremental training method and has two stages, as a baseline. In stage 1, Staged Training method trains the model with half hidden size. At the end of stage 1, expand the parameters of the model. In stage 2, train the complete model. The stage transition occurs at step 50k, and this baseline saves 16.7% of the training FLOPs.</p><p>For another baseline MSG <ref type="bibr" target="#b62">(Yao et al., 2023)</ref>, due to the inability of this method to simultaneously expand attention heads and intermediate sizes, the training stage settings in the MSG baseline differ slightly from our EST method:</p><p>• Stage1 (0-20k): Utilizing a model with half the number of layers, attention heads, and intermediate size.</p><p>• Stage2 (20k-40k): Restoring the number of layers and using a model with half the attention heads and intermediate size.</p><p>• Stage3 (40k-70k): Restoring the attention heads and using a model with half the intermediate size.</p><p>• Stage4 (70k-150k): Training the complete model. Main Results: We compare EST with the naive training method that trains the complete model, Staged Training method and MSG method. The results are as the Table 2. Our approach EST saves 26.7% of training FLOPs and leads to 1.22x speed up of the wall clock training time without increasing the loss on the validation dataset. The loss curve of GPT2 trained by EST can be found in Appendix A.1. Additionally, we find that the model trained by EST has better downstream performance, indicating that EST also enhances the generalization of GPT2 model. However, despite saving 16.7% of the training FLOPs, the performance of the model obtained by Staged Training cannot match the original model. Compared to MSG method, our EST approach achieves higher acceleration effects and delivering superior model performance.</p><p>Effect of Sampling Scheduler: We also conduct experiments to evaluate the effect of different sampling schedulers.</p><p>Besides our practical sampling scheduler, we evaluate model performance on five different sampling schedulers:</p><p>• EST-ONE-STAGE: S = (150k), P = [(0.5, 0.5, 1)].</p><p>• EST-TWO-STAGE-A: S = (50k, 150k), P = [(0.5, 0.5, 1), (1, 1, 1)].</p><p>• EST-TWO-STAGE-B: S = (70k, 150k), P = [(0.5, 0.5, 1), (1, 1, 1)].</p><p>• EST-TWO-STAGE-C: S = (90k, 150k), P = [(0.5, 0.5, 1), (1, 1, 1)].</p><p>• EST-THREE-STAGE: S = (20k, 70k, 150k), P = [(0.5, 0.5, 0.5), (1, 1, 0.5), (1, 1, 1)].  <ref type="table" target="#tab_8">3</ref>.</p><p>We find that our three-stage practical sampling scheduler saves more training cost than two-stage sampling schedulers with comparable model performance. On the other hand, results of EST-ONE-STAGE and EST-TWO-STAGE-C indicate that a long enough stage 3 is vital. In addition, the experiment on EST-THREE-STAGE sampling scheduler indicates that, in stage 2, sampling from MHA modules and MLP modules performs better than sampling from layers.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2.">Scale-up to TinyLlama</head><p>Experiment Setup: We pre-train a 1.1B TinyLlama model with 22 layers on the subset of SlimPajama dataset <ref type="bibr">(Soboleva et al., 2023)</ref> and Starcoder dataset <ref type="bibr">(Li et al., 2023a</ref>) from scratch, using AdamW optimizer. The batch size is set to 1024 and the sequence length is 2048. The total training step is 60k, containing 130B tokens in total. We report the validation loss on SlimPajama dataset and downstream performance on GPT4All <ref type="bibr">(Anand et al., 2023)</ref> benchmarks.</p><p>GPT4All contains seven different datasets, evaluating the few-shot common sense reasoning ability of models.</p><p>For TinyLlama model, the practical sampling scheduler is set to S = (10k, 25k, 60k) and P = [(0.5, 0.5, 0.5), (0.5, 0.5, 1), ( <ref type="formula" target="#formula_0">1</ref>, 1, 1)], which saves 25.0% computation cost of training. Main Results: We demonstrate the scalability of EST on TinyLlama in Table 4. Compared with the original model trained by the naive training method, EST method saves 25.0% of training FLOPs and leads to 1.22x speed up of wall clock training time, with comparable loss. The loss curve of TinyLlama trained by EST can be found in Appendix A.2. In addition, model generalization performance, measured by the average score of GPT4All, is improved by EST.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">Theoretical Studies</head><p>In this section, we aim to answer two key questions: 1) Why can EST method save training cost without compromising model performance? 2) Why do models trained using the EST method exhibit better generalization performance? We study the training dynamics of EST in Section 5.1 to answer question 1 and study the loss landscape of models trained using the EST method in Section 5.2 to answer question 2.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.">Why Can EST Save Training Cost without Compromising Model Performance</head><p>In general, EST enhances the dynamics of model training, resulting in a steeper loss curve and faster loss descent compared to the naive training approach, so it can save training cost without compromising model performance. To provide a more specific explanation, we first need to introduce two important properties in previous incremental training methods <ref type="bibr">(Shen et al., 2022)</ref>: loss-preserving property and training-dynamics-preserving property. Subsequently, we point out that it is precisely because EST breaks away from these two properties that it can achieve savings in model training cost in a broad range of scenarios. Loss-preserving Property: The loss-preserving property implies that during a transition in the training stages, the models before and after the transition should represent the same function, resulting in identical loss.</p><p>Training-dynamics-preserving Property: Intuitively, the training-dynamics-preserving property means that in the final stage of incremental training, the loss curve should match that of the target model.</p><p>Why Should Break Away from These Properties: In incremental training methods, maintaining these two properties is to ensure the feasibility of extending the parameters of a smaller model as the initialization parameters for the target model. However, to maintain these two properties while achieving the goal of saving training cost, incremental training methods require expanding the parameters to the size of the target model early in the training process <ref type="bibr">(Shen et al., 2022)</ref>. Therefore, when the model training requires a sufficient number of training steps, incremental training methods can actually save very little in training cost. EST breaks away from these two properties, alleviating this issue.</p><p>Break Away from Loss-preserving Property: EST method dose not maintain the loss-preserving property. During stage transitions when increasing the size of the subnetworks, the loss experiences a sudden drop compared to the previous stage.</p><p>Due to the equivalence between the random sampling of subnetworks and Structural Dropout <ref type="bibr">(Pal et al., 2020)</ref>, we can theoretically demonstrate using Dropout theory. Intuitively, training subnetworks via random sampling implicitly introduces a regularization term to the loss function, and the increase in subnetwork size reduces this regularization term, resulting in a sudden drop in loss. Break Away From Training-dynamics-preserving Property: EST method does not maintain the training-dynamicspreserving property. In the final stage of training, the model trained with EST exhibits better training dynamics compared to the target model obtained through naive training method. Intuitively, EST method is equivalent to the use of Structural Dropout in earlier stages. Early Dropout pushes model  Firstly, we observe that during stage transitions, the loss drops sharply, which is the result of breaking the losspreserving property, providing a better starting point for each stage. On the other hand, we notice that in stage 3, the slope of the EST loss curve is greater than the slope of the original loss curve under the same loss condition. This is a direct result of breaking the training-dynamics-preserving property, which is the key to the success of EST. If the training-dynamics-preserving property holds, the loss curve in stage 3 will be parallel to the loss curve of the original training method, and thus, the two curves will not intersect, eliminating the possibility of saving training costs. It is precisely because the EST method improves the dynamics of model training that it leads to savings in training costs without sacrificing model performance.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.">Why Can EST Benefit Model Generalization</head><p>In Section 4, we observe that the EST method not only achieves comparable loss on the pre-training dataset compared to the naive training method, but also brings some</p><p>Table 5. The trace of Hessian matrix and the average GLUE score of model trained through naive training method and through EST method. With almost the same pre-training loss, EST method has higher GLUE score for smaller trace of Hessian matrix. In Table <ref type="table">5</ref>, we demonstrate that GPT2 models trained through EST exhibit a smaller trace of the Hessian matrix and stronger generalization performance compared to models obtained through naive training method. Here Tr[∇ 2 L(ϕ)] denotes the trace of Hessian matrix of the loss function with respect to the model parameters.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.">Conclusion</head><p>Our goal is to achieve more efficient training for large language models. We propose a novel training method, Evolving Subnetwork Training (EST), which operates subnetwork training via random sampling and uses sampling scheduler to plan the process of training incrementally. Our approach enhances the efficiency of model training on GPT2 and TinyLlama models, saving 26.7% and 25.0% of training FLOPs respectively, with comparable pre-training performance. In addition, EST benefits the generalization ability of both GPT2 and TinyLlama, evaluated by several downstream tasks. We also provide intuitive theory studies, demonstrating the feasibility and superiority of EST.</p><p>Through theoretical analysis, we find that the efficient training dynamics of EST comes from the flatness of parameters. This insight may inspire other efficient training methods. In future works, we aim to provide the theoretical support for the design of sampling schedulers, to apply EST for training on even larger models. Additionally, since EST essentially samples for matrix multiplication, it can be applied not only to Transformer models but also to models like Mamba <ref type="bibr">(Gu &amp; Dao, 2023)</ref>. We will conduct experiments on other types of models to broaden the application scope of EST.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Impact Statement</head><p>This work's ethical impact is rooted in the ethical risks associated with large language models themselves. While there are numerous ethical risks linked to large language models, this paper primarily focuses on efficient training for such models, and thus, these ethical risks are not the main emphasis of this paper. Therefore, we believe it is not necessary to highlight them here.</p><p>The future societal consequences of this work primarily involve its impact on the environment and the applications of large language models. As this work helps reduce the training costs of large language models, it contributes to mitigating the carbon emissions caused by research and applications of such models, thereby aiding environmental conservation. Simultaneously, the cost savings may also facilitate a broader and more widespread application of large language models in society. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Implementation Details</head><p>Among the three sampling methods we use, sampling for the number of Transformer layers is straightforward and will not be elaborated. However, the sampling operation for the dimensions of MHA and MLP modules within each layer is more complex. This will be detailed here. The operation within each Transformer layer can be illustrated as Figure <ref type="figure" target="#fig_5">5</ref>. The index generator generates indexes I H , I M and I L . The router before each module takes I H or I M as input and activates the corresponding part of the module. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B.1. Implementation of Sampling for MHA module</head><p>For the MHA module, we sample a subset of heads for computation. Specifically, this involves sampling along the dimensions of the output projection matrices W Q ,W K ,W V , and selecting the corresponding input dimensions in the output matrix W O . The detailed process is illustrated in Figure <ref type="figure" target="#fig_6">6</ref>. </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 .</head><label>1</label><figDesc>Figure1. Overview of our EST method with practical sampling scheduler. The router takes IL as input and determines whether to activate the current layer. In stage 1, we obtain a subnetwork to train by sampling from NH , NM and NA dimensions. In such subnetworks, only some layers are activated and in each activated layer, and only some attention heads and MLP neurons are used. In stage 2, all layers are activated while in each layer still only a subset of the layer is used. In stage 3, the complete model is activated.</figDesc><graphic coords="4,90.64,67.06,413.10,355.99" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><figDesc>the training cost under specific configurations that p H = p M = p L = 0.5, r 1 = r 2 = r 3 = r compared with cost of training the original model through naive training method. Under such configurations, EST can save 41.7% of training cost.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><figDesc>Among these five sampling schedulers, EST-ONE-STAGE is exactly the stage 2 of the practical sampling scheduler and does not train the complete model at all. EST-TWO-STAGE-A, EST-TWO-STAGE-B, and EST-TWO-STAGE-C skip the stage 1 of the practical sampling scheduler and have different stage transition points. EST-THREE-STAGE, on the other hand, modifies the stage 2 of the practical sampling scheduler by disabling the sampling from MHA and MLP and enabling the sampling from the number of layers. The results are shown in Table</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 2 .</head><label>2</label><figDesc>Figure 2. Loss curves of EST compared with the original training method.</figDesc><graphic coords="8,55.44,149.63,233.99,155.45" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Loss</head><figDesc>tasks. This indicates an enhancement in the model's generalization performance.Liu et al. (2023a)  investigate the phenomenon where different models exhibit significant differences in downstream tasks under the same loss on the pre-training dataset. Furthermore, they find a strong correlation between the model's generalization ability and the trace of the Hessian matrix of the loss function with respect to the model parameters.The process of sampling subnetworks in the EST method is equivalent to Structural Dropout, which can effectively reduce the trace of the Hessian matrix in the early stages. However, more importantly, we find that even in the final stage of training the complete model, the Hessian matrix still maintains a relatively small trace until the end of training. This contributes to the better generalization performance of the final model obtained through EST.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 5 .</head><label>5</label><figDesc>Figure 5. Computation in each Transformer layer during subnetwork training.</figDesc><graphic coords="16,139.25,169.50,315.90,189.83" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 6 .</head><label>6</label><figDesc>Figure 6. The detailed implementation of sampling for MHA module.</figDesc><graphic coords="16,78.50,490.16,437.36,178.92" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 1 .</head><label>1</label><figDesc>An intuitive example of training cost saving. The real world wall time saving is shown inAppendix A.3    </figDesc><table><row><cell></cell><cell>.</cell><cell></cell></row><row><cell>Stages</cell><cell>EST</cell><cell>Original</cell></row><row><cell cols="2">Stage 1 0.25rN L</cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_7"><head>Table 2 .</head><label>2</label><figDesc>Main results of the experiment with GPT2 model. We choose Staged Training(Shen et al., 2022)  and MSG<ref type="bibr" target="#b62">(Yao et al., 2023)</ref> baselines. Loss is evaluated on the validation dataset. For metrics, we use accuracy and F1 score for SQuAD, and accuracy for LAMBADA. The detailed results of GLUE are in Appendix A.1.</figDesc><table><row><cell></cell><cell cols="4">WALL CLOCK TIME(HOURS) SPEED UP SAVING FLOPS</cell></row><row><cell>ORIGINAL</cell><cell>185.0</cell><cell></cell><cell>1X</cell><cell>0</cell></row><row><cell>STAGED TRAINING</cell><cell>173.1</cell><cell></cell><cell>1.06X</cell><cell>16.7%</cell></row><row><cell>MSG</cell><cell>160.8</cell><cell></cell><cell>1.16X</cell><cell>24.4%</cell></row><row><cell>EST</cell><cell>151.6</cell><cell></cell><cell>1.22X</cell><cell>26.7%</cell></row><row><cell></cell><cell>AVERAGE GLUE</cell><cell>SQUAD</cell><cell cols="2">LAMBADA LOSS</cell></row><row><cell>ORIGINAL</cell><cell>79.84</cell><cell>66.74/77.06</cell><cell>29.44</cell><cell>3.06</cell></row><row><cell>STAGED TRAINING</cell><cell>73.82</cell><cell>61.65/72.71</cell><cell>28.99</cell><cell>3.15</cell></row><row><cell>MSG</cell><cell>79.88</cell><cell>62.05/71.89</cell><cell>29.06</cell><cell>3.13</cell></row><row><cell>EST</cell><cell>80.66</cell><cell>67.14/77.15</cell><cell>32.01</cell><cell>3.05</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_8"><head>Table 3 .</head><label>3</label><figDesc>Ablation study on different sampling schedulers. We find that our proposed practical sampling scheduler strikes a good balance between model performance and FLOPs saving. Compared to other types of schedulers, our practical sampling scheduler performs the best with the same training cost.</figDesc><table><row><cell></cell><cell cols="3">SAVING FLOPS LOSS AVERAGE GLUE</cell><cell>SQUAD</cell><cell>LAMBADA</cell></row><row><cell>ORIGINAL</cell><cell>0</cell><cell>3.06</cell><cell>79.84</cell><cell>66.74/77.06</cell><cell>29.44</cell></row><row><cell>EST-ONE-STAGE</cell><cell>50.0%</cell><cell>3.36</cell><cell>77.78</cell><cell>63.95/74.65</cell><cell>26.57</cell></row><row><cell>EST-TWO-STAGE-A</cell><cell>16.7%</cell><cell>3.04</cell><cell>81.05</cell><cell>67.39/77.76</cell><cell>29.59</cell></row><row><cell>EST-TWO-STAGE-B</cell><cell>23.3%</cell><cell>3.06</cell><cell>80.17</cell><cell>67.18/77.51</cell><cell>29.71</cell></row><row><cell>EST-TWO-STAGE-C</cell><cell>30.0%</cell><cell>3.09</cell><cell>80.41</cell><cell>66.55/77.01</cell><cell>28.68</cell></row><row><cell>EST-THREE-STAGE</cell><cell>26.7%</cell><cell>3.07</cell><cell>79.47</cell><cell>65.73/76.22</cell><cell>29.67</cell></row><row><cell>EST</cell><cell>26.7%</cell><cell>3.05</cell><cell>80.66</cell><cell>67.14/77.15</cell><cell>32.01</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_10"><head>Table 4 .</head><label>4</label><figDesc>Main results of experiment with TinyLlama model. Loss is evaluated on the validation dataset. The detailed results of GPT4All are shown in Appendix A.2.</figDesc><table><row><cell></cell><cell cols="5">WALL CLOCK TIME(HOURS) SPEED UP SAVING FLOPS LOSS GPT4ALL</cell></row><row><cell>ORIGINAL</cell><cell>192.8</cell><cell>1X</cell><cell>0</cell><cell>2.64</cell><cell>42.40</cell></row><row><cell>EST</cell><cell>158.2</cell><cell>1.22X</cell><cell>25%</cell><cell>2.65</cell><cell>42.79</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_12"><head>Table 8 .</head><label>8</label><figDesc>Wall time overhead of GPT2 model. Each example contains 1024 tokens. MS) OF STAGE 2 TRAINING STEP 210.59 309.27 497.37 721.37 TOTAL TIME (MS) OF STAGE 3 (ORIGINAL) TRAINING STEP 211.05 388.46 646.85 1065.23</figDesc><table><row><cell>MICRO BATCH SIZE</cell><cell>8</cell><cell>16</cell><cell>32</cell><cell>48</cell></row><row><cell>GPU TIME (MS) OF MHA</cell><cell>2.51</cell><cell>4.84</cell><cell>9.48</cell><cell>14.12</cell></row><row><cell>GPU TIME (MS) OF EST MHA</cell><cell>1.41</cell><cell>2.57</cell><cell>4.92</cell><cell>7.27</cell></row><row><cell>GPU TIME (MS) OF MLP</cell><cell>0.92</cell><cell>1.78</cell><cell>3.38</cell><cell>5.01</cell></row><row><cell>GPU TIME (MS) OF EST MLP</cell><cell>0.59</cell><cell>1.05</cell><cell>1.95</cell><cell>2.86</cell></row><row><cell>GPU TIME (MS) OF TRANSFORMER LAYER</cell><cell>3.56</cell><cell>6.86</cell><cell>13.31</cell><cell>19.77</cell></row><row><cell>GPU TIME (MS) OF EST TRANSFORMER LAYER</cell><cell>2.12</cell><cell>3.86</cell><cell>7.34</cell><cell>10.79</cell></row><row><cell>TOTAL TIME (MS) OF STAGE 1 TRAINING STEP</cell><cell cols="3">182.49 278.62 447.91</cell><cell>525.55</cell></row><row><cell>TOTAL TIME (</cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_13"><head>Table 9 .</head><label>9</label><figDesc>Wall time overhead of TinyLlama 1.1B model. Each example contains 2048 tokens. MS) OF STAGE 2 TRAINING STEP 374.05 296.95 399.80 659.46 TOTAL TIME (MS) OF STAGE 3 (ORIGINAL) TRAINING STEP 274.23 336.71 555.82 915.40</figDesc><table><row><cell>MICRO BATCH SIZE</cell><cell>1</cell><cell>2</cell><cell>4</cell><cell>8</cell></row><row><cell>GPU TIME (MS) OF MHA</cell><cell>1.43</cell><cell>2.10</cell><cell>3.93</cell><cell>8.14</cell></row><row><cell>GPU TIME (MS) OF EST MHA</cell><cell>1.45</cell><cell>1.63</cell><cell>2.24</cell><cell>4.11</cell></row><row><cell>GPU TIME (MS) OF MLP</cell><cell>0.39</cell><cell>0.69</cell><cell>1.43</cell><cell>2.87</cell></row><row><cell>GPU TIME (MS) OF EST MLP</cell><cell>0.44</cell><cell>0.61</cell><cell>0.98</cell><cell>1.60</cell></row><row><cell>GPU TIME (MS) OF TRANSFORMER LAYER</cell><cell>2.05</cell><cell>3.12</cell><cell>5.99</cell><cell>11.88</cell></row><row><cell>GPU TIME (MS) OF EST TRANSFORMER LAYER</cell><cell>2.50</cell><cell>2.57</cell><cell>3.85</cell><cell>6.84</cell></row><row><cell>TOTAL TIME (MS) OF STAGE 1 TRAINING STEP</cell><cell cols="4">288.37 228.66 360.24 501.61</cell></row><row><cell>TOTAL TIME (</cell><cell></cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgments</head><p>This work is funded by the <rs type="funder">China NSFC Projects</rs> (<rs type="grantNumber">92370206</rs>, <rs type="grantNumber">U23B2057</rs>, <rs type="grantNumber">62106142</rs> and <rs type="grantNumber">62120106006</rs>) and <rs type="funder">Shanghai Municipal Science and Technology Major Project</rs> (<rs type="grantNumber">2021SHZDZX0102</rs>).</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_7DQTduv">
+					<idno type="grant-number">92370206</idno>
+				</org>
+				<org type="funding" xml:id="_w7WHhSa">
+					<idno type="grant-number">U23B2057</idno>
+				</org>
+				<org type="funding" xml:id="_jeKZYZB">
+					<idno type="grant-number">62106142</idno>
+				</org>
+				<org type="funding" xml:id="_pHAmDFP">
+					<idno type="grant-number">62120106006</idno>
+				</org>
+				<org type="funding" xml:id="_gFE5hBz">
+					<idno type="grant-number">2021SHZDZX0102</idno>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., and Polosukhin, I. Attention is all you need. Advances in neural information processing systems, 30, 2017.</p><p>Wang, A., Singh, A., Michael, J., Hill, F., Levy, O., and Bowman, S. R. Glue: A multi-task benchmark and analysis platform for natural language understanding. arXiv preprint arXiv:1804.07461, 2018.</p><p>Yao, Y., <ref type="bibr">Zhang,</ref><ref type="bibr">Z.,</ref><ref type="bibr">Li,</ref><ref type="bibr">J.,</ref><ref type="bibr">and Wang,</ref><ref type="bibr">Y. 2x</ref> faster language model pre-training via masked structural growth. arXiv preprint arXiv:2305.02869, 2023.</p><p>Zhang, P., Zeng, G., Wang, T., and Lu, W. Tinyllama: An open-source small language model, 2024.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Additional Experiment Details</head><p>A.1. Details for GPT2 Experiment Details for Pre-training: We pre-train 117M GPT2 model on OpenWebText dataset from scratch, using AdamW optimizer. Batch size is set to 512 and each example contains 1024 tokens. The initial learning rate is set to 6 × 10 -4 , followed by a linear learning rate decay. The pre-training loss curves of EST method on training dataset and validation dataset are as Figure <ref type="figure">3</ref>. </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Details for GLUE benchmark:</head><p>The detailed scores evaluated on GLUE are as    Details for GPT4All benchmark: The detailed scores evaluated on GPT4All are as Table <ref type="table">7</ref>. We test the efficiency of the EST method on GPT2 and TinyLlama models and assess the real acceleration effects. We will analyze the wall time overhead of each module and the time overhead under different training setups. Here we mainly analyze the impact of sampling on the MHA and MLP modules. These two modules involve matrix multiplication, and our sampling alters the size of these matrices. Since matrix multiplication is parallelized on GPUs, it's challenging to intuitively calculate the actual acceleration effect. For both GPT2-base and TinyLlama 1.1B model, we investigate the impact of different batch sizes on training speed when using Distributed Data Parallel (DDP). For simplicity, we discuss the practical sampling scheduler in Table <ref type="table">1</ref>. We use A100 80GB GPU to test both GPT2 model and TinyLlama model.</p><p>For the GPT2 model, the actual acceleration effects are as Table <ref type="table">8</ref>. For the TinyLlama 1.1B model, the actual acceleration effects are as Table <ref type="table">9</ref>. In these two tables, GPU time refers to the time spent on forward computations for each module or layer on the GPU. Total time indicates the overall time cost for each training step, including both forward and backward computation.</p><p>The final speedup rate is not 4× for stage1 and not 2× for stage 2 due to two reasons: (1) GPUs compute matrix multiplication in parallel, so the time consumption is not directly proportional to the number of rows or columns of the matrix;</p><p>(2) In addition to GPU computation time, there is also high memory access overhead during model training. As the batch size increases, the bottleneck of training gradually shifts from memory access to computation, resulting in an increase in the speedup, and the speedup on GPU time gradually approaches 2×.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B.2. Implementation of Sampling for MLP module</head><p>For the MLP module, we sample columns from W 1 and W 2 for computation. The detailed process is illustrated in Figure <ref type="figure">7</ref>. Unlike in Deja Vu <ref type="bibr">(Liu et al., 2023b)</ref>, in our training scenario, since our sampling operation is performed per batch rather than per token, the cost of extracting rows and columns from the matrices is relatively small, and kernel fusion is not necessary.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B.3. Implementation of Index Generator</head><p>The index generator simply generates random numbers as sampling indices. However, since it operates on the CPU, and once the indices are generated, they need to be transferred to the GPU memory. Executing it as part of the model before each forward pass could result in unnecessary time overhead. To optimize the training process as much as possible, we use an additional thread to run the index generator asynchronously to the model training. Once the index generator generates the next set of indices, it places them in a queue. When the model needs to sample, it retrieves the values from the queue. This completely eliminates the overhead of the index generator.</p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title level="m" type="main">Gpt4all: Training an assistantstyle chatbot with large scale data distillation from gpt-3.5-turbo</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Anand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Nussbaum</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Duderstadt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Schmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mulyar</surname></persName>
+		</author>
+		<ptr target="https://github.com/nomic-ai/gpt4all" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">L</forename><surname>Ba</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Kiros</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">E</forename><surname>Hinton</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1607.06450</idno>
+		<title level="m">Layer normalization</title>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">bert2bert: Towards reusable pretrained language models</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Shang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="2134" to="2148" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Net2net: Accelerating learning via knowledge transfer</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><forename type="middle">J</forename><surname>Goodfellow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Shlens</surname></persName>
+		</author>
+		<ptr target="http://arxiv.org/abs/1511.05641" />
+	</analytic>
+	<monogr>
+		<title level="m">4th International Conference on Learning Representations</title>
+		<editor>
+			<persName><forename type="first">Y</forename><surname>Bengio</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Y</forename><surname>Lecun</surname></persName>
+		</editor>
+		<meeting><address><addrLine>San Juan, Puerto Rico</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2016-05-02">2016. May 2-4, 2016. 2016</date>
+		</imprint>
+	</monogr>
+	<note>Conference Track Proceedings</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Gan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Early{bert}</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=I-VfjSBzi36" />
+		<title level="m">Efficient {bert} training via early-bird lottery tickets</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Rethinking attention with performers</title>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">M</forename><surname>Choromanski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Likhosherstov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gane</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Sarlos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Hawkins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">Q</forename><surname>Davis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mohiuddin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">B</forename><surname>Belanger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">J</forename><surname>Colwell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Weller</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=Ua6zuk0WRH" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<monogr>
+		<title level="m" type="main">Pixelated butterfly: Simple and efficient sparse training for neural network models</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rudra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Re</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2112.00029</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Monarch: Expressive structured matrices for efficient and accurate training</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">S</forename><surname>Sohoni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Desai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Poli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Grogan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rudra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Ré</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="4690" to="4721" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Flashattention: Fast and memory-efficient exact attention with io-awareness</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ermon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rudra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Ré</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="16344" to="16359" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Glam: Efficient scaling of language models with mixture-ofexperts</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Tong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Lepikhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Krikun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">W</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Firat</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="5547" to="5569" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Switch transformers: Scaling to trillion parameter models with simple and efficient sparsity</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">The Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">23</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="5232" to="5270" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">The lottery ticket hypothesis: Finding sparse, trainable neural networks</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Frankle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Carbin</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=rJl-b3RcF7" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<monogr>
+		<title level="m" type="main">Linear-time sequence modeling with selective state spaces</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Mamba</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">Deep networks with stochastic depth</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Sedra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Weinberger</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/978-3-319-46493-039</idno>
+		<imprint>
+			<date type="published" when="2016">10 2016</date>
+			<biblScope unit="volume">9908</biblScope>
+			<biblScope unit="page" from="646" to="661" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Reformer: The efficient transformer</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Kitaev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Levskaya</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=rkgNKkHtvB" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">R</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">B</forename><surname>Allal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kocetkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Mou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Marone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Akiki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Zheltonozhskii</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">Y</forename><surname>Zhuo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Dehaene</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Davaadorj</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lamy-Poirier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Monteiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Shliazhko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Gontier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Meade</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zebaze</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-H</forename><surname>Yee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">K</forename><surname>Umapathi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Lipkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Oblokulov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Murthy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Stillerman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">S</forename><surname>Patel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Abulkhanov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zocca</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Dey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Fahmy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">U</forename><surname>Bhattacharyya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Luccioni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Villegas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Kunakov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Zhdanov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Romero</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Timor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Schlesinger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Schoelkopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ebert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Robinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">J</forename><surname>Anderson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Dolan-Gavitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Contractor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Reddy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Fried</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Bahdanau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Jernite</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">M</forename><surname>Ferrandis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Hughes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wolf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Guha</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>von Werra, L., and de Vries, H. Starcoder: may the source be with you! 2023a</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Train big, then compress: Rethinking model size for efficient training and inference of transformers</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Wallace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Keutzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Klein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gonzalez</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on machine learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="5958" to="5968" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">The lazy neuron phenomenon: On emergence of activation sparsity in transformers</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>You</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bhojanapalli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">S</forename><surname>Rawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Reddi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Chern</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Guo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Conference on Parsimony and Learning</title>
+		<imprint>
+			<biblScope unit="page">2023</biblScope>
+		</imprint>
+	</monogr>
+	<note>Recent Spotlight Track</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Same pre-training loss, better downstream: Implicit bias matters for language models</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">M</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Ma</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="22188" to="22214" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Deja vu: Contextual sparsity for efficient llms at inference time</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Shrivastava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Re</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="22137" to="22176" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Decoupled weight decay regularization</title>
+		<author>
+			<persName><forename type="first">I</forename><surname>Loshchilov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Hutter</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=Bkg6RiCqY7" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Sparsity-accelerated training for large language models</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Yu</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=HvofKj7jlC" />
+	</analytic>
+	<monogr>
+		<title level="m">The 62nd Annual Meeting of the Association for Computational Linguistics</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">On the regularization properties of structured dropout</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Pal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Lane</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Vidal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">D</forename><surname>Haeffele</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF conference on computer vision and pattern recognition</title>
+		<meeting>the IEEE/CVF conference on computer vision and pattern recognition</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="7671" to="7679" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">The LAMBADA dataset: Word prediction requiring a broad discourse context</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Paperno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Kruszewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Lazaridou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">Q</forename><surname>Pham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Bernardi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Pezzelle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Baroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Boleda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Fernández</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/P16-1144</idno>
+		<ptr target="https://aclanthology.org/P16-1144" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics</title>
+		<editor>
+			<persName><forename type="first">K</forename><surname>Erk</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">N</forename><forename type="middle">A</forename><surname>Smith</surname></persName>
+		</editor>
+		<meeting>the 54th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Berlin, Germany</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2016-08">August 2016</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1525" to="1534" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Language models are unsupervised multitask learners</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">OpenAI blog</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page">9</biblScope>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">SQuAD: 100,000+ questions for machine comprehension of text</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Rajpurkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lopyrev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D16-1264</idno>
+		<ptr target="https://aclanthology.org/D16-1264" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2016 Conference on Empirical Methods in Natural Language Processing</title>
+		<editor>
+			<persName><forename type="first">J</forename><surname>Su</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">K</forename><surname>Duh</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">X</forename><surname>Carreras</surname></persName>
+		</editor>
+		<meeting>the 2016 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Austin, Texas</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2016-11">November 2016</date>
+			<biblScope unit="page" from="2383" to="2392" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title/>
+		<author>
+			<persName><forename type="first">R</forename><surname>Schwartz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Dodge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">A</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Etzioni</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Green Ai</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Communications of the ACM</title>
+		<imprint>
+			<biblScope unit="volume">63</biblScope>
+			<biblScope unit="issue">12</biblScope>
+			<biblScope unit="page" from="54" to="63" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Staged training for transformer language models</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Walsh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Keutzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Dodge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Peters</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Beltagy</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="19893" to="19908" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<monogr>
+		<title level="m" type="main">SlimPajama: A 627B token cleaned and deduplicated version of RedPajama</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Soboleva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Al-Khateeb</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Myers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Steeves</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hestness</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Dey</surname></persName>
+		</author>
+		<ptr target="https://huggingface.co/datasets/cerebras/SlimPajama-627B" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<monogr>
+		<title level="m" type="main">Gpt4all: Training an assistantstyle chatbot with large scale data distillation from gpt-3.5-turbo</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Anand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Nussbaum</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Duderstadt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Schmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mulyar</surname></persName>
+		</author>
+		<ptr target="https://github.com/nomic-ai/gpt4all" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">L</forename><surname>Ba</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Kiros</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><forename type="middle">E</forename><surname>Hinton</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1607.06450</idno>
+		<title level="m">Layer normalization</title>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="1877" to="1901" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">bert2bert: Towards reusable pretrained language models</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Shang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<publisher>Long Papers</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="2134" to="2148" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Net2net: Accelerating learning via knowledge transfer</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><forename type="middle">J</forename><surname>Goodfellow</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Shlens</surname></persName>
+		</author>
+		<ptr target="http://arxiv.org/abs/1511.05641" />
+	</analytic>
+	<monogr>
+		<title level="m">4th International Conference on Learning Representations</title>
+		<editor>
+			<persName><forename type="first">Y</forename><surname>Bengio</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">Y</forename><surname>Lecun</surname></persName>
+		</editor>
+		<meeting><address><addrLine>San Juan, Puerto Rico</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2016-05-02">2016. May 2-4, 2016. 2016</date>
+		</imprint>
+	</monogr>
+	<note>Conference Track Proceedings</note>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Gan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Early{bert}</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=I-VfjSBzi36" />
+		<title level="m">Efficient {bert} training via early-bird lottery tickets</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Rethinking attention with performers</title>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">M</forename><surname>Choromanski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Likhosherstov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gane</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Sarlos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Hawkins</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">Q</forename><surname>Davis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mohiuddin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">B</forename><surname>Belanger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">J</forename><surname>Colwell</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Weller</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=Ua6zuk0WRH" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<monogr>
+		<title level="m" type="main">Pixelated butterfly: Simple and efficient sparse training for neural network models</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rudra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Re</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2112.00029</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Monarch: Expressive structured matrices for efficient and accurate training</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">S</forename><surname>Sohoni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Desai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Poli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Grogan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rudra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Ré</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="4690" to="4721" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">Flashattention: Fast and memory-efficient exact attention with io-awareness</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ermon</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rudra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Ré</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="16344" to="16359" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">Glam: Efficient scaling of language models with mixture-ofexperts</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Tong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Lepikhin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Krikun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">W</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Firat</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="5547" to="5569" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Switch transformers: Scaling to trillion parameter models with simple and efficient sparsity</title>
+		<author>
+			<persName><forename type="first">W</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">The Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">23</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="5232" to="5270" />
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">The lottery ticket hypothesis: Finding sparse, trainable neural networks</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Frankle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Carbin</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=rJl-b3RcF7" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<monogr>
+		<title level="m" type="main">Linear-time sequence modeling with selective state spaces</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Mamba</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<monogr>
+		<title level="m" type="main">Deep networks with stochastic depth</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Sedra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Weinberger</surname></persName>
+		</author>
+		<idno type="DOI">10.1007/978-3-319-46493-039</idno>
+		<imprint>
+			<date type="published" when="2016">10 2016</date>
+			<biblScope unit="volume">9908</biblScope>
+			<biblScope unit="page" from="646" to="661" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Reformer: The efficient transformer</title>
+		<author>
+			<persName><forename type="first">N</forename><surname>Kitaev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Levskaya</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=rkgNKkHtvB" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<monogr>
+		<title/>
+		<author>
+			<persName><forename type="first">R</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">B</forename><surname>Allal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Muennighoff</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kocetkov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Mou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Marone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Akiki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Zheltonozhskii</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">Y</forename><surname>Zhuo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Dehaene</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Davaadorj</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lamy-Poirier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Monteiro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Shliazhko</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Gontier</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Meade</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zebaze</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-H</forename><surname>Yee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><forename type="middle">K</forename><surname>Umapathi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Lipkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Oblokulov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Murthy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Stillerman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">S</forename><surname>Patel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Abulkhanov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zocca</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Dey</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Fahmy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">U</forename><surname>Bhattacharyya</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Luccioni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Villegas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Kunakov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Zhdanov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Romero</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Timor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Schlesinger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Schoelkopf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Ebert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Robinson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">J</forename><surname>Anderson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Dolan-Gavitt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Contractor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Reddy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Fried</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Bahdanau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Jernite</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><forename type="middle">M</forename><surname>Ferrandis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Hughes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wolf</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Guha</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+	<note>von Werra, L., and de Vries, H. Starcoder: may the source be with you! 2023a</note>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<analytic>
+		<title level="a" type="main">Train big, then compress: Rethinking model size for efficient training and inference of transformers</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Wallace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Keutzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Klein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gonzalez</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on machine learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="5958" to="5968" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">The lazy neuron phenomenon: On emergence of activation sparsity in transformers</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>You</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bhojanapalli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">S</forename><surname>Rawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Reddi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Chern</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Guo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Conference on Parsimony and Learning</title>
+		<imprint>
+			<biblScope unit="page">2023</biblScope>
+		</imprint>
+	</monogr>
+	<note>Recent Spotlight Track</note>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<analytic>
+		<title level="a" type="main">Same pre-training loss, better downstream: Implicit bias matters for language models</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">M</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Ma</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="22188" to="22214" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">Deja vu: Contextual sparsity for efficient llms at inference time</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Yuan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Shrivastava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Re</surname></persName>
+		</author>
+		<idno>PMLR</idno>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="22137" to="22176" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<analytic>
+		<title level="a" type="main">Decoupled weight decay regularization</title>
+		<author>
+			<persName><forename type="first">I</forename><surname>Loshchilov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Hutter</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=Bkg6RiCqY7" />
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">Sparsity-accelerated training for large language models</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Yu</surname></persName>
+		</author>
+		<ptr target="https://openreview.net/forum?id=HvofKj7jlC" />
+	</analytic>
+	<monogr>
+		<title level="m">The 62nd Annual Meeting of the Association for Computational Linguistics</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<analytic>
+		<title level="a" type="main">On the regularization properties of structured dropout</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Pal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Lane</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Vidal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><forename type="middle">D</forename><surname>Haeffele</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF conference on computer vision and pattern recognition</title>
+		<meeting>the IEEE/CVF conference on computer vision and pattern recognition</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="7671" to="7679" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<analytic>
+		<title level="a" type="main">The LAMBADA dataset: Word prediction requiring a broad discourse context</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Paperno</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Kruszewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Lazaridou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">Q</forename><surname>Pham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Bernardi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Pezzelle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Baroni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Boleda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Fernández</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/P16-1144</idno>
+		<ptr target="https://aclanthology.org/P16-1144" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics</title>
+		<editor>
+			<persName><forename type="first">K</forename><surname>Erk</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">N</forename><forename type="middle">A</forename><surname>Smith</surname></persName>
+		</editor>
+		<meeting>the 54th Annual Meeting of the Association for Computational Linguistics<address><addrLine>Berlin, Germany</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2016-08">August 2016</date>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="1525" to="1534" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b55">
+	<analytic>
+		<title level="a" type="main">Language models are unsupervised multitask learners</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Radford</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Child</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Luan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Amodei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">OpenAI blog</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page">9</biblScope>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b56">
+	<analytic>
+		<title level="a" type="main">SQuAD: 100,000+ questions for machine comprehension of text</title>
+		<author>
+			<persName><forename type="first">P</forename><surname>Rajpurkar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lopyrev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<idno type="DOI">10.18653/v1/D16-1264</idno>
+		<ptr target="https://aclanthology.org/D16-1264" />
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2016 Conference on Empirical Methods in Natural Language Processing</title>
+		<editor>
+			<persName><forename type="first">J</forename><surname>Su</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">K</forename><surname>Duh</surname></persName>
+		</editor>
+		<editor>
+			<persName><forename type="first">X</forename><surname>Carreras</surname></persName>
+		</editor>
+		<meeting>the 2016 Conference on Empirical Methods in Natural Language Processing<address><addrLine>Austin, Texas</addrLine></address></meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2016-11">November 2016</date>
+			<biblScope unit="page" from="2383" to="2392" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b57">
+	<analytic>
+		<title/>
+		<author>
+			<persName><forename type="first">R</forename><surname>Schwartz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Dodge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><forename type="middle">A</forename><surname>Smith</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Etzioni</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Green Ai</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Communications of the ACM</title>
+		<imprint>
+			<biblScope unit="volume">63</biblScope>
+			<biblScope unit="issue">12</biblScope>
+			<biblScope unit="page" from="54" to="63" />
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b58">
+	<analytic>
+		<title level="a" type="main">Staged training for transformer language models</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Shen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Walsh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Keutzer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Dodge</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Peters</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Beltagy</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="19893" to="19908" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b59">
+	<monogr>
+		<title level="m" type="main">SlimPajama: A 627B token cleaned and deduplicated version of RedPajama</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Soboleva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Al-Khateeb</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Myers</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">R</forename><surname>Steeves</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Hestness</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Dey</surname></persName>
+		</author>
+		<ptr target="https://huggingface.co/datasets/cerebras/SlimPajama-627B" />
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b60">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ł</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">30</biblScope>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b61">
+	<monogr>
+		<title level="m" type="main">Glue: A multi-task benchmark and analysis platform for natural language understanding</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Michael</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Hill</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">R</forename><surname>Bowman</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1804.07461</idno>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b62">
+	<monogr>
+		<title level="m" type="main">2x faster language model pre-training via masked structural growth</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.02869</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b63">
+	<monogr>
+		<author>
+			<persName><forename type="first">P</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Lu</surname></persName>
+		</author>
+		<title level="m">Tinyllama: An open-source small language model</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>
